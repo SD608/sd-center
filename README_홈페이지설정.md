@@ -1,23 +1,14 @@
-# SD종합센터 홈페이지 업로드 방법
+# SD종합센터 v2.1.1 홈페이지 등록
 
-이 홈페이지는 `SD608/sd-center` 저장소 주소에 맞게 설정되어 있습니다.
+이 홈페이지는 v2.1.1 릴리스에 직접 연결됩니다.
 
-## 지금 할 일
+다운로드 주소:
+`https://github.com/SD608/sd-center/releases/download/v2.1.1/SDCenterSetup.exe`
 
-1. 이 ZIP을 압축 해제합니다.
-2. GitHub 저장소 화면에서 **uploading an existing file**을 누릅니다.
-3. `website` 폴더 안의 파일과 `assets` 폴더를 전부 끌어다 놓습니다.
-   - `website` 폴더 자체를 올리는 것이 아니라, 그 안의 `index.html`, `site-config.js`, `assets` 등을 올립니다.
-4. 화면 아래 **Commit changes**를 누릅니다.
-5. 저장소의 **Settings → Pages**로 이동합니다.
-6. Source를 **Deploy from a branch**, Branch를 **main / root**로 선택하고 저장합니다.
+1. 이 website 폴더 안의 파일을 GitHub 저장소 루트에 덮어씁니다.
+2. GitHub Releases에서 태그 `v2.1.1`을 새로 만듭니다.
+3. 새로 빌드한 파일 이름을 정확히 `SDCenterSetup.exe`로 유지해 첨부합니다.
+4. Release label은 None으로 두고 공개합니다.
+5. GitHub Pages 배포 후 `Ctrl + F5`로 새로고침합니다.
 
-홈페이지 주소는 배포 후 다음 형식이 됩니다.
-
-`https://sd608.github.io/sd-center/`
-
-다운로드 버튼은 다음 설치 파일을 찾습니다.
-
-`https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe`
-
-따라서 나중에 GitHub Releases에 설치 파일 이름을 정확히 `SDCenterSetup.exe`로 올려야 합니다.
+`latest` 주소를 사용하지 않으므로 예전 최신 릴리스 파일이 내려받아지는 문제를 피합니다.
