@@ -1,0 +1,14 @@
+SD종합센터 v2.1.0 GitHub 재등록 순서
+
+1. installer-source\BUILD_INSTALLER.cmd 실행
+2. installer-source\out\make\squirrel.windows\x64\SDCenterSetup.exe 확인
+3. GitHub SD608/sd-center 저장소의 Releases 열기
+4. 기존 v2.0.0을 수정하지 말고 새 Release v2.1.0 생성
+5. Release label은 None, Set as latest release 활성화
+6. 파일 이름을 SDCenterSetup.exe로 유지하여 첨부
+7. Publish release 클릭
+8. website 폴더 내용을 저장소 루트에 덮어쓰기 업로드 후 Commit changes
+9. GitHub Pages 배포 완료 후 https://sd608.github.io/sd-center/ 에서 Ctrl+F5
+10. Windows 다운로드 버튼 테스트
+
+주의: 실제 정부 지원금 또는 실제 금융 서비스가 아닌 가상 시뮬레이션입니다.

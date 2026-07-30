@@ -1,8 +1,16 @@
 "use strict";
 
-const config = window.SD_SITE_CONFIG || {};
-const isPlaceholder = (value) =>
-  !value || /YOUR_GITHUB_ID|YOUR_REPOSITORY/.test(String(value));
+const DEFAULT_CONFIG = {
+  productName: "SD종합센터",
+  version: "2.1.0",
+  fileName: "SDCenterSetup.exe",
+  downloadUrl: "https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe",
+  releasePageUrl: "https://github.com/SD608/sd-center/releases/latest",
+  sourcePageUrl: "https://github.com/SD608/sd-center",
+  systemRequirement: "Windows 10/11 64비트"
+};
+
+const config = { ...DEFAULT_CONFIG, ...(window.SD_SITE_CONFIG || {}) };
 
 function setText(selector, value) {
   document.querySelectorAll(selector).forEach((element) => {
@@ -11,59 +19,45 @@ function setText(selector, value) {
 }
 
 function configureLinks() {
-  const downloadUrl = config.downloadUrl || "#";
-  const placeholder = isPlaceholder(downloadUrl);
-
   document.querySelectorAll("[data-download-link]").forEach((link) => {
-    link.href = placeholder ? "#" : downloadUrl;
-    if (!placeholder) {
-      link.setAttribute("download", config.fileName || "SDCenterSetup.exe");
-    }
-
-    link.addEventListener("click", (event) => {
-      if (placeholder) {
-        event.preventDefault();
-        const notice = document.getElementById("configNotice");
-        notice.hidden = false;
-        return;
-      }
-
+    link.href = config.downloadUrl;
+    link.addEventListener("click", () => {
       window.setTimeout(() => {
-        document.getElementById("downloadModal").hidden = false;
+        const modal = document.getElementById("downloadModal");
+        if (modal) modal.hidden = false;
       }, 180);
     });
   });
 
   document.querySelectorAll("[data-release-link]").forEach((link) => {
-    link.href = isPlaceholder(config.releasePageUrl) ? "#" : config.releasePageUrl;
+    link.href = config.releasePageUrl;
   });
 
   document.querySelectorAll("[data-source-link]").forEach((link) => {
-    link.href = isPlaceholder(config.sourcePageUrl) ? "#" : config.sourcePageUrl;
+    link.href = config.sourcePageUrl;
   });
 }
 
 function initialize() {
-  setText("[data-version]", config.version || "2.1.0");
-  setText("[data-file-name]", config.fileName || "SDCenterSetup.exe");
-  setText("[data-system]", config.systemRequirement || "Windows 10/11 64비트");
+  setText("[data-version]", config.version);
+  setText("[data-file-name]", config.fileName);
+  setText("[data-system]", config.systemRequirement);
   configureLinks();
 
   const modal = document.getElementById("downloadModal");
   const closeModal = () => {
-    modal.hidden = true;
+    if (modal) modal.hidden = true;
   };
 
-  document.getElementById("modalClose").addEventListener("click", closeModal);
-  document.getElementById("modalConfirm").addEventListener("click", closeModal);
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) closeModal();
-  });
-
-  const notice = document.getElementById("configNotice");
-  notice.querySelector("button").addEventListener("click", () => {
-    notice.hidden = true;
-  });
+  const closeButton = document.getElementById("modalClose");
+  const confirmButton = document.getElementById("modalConfirm");
+  if (closeButton) closeButton.addEventListener("click", closeModal);
+  if (confirmButton) confirmButton.addEventListener("click", closeModal);
+  if (modal) {
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+  }
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeModal();
