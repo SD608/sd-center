@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="SD지갑, SD금고, SD홀짝, SD광부, SD비트코인 채굴장을 하나로 관리하는 시뮬레이션 데스크톱 앱" />
+  <meta name="description" content="SD종합센터 본체와 SD슬롯 등 선택형 확장팩을 다운로드하는 공식 페이지" />
   <meta name="theme-color" content="#0b1224" />
-  <title>SD종합센터 다운로드</title>
+  <title>SD종합센터 · 확장팩 다운로드</title>
   <link rel="icon" href="favicon.ico" />
-  <link rel="stylesheet" href="assets/css/style.css?v=211" />
-  <script src="site-config.js?v=212" defer></script>
-  <script src="assets/js/app.js?v=212" defer></script>
+  <link rel="stylesheet" href="assets/css/style.css?v=220" />
+  <script src="site-config.js?v=220" defer></script>
+  <script src="assets/js/extensions-data.js?v=220" defer></script>
+  <script src="assets/js/app.js?v=220" defer></script>
 </head>
 <body>
   <div class="page-glow glow-one" aria-hidden="true"></div>
@@ -21,7 +22,8 @@
       <span>SD종합센터</span>
     </a>
     <nav class="nav-links" aria-label="주요 메뉴">
-      <a href="#apps">포함 앱</a>
+      <a href="#apps">기본 앱</a>
+      <a href="#extensions">확장팩</a>
       <a href="#install">설치 방법</a>
       <a href="#faq">도움말</a>
     </nav>
@@ -35,9 +37,9 @@
           <span class="eyebrow">WINDOWS DESKTOP</span>
           <span class="version-badge">Distribution · v<span data-version>2.1.1</span></span>
         </div>
-        <h1>다섯 개의 SD 앱을<br /><span>하나의 센터에서.</span></h1>
+        <h1>SD 앱과 확장팩을<br /><span>한곳에서.</span></h1>
         <p class="hero-description">
-          SD지갑부터 금고, 광산, 홀짝, 비트코인 채굴장까지 한 번에 설치하고 실행하세요.
+          SD종합센터 본체를 설치한 뒤 슬롯머신 같은 선택형 확장팩을 자유롭게 추가하세요.
           모든 금액과 자산은 실제 금융거래가 아닌 가상 시뮬레이션 데이터입니다.
         </p>
         <div class="hero-actions">
@@ -45,14 +47,14 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3" /></svg>
             <span>Windows용 다운로드</span>
           </a>
-          <a class="secondary-button" href="#install">설치 과정 보기</a>
+          <a class="secondary-button" href="#extensions">확장팩 둘러보기</a>
         </div>
         <div class="download-meta">
           <span data-system>Windows 10/11 64비트</span>
           <span class="meta-dot"></span>
           <span data-file-name>SDCenterSetup.exe</span>
           <span class="meta-dot"></span>
-          <span>무료 시뮬레이션</span>
+          <span>확장팩 설치 지원</span>
         </div>
       </div>
 
@@ -78,7 +80,7 @@
           </div>
         </div>
         <div class="floating-chip chip-version">v<span data-version>2.1.1</span></div>
-        <div class="floating-chip chip-apps">5 APPS</div>
+        <div class="floating-chip chip-apps">5 APPS + PACKS</div>
       </div>
     </section>
 
@@ -86,14 +88,14 @@
       <div><strong>한 번에 설치</strong><span>설치 파일 하나로 앱 5개 구성</span></div>
       <div><strong>통합 실행</strong><span>센터와 트레이에서 빠른 접근</span></div>
       <div><strong>로컬 저장</strong><span>시뮬레이션 데이터는 PC에 저장</span></div>
-      <div><strong>백업·복구</strong><span>앱 보관함과 원클릭 재설치</span></div>
+      <div><strong>확장팩 지원</strong><span>ZIP 다운로드 후 센터에 바로 추가</span></div>
     </section>
 
     <section id="apps" class="apps-section section-shell">
       <div class="section-heading">
         <span class="section-kicker">INCLUDED APPLICATIONS</span>
-        <h2>한 번 설치하면 모두 사용할 수 있어요</h2>
-        <p>각 앱은 SD지갑의 가상 계좌를 중심으로 연결되며, 종합센터에서 실행·종료·보관·재설치할 수 있습니다.</p>
+        <h2>기본 제공 앱 5개</h2>
+        <p>기본 앱은 SD지갑의 가상 계좌를 중심으로 연결되며, 종합센터에서 실행·종료·보관·재설치할 수 있습니다.</p>
       </div>
 
       <div class="app-grid">
@@ -120,6 +122,34 @@
       </div>
     </section>
 
+
+    <section id="extensions" class="extensions-section section-shell">
+      <div class="section-heading">
+        <span class="section-kicker">OPTIONAL EXPANSION PACKS</span>
+        <h2>필요한 앱만 추가로 설치하세요</h2>
+        <p>확장팩 ZIP을 내려받은 뒤 압축을 풀지 않고 SD종합센터의 <strong>ZIP 앱 추가</strong>에서 선택하면 됩니다.</p>
+      </div>
+
+      <div class="extension-toolbar">
+        <div class="extension-count"><strong id="extensionCount">0</strong><span>개의 확장팩 공개 중</span></div>
+        <div class="extension-warning"><span>!</span> ZIP 파일은 압축을 풀지 마세요.</div>
+      </div>
+
+      <div id="extensionGrid" class="extension-grid" aria-live="polite"></div>
+
+      <div class="extension-install-guide">
+        <div class="guide-heading">
+          <span>3단계 설치</span>
+          <strong>다운로드한 확장팩을 종합센터에 추가하는 방법</strong>
+        </div>
+        <ol>
+          <li><b>1</b><span>홈페이지에서 확장팩 ZIP 다운로드</span></li>
+          <li><b>2</b><span>SD종합센터에서 <strong>ZIP 앱 추가</strong> 선택</span></li>
+          <li><b>3</b><span>압축을 풀지 않은 ZIP을 선택해 설치 또는 업데이트</span></li>
+        </ol>
+      </div>
+    </section>
+
     <section id="install" class="install-section section-shell">
       <div class="install-panel">
         <div class="section-heading compact">
@@ -130,7 +160,7 @@
           <li><span>1</span><div><strong>설치 파일 다운로드</strong><p>홈페이지에서 <code data-file-name>SDCenterSetup.exe</code>를 내려받습니다.</p></div></li>
           <li><span>2</span><div><strong>다운로드한 파일 실행</strong><p>브라우저 다운로드 목록이나 다운로드 폴더에서 설치 파일을 엽니다.</p></div></li>
           <li><span>3</span><div><strong>Windows 설치 진행</strong><p>설치가 끝나면 시작 메뉴에서 SD종합센터를 실행합니다.</p></div></li>
-          <li><span>4</span><div><strong>SD지갑부터 시작</strong><p>사용자 ID와 가상 계좌를 만듭니다. 초기 시뮬레이션 금액은 없으며 25만원 가상 지원금만 지급되고 직접 입출금은 할 수 없습니다.</p></div></li>
+          <li><span>4</span><div><strong>SD지갑부터 시작</strong><p>사용자 ID와 가상 계좌를 만든 뒤, 원하는 확장팩은 홈페이지에서 ZIP으로 내려받아 추가합니다.</p></div></li>
         </ol>
       </div>
       <aside class="requirement-card">
@@ -161,6 +191,14 @@
       </div>
       <div class="faq-list">
         <details>
+          <summary>확장팩은 어떻게 설치하나요?</summary>
+          <p>확장팩 ZIP을 다운로드하고 압축을 풀지 않은 상태로 SD종합센터의 ZIP 앱 추가 버튼에서 선택하세요. 같은 확장팩의 새 버전을 선택하면 업데이트할 수 있습니다.</p>
+        </details>
+        <details>
+          <summary>확장팩만 받아도 실행할 수 있나요?</summary>
+          <p>홈페이지의 확장팩은 SD종합센터 추가용으로 배포됩니다. 일부 앱은 개발 환경에서 따로 실행할 수 있지만, 일반 사용자는 종합센터에서 설치하는 방식을 권장합니다.</p>
+        </details>
+        <details>
           <summary>다운로드 버튼을 누르면 바로 설치 마법사가 열리나요?</summary>
           <p>브라우저 보안상 홈페이지가 설치 프로그램을 자동 실행할 수는 없습니다. 버튼을 누르면 설치 파일이 다운로드되고, 사용자가 그 파일을 한 번 열면 Windows 설치가 시작됩니다.</p>
         </details>
@@ -177,7 +215,7 @@
 
     <section class="cta-section section-shell">
       <img src="assets/icons/center.png" alt="" />
-      <div><span>SD SERIES FINAL</span><h2>지금 SD종합센터를 시작하세요.</h2><p>가상 경제 시뮬레이션 앱 5개를 하나의 설치 파일로 만나보세요.</p></div>
+      <div><span>SD SERIES FINAL</span><h2>지금 SD종합센터를 시작하세요.</h2><p>기본 앱 5개와 계속 추가되는 선택형 확장팩을 한곳에서 만나보세요.</p></div>
       <a class="primary-button" data-download-link href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">Windows 다운로드</a>
     </section>
   </main>
