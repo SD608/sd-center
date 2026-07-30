@@ -44,7 +44,7 @@ function configureLinks() {
 }
 
 function initialize() {
-  setText("[data-version]", config.version || "2.0.0");
+  setText("[data-version]", config.version || "2.1.0");
   setText("[data-file-name]", config.fileName || "SDCenterSetup.exe");
   setText("[data-system]", config.systemRequirement || "Windows 10/11 64비트");
   configureLinks();
