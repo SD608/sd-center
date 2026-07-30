@@ -1,0 +1,12 @@
+SD종합센터 홈페이지 업데이트 방법
+
+1. 이 ZIP을 압축 풉니다.
+2. 압축을 푼 폴더 안에서 Ctrl+A를 눌러 모든 파일과 폴더를 선택합니다.
+3. GitHub의 SD608/sd-center 저장소에서 Add file → Upload files를 누릅니다.
+4. 선택한 파일과 폴더를 업로드 화면에 끌어놓고, 아래에서 Commit directly to the main branch → Commit changes를 누릅니다.
+5. 업로드가 끝나면 https://sd608.github.io/sd-center/ 에서 Ctrl+F5를 누릅니다.
+
+주의:
+- 바깥쪽 폴더 자체가 아니라, 그 안의 index.html, assets, downloads 등을 전부 올려야 합니다.
+- ZIP 파일 자체를 GitHub에 올리는 것이 아닙니다. ZIP은 먼저 압축을 풀어야 합니다.
+- 기존 파일과 이름이 같다는 안내가 나와도 정상입니다. 새 파일로 덮어쓰기 됩니다.
