@@ -30,5 +30,20 @@ window.SD_EXTENSION_PACKS = [
     updatedAt: "2026-07-31",
     tags: ["SD지갑 연동", "연승 도전", "ZIP 앱 추가"],
     featured: true
+  },
+  {
+    id: "sta",
+    name: "STA",
+    stage: "Version 6",
+    version: "v1.5.0",
+    category: "작전 확장팩",
+    icon: "assets/icons/sta.png",
+    fileName: "STA_Version6_Desktop.zip",
+    downloadUrl: "downloads/extensions/STA_Version6_Desktop.zip",
+    description: "해킹, 습격, 운반을 순서대로 수행하는 SD지갑 연동 작전 확장팩입니다. 운반 완료 후 최종 보상을 받고 5분 뒤 새 작전을 시작할 수 있습니다.",
+    requirements: "SD종합센터 v2.1.1 이상",
+    updatedAt: "2026-07-31",
+    tags: ["SD지갑 연동", "미니게임 3종", "ZIP 앱 추가"],
+    featured: true
   }
 ];
