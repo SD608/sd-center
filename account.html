@@ -2,17 +2,17 @@
 <html lang="ko"><head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="SD608 Online 내 가상지갑" /><meta name="theme-color" content="#0b1224" />
-  <title>내 지갑 · SD608 Online</title><link rel="icon" href="favicon.ico" /><link rel="stylesheet" href="assets/css/style.css?v=online1" />
+  <title>내 지갑 · SD608 Online</title><link rel="manifest" href="manifest.webmanifest" /><link rel="icon" href="favicon.ico" /><link rel="stylesheet" href="assets/css/style.css?v=online2" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="assets/js/supabase-config.js?v=1" defer></script>
-  <script src="assets/js/auth-common.js?v=1" defer></script>
+  <script src="assets/js/supabase-config.js?v=2" defer></script>
+  <script src="assets/js/auth-common.js?v=2" defer></script>
   <script src="assets/js/account-page.js?v=1" defer></script>
 </head><body class="auth-body"><div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
-<header class="site-header auth-site-header"><a class="brand" href="index.html"><img src="assets/icons/center.png" alt="" /><span>SD종합센터</span></a><nav class="nav-links"><a href="index.html">홈</a><a href="#transactions">거래 내역</a></nav><div class="header-account"><button id="logoutButton" class="header-login" type="button">로그아웃</button></div></header>
+<header class="site-header auth-site-header"><a class="brand" href="index.html"><img src="assets/icons/center.png" alt="" /><span>SD종합센터</span></a><nav class="nav-links"><a href="index.html">홈</a><a href="mobile.html">모바일 센터</a><a href="#transactions">거래 내역</a></nav><div class="header-account"><button id="logoutButton" class="header-login" type="button">로그아웃</button></div></header>
 <main class="account-main section-shell">
   <section class="account-hero"><div><span class="section-kicker">MY SD ACCOUNT</span><h1><span id="welcomeName">회원님</span>의 가상지갑</h1><p>서버에 저장된 계좌와 거래 내역입니다. 표시 금액은 실제 현금이 아닌 SD 게임용 가상 데이터입니다.</p></div><button id="refreshAccount" class="secondary-button" type="button">새로고침</button></section>
   <div id="accountStatus" class="form-status account-status" hidden aria-live="polite"></div>
-  <section class="wallet-dashboard">
+  <div style="margin:0 0 18px"><a class="primary-button" href="mobile.html">SD종합센터 Mobile 열기</a></div><section class="wallet-dashboard">
     <article class="balance-card"><span>현재 가상잔액</span><strong id="accountBalance">불러오는 중…</strong><small>마지막 동기화 <b id="lastSynced">-</b></small></article>
     <article class="account-number-card"><span>SD 가상계좌</span><strong id="accountNumber">-</strong><small>회원당 계좌 1개</small></article>
   </section>

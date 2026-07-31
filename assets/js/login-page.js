@@ -9,8 +9,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const emailInput = document.getElementById("email");
   if (!auth || !form) return;
 
+  const next = new URLSearchParams(location.search).get("next");
+  const safeNext = next && next.startsWith("/") ? next : "account.html";
   const existing = await auth.getSession().catch(() => null);
-  if (existing) location.replace("account.html");
+  if (existing) location.replace(safeNext);
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -23,8 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const { error } = await auth.client.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      const next = new URLSearchParams(location.search).get("next");
-      location.replace(next && next.startsWith("/") ? next : "account.html");
+      location.replace(safeNext);
     } catch (error) {
       const message = auth.messageForError(error);
       auth.setStatus(status, message, "error");
