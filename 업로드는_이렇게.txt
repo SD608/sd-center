@@ -1,16 +1,16 @@
-﻿SD종합센터 홈페이지 GitHub 업로드 방법
+﻿SD608 Online 계정 홈페이지 업로드 방법
 
-1. 이 ZIP을 '모두 압축 풀기'로 압축 해제합니다.
+1. 이 ZIP을 우클릭하고 모두 압축 풀기를 누릅니다.
 2. 압축을 푼 폴더 안으로 들어갑니다.
-3. 안에 있는 파일과 폴더를 Ctrl+A로 전부 선택합니다.
+3. index.html, signup.html, login.html, account.html, auth, assets, downloads 등이 보이는 상태에서 Ctrl+A를 누릅니다.
 4. https://github.com/SD608/sd-center 로 들어갑니다.
 5. Add file → Upload files를 누릅니다.
-6. 선택한 내용물을 업로드 칸에 끌어다 놓습니다.
-7. 아래 설명 칸에 'STA Version 6 확장팩 추가'라고 입력합니다.
-8. Commit directly to the main branch를 선택합니다.
-9. Commit changes를 누릅니다.
-10. https://sd608.github.io/sd-center/ 에서 Ctrl+F5를 누릅니다.
+6. 선택한 파일과 폴더를 업로드 칸에 끌어다 놓습니다.
+7. 커밋 설명에 'SD608 Online 회원가입 및 지갑 추가'를 입력합니다.
+8. Commit directly to the main branch를 선택하고 Commit changes를 누릅니다.
+9. 1~3분 후 https://sd608.github.io/sd-center/ 에서 Ctrl+F5를 누릅니다.
+10. 상단 회원가입 버튼을 눌러 초대 코드로 첫 계정을 시험합니다.
 
-주의:
-- 바깥쪽 폴더 하나를 올리는 것이 아니라, 폴더 안의 index.html, assets, downloads 등을 올려야 합니다.
-- ZIP 파일 자체를 GitHub 업로드 칸에 올리면 홈페이지가 업데이트되지 않습니다.
+주의
+- ZIP 파일 자체를 저장소에 올리는 것이 아니라 압축을 푼 폴더 안의 내용물을 올려야 합니다.
+- Supabase publishable key만 포함되어 있으며 secret/service_role/database password는 포함하지 않았습니다.

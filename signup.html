@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko"><head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SD608 Online 초대 코드 회원가입" /><meta name="theme-color" content="#0b1224" />
+  <title>회원가입 · SD608 Online</title><link rel="icon" href="favicon.ico" /><link rel="stylesheet" href="assets/css/style.css?v=online1" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/supabase-config.js?v=1" defer></script>
+  <script src="assets/js/auth-common.js?v=1" defer></script>
+  <script src="assets/js/signup-page.js?v=1" defer></script>
+</head><body class="auth-body"><div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
+
+<header class="site-header auth-site-header">
+  <a class="brand" href="index.html" aria-label="SD종합센터 홈"><img src="assets/icons/center.png" alt="" /><span>SD종합센터</span></a>
+  <nav class="nav-links"><a href="index.html">홈</a><a href="index.html#extensions">확장팩</a></nav>
+  <div class="header-account"><a class="header-login" href="login.html">로그인</a><a class="header-signup" href="signup.html">회원가입</a></div>
+</header>
+<main class="auth-main section-shell">
+  <section class="auth-card">
+    <div class="auth-brand-icon"><img src="assets/icons/wallet.png" alt="" /></div>
+    <span class="section-kicker">INVITE ONLY</span><h1>SD 계정 만들기</h1>
+    <p class="auth-intro">지인 전용 1회용 초대 코드로 가입합니다. 가입하면 가상계좌 1개와 게임용 가상 250,000원이 자동 생성됩니다.</p>
+    <form id="signupForm" class="auth-form" novalidate>
+      <label>닉네임<input id="nickname" name="nickname" type="text" minlength="2" maxlength="20" autocomplete="nickname" required placeholder="2~20자" /></label>
+      <label>이메일<input id="email" name="email" type="email" autocomplete="email" required placeholder="example@email.com" /></label>
+      <label>비밀번호<input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required placeholder="8자 이상" /></label>
+      <label>비밀번호 확인<input id="passwordConfirm" name="passwordConfirm" type="password" minlength="8" autocomplete="new-password" required /></label>
+      <label>1회용 초대 코드<input id="inviteCode" name="inviteCode" type="text" autocomplete="off" required placeholder="SD-XXXX-XXXX" /></label>
+      <label class="consent-row"><input name="consent" type="checkbox" required /><span>이 서비스의 계좌와 금액은 실제 금융자산이 아닌 게임용 가상 데이터임을 확인합니다.</span></label>
+      <div id="formStatus" class="form-status" hidden aria-live="polite"></div>
+      <button id="signupButton" class="primary-button auth-submit" type="submit">SD 계정 만들기</button>
+      <button id="resendButton" class="secondary-button auth-secondary" type="button" hidden>인증메일 다시 보내기</button>
+    </form>
+    <p class="auth-switch">이미 계정이 있나요? <a href="login.html">로그인</a></p>
+  </section>
+  <aside class="auth-side-card"><strong>가입 후 자동 생성</strong><ul><li>회원당 가상계좌 1개</li><li>신규 가입 가상 지원금 250,000원</li><li>온라인 거래 내역 장부</li><li>PC 잔액 이전 기록 공간</li></ul><p>초대 코드는 한 번 사용하면 다시 사용할 수 없습니다.</p></aside>
+</main>
+</body></html>
