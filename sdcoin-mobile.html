@@ -9,12 +9,12 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/sdcoin.svg">
   <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
-  <link rel="stylesheet" href="assets/css/sdcoin-mobile.css?v=2">
+  <link rel="stylesheet" href="assets/css/sdcoin-mobile.css?v=3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/supabase-config.js?v=2" defer></script>
   <script src="assets/js/auth-common.js?v=2" defer></script>
   <script src="assets/js/mobile-common.js?v=2" defer></script>
-  <script src="assets/js/mobile-sdcoin.js?v=2" defer></script>
+  <script src="assets/js/mobile-sdcoin.js?v=3" defer></script>
 </head>
 <body class="mobile-body sdcoin-body">
   <header class="mobile-topbar">
@@ -70,6 +70,7 @@
         <div><span class="eyebrow-mobile">MARKET</span><h2>전체 코인</h2></div>
         <small class="sdcoin-fee-note">매수·매도 수수료 5%</small>
       </div>
+      <p class="sdcoin-change-guide">가격 아래 ‘최근 45분’은 직전 정기 가격 갱신과 비교한 등락률입니다.</p>
       <div id="sdcoinMarketList" class="sdcoin-market-list">
         <div class="empty-mobile">시세를 불러오는 중입니다.</div>
       </div>
@@ -107,7 +108,7 @@
         <article><span>평가손익</span><strong id="holdingProfit">0원</strong></article>
       </section>
 
-      <article class="sdcoin-trade-card">
+      <article id="sdcoinTradeCard" class="sdcoin-trade-card">
         <label for="tradeQuantity">거래 수량 <small>최소 0.05 · 0.05 단위</small></label>
         <input id="tradeQuantity" type="number" inputmode="decimal" min="0.05" step="0.05" value="0.05">
         <div class="sdcoin-quick-quantity">

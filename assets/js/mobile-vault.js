@@ -1,4 +1,5 @@
 "use strict";
+
 document.addEventListener("DOMContentLoaded", async () => {
   const mobile = window.SD_MOBILE;
   const status = document.getElementById("vaultStatus");
@@ -9,26 +10,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   const grid = document.getElementById("goldGrid");
   if (!mobile) return;
 
+  const formatNumber = (value, maximumFractionDigits = 2) => Number(value || 0).toLocaleString("ko-KR", {
+    maximumFractionDigits
+  });
+
   const renderState = (data) => {
     setupPanel.hidden = data.has_pin;
     unlockPanel.hidden = !data.has_pin || !data.is_locked;
+
     if (!data.is_locked && data.has_pin) {
       door.classList.add("open");
       setTimeout(() => room.classList.add("visible"), 350);
-      document.getElementById("goldWeight").textContent = `${Number(data.gold_grams || 0).toLocaleString("ko-KR", {maximumFractionDigits:2})}g`;
-      document.getElementById("goldCount").textContent = `완성 금괴 ${Number(data.gold_bars || 0).toLocaleString("ko-KR")}개 · 1개 3.75g`;
+
+      const grams = Number(data.gold_grams || 0);
+      const kilograms = grams / 1000;
+      const bars = Number(data.gold_bars || 0);
+
+      document.getElementById("goldCount").textContent = `${bars.toLocaleString("ko-KR")}개`;
+      document.getElementById("goldWeight").textContent =
+        `${formatNumber(grams, 2)}g · ${formatNumber(kilograms, 5)}kg`;
+
       grid.replaceChildren();
-      const visibleCount = Math.min(Number(data.gold_bars || 0), 100);
+      const visibleCount = Math.min(bars, 100);
       for (let index = 0; index < visibleCount; index += 1) {
         const bar = document.createElement("div");
         bar.className = "gold-bar";
         grid.append(bar);
       }
-      if (Number(data.gold_bars || 0) > 100) {
+
+      if (bars > 100) {
         const more = document.createElement("div");
         more.className = "empty-mobile";
         more.style.gridColumn = "1/-1";
-        more.textContent = `화면에는 100개까지만 표시 · 총 ${Number(data.gold_bars).toLocaleString("ko-KR")}개`;
+        more.textContent = `화면에는 100개까지만 표시 · 총 ${bars.toLocaleString("ko-KR")}개`;
         grid.append(more);
       }
     } else {

@@ -17,3 +17,4 @@
 .sdcoin-detail-identity{display:flex;align-items:center;gap:11px}.sdcoin-detail-icon{width:48px;height:48px;border-radius:50%;box-shadow:0 8px 18px rgba(0,0,0,.25)}
 .sdcoin-trade-status{margin-top:10px;padding:11px 12px;border:1px solid transparent;border-radius:13px;font-size:11px;font-weight:850;line-height:1.45}.sdcoin-trade-status.error{color:#ffd9df;background:rgba(255,76,105,.13);border-color:rgba(255,76,105,.34)}.sdcoin-trade-status.success{color:#caffea;background:rgba(54,202,142,.13);border-color:rgba(54,202,142,.34)}
 @media(max-width:390px){.sdcoin-owned-card{grid-template-columns:44px minmax(0,1fr) auto;gap:9px;padding:11px}.sdcoin-owned-card img{width:44px;height:44px}.sdcoin-owned-value>strong{font-size:12px}.sdcoin-owned-value>span{font-size:9px}.sdcoin-detail-icon{width:43px;height:43px}}
+.sdcoin-change-guide{margin:-2px 0 10px;color:#8f9bb8;font-size:9px;line-height:1.5}.sdcoin-trade-card{scroll-margin-top:92px;scroll-margin-bottom:108px}

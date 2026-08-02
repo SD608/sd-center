@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const ownedList = document.getElementById("sdcoinOwnedList");
   const holdingCount = document.getElementById("sdcoinHoldingCount");
   const detailIcon = document.getElementById("detailIcon");
+  const tradeCard = document.getElementById("sdcoinTradeCard");
   if (!mobile) return;
 
   const state = {
@@ -136,7 +137,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderMarket();
         renderDetail();
         await loadChart();
-        detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        setTimeout(() => tradeCard?.scrollIntoView({ behavior: "smooth", block: "center" }), 40);
       });
       ownedList.append(card);
     });
@@ -175,7 +176,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       priceValue.textContent = won(coin.current_price);
       const change = document.createElement("span");
       change.className = changeClass(coin.last_change_percent);
-      change.textContent = `45분 ${changeText(coin.last_change_percent)}`;
+      change.textContent = `최근 45분 ${changeText(coin.last_change_percent)}`;
       price.append(priceValue, change);
 
       button.append(icon, info, price);
@@ -186,6 +187,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         renderMarket();
         renderDetail();
         await loadChart();
+        setTimeout(() => tradeCard?.scrollIntoView({ behavior: "smooth", block: "center" }), 40);
       });
       marketList.append(button);
     });
@@ -205,7 +207,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("detailName").textContent = coin.name;
     document.getElementById("detailPrice").textContent = won(coin.current_price);
     const detailChange = document.getElementById("detailChange");
-    detailChange.textContent = `45분 ${changeText(coin.last_change_percent)} · 7일 ${changeText(coin.seven_day_change_percent)}`;
+    detailChange.textContent = `최근 45분 ${changeText(coin.last_change_percent)} · 최근 7일 ${changeText(coin.seven_day_change_percent)}`;
     detailChange.className = changeClass(coin.last_change_percent);
     document.getElementById("holdingQuantity").textContent = `${quantityText(coin.quantity)} ${coin.code}`;
     document.getElementById("averageBuyPrice").textContent = won(coin.average_buy_price);

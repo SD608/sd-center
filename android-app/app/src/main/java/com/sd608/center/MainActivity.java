@@ -2,19 +2,28 @@ package com.sd608.center;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.Settings;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
 import android.webkit.SafeBrowsingResponse;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -24,15 +33,48 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public final class MainActivity extends Activity {
     private static final String HOME_URL = "https://sd608.github.io/sd-center/mobile.html";
     private static final String TRUSTED_HOST = "sd608.github.io";
+    private static final String UPDATE_INFO_URL =
+        "https://github.com/SD608/sd-center/releases/latest/download/version.json";
+    private static final String APK_MIME = "application/vnd.android.package-archive";
+    private static final String PREFS = "sdcenter_update";
+    private static final String PREF_PENDING_APK = "pending_apk_uri";
+
     private WebView webView;
+    private final ExecutorService updateExecutor = Executors.newSingleThreadExecutor();
+    private boolean updateCheckRunning = false;
+    private boolean updateReceiverRegistered = false;
+    private boolean waitingForInstallPermission = false;
+    private long updateDownloadId = -1L;
+
+    private final BroadcastReceiver updateDownloadReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())) return;
+            long completedId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L);
+            if (completedId == updateDownloadId) handleCompletedUpdateDownload(completedId);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        registerUpdateReceiver();
         configureWebView();
         setContentView(webView);
         applyFullscreenSafely();
@@ -46,9 +88,11 @@ public final class MainActivity extends Activity {
         } else {
             webView.restoreState(savedInstanceState);
         }
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> checkForUpdates(true), 2500L);
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     private void configureWebView() {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(7, 17, 31));
@@ -61,7 +105,7 @@ public final class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.3");
+        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.4");
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
 
@@ -69,9 +113,253 @@ public final class MainActivity extends Activity {
         cookieManager.setAcceptCookie(true);
         cookieManager.setAcceptThirdPartyCookies(webView, true);
 
+        webView.addJavascriptInterface(new AndroidBridge(), "SDAndroid");
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new SDCenterClient());
         webView.setDownloadListener(new SDCenterDownloadListener());
+    }
+
+    private final class AndroidBridge {
+        @JavascriptInterface
+        public void checkForUpdates() {
+            runOnUiThread(() -> MainActivity.this.checkForUpdates(false));
+        }
+
+        @JavascriptInterface
+        public String getAppVersion() {
+            return currentVersionName();
+        }
+    }
+
+    private void registerUpdateReceiver() {
+        try {
+            IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(updateDownloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(updateDownloadReceiver, filter);
+            }
+            updateReceiverRegistered = true;
+        } catch (Throwable error) {
+            updateReceiverRegistered = false;
+        }
+    }
+
+    private void checkForUpdates(boolean silent) {
+        if (updateCheckRunning) {
+            if (!silent) Toast.makeText(this, "업데이트를 확인하고 있습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!isOnline()) {
+            if (!silent) Toast.makeText(this, "인터넷 연결을 확인하세요.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        updateCheckRunning = true;
+        if (!silent) Toast.makeText(this, "최신 버전을 확인합니다.", Toast.LENGTH_SHORT).show();
+
+        updateExecutor.execute(() -> {
+            try {
+                UpdateInfo info = fetchUpdateInfo();
+                runOnUiThread(() -> {
+                    updateCheckRunning = false;
+                    long currentCode = currentVersionCode();
+                    if (info.versionCode > currentCode) {
+                        showUpdateDialog(info);
+                    } else if (!silent) {
+                        Toast.makeText(this, "현재 최신 버전 " + currentVersionName() + "입니다.", Toast.LENGTH_LONG).show();
+                    }
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    updateCheckRunning = false;
+                    if (!silent) {
+                        Toast.makeText(this, "업데이트 확인에 실패했습니다. 잠시 후 다시 시도하세요.", Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
+    }
+
+    private UpdateInfo fetchUpdateInfo() throws Exception {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(UPDATE_INFO_URL + "?t=" + System.currentTimeMillis());
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(15000);
+            connection.setInstanceFollowRedirects(true);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("User-Agent", "SDCenter-Android/1.0.4");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode < 200 || responseCode >= 300) {
+                throw new IllegalStateException("HTTP " + responseCode);
+            }
+
+            StringBuilder jsonText = new StringBuilder();
+            try (InputStream stream = connection.getInputStream();
+                 BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) jsonText.append(line);
+            }
+
+            JSONObject json = new JSONObject(jsonText.toString());
+            int versionCode = json.optInt("versionCode", 0);
+            String versionName = json.optString("versionName", "").trim();
+            String downloadUrl = json.optString("downloadUrl", "").trim();
+            String message = json.optString("message", "새 버전이 준비되었습니다.").trim();
+            boolean required = json.optBoolean("required", false);
+
+            if (versionCode <= 0 || versionName.isEmpty() || downloadUrl.isEmpty()) {
+                throw new IllegalStateException("업데이트 정보가 올바르지 않습니다.");
+            }
+            URL apkUrl = new URL(downloadUrl);
+            if (!"https".equalsIgnoreCase(apkUrl.getProtocol())) {
+                throw new IllegalStateException("안전하지 않은 다운로드 주소입니다.");
+            }
+            return new UpdateInfo(versionCode, versionName, downloadUrl, message, required);
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
+    }
+
+    private void showUpdateDialog(UpdateInfo info) {
+        String message = "현재 " + currentVersionName() + " → 최신 " + info.versionName;
+        if (!info.message.isEmpty()) message += "\n\n" + info.message;
+        message += "\n\n업데이트를 누르면 APK 다운로드 후 Android 설치 화면이 열립니다.";
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+            .setTitle("SD종합센터 업데이트")
+            .setMessage(message)
+            .setPositiveButton("업데이트", (dialog, which) -> startUpdateDownload(info));
+
+        if (!info.required) builder.setNegativeButton("나중에", null);
+        AlertDialog dialog = builder.create();
+        dialog.setCancelable(!info.required);
+        dialog.setOnDismissListener(ignored -> applyFullscreenSafely());
+        dialog.show();
+    }
+
+    private void startUpdateDownload(UpdateInfo info) {
+        try {
+            DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            if (manager == null) throw new IllegalStateException("DownloadManager unavailable");
+
+            String safeVersion = info.versionName.replaceAll("[^0-9A-Za-z._-]", "_");
+            String fileName = "SDCenter-Mobile-" + safeVersion + ".apk";
+            File directory = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (directory != null) {
+                File oldFile = new File(directory, fileName);
+                if (oldFile.exists()) oldFile.delete();
+            }
+
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(info.downloadUrl));
+            request.setMimeType(APK_MIME);
+            request.addRequestHeader("Accept", APK_MIME);
+            request.setTitle("SD종합센터 " + info.versionName);
+            request.setDescription("업데이트 APK를 다운로드하고 있습니다.");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setAllowedOverMetered(true);
+            request.setAllowedOverRoaming(true);
+            request.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, fileName);
+
+            updateDownloadId = manager.enqueue(request);
+            Toast.makeText(this, "업데이트 다운로드를 시작했습니다.", Toast.LENGTH_LONG).show();
+        } catch (Exception error) {
+            Toast.makeText(this, "업데이트 다운로드를 시작하지 못했습니다.", Toast.LENGTH_LONG).show();
+            openExternal(Uri.parse(info.downloadUrl));
+        }
+    }
+
+    private void handleCompletedUpdateDownload(long downloadId) {
+        DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        if (manager == null) return;
+
+        DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
+        try (android.database.Cursor cursor = manager.query(query)) {
+            if (cursor == null || !cursor.moveToFirst()) return;
+            int statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+            int downloadStatus = statusIndex >= 0 ? cursor.getInt(statusIndex) : DownloadManager.STATUS_FAILED;
+            if (downloadStatus != DownloadManager.STATUS_SUCCESSFUL) {
+                Toast.makeText(this, "업데이트 다운로드에 실패했습니다.", Toast.LENGTH_LONG).show();
+                return;
+            }
+        } catch (Exception error) {
+            Toast.makeText(this, "다운로드 결과를 확인하지 못했습니다.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        Uri apkUri = manager.getUriForDownloadedFile(downloadId);
+        if (apkUri == null) {
+            Toast.makeText(this, "다운로드한 APK를 찾지 못했습니다.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        getSharedPreferences(PREFS, MODE_PRIVATE)
+            .edit()
+            .putString(PREF_PENDING_APK, apkUri.toString())
+            .apply();
+        requestInstall(apkUri);
+    }
+
+    private void requestInstall(Uri apkUri) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            !getPackageManager().canRequestPackageInstalls()) {
+            waitingForInstallPermission = true;
+            Toast.makeText(this, "이 앱에서 설치 허용을 켠 뒤 돌아오세요.", Toast.LENGTH_LONG).show();
+            try {
+                Intent settingsIntent = new Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:" + getPackageName())
+                );
+                startActivity(settingsIntent);
+            } catch (ActivityNotFoundException error) {
+                openExternal(apkUri);
+            }
+            return;
+        }
+        launchInstaller(apkUri);
+    }
+
+    private void launchInstaller(Uri apkUri) {
+        try {
+            Intent installIntent = new Intent(Intent.ACTION_VIEW);
+            installIntent.setDataAndType(apkUri, APK_MIME);
+            installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(installIntent);
+            getSharedPreferences(PREFS, MODE_PRIVATE)
+                .edit()
+                .remove(PREF_PENDING_APK)
+                .apply();
+        } catch (ActivityNotFoundException error) {
+            Toast.makeText(this, "APK 설치 화면을 열 수 없습니다.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private String pendingApkUri() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getString(PREF_PENDING_APK, "");
+    }
+
+    private long currentVersionCode() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) return info.getLongVersionCode();
+            return info.versionCode;
+        } catch (Exception ignored) {
+            return 0L;
+        }
+    }
+
+    private String currentVersionName() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return info.versionName == null ? "확인 불가" : info.versionName;
+        } catch (Exception ignored) {
+            return "확인 불가";
+        }
     }
 
     /**
@@ -107,9 +395,7 @@ public final class MainActivity extends Activity {
 
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-            if (request.isForMainFrame()) {
-                showOfflinePage();
-            }
+            if (request.isForMainFrame()) showOfflinePage();
         }
 
         @Override
@@ -131,6 +417,7 @@ public final class MainActivity extends Activity {
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                 request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "SDCenter-Mobile.apk");
                 DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                if (manager == null) throw new IllegalStateException("DownloadManager unavailable");
                 manager.enqueue(request);
                 Toast.makeText(MainActivity.this, "다운로드를 시작했습니다.", Toast.LENGTH_SHORT).show();
             } catch (Exception error) {
@@ -157,7 +444,6 @@ public final class MainActivity extends Activity {
                  capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
                  capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
         } catch (Throwable ignored) {
-            // 네트워크 판별 API가 기기에서 실패하면 WebView가 직접 접속을 시도하게 한다.
             return true;
         }
     }
@@ -180,6 +466,17 @@ public final class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         applyFullscreenSafely();
+
+        if (waitingForInstallPermission) {
+            waitingForInstallPermission = false;
+            String pending = pendingApkUri();
+            if (!pending.isEmpty() &&
+                (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getPackageManager().canRequestPackageInstalls())) {
+                launchInstaller(Uri.parse(pending));
+            } else if (!pending.isEmpty()) {
+                Toast.makeText(this, "업데이트 설치 권한이 필요합니다.", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override
@@ -199,10 +496,34 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (updateReceiverRegistered) {
+            try {
+                unregisterReceiver(updateDownloadReceiver);
+            } catch (Throwable ignored) {
+                // 이미 해제된 경우 무시한다.
+            }
+        }
+        updateExecutor.shutdownNow();
         if (webView != null) {
             webView.stopLoading();
             webView.destroy();
         }
         super.onDestroy();
+    }
+
+    private static final class UpdateInfo {
+        final int versionCode;
+        final String versionName;
+        final String downloadUrl;
+        final String message;
+        final boolean required;
+
+        UpdateInfo(int versionCode, String versionName, String downloadUrl, String message, boolean required) {
+            this.versionCode = versionCode;
+            this.versionName = versionName;
+            this.downloadUrl = downloadUrl;
+            this.message = message;
+            this.required = required;
+        }
     }
 }

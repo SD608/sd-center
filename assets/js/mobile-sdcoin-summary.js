@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const evaluationElement = document.getElementById("homeCoinEvaluation");
   const profitElement = document.getElementById("homeCoinProfit");
   const returnElement = document.getElementById("homeCoinReturn");
-  if (!mobile || !toggle || !panel) return;
+  if (!mobile || !toggle || !panel || !evaluationElement || !profitElement || !returnElement) return;
 
   const won = (value) => `${Math.round(Number(value || 0)).toLocaleString("ko-KR")}원`;
   const resultClass = (value) => Number(value) > 0
@@ -16,11 +16,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? "sdcoin-home-negative"
       : "sdcoin-home-flat";
 
+  const setExpanded = (expanded) => {
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.querySelector("b").textContent = expanded ? "접기" : "펼치기";
+    panel.hidden = !expanded;
+    panel.setAttribute("aria-hidden", String(!expanded));
+  };
+
+  setExpanded(false);
   toggle.addEventListener("click", () => {
-    const expanded = toggle.getAttribute("aria-expanded") === "true";
-    toggle.setAttribute("aria-expanded", String(!expanded));
-    toggle.querySelector("b").textContent = expanded ? "펼치기" : "접기";
-    panel.hidden = expanded;
+    setExpanded(toggle.getAttribute("aria-expanded") !== "true");
   });
 
   const loadSummary = async () => {
