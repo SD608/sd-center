@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1224">
+  <meta name="description" content="SD코인 모바일 가상자산 시뮬레이션">
+  <title>SD코인 · SD종합센터 Mobile</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/sdcoin.svg">
+  <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
+  <link rel="stylesheet" href="assets/css/sdcoin-mobile.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/supabase-config.js?v=2" defer></script>
+  <script src="assets/js/auth-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-sdcoin.js?v=1" defer></script>
+</head>
+<body class="mobile-body sdcoin-body">
+  <header class="mobile-topbar">
+    <a class="mobile-brand" href="mobile.html">
+      <img src="assets/icons/sdcoin.svg" alt="">
+      <span><small>SD MOBILE EXTENSION</small><strong>SD코인</strong></span>
+    </a>
+    <a class="icon-button sdcoin-home-button" href="mobile.html">홈</a>
+  </header>
+
+  <main class="mobile-main">
+    <section class="sdcoin-headline">
+      <div>
+        <span class="eyebrow-mobile">VIRTUAL COIN MARKET</span>
+        <h1>SD코인 거래소</h1>
+        <p>45분마다 가격이 바뀌는 게임 시뮬레이션 시장입니다.</p>
+      </div>
+      <button id="sdcoinRefresh" class="sdcoin-refresh" type="button">새로고침</button>
+    </section>
+
+    <div id="sdcoinStatus" class="status-mobile" hidden></div>
+
+    <section class="sdcoin-wallet-card">
+      <span>SD지갑 가상잔액</span>
+      <strong data-mobile-balance>불러오는 중…</strong>
+      <div class="sdcoin-total-row">
+        <span>코인 총 평가금</span>
+        <b id="sdcoinTotalEvaluation">-</b>
+      </div>
+      <div class="sdcoin-total-row">
+        <span>총 평가손익</span>
+        <b id="sdcoinTotalProfit">-</b>
+      </div>
+    </section>
+
+    <section class="sdcoin-timers" aria-label="시장 일정">
+      <article><span>다음 가격 갱신</span><strong id="regularCountdown">-</strong></article>
+      <article><span>다음 급등락</span><strong id="shockCountdown">-</strong></article>
+      <article><span>주간 보정</span><strong id="weeklyCountdown">-</strong></article>
+    </section>
+
+    <section class="mobile-section">
+      <div class="mobile-section-title">
+        <div><span class="eyebrow-mobile">MARKET</span><h2>코인 6종</h2></div>
+        <small class="sdcoin-fee-note">매수·매도 수수료 5%</small>
+      </div>
+      <div id="sdcoinMarketList" class="sdcoin-market-list">
+        <div class="empty-mobile">시세를 불러오는 중입니다.</div>
+      </div>
+    </section>
+
+    <section id="sdcoinDetail" class="mobile-section sdcoin-detail" hidden>
+      <div class="sdcoin-detail-title">
+        <div>
+          <span id="detailCode" class="sdcoin-code">-</span>
+          <h2 id="detailName">-</h2>
+        </div>
+        <div class="sdcoin-detail-price">
+          <strong id="detailPrice">-</strong>
+          <span id="detailChange">-</span>
+        </div>
+      </div>
+
+      <article class="sdcoin-chart-card">
+        <div class="sdcoin-chart-heading">
+          <strong>최근 7일 가격</strong>
+          <span id="chartRange">-</span>
+        </div>
+        <div id="sdcoinChart" class="sdcoin-chart" aria-label="최근 7일 가격 차트">
+          <div class="empty-mobile">차트를 불러오는 중입니다.</div>
+        </div>
+      </article>
+
+      <section class="sdcoin-holding-grid">
+        <article><span>보유 수량</span><strong id="holdingQuantity">0</strong></article>
+        <article><span>평균 구매가</span><strong id="averageBuyPrice">0원</strong></article>
+        <article><span>평가금액</span><strong id="holdingEvaluation">0원</strong></article>
+        <article><span>평가손익</span><strong id="holdingProfit">0원</strong></article>
+      </section>
+
+      <article class="sdcoin-trade-card">
+        <label for="tradeQuantity">거래 수량 <small>최소 0.05 · 0.05 단위</small></label>
+        <input id="tradeQuantity" type="number" inputmode="decimal" min="0.05" step="0.05" value="0.05">
+        <div class="sdcoin-quick-quantity">
+          <button type="button" data-quantity="0.05">0.05</button>
+          <button type="button" data-quantity="0.10">0.10</button>
+          <button type="button" data-quantity="0.50">0.50</button>
+          <button type="button" data-quantity="1.00">1.00</button>
+        </div>
+        <div class="sdcoin-preview">
+          <div><span>거래 원금</span><b id="tradeGross">-</b></div>
+          <div><span>수수료 5%</span><b id="tradeFee">-</b></div>
+          <div><span id="tradeTotalLabel">구매 시 차감</span><strong id="tradeTotal">-</strong></div>
+        </div>
+        <div class="sdcoin-trade-actions">
+          <button id="buyCoin" class="sdcoin-buy" type="button">구매</button>
+          <button id="sellCoin" class="sdcoin-sell" type="button">판매</button>
+        </div>
+      </article>
+    </section>
+
+    <div class="mobile-notice">
+      <strong>게임 시뮬레이션 전용</strong><br>
+      표시되는 코인과 원화형 잔액은 실제 암호화폐·현금·투자상품이 아닙니다.
+    </div>
+  </main>
+
+  <nav class="mobile-bottom-nav">
+    <a href="mobile.html"><b>⌂</b>홈</a>
+    <a href="wallet-mobile.html"><b>₩</b>지갑</a>
+    <a href="vault-mobile.html"><b>▣</b>금고</a>
+    <a href="odd-even-mobile.html"><b>⚄</b>홀짝</a>
+    <a href="slot-mobile.html"><b>7</b>슬롯</a>
+  </nav>
+</body>
+</html>
