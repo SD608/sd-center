@@ -1,4 +1,4 @@
-name: SD센터 Android APK 만들기
+name: SD센터 Android 정식 APK 만들기
 
 on:
   workflow_dispatch:
@@ -39,29 +39,79 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      - name: 설치용 테스트 APK 빌드
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: 고정 서명키 준비
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SDCENTER_KEYSTORE_BASE64 }}
+          KEY_PASSWORD: ${{ secrets.SDCENTER_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "GitHub Secrets의 SDCENTER_KEYSTORE_BASE64 또는 SDCENTER_KEY_PASSWORD가 없습니다."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/sdcenter-release.jks
+          keytool -list -keystore app/sdcenter-release.jks -storepass "$KEY_PASSWORD" -alias sdcenter >/dev/null
 
-      - name: APK 이름 정리
+      - name: 버전 읽기
+        id: version
         shell: bash
         run: |
+          VERSION_CODE=$(sed -n "s/.*versionCode[[:space:]]\+\([0-9]\+\).*/\1/p" app/build.gradle | head -n 1)
+          VERSION_NAME=$(sed -n "s/.*versionName[[:space:]]\+['\"]\([^'\"]*\)['\"].*/\1/p" app/build.gradle | head -n 1)
+          if [ -z "$VERSION_CODE" ] || [ -z "$VERSION_NAME" ]; then
+            echo "build.gradle에서 버전을 읽지 못했습니다."
+            exit 1
+          fi
+          echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=mobile-v${VERSION_CODE}-${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: 정식 서명 APK 빌드
+        env:
+          SDCENTER_KEYSTORE_PATH: sdcenter-release.jks
+          SDCENTER_KEY_PASSWORD: ${{ secrets.SDCENTER_KEY_PASSWORD }}
+        run: gradle :app:assembleRelease --no-daemon --stacktrace
+
+      - name: APK와 업데이트 정보 준비
+        shell: bash
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: |
           mkdir -p output
-          cp app/build/outputs/apk/debug/app-debug.apk output/SDCenter-Mobile.apk
+          cp app/build/outputs/apk/release/app-release.apk output/SDCenter-Mobile.apk
+          cat > output/version.json <<JSON
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "required": false,
+            "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v${VERSION_CODE}-${VERSION_NAME}/SDCenter-Mobile.apk",
+            "message": "NPC 금고 따기와 진동 다이얼 기능이 추가되었습니다."
+          }
+          JSON
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs output/SDCenter-Mobile.apk
 
       - name: Actions 다운로드 파일 등록
         uses: actions/upload-artifact@v4
         with:
-          name: SDCenter-Mobile-APK
-          path: android-app/output/SDCenter-Mobile.apk
+          name: SDCenter-Mobile-${{ steps.version.outputs.name }}
+          path: |
+            android-app/output/SDCenter-Mobile.apk
+            android-app/output/version.json
           if-no-files-found: error
 
       - name: GitHub 최신 Release에 APK 등록
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: mobile-v1.0.${{ github.run_number }}
-          name: SD종합센터 Mobile v1.0.${{ github.run_number }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: SD종합센터 Mobile v${{ steps.version.outputs.name }}
           body: |
-            SD608 Online 홈페이지 계정과 PC SD Link를 함께 사용하는 Android 테스트 APK입니다.
+            SD608 Online용 Android 정식 서명 APK입니다.
+            NPC 금고 따기와 진동 다이얼이 추가된 정식 업데이트입니다.
+            앱 안의 업데이트 확인 버튼으로 이후 버전을 받을 수 있습니다.
             표시 금액은 실제 현금이 아닌 SD 게임 시뮬레이션용 가상 데이터입니다.
-          files: android-app/output/SDCenter-Mobile.apk
-          make_latest: true
+          files: |
+            android-app/output/SDCenter-Mobile.apk
+            android-app/output/version.json
+          make_latest: false
+          overwrite_files: true
