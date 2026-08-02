@@ -399,9 +399,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     clearTradeStatus();
     renderTradePreview();
   });
-  document.querySelectorAll("[data-quantity]").forEach((button) => {
+  document.querySelectorAll("[data-quantity-add]").forEach((button) => {
     button.addEventListener("click", () => {
-      quantityInput.value = button.dataset.quantity;
+      const current = Number(quantityInput.value || 0);
+      const increment = Number(button.dataset.quantityAdd || 0);
+      const safeCurrent = Number.isFinite(current) && current >= 0 ? current : 0;
+      const next = Math.round((safeCurrent + increment) * 100) / 100;
+      quantityInput.value = next.toFixed(2);
       clearTradeStatus();
       renderTradePreview();
     });

@@ -1,7 +1,7 @@
 {
-  "versionCode": 105,
-  "versionName": "1.0.5",
+  "versionCode": 106,
+  "versionName": "1.0.6",
   "required": false,
-  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v105-1.0.5/SDCenter-Mobile.apk",
-  "message": "NPC 금고 따기와 진동 다이얼 기능이 추가되었습니다."
+  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v106-1.0.6/SDCenter-Mobile.apk",
+  "message": "코인 평가손익에서 수수료를 제외하고 수량 증가 버튼을 개선했습니다."
 }

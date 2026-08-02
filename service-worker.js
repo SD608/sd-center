@@ -1,10 +1,11 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v8-npc-vault-105";
+const CACHE_NAME = "sd608-mobile-v9-coin-ui-106";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
   "./vault-mobile.html",
   "./npc-vault-mobile.html",
+  "./update/version.json",
   "./odd-even-mobile.html",
   "./slot-mobile.html",
   "./sdcoin-mobile.html",
@@ -25,7 +26,7 @@ const APP_SHELL = [
   "./assets/js/mobile-native-update.js?v=1",
   "./assets/js/mobile-vault.js?v=5",
   "./assets/js/npc-vault-mobile.js?v=1",
-  "./assets/js/mobile-sdcoin.js?v=3",
+  "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
   "./assets/icons/center.png",
   "./assets/icons/wallet.png",

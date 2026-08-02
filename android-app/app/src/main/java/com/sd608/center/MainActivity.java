@@ -110,7 +110,7 @@ public final class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.5");
+        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.6");
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
 
@@ -257,7 +257,7 @@ public final class MainActivity extends Activity {
             connection.setInstanceFollowRedirects(true);
             connection.setRequestProperty("Accept", "application/json");
             connection.setRequestProperty("Cache-Control", "no-cache");
-            connection.setRequestProperty("User-Agent", "SDCenter-Android/1.0.5");
+            connection.setRequestProperty("User-Agent", "SDCenter-Android/1.0.6");
 
             int responseCode = connection.getResponseCode();
             if (responseCode < 200 || responseCode >= 300) {
