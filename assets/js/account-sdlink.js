@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     const session = await auth.requireSession();
     if (!session) return;
+
     const [migrationResult, deviceResult, profileResult] = await Promise.all([
       auth.client.from("wallet_migrations")
         .select("status,migrated_balance,created_at,reviewed_at,rejection_reason")
@@ -17,11 +18,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       auth.client.rpc("list_sd_link_devices"),
       auth.client.from("profiles").select("role").single(),
     ]);
+
     if (migrationResult.error) throw migrationResult.error;
     if (deviceResult.error) throw deviceResult.error;
     if (profileResult.error) throw profileResult.error;
-    const adminLink = document.getElementById("adminMigrationLink");
-    if (adminLink) adminLink.hidden = profileResult.data?.role !== "admin";
+
+    const isAdmin = profileResult.data?.role === "admin";
+    const migrationLink = document.getElementById("adminMigrationLink");
+    const inviteLink = document.getElementById("adminInviteLink");
+    if (migrationLink) migrationLink.hidden = !isAdmin;
+    if (inviteLink) inviteLink.hidden = !isAdmin;
 
     const migration = migrationResult.data;
     const devices = (deviceResult.data || []).filter((item) => !item.revoked_at);

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="SD608 Online 친구 초대 코드 관리" />
+<meta name="theme-color" content="#0b1224" />
+<title>친구 초대 코드 · SD608 Online</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="favicon.ico" />
+<link rel="stylesheet" href="assets/css/style.css?v=online2" />
+<link rel="stylesheet" href="assets/css/sdlink.css?v=1" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="assets/js/supabase-config.js?v=2" defer></script>
+<script src="assets/js/auth-common.js?v=2" defer></script>
+<script src="assets/js/admin-invites-page.js?v=1" defer></script>
+<style>
+.invite-main{padding:72px 0 110px}.invite-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}.invite-hero h1{margin:8px 0 8px;font-size:clamp(2.2rem,5vw,4.5rem);letter-spacing:-.055em;line-height:1.06}.invite-hero p{margin:0;color:var(--muted)}.invite-panel{padding:28px;border:1px solid var(--line);border-radius:24px;background:rgba(15,27,48,.76);box-shadow:var(--shadow)}.invite-create{display:grid;grid-template-columns:140px 160px 1fr auto;gap:12px;align-items:end}.invite-create label{display:flex;flex-direction:column;gap:8px;color:#aebbd0;font-size:.78rem;font-weight:800}.invite-create input{height:52px;padding:0 14px;border:1px solid var(--line);border-radius:14px;background:rgba(5,12,24,.62);color:#fff;font:inherit;outline:none}.invite-create input:focus{border-color:rgba(104,154,255,.65)}.invite-share{display:flex;margin-top:18px;padding:16px 18px;align-items:center;justify-content:space-between;gap:16px;border:1px solid rgba(92,141,255,.2);border-radius:17px;background:rgba(68,111,211,.09)}.invite-share code{color:#bcd1ff;word-break:break-all}.invite-list-card{margin-top:20px;padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(15,27,48,.76)}.invite-list-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.invite-list-head h2{margin:0}.invite-list{display:grid;margin-top:18px;gap:10px}.invite-row{display:grid;grid-template-columns:minmax(190px,1fr) 110px 1fr auto;gap:15px;padding:16px;align-items:center;border:1px solid rgba(153,181,226,.11);border-radius:17px;background:rgba(255,255,255,.025)}.invite-code{font-family:"Cascadia Code",Consolas,monospace;font-size:1rem;color:#dce8ff}.invite-meta{display:flex;flex-direction:column;color:#8998af;font-size:.74rem}.invite-status{width:max-content;padding:5px 10px;border-radius:999px;font-size:.7rem;font-weight:900}.invite-status.active{background:rgba(79,211,145,.12);color:#75e3aa}.invite-status.used{background:rgba(91,139,255,.14);color:#8db4ff}.invite-status.expired,.invite-status.revoked{background:rgba(255,98,108,.13);color:#ff9098}.invite-actions{display:flex;gap:7px}.mini-button{min-height:38px;padding:0 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.035);color:#dae5f6;cursor:pointer;font-weight:800}.mini-button.danger{color:#ffadb3}.invite-empty{padding:42px;text-align:center;color:#8290a7;border:1px dashed var(--line);border-radius:17px}.invite-summary{display:flex;gap:12px;margin:18px 0 0;flex-wrap:wrap}.invite-summary span{padding:7px 11px;border:1px solid var(--line);border-radius:999px;color:#98a8c0;font-size:.75rem}.invite-summary strong{color:#dce8ff}@media(max-width:850px){.invite-create{grid-template-columns:1fr 1fr}.invite-create label:nth-child(3),.invite-create button{grid-column:1/-1}.invite-row{grid-template-columns:1fr}.invite-hero{align-items:flex-start;flex-direction:column}.invite-share{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body class="auth-body">
+<div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
+<header class="site-header auth-site-header">
+<a class="brand" href="index.html"><img src="assets/icons/center.png" alt="" /><span>SD종합센터</span></a>
+<nav class="nav-links"><a href="account.html">내 지갑</a><a href="admin-migrations.html">이전 승인</a><a href="signup.html">가입 화면</a></nav>
+<div class="header-account"><button id="logoutButton" class="header-login" type="button">로그아웃</button></div>
+</header>
+<main class="invite-main section-shell">
+<section class="invite-hero">
+<div><span class="section-kicker">ADMIN · INVITE</span><h1>친구 초대 코드</h1><p>1회용 코드를 만들어 친구에게 가입 주소와 함께 보내세요.</p></div>
+<button id="refreshButton" class="secondary-button" type="button">새로고침</button>
+</section>
+<div id="pageStatus" class="form-status account-status" hidden aria-live="polite"></div>
+<section class="invite-panel">
+<form id="createInviteForm" class="invite-create">
+<label>생성 개수<input id="inviteCount" type="number" min="1" max="20" value="3" required /></label>
+<label>유효 기간<input id="expiresDays" type="number" min="1" max="365" value="30" required /></label>
+<label>메모<input id="inviteNote" type="text" maxlength="80" placeholder="예: 반 친구용" /></label>
+<button id="createButton" class="primary-button" type="submit">코드 생성</button>
+</form>
+<div class="invite-share">
+<div><strong>친구에게 보낼 가입 주소</strong><br /><code id="signupUrl">https://sd608.github.io/sd-center/signup.html</code></div>
+<button id="copySignupUrl" class="secondary-button" type="button">주소 복사</button>
+</div>
+<div id="inviteSummary" class="invite-summary"></div>
+</section>
+<section class="invite-list-card">
+<div class="invite-list-head"><div><span class="section-kicker">INVITE CODES</span><h2>발급 내역</h2></div></div>
+<div id="inviteList" class="invite-list"><div class="invite-empty">초대 코드를 불러오는 중입니다.</div></div>
+</section>
+</main>
+</body>
+</html>
