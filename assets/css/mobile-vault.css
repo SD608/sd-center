@@ -1,0 +1,21 @@
+.gold-weight-toggle{
+  width:fit-content;
+  max-width:100%;
+  margin:2px 0 4px;
+  padding:7px 11px;
+  border:1px solid rgba(255,213,92,.38);
+  border-radius:12px;
+  background:linear-gradient(145deg,rgba(255,210,74,.18),rgba(255,255,255,.045));
+  color:#ffe28a;
+  font:inherit;
+  font-size:20px;
+  font-weight:1000;
+  letter-spacing:-.03em;
+  text-align:left;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.gold-weight-toggle:active{transform:scale(.98)}
+.gold-weight-toggle:focus-visible{outline:2px solid #ffe28a;outline-offset:2px}
+.gold-unit-hint{color:#b7a96f!important;font-size:9px!important}

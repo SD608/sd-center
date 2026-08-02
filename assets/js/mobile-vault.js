@@ -8,11 +8,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   const door = document.getElementById("vaultDoor");
   const room = document.getElementById("goldRoom");
   const grid = document.getElementById("goldGrid");
+  const goldWeight = document.getElementById("goldWeight");
+  let currentGoldGrams = 0;
+  let weightUnit = "g";
   if (!mobile) return;
 
   const formatNumber = (value, maximumFractionDigits = 2) => Number(value || 0).toLocaleString("ko-KR", {
     maximumFractionDigits
   });
+
+  const renderGoldWeight = () => {
+    if (!goldWeight) return;
+
+    if (weightUnit === "kg") {
+      const kilograms = currentGoldGrams / 1000;
+      goldWeight.textContent = `${formatNumber(kilograms, 1)}kg`;
+      goldWeight.setAttribute("aria-label", "현재 kg 단위. 눌러서 g로 변경");
+      goldWeight.setAttribute("aria-pressed", "true");
+      return;
+    }
+
+    goldWeight.textContent = `${formatNumber(currentGoldGrams, 2)}g`;
+    goldWeight.setAttribute("aria-label", "현재 g 단위. 눌러서 kg로 변경");
+    goldWeight.setAttribute("aria-pressed", "false");
+  };
 
   const renderState = (data) => {
     setupPanel.hidden = data.has_pin;
@@ -23,12 +42,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       setTimeout(() => room.classList.add("visible"), 350);
 
       const grams = Number(data.gold_grams || 0);
-      const kilograms = grams / 1000;
       const bars = Number(data.gold_bars || 0);
+      currentGoldGrams = grams;
 
       document.getElementById("goldCount").textContent = `${bars.toLocaleString("ko-KR")}개`;
-      document.getElementById("goldWeight").textContent =
-        `${formatNumber(grams, 2)}g · ${formatNumber(kilograms, 5)}kg`;
+      renderGoldWeight();
 
       grid.replaceChildren();
       const visibleCount = Math.min(bars, 100);
@@ -62,6 +80,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       mobile.setMobileStatus(status, mobile.auth.messageForError(error), "error");
     }
   };
+
+  goldWeight?.addEventListener("click", () => {
+    weightUnit = weightUnit === "g" ? "kg" : "g";
+    renderGoldWeight();
+  });
 
   document.getElementById("setPinButton").addEventListener("click", async () => {
     const pin = document.getElementById("newVaultPin").value.trim();

@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v6-update-ui";
+const CACHE_NAME = "sd608-mobile-v7-vault-unit-toggle";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -14,13 +14,14 @@ const APP_SHELL = [
   "./assets/css/mobile-app.css?v=3",
   "./assets/css/mobile-nav-v2.css?v=1",
   "./assets/css/mobile-update.css?v=1",
+  "./assets/css/mobile-vault.css?v=1",
   "./assets/css/sdcoin-mobile.css?v=3",
   "./assets/css/sdcoin-home-card.css?v=3",
   "./assets/js/supabase-config.js?v=2",
   "./assets/js/auth-common.js?v=2",
   "./assets/js/mobile-common.js?v=2",
   "./assets/js/mobile-native-update.js?v=1",
-  "./assets/js/mobile-vault.js?v=3",
+  "./assets/js/mobile-vault.js?v=4",
   "./assets/js/mobile-sdcoin.js?v=3",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
   "./assets/icons/center.png",

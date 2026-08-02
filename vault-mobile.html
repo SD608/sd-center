@@ -8,11 +8,12 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/vault.png">
   <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
+  <link rel="stylesheet" href="assets/css/mobile-vault.css?v=1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/supabase-config.js?v=2" defer></script>
   <script src="assets/js/auth-common.js?v=2" defer></script>
   <script src="assets/js/mobile-common.js?v=2" defer></script>
-  <script src="assets/js/mobile-vault.js?v=3" defer></script>
+  <script src="assets/js/mobile-vault.js?v=4" defer></script>
 </head>
 <body class="mobile-body">
   <header class="mobile-topbar">
@@ -46,7 +47,8 @@
             <span>금괴 개수</span>
             <strong id="goldCount">0개</strong>
             <span>총 가상 금 중량</span>
-            <strong id="goldWeight">0g · 0kg</strong>
+            <button id="goldWeight" class="gold-weight-toggle" type="button" aria-label="현재 g 단위. 눌러서 kg로 변경">0g</button>
+            <span class="gold-unit-hint">숫자를 눌러 g ↔ kg 변환</span>
             <span>금괴 1개 = 3.75g</span>
           </div>
           <div id="goldGrid" class="gold-grid"></div>
