@@ -9,6 +9,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const quantityInput = document.getElementById("tradeQuantity");
   const buyButton = document.getElementById("buyCoin");
   const sellButton = document.getElementById("sellCoin");
+  const tradeStatus = document.getElementById("sdcoinTradeStatus");
+  const ownedList = document.getElementById("sdcoinOwnedList");
+  const holdingCount = document.getElementById("sdcoinHoldingCount");
+  const detailIcon = document.getElementById("detailIcon");
   if (!mobile) return;
 
   const state = {
@@ -19,17 +23,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     refreshTimer: null
   };
 
+  const coinIcons = {
+    DDJ: "assets/icons/coins/ddj.svg",
+    HSH: "assets/icons/coins/hsh.svg",
+    SET: "assets/icons/coins/set.svg",
+    HIZ: "assets/icons/coins/hiz.svg",
+    KNG: "assets/icons/coins/kng.svg",
+    SDC: "assets/icons/coins/sdc.svg"
+  };
+
   const won = (value) => `${Math.round(Number(value || 0)).toLocaleString("ko-KR")}원`;
   const quantityText = (value) => Number(value || 0).toLocaleString("ko-KR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 8
   });
   const changeClass = (value) => Number(value) > 0 ? "coin-up" : Number(value) < 0 ? "coin-down" : "coin-flat";
+  const profitClass = (value) => Number(value) > 0 ? "profit-positive" : Number(value) < 0 ? "profit-negative" : "profit-flat";
   const changeText = (value) => {
     const number = Number(value || 0);
     return `${number > 0 ? "+" : ""}${number.toFixed(3)}%`;
   };
   const selectedCoin = () => state.market?.coins?.find((coin) => coin.code === state.selectedCode) || state.market?.coins?.[0];
+  const coinReturnRate = (coin) => {
+    const evaluation = Number(coin?.evaluation_amount || 0);
+    const profit = Number(coin?.profit_loss || 0);
+    const cost = evaluation - profit;
+    return cost > 0 ? (profit / cost) * 100 : 0;
+  };
+  const setTradeStatus = (message, type = "error") => {
+    if (!tradeStatus) return;
+    tradeStatus.textContent = message;
+    tradeStatus.className = `sdcoin-trade-status ${type}`;
+    tradeStatus.hidden = false;
+  };
+  const clearTradeStatus = () => {
+    if (!tradeStatus) return;
+    tradeStatus.hidden = true;
+    tradeStatus.textContent = "";
+    tradeStatus.className = "sdcoin-trade-status";
+  };
 
   const durationText = (target) => {
     if (!target) return "-";
@@ -57,7 +89,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("sdcoinTotalEvaluation").textContent = won(evaluation);
     const profitElement = document.getElementById("sdcoinTotalProfit");
     profitElement.textContent = `${profit > 0 ? "+" : ""}${won(profit)}`;
-    profitElement.className = changeClass(profit);
+    profitElement.className = profitClass(profit);
+  };
+
+  const renderOwned = () => {
+    const owned = (state.market?.coins || []).filter((coin) => Number(coin.quantity || 0) > 0);
+    holdingCount.textContent = `${owned.length}종 보유`;
+    ownedList.replaceChildren();
+    if (!owned.length) {
+      ownedList.innerHTML = '<div class="empty-mobile sdcoin-owned-empty">아직 보유한 코인이 없습니다.</div>';
+      return;
+    }
+
+    owned.forEach((coin) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = `sdcoin-owned-card${coin.code === state.selectedCode ? " active" : ""}`;
+
+      const image = document.createElement("img");
+      image.src = coinIcons[coin.code] || "assets/icons/sdcoin.svg";
+      image.alt = "";
+
+      const info = document.createElement("span");
+      info.className = "sdcoin-owned-info";
+      const name = document.createElement("strong");
+      name.textContent = coin.name;
+      const quantity = document.createElement("span");
+      quantity.textContent = `${quantityText(coin.quantity)} ${coin.code}`;
+      info.append(name, quantity);
+
+      const value = document.createElement("span");
+      value.className = "sdcoin-owned-value";
+      const evaluation = document.createElement("strong");
+      evaluation.textContent = won(coin.evaluation_amount);
+      const profit = document.createElement("span");
+      profit.className = profitClass(coin.profit_loss);
+      const rate = coinReturnRate(coin);
+      profit.textContent = `${Number(coin.profit_loss) > 0 ? "+" : ""}${won(coin.profit_loss)} · ${rate > 0 ? "+" : ""}${rate.toFixed(2)}%`;
+      value.append(evaluation, profit);
+
+      card.append(image, info, value);
+      card.addEventListener("click", async () => {
+        state.selectedCode = coin.code;
+        clearTradeStatus();
+        renderOwned();
+        renderMarket();
+        renderDetail();
+        await loadChart();
+        detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      ownedList.append(card);
+    });
   };
 
   const renderMarket = () => {
@@ -74,9 +156,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       button.className = `sdcoin-market-row${coin.code === state.selectedCode ? " active" : ""}`;
       button.dataset.coinCode = coin.code;
 
-      const icon = document.createElement("span");
+      const icon = document.createElement("img");
       icon.className = "sdcoin-market-icon";
-      icon.textContent = coin.code;
+      icon.src = coinIcons[coin.code] || "assets/icons/sdcoin.svg";
+      icon.alt = "";
 
       const info = document.createElement("span");
       info.className = "sdcoin-market-info";
@@ -98,6 +181,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       button.append(icon, info, price);
       button.addEventListener("click", async () => {
         state.selectedCode = coin.code;
+        clearTradeStatus();
+        renderOwned();
         renderMarket();
         renderDetail();
         await loadChart();
@@ -114,6 +199,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     state.selectedCode = coin.code;
     detailSection.hidden = false;
+    detailIcon.src = coinIcons[coin.code] || "assets/icons/sdcoin.svg";
+    detailIcon.alt = `${coin.name} 이미지`;
     document.getElementById("detailCode").textContent = coin.code;
     document.getElementById("detailName").textContent = coin.name;
     document.getElementById("detailPrice").textContent = won(coin.current_price);
@@ -125,7 +212,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("holdingEvaluation").textContent = won(coin.evaluation_amount);
     const profit = document.getElementById("holdingProfit");
     profit.textContent = `${Number(coin.profit_loss) > 0 ? "+" : ""}${won(coin.profit_loss)}`;
-    profit.className = changeClass(coin.profit_loss);
+    profit.className = profitClass(coin.profit_loss);
     renderTradePreview();
   };
 
@@ -254,6 +341,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       mobile.updateBalanceText(state.market.wallet_balance);
       renderTotals();
       renderCountdowns();
+      renderOwned();
       renderMarket();
       renderDetail();
       await loadChart();
@@ -274,14 +362,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const quantity = validQuantity();
     if (!coin) return;
     if (quantity === null) {
-      return mobile.setMobileStatus(status, "수량을 0.05 이상, 0.05 단위로 입력하세요.", "error");
+      return setTradeStatus("수량을 0.05 이상, 0.05 단위로 입력하세요.", "error");
     }
     if (side === "sell" && quantity > Number(coin.quantity)) {
-      return mobile.setMobileStatus(status, "보유 코인 수량이 부족합니다.", "error");
+      return setTradeStatus("보유 코인 수량이 부족합니다.", "error");
     }
 
     setBusy(true);
-    mobile.clearMobileStatus(status);
+    clearTradeStatus();
     try {
       const { data, error } = await mobile.auth.client.rpc("trade_sdcoin", {
         p_coin_code: coin.code,
@@ -293,23 +381,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (error) throw error;
       mobile.updateBalanceText(data.balance_after);
       const action = side === "buy" ? "구매" : "판매";
-      mobile.setMobileStatus(
-        status,
+      setTradeStatus(
         `${coin.name} ${quantityText(quantity)} ${coin.code} ${action} 완료 · 수수료 ${won(data.fee)}`,
         "success"
       );
       await loadMarket({ quiet: true, force: true });
     } catch (error) {
-      mobile.setMobileStatus(status, mobile.auth.messageForError(error), "error");
+      setTradeStatus(mobile.auth.messageForError(error), "error");
     } finally {
       setBusy(false);
     }
   };
 
-  quantityInput.addEventListener("input", renderTradePreview);
+  quantityInput.addEventListener("input", () => {
+    clearTradeStatus();
+    renderTradePreview();
+  });
   document.querySelectorAll("[data-quantity]").forEach((button) => {
     button.addEventListener("click", () => {
       quantityInput.value = button.dataset.quantity;
+      clearTradeStatus();
       renderTradePreview();
     });
   });

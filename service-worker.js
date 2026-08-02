@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v3-sdcoin";
+const CACHE_NAME = "sd608-mobile-v4-sdcoin-ui";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -12,18 +12,25 @@ const APP_SHELL = [
   "./offline.html",
   "./assets/css/style.css?v=online2",
   "./assets/css/mobile-app.css?v=3",
-  "./assets/css/sdcoin-mobile.css?v=1",
-  "./assets/css/sdcoin-home-card.css?v=1",
+  "./assets/css/sdcoin-mobile.css?v=2",
+  "./assets/css/sdcoin-home-card.css?v=2",
   "./assets/js/supabase-config.js?v=2",
   "./assets/js/auth-common.js?v=2",
   "./assets/js/mobile-common.js?v=2",
-  "./assets/js/mobile-sdcoin.js?v=1",
+  "./assets/js/mobile-sdcoin.js?v=2",
+  "./assets/js/mobile-sdcoin-summary.js?v=1",
   "./assets/icons/center.png",
   "./assets/icons/wallet.png",
   "./assets/icons/vault.png",
   "./assets/icons/odd-even.png",
   "./assets/icons/slot.png",
-  "./assets/icons/sdcoin.svg"
+  "./assets/icons/sdcoin.svg",
+  "./assets/icons/coins/ddj.svg",
+  "./assets/icons/coins/hsh.svg",
+  "./assets/icons/coins/set.svg",
+  "./assets/icons/coins/hiz.svg",
+  "./assets/icons/coins/kng.svg",
+  "./assets/icons/coins/sdc.svg"
 ];
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
