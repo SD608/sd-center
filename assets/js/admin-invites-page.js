@@ -20,10 +20,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     revoked: "사용 중지"
   };
 
+  function errorMessage(error) {
+    const parts = [
+      error?.message,
+      error?.details,
+      error?.hint,
+      error?.code ? `오류 코드: ${error.code}` : ""
+    ].filter(Boolean);
+    return parts.join(" / ") || "알 수 없는 오류";
+  }
+
   async function copyText(text) {
-    await navigator.clipboard.writeText(text);
-    auth.setStatus(statusBox, "클립보드에 복사했습니다.", "success");
-    setTimeout(() => auth.clearStatus(statusBox), 1400);
+    try {
+      await navigator.clipboard.writeText(text);
+      auth.setStatus(statusBox, "클립보드에 복사했습니다.", "success");
+      setTimeout(() => auth.clearStatus(statusBox), 1400);
+    } catch {
+      auth.setStatus(
+        statusBox,
+        "자동 복사가 차단됐습니다. 코드를 직접 선택해서 복사하세요.",
+        "info"
+      );
+    }
   }
 
   async function ensureAdmin() {
@@ -58,18 +76,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const meta = document.createElement("div");
     meta.className = "invite-meta";
+
     const created = document.createElement("span");
     created.textContent = `생성 ${auth.formatDate(item.created_at)}`;
+
     const expires = document.createElement("span");
-    expires.textContent = item.expires_at ? `만료 ${auth.formatDate(item.expires_at)}` : "만료 없음";
+    expires.textContent = item.expires_at
+      ? `만료 ${auth.formatDate(item.expires_at)}`
+      : "만료 없음";
+
     const note = document.createElement("span");
     note.textContent = item.note || "메모 없음";
-    const used = document.createElement("span");
-    if (item.used_at) {
-      used.textContent = `사용 ${auth.formatDate(item.used_at)}${item.used_nickname ? ` · ${item.used_nickname}` : ""}`;
-    }
+
     meta.append(created, expires, note);
-    if (item.used_at) meta.append(used);
+
+    if (item.used_at) {
+      const used = document.createElement("span");
+      used.textContent =
+        `사용 ${auth.formatDate(item.used_at)}` +
+        (item.used_nickname ? ` · ${item.used_nickname}` : "");
+      meta.append(used);
+    }
 
     const actions = document.createElement("div");
     actions.className = "invite-actions";
@@ -78,9 +105,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     copy.type = "button";
     copy.className = "mini-button";
     copy.textContent = "복사";
-    copy.addEventListener("click", () => copyText(
-      `SD 계정 가입\n${signupUrl}\n초대 코드: ${item.invite_code}`
-    ));
+    copy.addEventListener("click", () =>
+      copyText(`SD 계정 가입\n${signupUrl}\n초대 코드: ${item.invite_code}`)
+    );
     actions.append(copy);
 
     if (item.invite_status === "active") {
@@ -98,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (error) throw error;
           await loadInvites();
         } catch (error) {
-          auth.setStatus(statusBox, auth.messageForError(error), "error");
+          auth.setStatus(statusBox, errorMessage(error), "error");
         } finally {
           revoke.disabled = false;
         }
@@ -113,8 +140,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function loadInvites() {
     auth.clearStatus(statusBox);
     refreshButton.disabled = true;
+
     try {
       if (!await ensureAdmin()) return;
+
       const { data, error } = await auth.client.rpc("admin_list_invite_codes");
       if (error) throw error;
 
@@ -140,6 +169,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       list.replaceChildren();
+
       if (!items.length) {
         const empty = document.createElement("div");
         empty.className = "invite-empty";
@@ -147,10 +177,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         list.append(empty);
         return;
       }
+
       items.forEach((item) => list.append(makeRow(item)));
     } catch (error) {
-      auth.setStatus(statusBox, auth.messageForError(error), "error");
-      list.innerHTML = '<div class="invite-empty">초대 코드 목록을 불러오지 못했습니다.</div>';
+      auth.setStatus(statusBox, errorMessage(error), "error");
+      list.innerHTML =
+        '<div class="invite-empty">초대 코드 목록을 불러오지 못했습니다.</div>';
     } finally {
       refreshButton.disabled = false;
     }
@@ -172,16 +204,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         p_expires_days: days,
         p_note: note || null
       });
+
       if (error) throw error;
 
       const codes = (data || []).map((item) => item.invite_code);
-      auth.setStatus(statusBox, `${codes.length}개의 초대 코드를 만들었습니다.`, "success");
-      if (codes.length === 1) {
-        await copyText(`SD 계정 가입\n${signupUrl}\n초대 코드: ${codes[0]}`);
-      }
+      auth.setStatus(
+        statusBox,
+        `${codes.length}개의 초대 코드를 만들었습니다. 아래 목록에서 복사하세요.`,
+        "success"
+      );
+
+      // 생성 뒤 자동 클립보드 복사를 하지 않음.
+      // 브라우저 권한 문제로 실제 생성 성공을 오류처럼 표시하는 현상을 막음.
       await loadInvites();
     } catch (error) {
-      auth.setStatus(statusBox, auth.messageForError(error), "error");
+      auth.setStatus(statusBox, errorMessage(error), "error");
     } finally {
       createButton.disabled = false;
       createButton.textContent = "코드 생성";
@@ -189,7 +226,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   refreshButton.addEventListener("click", loadInvites);
-  document.getElementById("copySignupUrl").addEventListener("click", () => copyText(signupUrl));
+
+  document.getElementById("copySignupUrl").addEventListener("click", () =>
+    copyText(signupUrl)
+  );
+
   logoutButton.addEventListener("click", async () => {
     await auth.client.auth.signOut();
     location.replace("login.html");
