@@ -10,12 +10,9 @@ import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.SafeBrowsingResponse;
@@ -35,10 +32,10 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        enterImmersiveMode();
+
         configureWebView();
         setContentView(webView);
-        enterImmersiveMode();
+        applyFullscreenSafely();
 
         if (savedInstanceState == null) {
             if (isOnline()) {
@@ -55,6 +52,7 @@ public final class MainActivity extends Activity {
     private void configureWebView() {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(7, 17, 31));
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -63,35 +61,37 @@ public final class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.2");
+        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.3");
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
-        CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(webView, true);
+
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new SDCenterClient());
         webView.setDownloadListener(new SDCenterDownloadListener());
     }
 
-    private void enterImmersiveMode() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-            return;
+    /**
+     * 기기별 WindowInsets 호환 문제를 피하기 위해 Android 전 버전에서
+     * 검증된 시스템 UI 플래그만 사용한다. 오류가 나더라도 앱 실행은 계속된다.
+     */
+    private void applyFullscreenSafely() {
+        try {
+            View decorView = getWindow().getDecorView();
+            decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            );
+        } catch (Throwable ignored) {
+            // 전체화면 적용 실패가 앱 종료로 이어지지 않게 한다.
         }
-
-        getWindow().getDecorView().setSystemUiVisibility(
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        );
     }
 
     private final class SDCenterClient extends WebViewClient {
@@ -148,12 +148,18 @@ public final class MainActivity extends Activity {
     }
 
     private boolean isOnline() {
-        ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkCapabilities capabilities = manager.getNetworkCapabilities(manager.getActiveNetwork());
-        return capabilities != null &&
-            (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+        try {
+            ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (manager == null) return false;
+            NetworkCapabilities capabilities = manager.getNetworkCapabilities(manager.getActiveNetwork());
+            return capabilities != null &&
+                (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+        } catch (Throwable ignored) {
+            // 네트워크 판별 API가 기기에서 실패하면 WebView가 직접 접속을 시도하게 한다.
+            return true;
+        }
     }
 
     private void showOfflinePage() {
@@ -167,18 +173,18 @@ public final class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) enterImmersiveMode();
+        if (hasFocus) applyFullscreenSafely();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        enterImmersiveMode();
+        applyFullscreenSafely();
     }
 
     @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) {
+        if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
             super.onBackPressed();
@@ -187,7 +193,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        webView.saveState(outState);
+        if (webView != null) webView.saveState(outState);
         super.onSaveInstanceState(outState);
     }
 
