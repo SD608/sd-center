@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="NPC 금고">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#35445d"/><stop offset="1" stop-color="#101827"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a2"/><stop offset=".45" stop-color="#f2bd3d"/><stop offset="1" stop-color="#a8640d"/></linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#bg)" stroke="#667a98" stroke-width="4"/>
+  <rect x="25" y="24" width="78" height="80" rx="13" fill="#1c2738" stroke="#94a5bd" stroke-width="5"/>
+  <circle cx="63" cy="62" r="25" fill="#121a27" stroke="url(#gold)" stroke-width="7"/>
+  <circle cx="63" cy="62" r="7" fill="#f5c653"/>
+  <path d="M63 37v11M63 76v11M38 62h11M77 62h11M46 45l8 8M72 71l8 8M80 45l-8 8M54 71l-8 8" stroke="#d8e1ed" stroke-width="4" stroke-linecap="round"/>
+  <path d="M93 48h13v28H93" fill="none" stroke="#f2bd3d" stroke-width="5" stroke-linecap="round"/>
+</svg>

@@ -8,12 +8,12 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/vault.png">
   <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
-  <link rel="stylesheet" href="assets/css/mobile-vault.css?v=1">
+  <link rel="stylesheet" href="assets/css/mobile-vault.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/supabase-config.js?v=2" defer></script>
   <script src="assets/js/auth-common.js?v=2" defer></script>
   <script src="assets/js/mobile-common.js?v=2" defer></script>
-  <script src="assets/js/mobile-vault.js?v=4" defer></script>
+  <script src="assets/js/mobile-vault.js?v=5" defer></script>
 </head>
 <body class="mobile-body">
   <header class="mobile-topbar">
@@ -36,6 +36,12 @@
       </div>
 
       <div id="vaultStatus" class="status-mobile" hidden></div>
+
+      <a class="npc-vault-entry" href="npc-vault-mobile.html">
+        <img src="assets/icons/npc-vault.svg" alt="">
+        <span><strong>NPC 금고 따기</strong><small>진동을 따라 번호 3개를 맞추고 가상 보상을 획득</small></span>
+        <b>도전</b>
+      </a>
 
       <div class="vault-door-wrap">
         <div id="vaultDoor" class="vault-door">

@@ -19,3 +19,20 @@
 .gold-weight-toggle:active{transform:scale(.98)}
 .gold-weight-toggle:focus-visible{outline:2px solid #ffe28a;outline-offset:2px}
 .gold-unit-hint{color:#b7a96f!important;font-size:9px!important}
+
+.npc-vault-entry{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  margin:14px 0 16px;
+  padding:13px;
+  border:1px solid rgba(244,200,91,.34);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(244,200,91,.12),rgba(255,255,255,.035));
+  color:#edf3ff;
+  text-decoration:none;
+}
+.npc-vault-entry img{width:48px;height:48px;border-radius:15px;box-shadow:0 8px 18px rgba(0,0,0,.28)}
+.npc-vault-entry span{min-width:0}.npc-vault-entry strong{display:block;font-size:14px}.npc-vault-entry small{display:block;margin-top:4px;color:#a7b1c1;font-size:9px;line-height:1.45}.npc-vault-entry b{color:#f5cf6e;font-size:11px}
+.npc-vault-entry:active{transform:scale(.99)}

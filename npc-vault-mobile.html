@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#111722">
+  <meta name="description" content="SD종합센터 NPC 금고 따기 게임">
+  <title>NPC 금고 따기 · SD종합센터</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/npc-vault.svg">
+  <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
+  <link rel="stylesheet" href="assets/css/npc-vault-mobile.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/supabase-config.js?v=2" defer></script>
+  <script src="assets/js/auth-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-common.js?v=2" defer></script>
+  <script src="assets/js/npc-vault-mobile.js?v=1" defer></script>
+</head>
+<body class="mobile-body npc-vault-body">
+  <header class="mobile-topbar">
+    <a class="mobile-brand" href="mobile.html">
+      <img src="assets/icons/npc-vault.svg" alt="">
+      <span><small>NPC VAULT JOB</small><strong>금고 따기</strong></span>
+    </a>
+    <a class="icon-button" href="vault-mobile.html">내 금고</a>
+  </header>
+
+  <main class="mobile-main">
+    <section class="npc-hero">
+      <div>
+        <span class="eyebrow-mobile">THREE-DIAL CHALLENGE</span>
+        <h1>NPC 금고 따기</h1>
+        <p>진동을 따라 번호 3개를 제한시간 안에 맞추세요.</p>
+      </div>
+      <img src="assets/icons/npc-vault.svg" alt="">
+    </section>
+
+    <div id="npcVaultStatus" class="status-mobile" hidden></div>
+
+    <section class="npc-account-card">
+      <article><span>SD지갑 잔액</span><strong id="npcWalletBalance">-</strong></article>
+      <article><span>오늘 남은 도전</span><strong id="npcAttempts">-/5</strong></article>
+      <article><span>재도전 대기</span><strong id="npcCooldown">확인 중</strong></article>
+      <small id="npcResetHint">한국시간 00:00에 5회 충전</small>
+    </section>
+
+    <section id="difficultyPanel" class="mobile-section npc-difficulty-section">
+      <div class="mobile-section-title">
+        <div><span class="eyebrow-mobile">SELECT VAULT</span><h2>금고 선택</h2></div>
+      </div>
+      <div class="npc-difficulty-list">
+        <button class="npc-difficulty-card normal" type="button" data-difficulty="normal">
+          <span class="npc-difficulty-icon">N</span>
+          <span><strong>일반 금고</strong><small>35초 · 참가비 10,000원</small></span>
+          <b>15,000~40,000원</b>
+        </button>
+        <button class="npc-difficulty-card large" type="button" data-difficulty="large">
+          <span class="npc-difficulty-icon">L</span>
+          <span><strong>대형 금고</strong><small>30초 · 참가비 50,000원</small></span>
+          <b>80,000~200,000원</b>
+        </button>
+        <button class="npc-difficulty-card mega" type="button" data-difficulty="mega">
+          <span class="npc-difficulty-icon">XL</span>
+          <span><strong>초대형 금고</strong><small>25초 · 참가비 200,000원</small></span>
+          <b>350,000~1,000,000원</b>
+        </button>
+      </div>
+    </section>
+
+    <section id="gamePanel" class="npc-game-panel" hidden>
+      <div class="npc-game-top">
+        <div><span id="gameDifficulty">NPC 금고</span><strong id="gameStep">1 / 3</strong></div>
+        <div class="npc-time"><span>남은 시간</span><strong id="gameTimer">00.0</strong></div>
+      </div>
+
+      <div class="npc-step-track" aria-label="다이얼 진행 단계">
+        <span data-step="0" class="active">1</span><i></i><span data-step="1">2</span><i></i><span data-step="2">3</span>
+      </div>
+
+      <div class="npc-direction-card">
+        <span>돌리는 방향</span>
+        <strong id="dialDirection">시계 방향 ↻</strong>
+        <small>다이얼을 누른 채 돌리고 손을 떼면 번호가 입력됩니다.</small>
+      </div>
+
+      <div id="npcDial" class="npc-dial" role="slider" tabindex="0" aria-valuemin="1" aria-valuemax="100" aria-valuenow="1">
+        <div class="npc-dial-ring"></div>
+        <span class="dial-label top">1</span>
+        <span class="dial-label right">25</span>
+        <span class="dial-label bottom">50</span>
+        <span class="dial-label left">75</span>
+        <div id="dialNeedle" class="npc-dial-needle"><i></i></div>
+        <div class="npc-dial-center"><small>현재 번호</small><strong id="dialValue">1</strong></div>
+      </div>
+
+      <div class="npc-heat-card">
+        <span>진동 감도</span>
+        <strong id="heatText">정답을 탐색하세요</strong>
+        <div class="npc-heat-meter"><i id="heatMeter"></i></div>
+      </div>
+
+      <div class="npc-entered-row">
+        <span>입력 번호</span>
+        <strong id="enteredNumbers">- · - · -</strong>
+      </div>
+      <p id="dialMessage" class="npc-dial-message">1차 번호를 찾으세요.</p>
+    </section>
+
+    <section id="resultPanel" class="npc-result-panel" hidden>
+      <img id="resultIcon" src="assets/icons/npc-vault.svg" alt="">
+      <span id="resultEyebrow">RESULT</span>
+      <h2 id="resultTitle">결과</h2>
+      <p id="resultMessage"></p>
+      <div class="npc-result-money"><span>보상</span><strong id="resultReward">0원</strong></div>
+      <div class="npc-result-money"><span>참가비 포함 손익</span><strong id="resultNet">0원</strong></div>
+      <button id="resultClose" class="primary-mobile" type="button">확인</button>
+    </section>
+
+    <section class="npc-rules">
+      <strong>게임 규칙</strong>
+      <p>1차 시계 방향 → 2차 반시계 방향 → 3차 시계 방향입니다. 정답에 가까울수록 진동이 강해지고, 손을 떼는 순간 현재 번호가 확정됩니다.</p>
+      <p>하루 5회, 실패 후 5분·성공 후 10분 동안 재도전할 수 없습니다. 참가비와 보상은 모두 SD 게임용 가상금액입니다.</p>
+    </section>
+  </main>
+
+  <nav class="mobile-bottom-nav">
+    <a href="wallet-mobile.html"><b>₩</b>지갑</a>
+    <a href="mobile.html"><b>⌂</b>홈</a>
+    <a href="sdcoin-mobile.html"><b>◈</b>코인</a>
+  </nav>
+</body>
+</html>

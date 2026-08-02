@@ -19,6 +19,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.provider.Settings;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -105,7 +108,7 @@ public final class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.4");
+        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.5");
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
 
@@ -128,6 +131,53 @@ public final class MainActivity extends Activity {
         @JavascriptInterface
         public String getAppVersion() {
             return currentVersionName();
+        }
+
+        @JavascriptInterface
+        public void vibrate(int amplitude, int durationMs) {
+            runOnUiThread(() -> vibrateOnce(amplitude, durationMs));
+        }
+
+        @JavascriptInterface
+        public void vibrateExact() {
+            runOnUiThread(MainActivity.this::vibrateExactPattern);
+        }
+    }
+
+    private Vibrator getDefaultVibrator() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                VibratorManager manager = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+                return manager == null ? null : manager.getDefaultVibrator();
+            }
+            return (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private void vibrateOnce(int amplitude, int durationMs) {
+        try {
+            Vibrator vibrator = getDefaultVibrator();
+            if (vibrator == null || !vibrator.hasVibrator()) return;
+            int safeAmplitude = Math.max(1, Math.min(255, amplitude));
+            int safeDuration = Math.max(10, Math.min(500, durationMs));
+            vibrator.vibrate(VibrationEffect.createOneShot(safeDuration, safeAmplitude));
+        } catch (Throwable ignored) {
+            // 진동 기능이 없는 기기에서도 게임은 계속 실행됩니다.
+        }
+    }
+
+    private void vibrateExactPattern() {
+        try {
+            Vibrator vibrator = getDefaultVibrator();
+            if (vibrator == null || !vibrator.hasVibrator()) return;
+            long[] timings = new long[] {0L, 140L, 70L, 230L};
+            int[] amplitudes = new int[] {0, 255, 0, 255};
+            vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1));
+        } catch (Throwable ignored) {
+            // 강한 패턴이 지원되지 않으면 단발 진동으로 대체합니다.
+            vibrateOnce(255, 220);
         }
     }
 
@@ -190,7 +240,7 @@ public final class MainActivity extends Activity {
             connection.setReadTimeout(15000);
             connection.setInstanceFollowRedirects(true);
             connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("User-Agent", "SDCenter-Android/1.0.4");
+            connection.setRequestProperty("User-Agent", "SDCenter-Android/1.0.5");
 
             int responseCode = connection.getResponseCode();
             if (responseCode < 200 || responseCode >= 300) {
