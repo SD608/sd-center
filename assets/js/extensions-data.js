@@ -2,6 +2,21 @@
 
 window.SD_EXTENSION_PACKS = [
   {
+    id: "sd-link",
+    name: "SD Link",
+    stage: "Stage 1",
+    version: "v1.0.0",
+    category: "온라인 연동 확장팩",
+    icon: "assets/icons/center.png",
+    fileName: "SDLink_Stage1_Desktop.zip",
+    downloadUrl: "downloads/extensions/SDLink_Stage1_Desktop.zip",
+    description: "기존 로컬 SD지갑을 홈페이지 계정과 연결하고 Android 모바일 센터와 같은 온라인 가상잔액을 사용하는 양방향 동기화 확장팩입니다.",
+    requirements: "SD종합센터 v2.1.1 이상 · SD지갑 · Windows 10/11",
+    updatedAt: "2026-08-02",
+    tags: ["PC·모바일 연동", "홈페이지 계정", "ZIP 앱 추가"],
+    featured: true
+  },
+  {
     id: "sd-slot",
     name: "SD슬롯",
     stage: "Stage 7",

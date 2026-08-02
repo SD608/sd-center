@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1224">
+<title>연결된 PC · SD608 Online</title><link rel="icon" href="favicon.ico"><link rel="stylesheet" href="assets/css/style.css?v=online2"><link rel="stylesheet" href="assets/css/sdlink.css?v=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script><script src="assets/js/supabase-config.js?v=2" defer></script><script src="assets/js/auth-common.js?v=2" defer></script><script src="assets/js/device-link-page.js?v=1" defer></script>
+</head><body class="auth-body"><div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
+<header class="site-header auth-site-header"><a class="brand" href="index.html"><img src="assets/icons/center.png" alt=""><span>SD종합센터</span></a><nav class="nav-links"><a href="account.html">내 지갑</a><a href="mobile.html">모바일 센터</a></nav><div class="header-account"><button id="deviceLogout" class="header-login" type="button">로그아웃</button></div></header>
+<main class="account-main section-shell">
+<section class="account-hero"><div><span class="section-kicker">CONNECTED DEVICES</span><h1>PC 연결 관리</h1><p>SD Link 확장팩으로 홈페이지 계정과 연결된 Windows PC 목록입니다.</p></div><button id="refreshDevices" class="secondary-button" type="button">새로고침</button></section>
+<div id="deviceStatus" class="form-status account-status" hidden></div>
+<section class="sdlink-how"><div><b>1</b><span>SD종합센터에서 SD Link ZIP 설치</span></div><i>→</i><div><b>2</b><span>홈페이지 계정 로그인</span></div><i>→</i><div><b>3</b><span>로컬 계좌 선택·잔액 이전</span></div><i>→</i><div><b>4</b><span>PC·모바일 자동 동기화</span></div></section>
+<section class="transactions-card"><div class="transactions-heading"><div><span class="section-kicker">WINDOWS</span><h2>연결된 PC</h2></div><small id="deviceCount">-</small></div><div id="deviceList" class="sdlink-device-list"><div class="transaction-empty">불러오는 중입니다.</div></div></section>
+<section class="sdlink-download-card"><div><span class="section-kicker">EXTENSION PACK</span><h2>SD Link 확장팩</h2><p>SD종합센터의 앱 추가에서 ZIP 파일을 선택해 설치하세요.</p></div><a class="primary-button" href="downloads/extensions/SDLink_Stage1_Desktop.zip">SD Link ZIP 다운로드</a></section>
+<section class="notice-section account-notice"><div class="notice-icon">!</div><div><strong>모르는 PC가 보이면 즉시 연결 해제하세요.</strong><p>연결 해제한 PC는 다시 홈페이지 계정으로 로그인하고 등록하기 전까지 서버 장부를 변경할 수 없습니다.</p></div></section>
+</main></body></html>

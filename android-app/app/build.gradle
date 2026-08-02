@@ -3,15 +3,15 @@ plugins {
 }
 
 android {
-    namespace 'com.sd608.sdcenter'
+    namespace 'com.sd608.center'
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.sd608.sdcenter'
-        minSdk 24
+        applicationId 'com.sd608.center'
+        minSdk 26
         targetSdk 35
-        versionCode 1
-        versionName '1.0.0-mobile-beta'
+        versionCode 100
+        versionName '1.0.0'
     }
 
     buildTypes {
