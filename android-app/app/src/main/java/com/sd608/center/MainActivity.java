@@ -10,8 +10,12 @@ import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.SafeBrowsingResponse;
@@ -31,8 +35,11 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        enterImmersiveMode();
         configureWebView();
         setContentView(webView);
+        enterImmersiveMode();
+
         if (savedInstanceState == null) {
             if (isOnline()) {
                 webView.loadUrl(HOME_URL);
@@ -56,7 +63,7 @@ public final class MainActivity extends Activity {
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " SD608Android/1.0.2");
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         CookieManager.getInstance().setAcceptCookie(true);
@@ -64,6 +71,27 @@ public final class MainActivity extends Activity {
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new SDCenterClient());
         webView.setDownloadListener(new SDCenterDownloadListener());
+    }
+
+    private void enterImmersiveMode() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            getWindow().setDecorFitsSystemWindows(false);
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+            return;
+        }
+
+        getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
     }
 
     private final class SDCenterClient extends WebViewClient {
@@ -134,6 +162,18 @@ public final class MainActivity extends Activity {
             "<main style='padding:28px'><h1>인터넷 연결 없음</h1><p style='color:#9fb1c8;line-height:1.7'>SD종합센터 Mobile은 홈페이지 온라인 계정에 연결되어야 합니다.<br>인터넷을 연결한 뒤 아래 버튼을 누르세요.</p>" +
             "<button onclick=\"location.href='" + HOME_URL + "'\" style='border:0;border-radius:12px;padding:13px 18px;background:#258fd7;color:white;font-weight:800'>다시 연결</button></main></body>";
         webView.loadDataWithBaseURL(HOME_URL, html, "text/html", "UTF-8", null);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) enterImmersiveMode();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        enterImmersiveMode();
     }
 
     @Override

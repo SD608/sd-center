@@ -1,12 +1,59 @@
 "use strict";
 
 (function initializeMobileCommon() {
+  const installCompactBottomNavigation = () => {
+    const nav = document.querySelector(".mobile-bottom-nav");
+    if (!nav) return;
+
+    const fileName = (location.pathname.split("/").pop() || "mobile.html").toLowerCase();
+    const items = [
+      {
+        id: "wallet",
+        href: "wallet-mobile.html",
+        label: "지갑",
+        icon: "assets/icons/wallet.png",
+        active: fileName === "wallet-mobile.html"
+      },
+      {
+        id: "home",
+        href: "mobile.html",
+        label: "홈",
+        icon: "assets/icons/center.png",
+        active: fileName === "mobile.html" || fileName === ""
+      },
+      {
+        id: "coin",
+        href: "sdcoin-mobile.html",
+        label: "코인",
+        icon: "assets/icons/sdcoin.svg",
+        active: fileName === "sdcoin-mobile.html"
+      }
+    ];
+
+    nav.classList.add("mobile-bottom-nav-three");
+    nav.innerHTML = items.map((item) => `
+      <a class="${item.active ? "active" : ""}" href="${item.href}" data-bottom-nav="${item.id}"${item.active ? ' aria-current="page"' : ""}>
+        <img src="${item.icon}" alt="">
+        <span>${item.label}</span>
+      </a>
+    `).join("");
+
+    if (!document.querySelector('link[data-mobile-nav-v2]')) {
+      const stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href = "assets/css/mobile-nav-v2.css?v=1";
+      stylesheet.dataset.mobileNavV2 = "true";
+      document.head.appendChild(stylesheet);
+    }
+  };
+
+  installCompactBottomNavigation();
+
   const auth = window.SD_AUTH;
   if (!auth) return;
 
   let deferredInstallPrompt = null;
   const platform = /SD608Android/i.test(navigator.userAgent) ? "android" : "web";
-
   const uuid = () => {
     if (crypto?.randomUUID) return crypto.randomUUID();
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
@@ -15,7 +62,6 @@
       return value.toString(16);
     });
   };
-
   const setMobileStatus = (element, message, type = "info") => {
     if (!element) return;
     element.textContent = message;
@@ -28,7 +74,6 @@
     element.hidden = true;
     element.textContent = "";
   };
-
   const fetchWallet = async () => {
     const { data, error } = await auth.client
       .from("wallets")
@@ -43,7 +88,6 @@
       element.textContent = auth.formatWon(balance);
     });
   };
-
   const loadMobileShell = async () => {
     const session = await auth.requireSession();
     if (!session) return null;
@@ -54,7 +98,6 @@
     if (profileResult.error) throw profileResult.error;
     if (walletResult.error) throw walletResult.error;
     if (profileResult.data.status !== "active") throw new Error("현재 이용할 수 없는 계정입니다.");
-
     document.querySelectorAll("[data-mobile-name]").forEach((element) => {
       element.textContent = profileResult.data.nickname;
     });
@@ -64,7 +107,6 @@
     updateBalanceText(walletResult.data.balance);
     return { session, profile: profileResult.data, wallet: walletResult.data };
   };
-
   document.addEventListener("click", async (event) => {
     const logoutButton = event.target.closest("[data-mobile-logout]");
     if (!logoutButton) return;
@@ -76,13 +118,11 @@
       logoutButton.disabled = false;
     }
   });
-
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     deferredInstallPrompt = event;
     document.querySelectorAll("[data-install-banner]").forEach((element) => element.classList.add("visible"));
   });
-
   document.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-install-app]");
     if (!button || !deferredInstallPrompt) return;
@@ -91,7 +131,6 @@
     deferredInstallPrompt = null;
     document.querySelectorAll("[data-install-banner]").forEach((element) => element.classList.remove("visible"));
   });
-
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js").catch(console.error));
   }

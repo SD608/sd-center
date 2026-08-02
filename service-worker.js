@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v4-sdcoin-ui";
+const CACHE_NAME = "sd608-mobile-v5-nav-fullscreen";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -12,6 +12,7 @@ const APP_SHELL = [
   "./offline.html",
   "./assets/css/style.css?v=online2",
   "./assets/css/mobile-app.css?v=3",
+  "./assets/css/mobile-nav-v2.css?v=1",
   "./assets/css/sdcoin-mobile.css?v=2",
   "./assets/css/sdcoin-home-card.css?v=2",
   "./assets/js/supabase-config.js?v=2",

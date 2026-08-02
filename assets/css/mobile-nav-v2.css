@@ -1,0 +1,51 @@
+body.mobile-body {
+  padding-bottom: 96px;
+}
+
+.mobile-bottom-nav.mobile-bottom-nav-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 14px max(9px, env(safe-area-inset-bottom));
+}
+
+.mobile-bottom-nav.mobile-bottom-nav-three a {
+  min-height: 58px;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 4px;
+  border: 1px solid transparent;
+  border-radius: 17px;
+  font-size: 10px;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-bottom-nav.mobile-bottom-nav-three a:active {
+  transform: scale(.96);
+}
+
+.mobile-bottom-nav.mobile-bottom-nav-three a img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  opacity: .58;
+  filter: saturate(.72);
+}
+
+.mobile-bottom-nav.mobile-bottom-nav-three a span {
+  color: inherit;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.mobile-bottom-nav.mobile-bottom-nav-three a.active {
+  color: #f5f8ff;
+  border-color: rgba(126, 161, 255, .25);
+  background: linear-gradient(145deg, rgba(93, 140, 255, .25), rgba(116, 91, 255, .13));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+.mobile-bottom-nav.mobile-bottom-nav-three a.active img {
+  opacity: 1;
+  filter: none;
+}
