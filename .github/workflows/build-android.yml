@@ -8,7 +8,7 @@ on:
       - ".github/workflows/build-android.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-apk:
@@ -46,11 +46,22 @@ jobs:
         shell: bash
         run: |
           mkdir -p output
-          cp app/build/outputs/apk/debug/app-debug.apk output/SDCenter-Mobile-V1-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk output/SDCenter-Mobile.apk
 
-      - name: APK 다운로드 파일 등록
+      - name: Actions 다운로드 파일 등록
         uses: actions/upload-artifact@v4
         with:
-          name: SDCenter-Mobile-V1-APK
-          path: android-app/output/SDCenter-Mobile-V1-debug.apk
+          name: SDCenter-Mobile-APK
+          path: android-app/output/SDCenter-Mobile.apk
           if-no-files-found: error
+
+      - name: GitHub 최신 Release에 APK 등록
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-v1.0.${{ github.run_number }}
+          name: SD종합센터 Mobile v1.0.${{ github.run_number }}
+          body: |
+            SD608 Online 홈페이지 계정과 PC SD Link를 함께 사용하는 Android 테스트 APK입니다.
+            표시 금액은 실제 현금이 아닌 SD 게임 시뮬레이션용 가상 데이터입니다.
+          files: android-app/output/SDCenter-Mobile.apk
+          make_latest: true
