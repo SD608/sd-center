@@ -51,8 +51,10 @@ import java.util.concurrent.Executors;
 public final class MainActivity extends Activity {
     private static final String HOME_URL = "https://sd608.github.io/sd-center/mobile.html";
     private static final String TRUSTED_HOST = "sd608.github.io";
-    private static final String UPDATE_INFO_URL =
-        "https://github.com/SD608/sd-center/releases/latest/download/version.json";
+    private static final String[] UPDATE_INFO_URLS = new String[] {
+        "https://raw.githubusercontent.com/SD608/sd-center/main/update/version.json",
+        "https://sd608.github.io/sd-center/update/version.json"
+    };
     private static final String APK_MIME = "application/vnd.android.package-archive";
     private static final String PREFS = "sdcenter_update";
     private static final String PREF_PENDING_APK = "pending_apk_uri";
@@ -221,10 +223,11 @@ public final class MainActivity extends Activity {
                     }
                 });
             } catch (Exception error) {
+                final String reason = error.getMessage() == null ? "연결 오류" : error.getMessage();
                 runOnUiThread(() -> {
                     updateCheckRunning = false;
                     if (!silent) {
-                        Toast.makeText(this, "업데이트 확인에 실패했습니다. 잠시 후 다시 시도하세요.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "업데이트 확인 실패: " + reason, Toast.LENGTH_LONG).show();
                     }
                 });
             }
@@ -232,14 +235,28 @@ public final class MainActivity extends Activity {
     }
 
     private UpdateInfo fetchUpdateInfo() throws Exception {
+        Exception lastError = null;
+        for (String endpoint : UPDATE_INFO_URLS) {
+            try {
+                return fetchUpdateInfoFrom(endpoint);
+            } catch (Exception error) {
+                lastError = error;
+            }
+        }
+        if (lastError != null) throw lastError;
+        throw new IllegalStateException("업데이트 서버 주소가 없습니다.");
+    }
+
+    private UpdateInfo fetchUpdateInfoFrom(String endpoint) throws Exception {
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(UPDATE_INFO_URL + "?t=" + System.currentTimeMillis());
+            URL url = new URL(endpoint + "?t=" + System.currentTimeMillis());
             connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(15000);
             connection.setInstanceFollowRedirects(true);
             connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Cache-Control", "no-cache");
             connection.setRequestProperty("User-Agent", "SDCenter-Android/1.0.5");
 
             int responseCode = connection.getResponseCode();
@@ -263,11 +280,11 @@ public final class MainActivity extends Activity {
             boolean required = json.optBoolean("required", false);
 
             if (versionCode <= 0 || versionName.isEmpty() || downloadUrl.isEmpty()) {
-                throw new IllegalStateException("업데이트 정보가 올바르지 않습니다.");
+                throw new IllegalStateException("업데이트 정보 형식 오류");
             }
             URL apkUrl = new URL(downloadUrl);
             if (!"https".equalsIgnoreCase(apkUrl.getProtocol())) {
-                throw new IllegalStateException("안전하지 않은 다운로드 주소입니다.");
+                throw new IllegalStateException("안전하지 않은 다운로드 주소");
             }
             return new UpdateInfo(versionCode, versionName, downloadUrl, message, required);
         } finally {
