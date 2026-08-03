@@ -3,5 +3,5 @@
   "versionName": "1.0.6",
   "required": false,
   "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v106-1.0.6/SDCenter-Mobile.apk",
-  "message": "코인 평가손익에서 수수료를 제외하고 수량 증가 버튼을 개선했습니다."
+  "message": "코인 손익·수량 버튼 개선과 APK 설치 화면 자동 실행 오류를 수정했습니다."
 }

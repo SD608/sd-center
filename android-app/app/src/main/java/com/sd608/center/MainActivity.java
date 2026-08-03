@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -58,20 +59,26 @@ public final class MainActivity extends Activity {
     private static final String APK_MIME = "application/vnd.android.package-archive";
     private static final String PREFS = "sdcenter_update";
     private static final String PREF_PENDING_APK = "pending_apk_uri";
+    private static final String PREF_DOWNLOAD_ID = "pending_download_id";
 
     private WebView webView;
     private final ExecutorService updateExecutor = Executors.newSingleThreadExecutor();
     private boolean updateCheckRunning = false;
     private boolean updateReceiverRegistered = false;
     private boolean waitingForInstallPermission = false;
+    private boolean installerOpening = false;
     private long updateDownloadId = -1L;
+    private final Handler updateHandler = new Handler(Looper.getMainLooper());
 
     private final BroadcastReceiver updateDownloadReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (!DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())) return;
             long completedId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L);
-            if (completedId == updateDownloadId) handleCompletedUpdateDownload(completedId);
+            long pendingId = pendingDownloadId();
+            if (completedId == updateDownloadId || completedId == pendingId) {
+                handleUpdateDownloadState(completedId, false);
+            }
         }
     };
 
@@ -185,12 +192,11 @@ public final class MainActivity extends Activity {
 
     private void registerUpdateReceiver() {
         try {
+            // ACTION_DOWNLOAD_COMPLETE는 시스템 전용 브로드캐스트이므로 플래그 없이 등록한다.
+            // 일부 삼성/최신 Android 기기에서 RECEIVER_NOT_EXPORTED 사용 시 완료 신호를
+            // 받지 못해 APK만 내려받고 설치 화면이 열리지 않는 문제가 있었다.
             IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(updateDownloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-            } else {
-                registerReceiver(updateDownloadReceiver, filter);
-            }
+            registerReceiver(updateDownloadReceiver, filter);
             updateReceiverRegistered = true;
         } catch (Throwable error) {
             updateReceiverRegistered = false;
@@ -333,6 +339,13 @@ public final class MainActivity extends Activity {
             request.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, fileName);
 
             updateDownloadId = manager.enqueue(request);
+            getSharedPreferences(PREFS, MODE_PRIVATE)
+                .edit()
+                .putLong(PREF_DOWNLOAD_ID, updateDownloadId)
+                .remove(PREF_PENDING_APK)
+                .apply();
+            installerOpening = false;
+            scheduleDownloadCheck(updateDownloadId, 1200L);
             Toast.makeText(this, "업데이트 다운로드를 시작했습니다.", Toast.LENGTH_LONG).show();
         } catch (Exception error) {
             Toast.makeText(this, "업데이트 다운로드를 시작하지 못했습니다.", Toast.LENGTH_LONG).show();
@@ -340,34 +353,57 @@ public final class MainActivity extends Activity {
         }
     }
 
-    private void handleCompletedUpdateDownload(long downloadId) {
+    private void scheduleDownloadCheck(long downloadId, long delayMs) {
+        if (downloadId <= 0L) return;
+        updateHandler.postDelayed(() -> handleUpdateDownloadState(downloadId, true), delayMs);
+    }
+
+    private void handleUpdateDownloadState(long downloadId, boolean allowRetry) {
+        if (downloadId <= 0L || installerOpening) return;
         DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         if (manager == null) return;
 
+        int downloadStatus = DownloadManager.STATUS_FAILED;
         DownloadManager.Query query = new DownloadManager.Query().setFilterById(downloadId);
         try (android.database.Cursor cursor = manager.query(query)) {
-            if (cursor == null || !cursor.moveToFirst()) return;
-            int statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
-            int downloadStatus = statusIndex >= 0 ? cursor.getInt(statusIndex) : DownloadManager.STATUS_FAILED;
-            if (downloadStatus != DownloadManager.STATUS_SUCCESSFUL) {
-                Toast.makeText(this, "업데이트 다운로드에 실패했습니다.", Toast.LENGTH_LONG).show();
+            if (cursor == null || !cursor.moveToFirst()) {
+                if (allowRetry) scheduleDownloadCheck(downloadId, 1500L);
                 return;
             }
+            int statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+            if (statusIndex >= 0) downloadStatus = cursor.getInt(statusIndex);
         } catch (Exception error) {
-            Toast.makeText(this, "다운로드 결과를 확인하지 못했습니다.", Toast.LENGTH_LONG).show();
+            if (allowRetry) scheduleDownloadCheck(downloadId, 1500L);
+            return;
+        }
+
+        if (downloadStatus == DownloadManager.STATUS_PENDING ||
+            downloadStatus == DownloadManager.STATUS_RUNNING ||
+            downloadStatus == DownloadManager.STATUS_PAUSED) {
+            if (allowRetry) scheduleDownloadCheck(downloadId, 1500L);
+            return;
+        }
+
+        if (downloadStatus != DownloadManager.STATUS_SUCCESSFUL) {
+            clearPendingDownload();
+            Toast.makeText(this, "업데이트 다운로드에 실패했습니다.", Toast.LENGTH_LONG).show();
             return;
         }
 
         Uri apkUri = manager.getUriForDownloadedFile(downloadId);
         if (apkUri == null) {
+            clearPendingDownload();
             Toast.makeText(this, "다운로드한 APK를 찾지 못했습니다.", Toast.LENGTH_LONG).show();
             return;
         }
 
+        installerOpening = true;
         getSharedPreferences(PREFS, MODE_PRIVATE)
             .edit()
             .putString(PREF_PENDING_APK, apkUri.toString())
+            .remove(PREF_DOWNLOAD_ID)
             .apply();
+        updateDownloadId = -1L;
         requestInstall(apkUri);
     }
 
@@ -375,7 +411,8 @@ public final class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             !getPackageManager().canRequestPackageInstalls()) {
             waitingForInstallPermission = true;
-            Toast.makeText(this, "이 앱에서 설치 허용을 켠 뒤 돌아오세요.", Toast.LENGTH_LONG).show();
+            installerOpening = false;
+            Toast.makeText(this, "SD종합센터의 '이 출처 허용'을 켠 뒤 앱으로 돌아오세요.", Toast.LENGTH_LONG).show();
             try {
                 Intent settingsIntent = new Intent(
                     Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
@@ -394,6 +431,7 @@ public final class MainActivity extends Activity {
         try {
             Intent installIntent = new Intent(Intent.ACTION_VIEW);
             installIntent.setDataAndType(apkUri, APK_MIME);
+            installIntent.setClipData(ClipData.newRawUri("SD종합센터 업데이트", apkUri));
             installIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             installIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(installIntent);
@@ -401,13 +439,29 @@ public final class MainActivity extends Activity {
                 .edit()
                 .remove(PREF_PENDING_APK)
                 .apply();
-        } catch (ActivityNotFoundException error) {
-            Toast.makeText(this, "APK 설치 화면을 열 수 없습니다.", Toast.LENGTH_LONG).show();
+            installerOpening = false;
+        } catch (ActivityNotFoundException | SecurityException error) {
+            installerOpening = false;
+            Toast.makeText(this, "APK 설치 화면을 열 수 없습니다. 다운로드 알림의 APK를 눌러 설치하세요.", Toast.LENGTH_LONG).show();
         }
     }
 
     private String pendingApkUri() {
         return getSharedPreferences(PREFS, MODE_PRIVATE).getString(PREF_PENDING_APK, "");
+    }
+
+    private long pendingDownloadId() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getLong(PREF_DOWNLOAD_ID, -1L);
+    }
+
+    private void clearPendingDownload() {
+        updateDownloadId = -1L;
+        installerOpening = false;
+        getSharedPreferences(PREFS, MODE_PRIVATE)
+            .edit()
+            .remove(PREF_DOWNLOAD_ID)
+            .remove(PREF_PENDING_APK)
+            .apply();
     }
 
     private long currentVersionCode() {
@@ -534,15 +588,25 @@ public final class MainActivity extends Activity {
         super.onResume();
         applyFullscreenSafely();
 
-        if (waitingForInstallPermission) {
+        String pendingApk = pendingApkUri();
+        if (!pendingApk.isEmpty() &&
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getPackageManager().canRequestPackageInstalls())) {
             waitingForInstallPermission = false;
-            String pending = pendingApkUri();
-            if (!pending.isEmpty() &&
-                (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getPackageManager().canRequestPackageInstalls())) {
-                launchInstaller(Uri.parse(pending));
-            } else if (!pending.isEmpty()) {
-                Toast.makeText(this, "업데이트 설치 권한이 필요합니다.", Toast.LENGTH_LONG).show();
-            }
+            installerOpening = true;
+            launchInstaller(Uri.parse(pendingApk));
+            return;
+        }
+
+        if (waitingForInstallPermission && !pendingApk.isEmpty()) {
+            waitingForInstallPermission = false;
+            installerOpening = false;
+            Toast.makeText(this, "업데이트 설치 권한이 필요합니다.", Toast.LENGTH_LONG).show();
+        }
+
+        long pendingId = pendingDownloadId();
+        if (pendingId > 0L) {
+            updateDownloadId = pendingId;
+            scheduleDownloadCheck(pendingId, 300L);
         }
     }
 
@@ -570,6 +634,7 @@ public final class MainActivity extends Activity {
                 // 이미 해제된 경우 무시한다.
             }
         }
+        updateHandler.removeCallbacksAndMessages(null);
         updateExecutor.shutdownNow();
         if (webView != null) {
             webView.stopLoading();
