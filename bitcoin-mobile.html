@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17100a">
+  <title>SD비트코인 Mobile</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/bitcoin.svg">
+  <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
+  <link rel="stylesheet" href="assets/css/mobile-v107.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/supabase-config.js?v=2" defer></script>
+  <script src="assets/js/auth-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-bitcoin.js?v=1" defer></script>
+</head>
+<body class="mobile-body">
+  <header class="mobile-topbar">
+    <a class="mobile-brand" href="mobile.html">
+      <img src="assets/icons/bitcoin.svg" alt="">
+      <span><small>PC SYNC VIEW</small><strong>SD비트코인</strong></span>
+    </a>
+    <div class="sync-pill">조회 전용</div>
+  </header>
+  <main class="mobile-main">
+    <section class="app-panel">
+      <div class="page-heading">
+        <img src="assets/icons/bitcoin.svg" alt="">
+        <div>
+          <span class="eyebrow-mobile">BITCOIN MINING</span>
+          <h1>보유 BTC</h1>
+          <p>PC SD비트코인 채굴장의 보유 수량을 모바일에서 확인합니다.</p>
+        </div>
+      </div>
+      <div id="bitcoinStatus" class="status-mobile" hidden></div>
+      <section class="bitcoin-card">
+        <span>현재 보유량</span>
+        <strong id="btcQuantity" class="btc-amount">불러오는 중…</strong>
+        <div class="bitcoin-meta">
+          <div><span>마지막 SD Link 동기화</span><strong id="btcSyncedAt">-</strong></div>
+          <div><span>PC 데이터 갱신 시각</span><strong id="btcLocalUpdatedAt">-</strong></div>
+        </div>
+      </section>
+      <p class="small-note">모바일에서는 BTC 조회만 가능합니다.<br>판매·채굴·장비 조작은 PC SD비트코인 채굴장에서 진행하세요.</p>
+    </section>
+  </main>
+  <nav class="mobile-bottom-nav"></nav>
+</body>
+</html>

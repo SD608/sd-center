@@ -1,7 +1,7 @@
 {
-  "versionCode": 106,
-  "versionName": "1.0.6",
+  "versionCode": 107,
+  "versionName": "1.0.7",
   "required": false,
-  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v106-1.0.6/SDCenter-Mobile.apk",
-  "message": "코인 손익·수량 버튼 개선과 APK 설치 화면 자동 실행 오류를 수정했습니다."
+  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v107-1.0.7/SDCenter-Mobile.apk",
+  "message": "BTC 보유량 조회, PC 방식 홀짝, 금괴 직접 구매·보관, 홀짝·슬롯 누적 베팅을 추가했습니다."
 }

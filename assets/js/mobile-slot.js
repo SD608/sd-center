@@ -16,7 +16,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   let balance = 0;
   if (!mobile) return;
 
-  const renderBalance = (value) => { balance = Number(value); mobile.updateBalanceText(balance); };
+  const renderBalance = (value) => {
+    balance = Number(value);
+    mobile.updateBalanceText(balance);
+  };
+
   try {
     const state = await mobile.loadMobileShell();
     if (!state) return;
@@ -27,13 +31,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.querySelectorAll("[data-slot-bet]").forEach((button) => button.addEventListener("click", () => {
     const raw = button.dataset.slotBet;
-    input.value = raw === "all" ? Math.max(0, balance) : raw;
+    if (raw === "reset") {
+      input.value = "0";
+      return;
+    }
+    if (raw === "all") {
+      input.value = String(Math.max(0, Math.trunc(balance)));
+      return;
+    }
+    const current = Math.max(0, Math.trunc(Number(input.value) || 0));
+    input.value = String(current + Math.trunc(Number(raw) || 0));
   }));
 
   spinButton.addEventListener("click", async () => {
     const wager = Math.trunc(Number(input.value));
     if (!Number.isSafeInteger(wager) || wager < 100) return mobile.setMobileStatus(status, "베팅금을 100원 이상 입력하세요.", "error");
     if (wager > balance) return mobile.setMobileStatus(status, "가상잔액이 부족합니다.", "error");
+
     mobile.clearMobileStatus(status);
     spinButton.disabled = true;
     reels.forEach((reel) => reel.classList.add("spinning"));
@@ -41,6 +55,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const key = visualKeys[Math.floor(Math.random() * visualKeys.length)];
       reel.textContent = symbols[key];
     }), 75);
+
     try {
       const { data, error } = await mobile.auth.client.rpc("play_sd_slot", {
         p_wager: wager,

@@ -1,4 +1,51 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#190c16"><title>SD슬롯 Mobile</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="assets/icons/slot.png"><link rel="stylesheet" href="assets/css/mobile-app.css?v=2"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script><script src="assets/js/supabase-config.js?v=2" defer></script><script src="assets/js/auth-common.js?v=2" defer></script><script src="assets/js/mobile-common.js?v=2" defer></script><script src="assets/js/mobile-slot.js?v=2" defer></script></head><body class="mobile-body">
-<header class="mobile-topbar"><a class="mobile-brand" href="mobile.html"><img src="assets/icons/slot.png" alt=""><span><small>RTP 75%</small><strong>SD슬롯</strong></span></a><div class="sync-pill" data-mobile-balance>-</div></header>
-<main class="mobile-main"><section class="app-panel"><div class="page-heading"><img src="assets/icons/slot.png" alt=""><div><span class="eyebrow-mobile">ONLINE SLOT</span><h1>SD슬롯</h1><p>PC Stage 7과 같은 확률·배당을 서버에서 계산합니다.</p></div></div><div id="slotStatus" class="status-mobile" hidden></div><div class="slot-stage"><div class="slot-reel">7</div><div class="slot-reel">💎</div><div class="slot-reel">🟨</div></div><div id="slotResult" class="result-card-mobile"><strong id="slotResultTitle">회전 준비 완료</strong><span id="slotResultDetail">3개가 같으면 가상 당첨</span></div><div class="bet-box"><label for="slotWager">가상 베팅금</label><div class="bet-input-row"><input id="slotWager" type="number" min="100" step="100" value="1000" inputmode="numeric"></div><div class="quick-bets"><button data-slot-bet="1000" type="button">1천</button><button data-slot-bet="10000" type="button">1만</button><button data-slot-bet="100000" type="button">10만</button><button data-slot-bet="all" type="button">올인</button></div></div><button id="spinButton" class="primary-mobile" type="button">슬롯 돌리기</button><div class="paytable"><div><span>돌</span><b>x1 · 12%</b></div><div><span>석탄</span><b>x2 · 6%</b></div><div><span>구리</span><b>x3 · 3.5%</b></div><div><span>철</span><b>x5 · 2%</b></div><div><span>금</span><b>x10 · 1%</b></div><div><span>에메랄드</span><b>x25 · 0.35%</b></div><div><span>다이아</span><b>x50 · 0.1%</b></div><div><span>7</span><b>x100 · 0.04%</b></div><div><span>빨간 7</span><b>x250 · 0.009%</b></div><div><span>황금 7</span><b>x500 · 0.001%</b></div></div><p class="small-note">베팅금은 서버에서 먼저 차감되고 당첨금이 다시 지급됩니다. 모든 금액은 가상 데이터입니다.</p></section></main>
-<nav class="mobile-bottom-nav"><a href="mobile.html"><b>⌂</b>홈</a><a href="wallet-mobile.html"><b>₩</b>지갑</a><a href="vault-mobile.html"><b>▣</b>금고</a><a href="odd-even-mobile.html"><b>⚄</b>홀짝</a><a class="active" href="slot-mobile.html"><b>7</b>슬롯</a></nav></body></html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#190c16">
+  <title>SD슬롯 Mobile</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/slot.png">
+  <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
+  <link rel="stylesheet" href="assets/css/mobile-v107.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/supabase-config.js?v=2" defer></script>
+  <script src="assets/js/auth-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-slot.js?v=7" defer></script>
+</head>
+<body class="mobile-body">
+  <header class="mobile-topbar">
+    <a class="mobile-brand" href="mobile.html"><img src="assets/icons/slot.png" alt=""><span><small>RTP 75%</small><strong>SD슬롯</strong></span></a>
+    <div class="sync-pill" data-mobile-balance>-</div>
+  </header>
+  <main class="mobile-main"><section class="app-panel">
+    <div class="page-heading"><img src="assets/icons/slot.png" alt=""><div><span class="eyebrow-mobile">ONLINE SLOT</span><h1>SD슬롯</h1><p>PC Stage 7과 같은 확률·배당을 서버에서 계산합니다.</p></div></div>
+    <div id="slotStatus" class="status-mobile" hidden></div>
+    <div class="slot-stage"><div class="slot-reel">7</div><div class="slot-reel">💎</div><div class="slot-reel">🟨</div></div>
+    <div id="slotResult" class="result-card-mobile"><strong id="slotResultTitle">회전 준비 완료</strong><span id="slotResultDetail">3개가 같으면 가상 당첨</span></div>
+    <div class="bet-box">
+      <label for="slotWager">가상 베팅금</label>
+      <div class="bet-input-row"><input id="slotWager" type="number" min="100" step="100" value="1000" inputmode="numeric"></div>
+      <div class="quick-bets quick-bets-five">
+        <button data-slot-bet="1000" type="button">+1천</button>
+        <button data-slot-bet="10000" type="button">+1만</button>
+        <button data-slot-bet="100000" type="button">+10만</button>
+        <button data-slot-bet="all" type="button">올인</button>
+        <button data-slot-bet="reset" class="reset-bet" type="button">초기화</button>
+      </div>
+    </div>
+    <button id="spinButton" class="primary-mobile" type="button">슬롯 돌리기</button>
+    <div class="paytable">
+      <div><span>돌</span><b>x1 · 12%</b></div><div><span>석탄</span><b>x2 · 6%</b></div>
+      <div><span>구리</span><b>x3 · 3.5%</b></div><div><span>철</span><b>x5 · 2%</b></div>
+      <div><span>금</span><b>x10 · 1%</b></div><div><span>에메랄드</span><b>x25 · 0.35%</b></div>
+      <div><span>다이아</span><b>x50 · 0.1%</b></div><div><span>7</span><b>x100 · 0.04%</b></div>
+      <div><span>빨간 7</span><b>x250 · 0.009%</b></div><div><span>황금 7</span><b>x500 · 0.001%</b></div>
+    </div>
+    <p class="small-note">빠른 베팅 버튼은 누를 때마다 금액이 더해집니다.<br>모든 금액은 가상 데이터입니다.</p>
+  </section></main>
+  <nav class="mobile-bottom-nav"></nav>
+</body>
+</html>

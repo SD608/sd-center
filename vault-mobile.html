@@ -9,55 +9,57 @@
   <link rel="icon" href="assets/icons/vault.png">
   <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
   <link rel="stylesheet" href="assets/css/mobile-vault.css?v=2">
+  <link rel="stylesheet" href="assets/css/mobile-v107.css?v=1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/supabase-config.js?v=2" defer></script>
   <script src="assets/js/auth-common.js?v=2" defer></script>
   <script src="assets/js/mobile-common.js?v=2" defer></script>
-  <script src="assets/js/mobile-vault.js?v=5" defer></script>
+  <script src="assets/js/mobile-vault.js?v=7" defer></script>
 </head>
 <body class="mobile-body">
   <header class="mobile-topbar">
-    <a class="mobile-brand" href="mobile.html">
-      <img src="assets/icons/vault.png" alt="">
-      <span><small>VIRTUAL GOLD</small><strong>SD금고</strong></span>
-    </a>
+    <a class="mobile-brand" href="mobile.html"><img src="assets/icons/vault.png" alt=""><span><small>VIRTUAL GOLD</small><strong>SD금고</strong></span></a>
     <button id="lockVaultButton" class="icon-button" type="button">잠금</button>
   </header>
-
   <main class="mobile-main">
     <section class="app-panel">
       <div class="page-heading">
         <img src="assets/icons/vault.png" alt="">
-        <div>
-          <span class="eyebrow-mobile">SECURE VAULT</span>
-          <h1>내 가상금고</h1>
-          <p>잔액을 고정 가상 시세 1돈 826,000원으로 환산합니다.</p>
-        </div>
+        <div><span class="eyebrow-mobile">SECURE VAULT</span><h1>내 가상금고</h1><p>지갑으로 직접 구매한 가상 금괴만 금고에 보관됩니다.</p></div>
       </div>
-
       <div id="vaultStatus" class="status-mobile" hidden></div>
 
       <a class="npc-vault-entry" href="npc-vault-mobile.html">
         <img src="assets/icons/npc-vault.svg" alt="">
-        <span><strong>NPC 금고 따기</strong><small>진동을 따라 번호 3개를 맞추고 가상 보상을 획득</small></span>
-        <b>도전</b>
+        <span><strong>NPC 금고 따기</strong><small>진동을 따라 번호 3개를 맞추고 가상 보상을 획득</small></span><b>도전</b>
       </a>
 
       <div class="vault-door-wrap">
-        <div id="vaultDoor" class="vault-door">
-          <div class="vault-wheel"></div>
-          <div class="vault-handle"></div>
-        </div>
+        <div id="vaultDoor" class="vault-door"><div class="vault-wheel"></div><div class="vault-handle"></div></div>
         <div id="goldRoom" class="gold-room">
           <div class="gold-summary">
-            <span>금괴 개수</span>
-            <strong id="goldCount">0개</strong>
+            <span>보유 금괴</span><strong id="goldCount">0개</strong>
             <span>총 가상 금 중량</span>
             <button id="goldWeight" class="gold-weight-toggle" type="button" aria-label="현재 g 단위. 눌러서 kg로 변경">0g</button>
             <span class="gold-unit-hint">숫자를 눌러 g ↔ kg 변환</span>
             <span>금괴 1개 = 3.75g</span>
           </div>
           <div id="goldGrid" class="gold-grid"></div>
+
+          <section class="vault-purchase">
+            <h3>가상 금괴 구매</h3>
+            <p>금괴 1개(3.75g) = 826,000원 · 구매한 금만 금고 자산으로 저장됩니다.</p>
+            <div class="gold-stepper">
+              <button id="goldMinus" type="button">−</button>
+              <input id="goldBuyBars" type="number" min="1" max="10000" step="1" value="1" inputmode="numeric">
+              <button id="goldPlus" type="button">+</button>
+            </div>
+            <div class="gold-buy-summary">
+              <div><span>구매 수량</span><strong id="goldBuyCount">1개</strong></div>
+              <div><span>필요 금액</span><strong id="goldBuyCost">826,000원</strong></div>
+            </div>
+            <button id="buyGoldButton" class="primary-mobile" type="button">금 구매</button>
+          </section>
         </div>
       </div>
 
@@ -76,16 +78,9 @@
         <button id="unlockVaultButton" class="primary-mobile" type="button">금고 열기</button>
       </section>
 
-      <p class="small-note">실제 금을 구매하거나 보관하는 서비스가 아닙니다.<br>표시 금은 가상 잔액의 시각화입니다.</p>
+      <p class="small-note">실제 금을 구매하거나 보관하는 서비스가 아닙니다.<br>SD 게임 안에서만 사용하는 가상 금 보관 시스템입니다.</p>
     </section>
   </main>
-
-  <nav class="mobile-bottom-nav">
-    <a href="mobile.html"><b>⌂</b>홈</a>
-    <a href="wallet-mobile.html"><b>₩</b>지갑</a>
-    <a class="active" href="vault-mobile.html"><b>▣</b>금고</a>
-    <a href="odd-even-mobile.html"><b>⚄</b>홀짝</a>
-    <a href="slot-mobile.html"><b>7</b>슬롯</a>
-  </nav>
+  <nav class="mobile-bottom-nav"></nav>
 </body>
 </html>

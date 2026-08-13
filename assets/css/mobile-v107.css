@@ -1,0 +1,120 @@
+/* SD종합센터 Mobile v1.0.7 additions */
+.quick-bets.quick-bets-five{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+}
+.quick-bets .reset-bet{
+  color:#ffb0bd;
+  background:rgba(255,100,124,.08);
+  border-color:rgba(255,100,124,.22);
+}
+.round-controls{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:14px;
+}
+.round-controls button{
+  min-height:52px;
+  border:0;
+  border-radius:14px;
+  color:#fff;
+  font-weight:900;
+}
+.roll-button{background:linear-gradient(135deg,#7653f7,#9d63ff)}
+.stop-button{background:linear-gradient(135deg,#e2653c,#ff9c45)}
+.hidden-die{
+  background:linear-gradient(#1b2233,#101522);
+  color:#8fa2c7;
+  border:1px solid rgba(255,255,255,.08);
+}
+.choice-grid[hidden], .round-controls button[hidden]{display:none!important}
+.phase-chip{
+  display:inline-flex;
+  margin:0 auto 9px;
+  padding:6px 10px;
+  border-radius:99px;
+  color:#a9bfff;
+  background:rgba(93,140,255,.11);
+  border:1px solid rgba(93,140,255,.2);
+  font-size:10px;
+  font-weight:900;
+}
+.vault-purchase{
+  margin-top:16px;
+  padding:15px;
+  border:1px solid rgba(255,204,88,.22);
+  border-radius:17px;
+  background:rgba(255,204,88,.055);
+}
+.vault-purchase h3{margin:0 0 6px;font-size:15px}
+.vault-purchase p{margin:0;color:#b9a96f;font-size:10px;line-height:1.5}
+.gold-buy-summary{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:12px;
+}
+.gold-buy-summary div{
+  padding:10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.045);
+}
+.gold-buy-summary span{display:block;color:#a99d75;font-size:9px}
+.gold-buy-summary strong{display:block;margin-top:4px;color:#ffe28a;font-size:15px}
+.gold-stepper{
+  display:grid;
+  grid-template-columns:48px 1fr 48px;
+  gap:8px;
+  margin-top:10px;
+}
+.gold-stepper button{
+  border:1px solid rgba(255,213,92,.28);
+  border-radius:12px;
+  background:rgba(255,213,92,.08);
+  color:#ffe28a;
+  font-weight:1000;
+}
+.gold-stepper input{
+  width:100%;
+  height:46px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.1);
+  background:#0a1020;
+  color:#fff;
+  text-align:center;
+  font-weight:900;
+}
+.bitcoin-card{
+  padding:22px;
+  border-radius:24px;
+  border:1px solid rgba(255,168,52,.26);
+  background:radial-gradient(circle at 100% 0,rgba(255,166,35,.18),transparent 42%),rgba(16,24,43,.9);
+}
+.bitcoin-card .btc-amount{
+  display:block;
+  margin-top:12px;
+  font-size:34px;
+  letter-spacing:-.04em;
+  color:#ffbd52;
+}
+.bitcoin-meta{
+  display:grid;
+  gap:8px;
+  margin-top:18px;
+}
+.bitcoin-meta div{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 0;
+  border-top:1px solid rgba(255,255,255,.08);
+  font-size:11px;
+}
+.bitcoin-meta span{color:#9ca9c6}
+.bitcoin-meta strong{text-align:right}
+.mobile-app-card.bitcoin{
+  background:linear-gradient(145deg,rgba(247,147,26,.19),rgba(31,23,15,.96));
+}
+@media(max-width:520px){
+  .quick-bets.quick-bets-five{grid-template-columns:repeat(3,1fr)}
+}
