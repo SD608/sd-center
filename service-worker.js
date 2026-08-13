@@ -1,11 +1,10 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v10-107-pc-mobile";
+const CACHE_NAME = "sd608-mobile-v10-security-107";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
   "./vault-mobile.html",
   "./npc-vault-mobile.html",
-  "./bitcoin-mobile.html",
   "./update/version.json",
   "./odd-even-mobile.html",
   "./slot-mobile.html",
@@ -18,7 +17,6 @@ const APP_SHELL = [
   "./assets/css/mobile-nav-v2.css?v=1",
   "./assets/css/mobile-update.css?v=1",
   "./assets/css/mobile-vault.css?v=2",
-  "./assets/css/mobile-v107.css?v=1",
   "./assets/css/npc-vault-mobile.css?v=1",
   "./assets/css/sdcoin-mobile.css?v=3",
   "./assets/css/sdcoin-home-card.css?v=3",
@@ -26,10 +24,7 @@ const APP_SHELL = [
   "./assets/js/auth-common.js?v=2",
   "./assets/js/mobile-common.js?v=2",
   "./assets/js/mobile-native-update.js?v=1",
-  "./assets/js/mobile-vault.js?v=7",
-  "./assets/js/mobile-bitcoin.js?v=1",
-  "./assets/js/mobile-odd-even.js?v=7",
-  "./assets/js/mobile-slot.js?v=7",
+  "./assets/js/mobile-vault.js?v=5",
   "./assets/js/npc-vault-mobile.js?v=1",
   "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
@@ -37,7 +32,6 @@ const APP_SHELL = [
   "./assets/icons/wallet.png",
   "./assets/icons/vault.png",
   "./assets/icons/npc-vault.svg",
-  "./assets/icons/bitcoin.svg",
   "./assets/icons/odd-even.png",
   "./assets/icons/slot.png",
   "./assets/icons/sdcoin.svg",
@@ -48,28 +42,59 @@ const APP_SHELL = [
   "./assets/icons/coins/kng.svg",
   "./assets/icons/coins/sdc.svg"
 ];
+
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();
 });
+
 self.addEventListener("activate", (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))));
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+    ))
+  );
   self.clients.claim();
 });
+
+async function fetchAndRefreshCache(request) {
+  const response = await fetch(request);
+  if (response.ok) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  }
+  return response;
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // HTML 이동은 항상 네트워크 우선.
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(async () => (await caches.match(request)) || caches.match("./offline.html")));
+    event.respondWith(
+      fetch(request).catch(async () => (await caches.match(request)) || caches.match("./offline.html"))
+    );
     return;
   }
-  event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-    if (response.ok) {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-    }
-    return response;
-  })));
+
+  // JS/CSS/JSON은 네트워크 우선으로 바꿉니다.
+  // 기존 cache-first 때문에 Ctrl+F5 전까지 오래된 로그인/UI 코드가 남는 문제를 방지합니다.
+  const networkFirst = request.destination === "script"
+    || request.destination === "style"
+    || url.pathname.endsWith(".json");
+
+  if (networkFirst) {
+    event.respondWith(
+      fetchAndRefreshCache(request).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // 이미지 등 정적 자산은 기존처럼 캐시 우선.
+  event.respondWith(
+    caches.match(request).then((cached) => cached || fetchAndRefreshCache(request))
+  );
 });

@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     const session = await auth.requireSession();
     if (!session) return;
-
     const [migrationResult, deviceResult, profileResult] = await Promise.all([
       auth.client.from("wallet_migrations")
         .select("status,migrated_balance,created_at,reviewed_at,rejection_reason")
@@ -18,7 +17,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       auth.client.rpc("list_sd_link_devices"),
       auth.client.from("profiles").select("role").single(),
     ]);
-
     if (migrationResult.error) throw migrationResult.error;
     if (deviceResult.error) throw deviceResult.error;
     if (profileResult.error) throw profileResult.error;
@@ -26,13 +24,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const isAdmin = profileResult.data?.role === "admin";
     const migrationLink = document.getElementById("adminMigrationLink");
     const inviteLink = document.getElementById("adminInviteLink");
+    const securityLink = document.getElementById("adminSecurityLink");
     if (migrationLink) migrationLink.hidden = !isAdmin;
     if (inviteLink) inviteLink.hidden = !isAdmin;
-
+    if (securityLink) securityLink.hidden = !isAdmin;
     const migration = migrationResult.data;
     const devices = (deviceResult.data || []).filter((item) => !item.revoked_at);
     count.textContent = `${devices.length}대 연결됨`;
-
     if (!migration) {
       badge.textContent = "미신청";
       badge.className = "migration-badge pending";

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="SD608 Online 보안 및 회원 접속 관리" />
+<meta name="theme-color" content="#0b1224" />
+<title>보안·회원 관리 · SD608 Online</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="favicon.ico" />
+<link rel="stylesheet" href="assets/css/style.css?v=online2" />
+<link rel="stylesheet" href="assets/css/sdlink.css?v=1" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="assets/js/supabase-config.js?v=2" defer></script>
+<script src="assets/js/auth-common.js?v=security1" defer></script>
+<script src="assets/js/admin-security-page.js?v=security1" defer></script>
+<style>
+.security-main{padding:72px 0 110px}.security-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}.security-hero h1{margin:8px 0;font-size:clamp(2.2rem,5vw,4.5rem);letter-spacing:-.055em;line-height:1.06}.security-hero p{margin:0;color:var(--muted)}
+.security-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 22px}.security-stat{padding:20px;border:1px solid var(--line);border-radius:20px;background:rgba(15,27,48,.76)}.security-stat span{display:block;color:#8998af;font-size:.76rem}.security-stat strong{display:block;margin-top:8px;color:#eef5ff;font-size:1.65rem}
+.security-card{margin-top:18px;padding:24px;border:1px solid var(--line);border-radius:24px;background:rgba(15,27,48,.76)}.security-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.security-head h2{margin:0}.security-head small{color:#7f90a9}
+.security-list{display:grid;gap:10px;margin-top:16px}.security-row{display:grid;grid-template-columns:minmax(160px,1fr) minmax(170px,1.1fr) minmax(160px,1fr) auto;gap:14px;align-items:center;padding:15px 16px;border:1px solid rgba(153,181,226,.11);border-radius:17px;background:rgba(255,255,255,.025)}.security-primary{display:flex;flex-direction:column;gap:4px}.security-primary strong{color:#e5efff}.security-primary span,.security-meta{color:#8b9bb2;font-size:.76rem;word-break:break-word}.security-meta{display:flex;flex-direction:column;gap:4px}.security-pill{width:max-content;padding:5px 9px;border-radius:999px;font-size:.7rem;font-weight:900}.security-pill.online{background:rgba(79,211,145,.13);color:#78e4ac}.security-pill.warn{background:rgba(255,177,66,.14);color:#ffc46e}.security-pill.offline{background:rgba(145,159,183,.11);color:#9caac0}.security-pill.login{background:rgba(91,139,255,.14);color:#9abaff}.security-pill.signup{background:rgba(79,211,145,.13);color:#78e4ac}.security-pill.logout{background:rgba(145,159,183,.11);color:#aab6c7}.security-pill.danger{background:rgba(255,98,108,.13);color:#ff9aa1}
+.security-empty{padding:34px;text-align:center;color:#8290a7;border:1px dashed var(--line);border-radius:17px}.automation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}.automation-item{padding:16px;border:1px solid rgba(153,181,226,.11);border-radius:16px;background:rgba(255,255,255,.025)}.automation-item strong{display:block;color:#dce8ff}.automation-item span{display:block;margin-top:5px;color:#8798b1;font-size:.78rem;line-height:1.55}.privacy-note{margin-top:16px;padding:15px 17px;border:1px solid rgba(92,141,255,.18);border-radius:16px;background:rgba(68,111,211,.07);color:#9cacc2;font-size:.78rem;line-height:1.6}
+@media(max-width:900px){.security-summary{grid-template-columns:1fr 1fr}.security-row{grid-template-columns:1fr 1fr}.security-hero{align-items:flex-start;flex-direction:column}}@media(max-width:600px){.security-summary,.automation-grid,.security-row{grid-template-columns:1fr}.security-main{padding-top:48px}}
+</style>
+</head>
+<body class="auth-body">
+<div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
+<header class="site-header auth-site-header">
+<a class="brand" href="index.html"><img src="assets/icons/center.png" alt="" /><span>SD종합센터</span></a>
+<nav class="nav-links"><a href="account.html">내 지갑</a><a href="admin-invites.html">초대코드</a><a href="admin-migrations.html">이전 승인</a></nav>
+<div class="header-account"><button id="logoutButton" class="header-login" type="button">로그아웃</button></div>
+</header>
+<main class="security-main section-shell">
+<section class="security-hero"><div><span class="section-kicker">ADMIN · SECURITY</span><h1>보안·회원 관리</h1><p>현재 접속자, 최근 로그인, 회원과 기기 변화를 한 화면에서 확인합니다.</p></div><button id="refreshButton" class="secondary-button" type="button">새로고침</button></section>
+<div id="pageStatus" class="form-status account-status" hidden aria-live="polite"></div>
+<section class="security-summary">
+<article class="security-stat"><span>현재 접속</span><strong id="onlineCount">0명</strong></article>
+<article class="security-stat"><span>전체 회원</span><strong id="memberCount">-</strong></article>
+<article class="security-stat"><span>최근 24시간 로그인</span><strong id="login24Count">-</strong></article>
+<article class="security-stat"><span>브라우저/앱 기기</span><strong id="deviceCount">-</strong></article>
+</section>
+<section class="security-card"><div class="security-head"><div><span class="section-kicker">LIVE PRESENCE</span><h2>현재 접속자</h2></div><small>Realtime Presence</small></div><div id="onlineList" class="security-list"><div class="security-empty">접속 상태를 확인하는 중입니다.</div></div></section>
+<section class="security-card"><div class="security-head"><div><span class="section-kicker">MEMBERS</span><h2>전체 회원</h2></div><small>마지막 로그인·기기</small></div><div id="memberList" class="security-list"><div class="security-empty">회원 정보를 불러오는 중입니다.</div></div></section>
+<section class="security-card"><div class="security-head"><div><span class="section-kicker">AUTH AUDIT</span><h2>최근 인증 기록</h2></div><small>로그인·가입·로그아웃</small></div><div id="eventList" class="security-list"><div class="security-empty">인증 기록을 불러오는 중입니다.</div></div><div class="privacy-note">정밀 GPS 위치는 수집하지 않습니다. IP는 Supabase Auth 감사 로그가 기록한 보안 정보만 관리자에게 표시하며, 접속 화면에서는 플랫폼·브라우저·시간대 정도만 확인합니다.</div></section>
+<section class="security-card"><div class="security-head"><div><span class="section-kicker">AUTOMATION</span><h2>회원가입 자동 처리</h2></div></div><div class="automation-grid"><div class="automation-item"><strong>초대코드 검증 · 자동</strong><span>미사용·유효기간·중지 여부를 서버에서 확인하고 정상 코드만 가입시킵니다.</span></div><div class="automation-item"><strong>가상계좌 생성 · 자동</strong><span>회원가입이 완료되면 회원당 가상계좌 1개를 자동 생성합니다.</span></div><div class="automation-item"><strong>250,000원 지급 · 자동</strong><span>신규 가입 가상 지원금과 거래 기록이 자동 생성됩니다.</span></div><div class="automation-item"><strong>금고 생성 · 자동</strong><span>기본 금고 데이터가 자동 생성되고 초대코드는 사용 완료 처리됩니다.</span></div><div class="automation-item"><strong>초대코드 대량 발급 · 자동</strong><span>초대코드 관리에서 최대 여러 개를 한 번에 만들고 메모·만료일을 관리할 수 있습니다.</span></div><div class="automation-item"><strong>기존 PC 잔액 이전 · 관리자 확인 유지</strong><span>로컬 데이터 변조 위험 때문에 기존 PC 잔액 이전만 직접 승인하도록 유지합니다.</span></div></div></section>
+</main>
+</body>
+</html>
