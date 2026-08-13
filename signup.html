@@ -8,7 +8,7 @@
   <script src="assets/js/auth-common.js?v=2" defer></script>
   <script src="assets/js/signup-page.js?v=20260813-email2" defer></script>
   <style>
-    .signup-progress{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:18px 0 22px}.signup-progress span{height:6px;border-radius:999px;background:rgba(148,163,184,.22)}.signup-progress span.active{background:#5b8cff}.signup-step[hidden]{display:none!important}.signup-step-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.signup-step-title strong{font-size:1.05rem}.signup-step-title small{color:#8fa3c7}.signup-actions{display:flex;gap:10px;margin-top:14px}.signup-actions>*{flex:1}.signup-code-input{text-align:center;letter-spacing:.22em;font-size:1.35rem;font-weight:800}.signup-email-box{padding:12px 14px;border:1px solid rgba(148,163,184,.22);border-radius:14px;background:rgba(15,23,42,.34);word-break:break-all;margin-bottom:14px}.signup-help{font-size:.9rem;color:#9fb0cd;line-height:1.55}.signup-complete{padding:18px;border-radius:18px;background:rgba(37,99,235,.12);border:1px solid rgba(96,165,250,.3)}
+    .signup-progress{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:18px 0 22px}.signup-progress span{height:6px;border-radius:999px;background:rgba(148,163,184,.22)}.signup-progress span.active{background:#5b8cff}.signup-step[hidden]{display:none!important}.signup-step-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.signup-step-title strong{font-size:1.05rem}.signup-step-title small{color:#8fa3c7}.signup-actions{display:flex;gap:10px;margin-top:14px}.signup-actions>*{flex:1}.signup-code-input{text-align:center;letter-spacing:.22em;font-size:1.35rem;font-weight:800}.signup-email-box{padding:12px 14px;border:1px solid rgba(148,163,184,.22);border-radius:14px;background:rgba(15,23,42,.34);word-break:break-all;margin-bottom:14px}.signup-help{font-size:.9rem;color:#9fb0cd;line-height:1.55}.signup-complete{padding:18px;border-radius:18px;background:rgba(37,99,235,.12);border:1px solid rgba(96,165,250,.3)}.signup-complete-start{display:flex;justify-content:center;margin-top:18px}.signup-complete-start .primary-button{display:inline-flex;align-items:center;justify-content:center;width:min(100%,320px);text-align:center}
   </style>
 </head><body class="auth-body"><div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
 <header class="site-header auth-site-header">
@@ -69,7 +69,7 @@
 
     <section id="completeStep" class="signup-step" data-step="5" hidden>
       <div class="signup-complete"><strong>회원가입 완료</strong><p id="completeSummary" class="signup-help"></p></div>
-      <a class="primary-button auth-submit" href="account.html" style="display:block;text-align:center;margin-top:14px">SD종합센터 시작</a>
+      <div class="signup-complete-start"><a class="primary-button auth-submit" href="account.html">SD종합센터 시작</a></div>
     </section>
 
     <p class="auth-switch">이미 계정이 있나요? <a href="login.html">로그인</a></p>

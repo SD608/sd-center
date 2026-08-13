@@ -6,16 +6,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const refresh = document.getElementById("refreshAccount");
   const logout = document.getElementById("logoutButton");
   const list = document.getElementById("transactionList");
+  const showDelete = document.getElementById("showDeleteAccount");
+  const deleteForm = document.getElementById("deleteAccountForm");
+  const deletePassword = document.getElementById("deletePassword");
+  const deleteConfirmText = document.getElementById("deleteConfirmText");
+  const deleteButton = document.getElementById("deleteAccountButton");
+  let currentSession = null;
+  let currentProfile = null;
   if (!auth) return;
 
   async function loadAccount() {
     auth.clearStatus(status);
-    refresh.disabled = true;
+    if (refresh) refresh.disabled = true;
     try {
       const session = await auth.requireSession();
       if (!session) return;
+      currentSession = session;
       document.getElementById("accountEmail").textContent = session.user.email || "-";
-
       const [profileResult, walletResult, txResult] = await Promise.all([
         auth.client.from("profiles").select("nickname,status,role,created_at").single(),
         auth.client.from("wallets").select("id,account_number,balance,created_at,updated_at").single(),
@@ -27,9 +34,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (profileResult.error) throw profileResult.error;
       if (walletResult.error) throw walletResult.error;
       if (txResult.error) throw txResult.error;
-
       const profile = profileResult.data;
       const wallet = walletResult.data;
+      currentProfile = profile;
       document.getElementById("accountNickname").textContent = profile.nickname;
       document.getElementById("welcomeName").textContent = `${profile.nickname}님`;
       document.getElementById("accountNumber").textContent = wallet.account_number;
@@ -38,7 +45,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("accountState").textContent = profile.status === "active" ? "정상" : "이용 정지";
       document.getElementById("accountRole").textContent = profile.role === "admin" ? "관리자" : "일반 회원";
       document.getElementById("lastSynced").textContent = auth.formatDate(wallet.updated_at);
-
+      if (profile.role === "admin" && showDelete) {
+        showDelete.disabled = true;
+        showDelete.textContent = "관리자 계정 삭제 잠금";
+      }
       list.replaceChildren();
       const transactions = txResult.data || [];
       if (!transactions.length) {
@@ -54,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           const title = document.createElement("strong");
           title.textContent = tx.description;
           const meta = document.createElement("span");
-          meta.textContent = `${auth.formatDate(tx.created_at)} · ${tx.platform.toUpperCase()}`;
+          meta.textContent = `${auth.formatDate(tx.created_at)} · ${String(tx.platform || "web").toUpperCase()}`;
           info.append(title, meta);
           const amount = document.createElement("div");
           amount.className = `transaction-amount ${tx.amount > 0 ? "plus" : "minus"}`;
@@ -71,7 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
       auth.setStatus(status, auth.messageForError(error), "error");
     } finally {
-      refresh.disabled = false;
+      if (refresh) refresh.disabled = false;
     }
   }
 
@@ -85,5 +95,51 @@ document.addEventListener("DOMContentLoaded", async () => {
       logout.disabled = false;
     }
   });
+
+  showDelete?.addEventListener("click", () => {
+    if (currentProfile?.role === "admin") return;
+    deleteForm.hidden = !deleteForm.hidden;
+    showDelete.textContent = deleteForm.hidden ? "계정 삭제하기" : "삭제 취소";
+    if (!deleteForm.hidden) deletePassword?.focus();
+  });
+
+  deleteForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    auth.clearStatus(status);
+    if (!currentSession?.user?.email) {
+      return auth.setStatus(status, "로그인 정보를 다시 불러온 뒤 시도하세요.", "error");
+    }
+    if (currentProfile?.role === "admin") {
+      return auth.setStatus(status, "관리자 계정은 이 화면에서 삭제할 수 없습니다.", "error");
+    }
+    const password = String(deletePassword?.value || "");
+    const confirmText = String(deleteConfirmText?.value || "").replace(/\s+/g, "");
+    if (!password) return auth.setStatus(status, "현재 비밀번호를 입력하세요.", "error");
+    if (confirmText !== "계정삭제") {
+      return auth.setStatus(status, "확인 문구에 계정삭제를 정확히 입력하세요.", "error");
+    }
+    const finalConfirm = window.confirm("계정을 영구 삭제합니다. SD 가상계좌와 게임 데이터도 함께 삭제되며 복구할 수 없습니다. 계속할까요?");
+    if (!finalConfirm) return;
+
+    deleteButton.disabled = true;
+    deleteButton.textContent = "삭제 중…";
+    try {
+      const { error: reauthError } = await auth.client.auth.signInWithPassword({
+        email: currentSession.user.email,
+        password
+      });
+      if (reauthError) throw reauthError;
+      const { error } = await auth.client.rpc("delete_my_sd_account");
+      if (error) throw error;
+      await auth.client.auth.signOut({ scope: "local" }).catch(() => {});
+      localStorage.removeItem("sd_pending_email");
+      location.replace("index.html?account=deleted");
+    } catch (error) {
+      auth.setStatus(status, auth.messageForError(error), "error");
+      deleteButton.disabled = false;
+      deleteButton.textContent = "영구 삭제";
+    }
+  });
+
   loadAccount();
 });
