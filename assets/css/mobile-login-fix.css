@@ -1,0 +1,31 @@
+/* SD608 homepage mobile login visibility fix
+   Loaded after style.css so the legacy max-width rule no longer hides 로그인. */
+@media (max-width: 760px) {
+  .header-account a.header-login[data-auth-guest] {
+    display: inline-flex !important;
+  }
+
+  .header-actions-group,
+  .header-account {
+    gap: 6px;
+  }
+
+  .header-login,
+  .header-signup {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: .72rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 380px) {
+  .site-header .brand span {
+    display: none;
+  }
+
+  .site-header .brand img {
+    width: 36px;
+    height: 36px;
+  }
+}
