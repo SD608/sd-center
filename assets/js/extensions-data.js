@@ -4,15 +4,15 @@ window.SD_EXTENSION_PACKS = [
     id: "sd-logistics-center",
     name: "SD 물류센터",
     stage: "Season 0",
-    version: "v1.0.1",
+    version: "v1.0.4",
     category: "경영 확장팩",
-    icon: "assets/icons/center.png",
+    icon: "assets/icons/logistics-center.png",
     fileName: "SDLogisticsCenter_Season0_Desktop.zip",
     downloadUrl: "downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
     description: "SD종합센터에서 실행하는 물류 경영 확장팩입니다. 운송 계약, 차량 운영, S등급 이후 물류 본부와 기사 자동수익을 제공하며 선택한 SD지갑 가상계좌와 직접 연동됩니다.",
     requirements: "SD종합센터 v2.1.1 이상 · SD지갑 · Windows 10/11",
     updatedAt: "2026-08-14",
-    tags: ["SD지갑 연동", "종합센터 실행", "UI 수정"],
+    tags: ["SD지갑 연동", "종합센터 실행", "물류 전용 아이콘"],
     featured: true
   },
   {
