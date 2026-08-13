@@ -1,13 +1,13 @@
 {
-  "policyVersion": 1,
-  "updatedAt": "2026-08-14T05:20:00+09:00",
+  "policyVersion": 2,
+  "updatedAt": "2026-08-14T05:33:00+09:00",
   "required": true,
   "apps": {
     "sd-bitcoin-miner-desktop": {
-      "required": true,
+      "required": false,
       "minVersion": "1.2.0",
       "downloadUrl": "https://sd608.github.io/sd-center/",
-      "message": "비트코인 채굴 경제 밸런스 패치가 필수입니다. 구버전에서는 채굴을 진행할 수 없습니다."
+      "message": "비트코인 채굴장은 이번 필수 업데이트 대상이 아닙니다."
     },
     "sd-logistics-center-desktop": {
       "required": true,
