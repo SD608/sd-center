@@ -2,6 +2,13 @@
   const KEY = "sd_logistics_center_web_progress_v100";
   const OLD_KEY = "sd_logistics_center_expansion_season0_v101";
 
+  // Economy Balance v2
+  const DIRECT_PAYOUT_MULTIPLIER = 0.15;
+  const DRIVER_PAYOUT_MULTIPLIER = 0.10;
+  const DELIVERY_DURATION_MULTIPLIER = 4;
+  const DRIVER_DURATION_MULTIPLIER = 4;
+  const FAST_DELIVERY_BONUS_MULTIPLIER = 1.10;
+
   // 적재 스택: 소형 1 / 중형 3 / 대형 6 / 초대형 12
   // 작은 차량일수록 속도가 빠릅니다.
   const vehicleTypes = [
@@ -371,7 +378,7 @@
   }
 
   function businessRevenueMultiplier(){
-    let mult=1;
+    let mult=DIRECT_PAYOUT_MULTIPLIER;
     if(state.warehouseOwned)mult*=1.10;
     if(state.headquartersLevel>=10)mult*=1.10;
     mult*=1+(state.hqPerks.directIncome||0)*0.05;
@@ -379,7 +386,7 @@
   }
 
   function driverIncomeMultiplier(){
-    let mult=1;
+    let mult=DRIVER_PAYOUT_MULTIPLIER;
     if(state.warehouseOwned)mult*=1.10;
     if(state.headquartersLevel>=10)mult*=1.10;
     mult*=1+(state.hqPerks.driverIncome||0)*0.10;
@@ -388,7 +395,7 @@
 
   function driverMissionDuration(mission){
     const reduction=Math.min(0.45,(state.hqPerks.driverSpeed||0)*0.08);
-    return Math.max(6,Math.round(mission.seconds*(1-reduction)));
+    return Math.max(12,Math.round(mission.seconds*DRIVER_DURATION_MULTIPLIER*(1-reduction)));
   }
 
   function driverMissionPayout(mission){
@@ -937,12 +944,12 @@
     let eventText="정상 운송 완료";
     let finalReward=revenueBase;
     if(eventRoll>.90){
-      finalReward=Math.round(revenueBase*1.18);
-      eventText="빠른 배송 · 보너스 18%";
+      finalReward=Math.round(revenueBase*FAST_DELIVERY_BONUS_MULTIPLIER);
+      eventText="빠른 배송 · 보너스 10%";
     }
 
     const baseSeconds=6+Math.ceil(c.requiredStack*.55);
-    const durationMs=Math.round((baseSeconds/speed+Math.random()*4)*1000);
+    const durationMs=Math.round((baseSeconds/speed+Math.random()*4)*DELIVERY_DURATION_MULTIPLIER*1000);
     const startedAt=Date.now();
 
     state.activeDeliveries.push({
