@@ -1,18 +1,43 @@
 <!DOCTYPE html>
-
 <html lang="ko">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <meta content="SD종합센터 본체와 SD슬롯, SD묵찌빠 등 선택형 확장팩을 다운로드하는 공식 페이지" name="description"/>
 <meta content="#0b1224" name="theme-color"/>
 <title>SD종합센터 · 확장팩 다운로드</title><link rel="manifest" href="manifest.webmanifest" />
 <link href="favicon.ico" rel="icon"/>
 <link href="assets/css/style.css?v=online2" rel="stylesheet"/>
+<script>document.documentElement.dataset.sdPlatform=/Android/i.test(navigator.userAgent||"")?"android":"other";</script>
+<style>
+.mobile-install-spotlight{display:none}
+@media (max-width:760px){
+  .header-download{display:none!important}
+  .hero .hero-actions [data-download-link]{display:none!important}
+  .hero .download-meta{display:none!important}
+  .mobile-install-spotlight{display:block;width:calc(100% - 20px);box-sizing:border-box;margin:12px auto 4px;padding:18px;border:1px solid rgba(112,159,255,.28);border-radius:20px;background:linear-gradient(135deg,rgba(34,73,148,.96),rgba(16,35,72,.98));box-shadow:0 18px 48px rgba(0,0,0,.3)}
+  .mobile-install-head{display:flex;align-items:center;gap:13px}
+  .mobile-install-head img{width:54px;height:54px;flex:0 0 auto;border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
+  .mobile-install-copy{min-width:0;display:flex;flex-direction:column}
+  .mobile-install-copy small{color:#8fb4ff;font-size:.66rem;font-weight:900;letter-spacing:.13em}
+  .mobile-install-copy strong{margin-top:2px;color:#fff;font-size:1.08rem;letter-spacing:-.025em}
+  .mobile-install-copy span{margin-top:2px;color:#b7c7df;font-size:.74rem;line-height:1.45}
+  .mobile-install-primary,.mobile-install-secondary{display:flex;width:100%;box-sizing:border-box;align-items:center;justify-content:center;text-decoration:none;text-align:center;font-weight:900;border-radius:15px}
+  .mobile-install-primary{min-height:58px;margin-top:14px;background:linear-gradient(135deg,#65d1ff,#6385ff 78%);color:#fff;box-shadow:0 14px 30px rgba(72,122,255,.32);font-size:1rem}
+  .mobile-install-secondary{min-height:46px;margin-top:9px;border:1px solid rgba(164,190,236,.18);background:rgba(255,255,255,.045);color:#c8d5e8;font-size:.78rem}
+  .mobile-install-note{display:block;margin-top:10px;color:#8192aa;font-size:.68rem;line-height:1.55;text-align:center}
+  html[data-sd-platform="other"] .mobile-install-apk{display:none!important}
+  html[data-sd-platform="android"] .mobile-install-web-primary{display:none!important}
+  html[data-sd-platform="other"] .mobile-install-web-primary{display:flex!important}
+}
+</style>
 <script defer="" src="site-config.js?v=221"></script>
 <script defer="" src="assets/js/extensions-data.js?v=221"></script>
-<script defer="" src="assets/js/app.js?v=221"></script>
-<script defer="True" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script defer="True" src="assets/js/supabase-config.js?v=2"></script><script defer="True" src="assets/js/auth-common.js?v=2"></script><script defer="True" src="assets/js/auth-nav.js?v=1"></script></head>
+<script defer="" src="assets/js/app.js?v=20260813c"></script>
+<script defer="True" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script defer="True" src="assets/js/supabase-config.js?v=2"></script><script defer="True" src="assets/js/auth-common.js?v=2"></script><script defer="True" src="assets/js/auth-nav.js?v=20260813c"></script></head>
 <body>
 <div aria-hidden="true" class="page-glow glow-one"></div>
 <div aria-hidden="true" class="page-glow glow-two"></div>
@@ -27,8 +52,21 @@
 <a href="#install">설치 방법</a>
 <a href="#faq">도움말</a>
 </nav>
-
 <div class="header-actions-group"><div class="header-account"><a class="header-login" data-auth-guest="" href="login.html">로그인</a><a class="header-signup" data-auth-guest="" href="signup.html">회원가입</a><a class="header-signup" data-auth-name="" data-auth-user="" hidden="" href="account.html">내 지갑</a></div><a class="header-download" data-download-link="" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">Windows 다운로드</a></div></header>
+<section class="mobile-install-spotlight" aria-label="SD종합센터 모바일 설치">
+  <div class="mobile-install-head">
+    <img alt="" src="assets/icons/center.png"/>
+    <div class="mobile-install-copy">
+      <small>MOBILE APP</small>
+      <strong>SD종합센터 모바일</strong>
+      <span>Android에서는 앱을 바로 설치하고, 다른 모바일에서는 웹 버전을 바로 열 수 있습니다.</span>
+    </div>
+  </div>
+  <a class="mobile-install-primary mobile-install-apk" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenter-Mobile.apk">Android 앱 설치하기</a>
+  <a class="mobile-install-primary mobile-install-web-primary" href="mobile.html">모바일 웹으로 시작하기</a>
+  <a class="mobile-install-secondary" href="mobile.html">설치 없이 웹으로 사용</a>
+  <small class="mobile-install-note">Android: APK 다운로드 후 브라우저 다운로드 알림에서 파일을 열어 설치하세요.</small>
+</section>
 <main id="top">
 <section class="hero section-shell">
 <div class="hero-copy">
@@ -87,9 +125,9 @@
 <div><strong>로컬 저장</strong><span>시뮬레이션 데이터는 PC에 저장</span></div>
 <div><strong>확장팩 지원</strong><span>ZIP 다운로드 후 센터에 바로 추가</span></div>
 </section>
-
 <section class="online-account-section section-shell" id="online-account">
-<div class="online-account-copy"><span class="section-kicker">SD608 ONLINE · BETA</span><h2>공식 홈페이지에서 SD 계정을 만드세요</h2><p>초대 코드로 가입하면 회원당 가상계좌 1개와 게임용 가상 250,000원이 생성됩니다. 홈페이지에서 잔액과 거래 장부를 확인할 수 있으며, Windows·Android 온라인 앱 연결은 단계적으로 추가됩니다.</p><div class="online-actions"><a class="primary-button" data-auth-guest="" href="signup.html">초대 코드로 회원가입</a><a class="secondary-button" data-auth-guest="" href="login.html">로그인</a><a class="primary-button" data-auth-user="" hidden="" href="account.html">내 가상지갑 열기</a><a class="secondary-button" href="mobile.html">Android·모바일 앱 열기</a></div></div>
+<div class="online-account-copy"><span class="section-kicker">SD608 ONLINE · BETA</span><h2>공식 홈페이지에서 SD 계정을 만드세요</h2><p>초대 코드로 가입하면 회원당 가상계좌 1개와 게임용 가상 250,000원이 생성됩니다.
+홈페이지에서 잔액과 거래 장부를 확인할 수 있으며, Windows·Android 온라인 앱 연결은 단계적으로 추가됩니다.</p><div class="online-actions"><a class="primary-button" data-auth-guest="" href="signup.html">초대 코드로 회원가입</a><a class="secondary-button" data-auth-guest="" href="login.html">로그인</a><a class="primary-button" data-auth-user="" hidden="" href="account.html">내 가상지갑 열기</a><a class="secondary-button" href="mobile.html">Android·모바일 앱 열기</a></div></div>
 <div class="online-feature-grid"><article><strong>1</strong><span>회원당 계좌 1개</span></article><article><strong>25만</strong><span>신규 가상 지원금</span></article><article><strong>15명</strong><span>지인 전용 정원</span></article><article><strong>RLS</strong><span>회원별 데이터 분리</span></article></div>
 </section>
 <section class="apps-section section-shell" id="apps">
