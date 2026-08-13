@@ -11,7 +11,14 @@
 <title>SD종합센터 · 확장팩 다운로드</title><link rel="manifest" href="manifest.webmanifest" />
 <link href="favicon.ico" rel="icon"/>
 <link href="assets/css/style.css?v=online2" rel="stylesheet"/>
-<script>document.documentElement.dataset.sdPlatform=/Android/i.test(navigator.userAgent||"")?"android":"other";</script>
+<script>
+(function(){
+  var ua=navigator.userAgent||"";
+  var isAndroid=/Android/i.test(ua);
+  var isIOS=/iPhone|iPad|iPod/i.test(ua) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+  document.documentElement.dataset.sdPlatform=isAndroid?"android":(isIOS?"ios":"other");
+})();
+</script>
 <style>
 .mobile-install-spotlight{display:none}
 @media (max-width:760px){
@@ -29,15 +36,49 @@
   .mobile-install-primary{min-height:58px;margin-top:14px;background:linear-gradient(135deg,#65d1ff,#6385ff 78%);color:#fff;box-shadow:0 14px 30px rgba(72,122,255,.32);font-size:1rem}
   .mobile-install-secondary{min-height:46px;margin-top:9px;border:1px solid rgba(164,190,236,.18);background:rgba(255,255,255,.045);color:#c8d5e8;font-size:.78rem}
   .mobile-install-note{display:block;margin-top:10px;color:#8192aa;font-size:.68rem;line-height:1.55;text-align:center}
-  html[data-sd-platform="other"] .mobile-install-apk{display:none!important}
-  html[data-sd-platform="android"] .mobile-install-web-primary{display:none!important}
+  .mobile-install-ios{display:none!important}
+  html[data-sd-platform="other"] .mobile-install-apk,html[data-sd-platform="ios"] .mobile-install-apk{display:none!important}
+  html[data-sd-platform="android"] .mobile-install-web-primary,html[data-sd-platform="ios"] .mobile-install-web-primary{display:none!important}
   html[data-sd-platform="other"] .mobile-install-web-primary{display:flex!important}
+  html[data-sd-platform="ios"] .mobile-install-ios{display:flex!important}
+}
+
+/* PC / Galaxy / iPhone beginner installation guide */
+.device-install-guide{padding-top:130px}
+.device-install-guide .guide-intro{max-width:780px;margin-bottom:30px}
+.device-install-guide .guide-intro h2{margin:10px 0 0;font-size:clamp(2rem,4vw,3.3rem);line-height:1.2;letter-spacing:-.045em}
+.device-install-guide .guide-intro p{margin:16px 0 0;color:var(--muted);line-height:1.8}
+.device-guide-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.device-guide-card{display:flex;min-width:0;padding:26px;flex-direction:column;border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(23,38,65,.9),rgba(10,20,37,.94));box-shadow:0 18px 50px rgba(0,0,0,.17)}
+.device-guide-card.recommended{border-color:rgba(91,139,255,.34);box-shadow:0 20px 60px rgba(47,91,194,.16)}
+.device-guide-top{display:flex;align-items:center;gap:14px}
+.device-guide-mark{display:grid;width:48px;height:48px;flex:0 0 auto;place-items:center;border-radius:15px;background:rgba(92,132,244,.14);color:#9ab7ff;font-size:.78rem;font-weight:950;letter-spacing:.04em}
+.device-guide-title small{display:block;color:#7893c4;font-size:.65rem;font-weight:900;letter-spacing:.11em}
+.device-guide-title h3{margin:2px 0 0;font-size:1.2rem;letter-spacing:-.03em}
+.device-guide-sub{min-height:54px;margin:17px 0;color:#8e9db5;font-size:.8rem;line-height:1.7}
+.device-guide-steps{display:grid;margin:0;padding:0;gap:9px;list-style:none}
+.device-guide-steps li{display:flex;min-height:58px;padding:11px 12px;align-items:flex-start;gap:11px;border:1px solid rgba(143,171,218,.09);border-radius:14px;background:rgba(255,255,255,.025)}
+.device-guide-steps b{display:grid;width:28px;height:28px;flex:0 0 auto;place-items:center;border-radius:9px;background:rgba(89,132,245,.14);color:#85aaff;font-size:.74rem}
+.device-guide-steps div{min-width:0}
+.device-guide-steps strong{display:block;color:#dce6f5;font-size:.79rem}
+.device-guide-steps span{display:block;margin-top:2px;color:#7f8da4;font-size:.71rem;line-height:1.55}
+.device-guide-card .guide-action{display:grid;min-height:50px;margin-top:18px;place-items:center;border-radius:14px;background:linear-gradient(135deg,#58c7f5,#5c7df6 75%);color:#fff;font-size:.82rem;font-weight:900}
+.device-guide-card .guide-action.secondary{border:1px solid rgba(140,170,222,.16);background:rgba(255,255,255,.04);color:#cfdbed}
+.device-guide-note{margin-top:18px;padding:20px 22px;border:1px solid rgba(105,152,255,.16);border-radius:19px;background:rgba(26,48,89,.34)}
+.device-guide-note strong{display:block;margin-bottom:6px;color:#dce8ff}
+.device-guide-note p{margin:0;color:#8f9db1;font-size:.78rem;line-height:1.7}
+.device-guide-note code{color:#a9c5ff}
+.device-quick-nav{display:flex;margin-bottom:22px;gap:9px;flex-wrap:wrap}
+.device-quick-nav a{display:inline-flex;min-height:40px;padding:0 14px;align-items:center;border:1px solid rgba(143,171,218,.12);border-radius:12px;background:rgba(255,255,255,.03);color:#b7c5d9;font-size:.75rem;font-weight:850}
+.device-quick-nav a:hover{border-color:rgba(111,156,255,.35);color:#fff}
+@media(max-width:980px){.device-guide-grid{grid-template-columns:1fr}.device-guide-sub{min-height:0}}
+@media(max-width:660px){.device-install-guide{padding-top:95px}.device-guide-card{padding:21px}.device-guide-note{padding:18px}.device-quick-nav a{flex:1;justify-content:center}}
 }
 </style>
 <script defer="" src="site-config.js?v=221"></script>
 <script defer="" src="assets/js/extensions-data.js?v=221"></script>
-<script defer="" src="assets/js/app.js?v=20260813c"></script>
-<script defer="True" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script defer="True" src="assets/js/supabase-config.js?v=2"></script><script defer="True" src="assets/js/auth-common.js?v=2"></script><script defer="True" src="assets/js/auth-nav.js?v=20260813c"></script></head>
+<script defer="" src="assets/js/app.js?v=20260813d"></script>
+<script defer="True" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script defer="True" src="assets/js/supabase-config.js?v=2"></script><script defer="True" src="assets/js/auth-common.js?v=2"></script><script defer="True" src="assets/js/auth-nav.js?v=20260813d"></script></head>
 <body>
 <div aria-hidden="true" class="page-glow glow-one"></div>
 <div aria-hidden="true" class="page-glow glow-two"></div>
@@ -63,9 +104,10 @@
     </div>
   </div>
   <a class="mobile-install-primary mobile-install-apk" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenter-Mobile.apk">Android 앱 설치하기</a>
+  <a class="mobile-install-primary mobile-install-ios" href="#install-iphone">iPhone 설치 방법 보기</a>
   <a class="mobile-install-primary mobile-install-web-primary" href="mobile.html">모바일 웹으로 시작하기</a>
   <a class="mobile-install-secondary" href="mobile.html">설치 없이 웹으로 사용</a>
-  <small class="mobile-install-note">Android: APK 다운로드 후 브라우저 다운로드 알림에서 파일을 열어 설치하세요.</small>
+  <small class="mobile-install-note">Android는 APK 설치, iPhone은 Safari의 홈 화면에 추가 기능을 사용합니다.</small>
 </section>
 <main id="top">
 <section class="hero section-shell">
@@ -182,30 +224,60 @@
 </ol>
 </div>
 </section>
-<section class="install-section section-shell" id="install">
-<div class="install-panel">
-<div class="section-heading compact">
-<span class="section-kicker">INSTALLATION</span>
-<h2>다운로드부터 실행까지</h2>
+<section class="device-install-guide section-shell" id="install">
+<div class="guide-intro">
+<span class="section-kicker">INSTALLATION GUIDE</span>
+<h2>처음이어도 그대로 따라 하면 됩니다</h2>
+<p>사용 중인 기기를 고른 뒤 1번부터 순서대로 진행하세요. Windows PC, 삼성 갤럭시, iPhone 설치 방법을 한곳에 정리했습니다.</p>
 </div>
-<ol class="steps">
-<li><span>1</span><div><strong>설치 파일 다운로드</strong><p>홈페이지에서 <code data-file-name="">SDCenterSetup.exe</code>를 내려받습니다.</p></div></li>
-<li><span>2</span><div><strong>다운로드한 파일 실행</strong><p>브라우저 다운로드 목록이나 다운로드 폴더에서 설치 파일을 엽니다.</p></div></li>
-<li><span>3</span><div><strong>Windows 설치 진행</strong><p>설치가 끝나면 시작 메뉴에서 SD종합센터를 실행합니다.</p></div></li>
-<li><span>4</span><div><strong>SD지갑부터 시작</strong><p>사용자 ID와 가상 계좌를 만든 뒤, 원하는 확장팩은 홈페이지에서 ZIP으로 내려받아 추가합니다.</p></div></li>
+<div class="device-quick-nav" aria-label="기기별 설치 방법 바로가기">
+<a href="#install-pc">Windows PC</a>
+<a href="#install-galaxy">삼성 갤럭시</a>
+<a href="#install-iphone">iPhone</a>
+</div>
+<div class="device-guide-grid">
+<article class="device-guide-card" id="install-pc">
+<div class="device-guide-top"><span class="device-guide-mark">PC</span><div class="device-guide-title"><small>WINDOWS</small><h3>PC 설치 방법</h3></div></div>
+<p class="device-guide-sub">Windows에서는 설치 프로그램을 내려받아 일반 프로그램처럼 설치합니다.</p>
+<ol class="device-guide-steps">
+<li><b>1</b><div><strong>홈페이지에서 Windows 다운로드</strong><span>아래의 설치 파일 받기 버튼을 누릅니다.</span></div></li>
+<li><b>2</b><div><strong>다운로드 완료 확인</strong><span>브라우저 다운로드 목록 또는 Windows의 다운로드 폴더를 엽니다.</span></div></li>
+<li><b>3</b><div><strong>SDCenterSetup.exe 실행</strong><span>다운로드한 <code>SDCenterSetup.exe</code>를 더블클릭합니다.</span></div></li>
+<li><b>4</b><div><strong>설치 진행</strong><span>화면 안내에 따라 설치를 완료합니다.</span></div></li>
+<li><b>5</b><div><strong>SD종합센터 실행</strong><span>설치가 끝나면 시작 메뉴 또는 바탕화면에서 SD종합센터를 실행합니다.</span></div></li>
 </ol>
+<a class="guide-action" data-download-link href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">Windows 설치 파일 받기</a>
+</article>
+<article class="device-guide-card recommended" id="install-galaxy">
+<div class="device-guide-top"><span class="device-guide-mark">AOS</span><div class="device-guide-title"><small>ANDROID</small><h3>삼성 갤럭시 설치 방법</h3></div></div>
+<p class="device-guide-sub">갤럭시는 Android APK를 내려받아 SD종합센터 앱으로 설치할 수 있습니다.</p>
+<ol class="device-guide-steps">
+<li><b>1</b><div><strong>Chrome 또는 삼성 인터넷으로 접속</strong><span>휴대폰에서 현재 SD종합센터 홈페이지를 엽니다.</span></div></li>
+<li><b>2</b><div><strong>Android 앱 설치하기 선택</strong><span>APK 다운로드 버튼을 눌러 설치 파일을 받습니다.</span></div></li>
+<li><b>3</b><div><strong>다운로드한 APK 열기</strong><span>다운로드 알림을 누르거나 내 파일 → 다운로드에서 APK를 엽니다.</span></div></li>
+<li><b>4</b><div><strong>처음 한 번 설치 권한 허용</strong><span>브라우저에서 받은 앱 설치 권한을 요청하면 해당 브라우저에 대해서만 허용합니다.</span></div></li>
+<li><b>5</b><div><strong>설치 버튼 누르기</strong><span>Android 설치 화면에서 설치를 누르고 완료될 때까지 기다립니다.</span></div></li>
+<li><b>6</b><div><strong>앱 실행 및 로그인</strong><span>홈 화면의 SD종합센터를 열고 홈페이지 계정으로 로그인합니다.</span></div></li>
+</ol>
+<a class="guide-action" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenter-Mobile.apk">Android APK 받기</a>
+</article>
+<article class="device-guide-card" id="install-iphone">
+<div class="device-guide-top"><span class="device-guide-mark">iOS</span><div class="device-guide-title"><small>IPHONE</small><h3>iPhone 설치 방법</h3></div></div>
+<p class="device-guide-sub">iPhone은 APK를 설치하지 않고 Safari에서 홈페이지를 홈 화면에 추가해 앱처럼 사용합니다.</p>
+<ol class="device-guide-steps">
+<li><b>1</b><div><strong>Safari로 홈페이지 접속</strong><span>iPhone의 Safari에서 SD종합센터 홈페이지를 엽니다.</span></div></li>
+<li><b>2</b><div><strong>공유 버튼 누르기</strong><span>Safari의 공유 버튼을 눌러 메뉴를 엽니다.</span></div></li>
+<li><b>3</b><div><strong>홈 화면에 추가 선택</strong><span>메뉴에서 홈 화면에 추가를 찾아 선택합니다.</span></div></li>
+<li><b>4</b><div><strong>추가 확인</strong><span>이름이 SD종합센터인지 확인한 뒤 추가를 누릅니다.</span></div></li>
+<li><b>5</b><div><strong>홈 화면 아이콘으로 실행</strong><span>이후에는 홈 화면에 생긴 SD종합센터 아이콘을 눌러 실행합니다.</span></div></li>
+</ol>
+<a class="guide-action secondary" href="mobile.html">SD종합센터 웹 열기</a>
+</article>
 </div>
-<aside class="requirement-card">
-<span class="requirement-icon">✓</span>
-<h3>시스템 요구사항</h3>
-<dl>
-<div><dt>운영체제</dt><dd data-system="">Windows 10/11 64비트</dd></div>
-<div><dt>인터넷</dt><dd>설치 파일 다운로드 시 필요</dd></div>
-<div><dt>권한</dt><dd>일반 사용자 설치</dd></div>
-<div><dt>데이터</dt><dd>PC 로컬 저장</dd></div>
-</dl>
-<a class="requirement-download" data-download-link="" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">설치 파일 받기</a>
-</aside>
+<div class="device-guide-note">
+<strong>처음 사용하는 분</strong>
+<p>설치 후 계정이 없다면 홈페이지에서 회원가입을 진행하고 초대 코드를 입력해 계정을 만드세요. PC와 모바일의 가상계좌 데이터를 연결해서 사용할 경우에만 PC에서 SD Link를 추가로 설정하면 됩니다.</p>
+</div>
 </section>
 <section class="notice-section section-shell">
 <div class="notice-icon">!</div>
