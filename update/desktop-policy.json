@@ -1,6 +1,6 @@
 {
-  "policyVersion": 2,
-  "updatedAt": "2026-08-14T05:33:00+09:00",
+  "policyVersion": 3,
+  "updatedAt": "2026-08-14T06:25:00+09:00",
   "required": true,
   "apps": {
     "sd-bitcoin-miner-desktop": {
@@ -11,9 +11,15 @@
     },
     "sd-logistics-center-desktop": {
       "required": true,
-      "minVersion": "1.0.6",
+      "minVersion": "1.0.7",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
-      "message": "물류회사 경제 밸런스 패치가 필수입니다. 구버전에서는 물류 수익을 발생시킬 수 없습니다."
+      "message": "물류회사 경제 밸런스/버전 증명 패치 v1.0.7 이상이 필수입니다."
+    },
+    "sdlink-desktop": {
+      "required": true,
+      "minVersion": "1.2.4",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+      "message": "구 센터 우회 차단을 위해 SD Link v1.2.4 이상이 필수입니다."
     }
   }
 }
