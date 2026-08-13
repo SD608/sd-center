@@ -1,0 +1,32 @@
+name: Disable Bitcoin Required
+on:
+  push:
+    paths:
+      - '.github/workflows/disable-bitcoin-required.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Disable bitcoin required flag
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('update/desktop-policy.json')
+          data=json.loads(p.read_text(encoding='utf-8'))
+          data['policyVersion']=int(data.get('policyVersion',1))+1
+          data['updatedAt']='2026-08-14T05:33:00+09:00'
+          if 'sd-bitcoin-miner-desktop' in data.get('apps',{}):
+              data['apps']['sd-bitcoin-miner-desktop']['required']=False
+              data['apps']['sd-bitcoin-miner-desktop']['message']='비트코인 채굴장은 이번 필수 업데이트 대상이 아닙니다.'
+          p.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add update/desktop-policy.json
+          git commit -m "policy: require logistics update only" || exit 0
+          git push
