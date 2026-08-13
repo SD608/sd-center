@@ -1,0 +1,1065 @@
+:root{
+  --bg:#0b1020;--panel:#121a2f;--panel2:#17213a;--line:#263454;--text:#eef4ff;
+  --muted:#9fb0cc;--accent:#6ea8ff;--accent2:#8dd4ff;--good:#7ee2a8;--bad:#ff8c9a;
+  --shadow:0 18px 55px rgba(0,0,0,.28)
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(circle at 10% 0%,#17264b 0,#0b1020 38%,#080c18 100%);color:var(--text);font-family:Inter,Pretendard,"Noto Sans KR",system-ui,sans-serif;min-height:100%}
+button{font:inherit;color:inherit;background:#1a2745;border:1px solid #30466f;border-radius:14px;padding:11px 15px;cursor:pointer;transition:.18s transform,.18s background,.18s border}
+button:hover{transform:translateY(-1px);background:#22345a;border-color:#4a6da8}
+button:disabled{opacity:.42;cursor:not-allowed;transform:none}
+button.primary{background:linear-gradient(135deg,#3f7df0,#6aa8ff);border:0;color:white;font-weight:800}
+button.danger{color:#ffc2c8;border-color:#6d3540}
+button.ghost{background:transparent}
+button.wide{width:100%;margin-top:18px}
+button.small{font-size:13px;padding:8px 11px}
+.topbar{max-width:1240px;margin:0 auto;padding:28px 24px 10px;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.topbar h1{margin:2px 0 0;font-size:28px}
+.eyebrow{font-size:11px;letter-spacing:.17em;color:#83aef5;font-weight:900}
+.wallet-pill{background:rgba(17,26,47,.88);border:1px solid var(--line);border-radius:18px;padding:11px 16px;display:flex;flex-direction:column;align-items:flex-end;box-shadow:var(--shadow)}
+.wallet-pill span{font-size:11px;color:var(--muted)}
+.wallet-pill strong{font-size:19px}
+.shell{max-width:1240px;margin:0 auto;padding:14px 24px 70px}
+.panel{background:linear-gradient(180deg,rgba(20,30,54,.96),rgba(15,23,43,.96));border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:var(--shadow)}
+.hero{display:flex;justify-content:space-between;align-items:center;gap:24px}
+.hero h2{font-size:32px;margin:10px 0 8px}
+.hero p{color:var(--muted);margin:0;max-width:720px;line-height:1.6}
+.badge,.platform-label,.tiny-badge{display:inline-flex;border:1px solid #31518a;background:#122343;color:#9bc4ff;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0 30px}
+.stat-card{background:rgba(17,26,47,.8);border:1px solid var(--line);border-radius:20px;padding:18px}
+.stat-card span,.stat-card small{display:block;color:var(--muted)}
+.stat-card strong{display:block;font-size:28px;margin:6px 0}
+.section-heading{display:flex;justify-content:space-between;align-items:end;margin:24px 2px 13px}
+.section-heading.sub{margin-top:34px}
+.section-heading h2{margin:4px 0 0;font-size:26px}
+.two-col{display:grid;grid-template-columns:1.35fr .85fr;gap:16px}
+.panel h3{margin:0 0 6px}
+.panel p{margin:0;color:var(--muted)}
+.panel-title-row,.section-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.card-list{display:grid;gap:12px;margin-top:18px}
+.contract,.recipe{border:1px solid #2a3a5e;background:#111a30;border-radius:18px;padding:16px}
+.contract-top,.recipe-top{display:flex;justify-content:space-between;gap:16px}
+.contract h4,.recipe h4{margin:0 0 5px;font-size:17px}
+.contract p,.recipe p{font-size:13px}
+.money{font-weight:900;color:var(--good);white-space:nowrap}
+.contract-meta,.recipe-meta{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.meta{font-size:12px;color:#bdd0ec;background:#1a2845;padding:6px 8px;border-radius:10px}
+.contract-actions,.recipe-actions{display:flex;justify-content:flex-end;margin-top:10px}
+.info-list{display:grid;gap:12px;margin-top:18px}
+.info-list div{display:flex;justify-content:space-between;border-bottom:1px solid #233250;padding-bottom:10px}
+.info-list span{color:var(--muted)}
+.progress-wrap{margin-top:18px}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px}
+.progress{height:9px;background:#0a1121;border-radius:99px;overflow:hidden}
+.progress div{height:100%;width:0;background:linear-gradient(90deg,#4c8cff,#7bdcff);transition:width .3s}
+.hint,.muted{font-size:12px!important;color:var(--muted)!important;margin-top:10px!important;line-height:1.5}
+.material-shop{display:grid;gap:10px;margin-top:18px}
+.factory-log{margin-top:18px;border:1px dashed #34507c;border-radius:16px;padding:14px;color:#b9c9df;font-size:13px;min-height:92px;white-space:pre-line}
+.hidden{display:none!important}
+.phone-frame{max-width:520px;margin:18px auto 30px;background:#0c1325;border:1px solid #324a78;border-radius:36px;padding:18px;box-shadow:0 30px 80px rgba(0,0,0,.38)}
+.phone-head{display:flex;justify-content:space-between;align-items:center;padding:7px 5px 18px}
+.phone-head h2{margin:4px 0 0}
+.phone-head>span{font-weight:900;background:#172540;border-radius:14px;padding:9px 11px}
+.mobile-section{background:#111a30;border:1px solid #263858;border-radius:24px;padding:16px;margin-bottom:14px}
+.mobile-section h3{margin:0}
+.mobile-cards{display:grid;gap:10px;margin-top:13px}
+.job-card{background:#17233d;border:1px solid #2b416a;border-radius:18px;padding:14px}
+.job-card .row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.job-card strong{font-size:15px}
+.job-card small{display:block;color:var(--muted);margin-top:5px}
+.job-card button{width:100%;margin-top:12px}
+.delivery-card{margin-top:12px;background:linear-gradient(145deg,#1b2b4a,#142039);border:1px solid #315183;border-radius:18px;padding:16px}
+.delivery-card h4{margin:0 0 5px}
+.delivery-card p{font-size:13px;color:var(--muted);line-height:1.5}
+.delivery-card button{width:100%;margin-top:12px}
+.ledger-panel{margin-top:30px}
+.ledger{display:grid;gap:8px;margin-top:16px;max-height:340px;overflow:auto}
+.ledger-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px 3px;border-bottom:1px solid #22314f}
+.ledger-row strong.plus{color:var(--good)}
+.ledger-row strong.minus{color:var(--bad)}
+.ledger-row small{display:block;color:var(--muted);margin-top:3px}
+.modal{position:fixed;inset:0;background:rgba(3,7,15,.76);display:grid;place-items:center;padding:18px;z-index:50}
+.modal-card{width:min(560px,100%);background:#111a30;border:1px solid #355183;border-radius:24px;padding:22px;position:relative;box-shadow:0 35px 100px rgba(0,0,0,.5)}
+.modal-close{position:absolute;right:14px;top:12px;border:0;background:transparent;font-size:28px;padding:2px 8px}
+.game-title{font-size:24px;margin:0 0 8px}
+.game-desc{color:var(--muted);line-height:1.6}
+.sort-box{margin-top:18px;padding:18px;border:1px solid #30476f;border-radius:18px;background:#0d162a;text-align:center}
+.sort-destination{font-size:30px;font-weight:950;letter-spacing:.04em;margin:8px 0 18px}
+.sort-actions,.route-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.route-actions{grid-template-columns:repeat(3,1fr)}
+.game-status{display:flex;justify-content:space-between;margin:14px 0;color:#b8cae8}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#e9f2ff;color:#0b1324;border-radius:14px;padding:12px 16px;font-weight:850;z-index:100;box-shadow:var(--shadow)}
+@media(max-width:850px){
+  .topbar,.hero,.section-heading{align-items:flex-start}
+  .hero{flex-direction:column}
+  .hero-actions{justify-content:flex-start}
+  .summary-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .topbar{padding:20px 14px 8px}
+  .topbar h1{font-size:21px}
+  .wallet-pill{padding:9px 11px}
+  .wallet-pill strong{font-size:15px}
+  .shell{padding:10px 12px 50px}
+  .panel{border-radius:20px;padding:17px}
+  .hero h2{font-size:25px}
+  .summary-grid{gap:9px;margin-bottom:22px}
+  .stat-card{padding:14px}
+  .stat-card strong{font-size:22px}
+  .section-heading{flex-direction:column;gap:9px}
+  .phone-frame{border-radius:28px;padding:10px}
+}
+
+
+/* ===== v0.2 ===== */
+.contract.running{
+  border-color:#4d7fc8;
+  background:linear-gradient(145deg,#162847,#111d35);
+}
+.contract-running{
+  margin-top:13px;
+  border:1px solid #33558a;
+  border-radius:15px;
+  padding:12px;
+  background:#0d1830;
+}
+.contract-running-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:9px;
+}
+.contract-running-head strong{color:#a9caff}
+.contract-running-head span{font-weight:900;font-variant-numeric:tabular-nums}
+.contract-result-note{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:9px;
+}
+#refreshContractsBtn:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+.swipe-help{
+  margin-top:12px;
+  color:#aebfda;
+  font-size:12px;
+  line-height:1.55;
+}
+.swipe-layout{
+  position:relative;
+  width:min(360px,100%);
+  height:390px;
+  margin:14px auto 2px;
+  user-select:none;
+}
+.swipe-zone{
+  position:absolute;
+  z-index:1;
+  min-width:92px;
+  max-width:130px;
+  text-align:center;
+  border:1px solid #35527f;
+  background:#101d35;
+  color:#bcd2f5;
+  border-radius:14px;
+  padding:8px 10px;
+  font-size:12px;
+  font-weight:850;
+  box-shadow:0 8px 22px rgba(0,0,0,.18);
+}
+.swipe-zone.up{top:0;left:50%;transform:translateX(-50%)}
+.swipe-zone.down{bottom:0;left:50%;transform:translateX(-50%)}
+.swipe-zone.left{left:0;top:50%;transform:translateY(-50%)}
+.swipe-zone.right{right:0;top:50%;transform:translateY(-50%)}
+.swipe-card-wrap{
+  position:absolute;
+  inset:54px 54px;
+  display:grid;
+  place-items:center;
+}
+.swipe-card{
+  width:100%;
+  min-height:210px;
+  border-radius:24px;
+  border:1px solid #446ba7;
+  background:linear-gradient(145deg,#21375d,#152440);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:22px 16px;
+  text-align:center;
+  cursor:grab;
+  touch-action:none;
+  box-shadow:0 20px 42px rgba(0,0,0,.32);
+  transition:transform .16s ease, opacity .16s ease, border-color .16s ease;
+  will-change:transform;
+}
+.swipe-card.dragging{transition:none;cursor:grabbing}
+.swipe-card.correct{border-color:#4dca83}
+.swipe-card.wrong{border-color:#e46a78}
+.swipe-card .swipe-icon{font-size:42px}
+.swipe-card .swipe-item{
+  font-size:24px;
+  font-weight:950;
+  line-height:1.25;
+}
+.swipe-card .swipe-sub{font-size:12px;color:#aebed8}
+.swipe-feedback{
+  min-height:24px;
+  text-align:center;
+  font-size:13px;
+  font-weight:850;
+}
+.swipe-feedback.good{color:var(--good)}
+.swipe-feedback.bad{color:var(--bad)}
+.route-preview{
+  margin:18px 0;
+  padding:18px 12px;
+  border:1px solid #35527f;
+  background:#0c172b;
+  border-radius:18px;
+  text-align:center;
+}
+.route-sequence{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:8px;
+  margin-top:12px;
+}
+.route-arrow{
+  width:40px;height:40px;
+  display:grid;place-items:center;
+  border-radius:12px;
+  background:#1c2d4c;
+  border:1px solid #385783;
+  font-size:22px;
+  font-weight:950;
+}
+.delivery-progress{
+  display:flex;
+  gap:6px;
+  justify-content:center;
+  margin:10px 0 14px;
+}
+.delivery-dot{
+  width:10px;height:10px;border-radius:99px;
+  background:#273856;border:1px solid #3c557d;
+}
+.delivery-dot.done{background:#6aa8ff;border-color:#88bcff}
+.delivery-dot.error{background:#e56c7a;border-color:#ff9eaa}
+.delivery-driving-card .swipe-card{min-height:190px}
+@media(max-width:560px){
+  .modal{padding:10px}
+  .modal-card{padding:18px 14px;border-radius:22px}
+  .swipe-layout{height:360px}
+  .swipe-card-wrap{inset:50px 47px}
+  .swipe-zone{min-width:78px;max-width:110px;padding:7px 8px;font-size:11px}
+  .swipe-card .swipe-item{font-size:21px}
+}
+
+
+/* ===== v0.3 · 물류 차량 시스템 ===== */
+.fleet-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:18px;
+}
+.vehicle-card{
+  border:1px solid #2d4168;
+  background:#111b31;
+  border-radius:18px;
+  padding:15px;
+}
+.vehicle-card.busy{
+  border-color:#4b78ba;
+  background:linear-gradient(145deg,#172948,#111d34);
+}
+.vehicle-card-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+}
+.vehicle-card h4{margin:0 0 5px;font-size:16px}
+.vehicle-card p{font-size:12px!important;line-height:1.5}
+.vehicle-type{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:56px;
+  padding:5px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  border:1px solid #3a5b90;
+  background:#172944;
+  color:#b9d5ff;
+}
+.vehicle-status{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:center;
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid #233451;
+  color:#aebed6;
+  font-size:12px;
+}
+.vehicle-card button{
+  width:100%;
+  margin-top:10px;
+}
+.vehicle-shop{
+  display:grid;
+  gap:10px;
+  margin-top:18px;
+}
+.shop-vehicle{
+  border:1px solid #2c4168;
+  background:#111a30;
+  border-radius:16px;
+  padding:14px;
+}
+.shop-vehicle-top{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+}
+.shop-vehicle h4{margin:0 0 4px}
+.shop-vehicle small{color:var(--muted)}
+.shop-vehicle button{width:100%;margin-top:10px}
+.contract-vehicle-row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:center;
+  margin-top:12px;
+}
+.contract-vehicle-row select{
+  width:100%;
+  background:#0e192d;
+  color:var(--text);
+  border:1px solid #30496f;
+  border-radius:12px;
+  padding:10px 11px;
+  font:inherit;
+}
+.contract-vehicle-row select:disabled{opacity:.45}
+.requirement-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  border:1px solid #6a5231;
+  background:#2a2114;
+  color:#ffd69c;
+  border-radius:10px;
+  padding:6px 8px;
+  font-size:12px;
+  font-weight:850;
+}
+.delivery-vehicle-line{
+  margin-top:8px;
+  color:#a9c5ec;
+  font-size:12px;
+  font-weight:800;
+}
+@media(max-width:720px){
+  .fleet-grid{grid-template-columns:1fr}
+  .contract-vehicle-row{grid-template-columns:1fr}
+}
+
+
+/* ===== v0.4 · 물류 스택 / 다중차량 / 스타터 업그레이드 ===== */
+.active-delivery-dock{
+  position:fixed;
+  left:16px;
+  top:16px;
+  width:min(330px,calc(100vw - 32px));
+  max-height:44vh;
+  overflow:auto;
+  z-index:45;
+  border:1px solid #365b92;
+  background:rgba(10,18,34,.96);
+  backdrop-filter:blur(14px);
+  border-radius:18px;
+  padding:13px;
+  box-shadow:0 20px 65px rgba(0,0,0,.42);
+}
+.active-delivery-dock-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.active-delivery-dock-head strong{font-size:15px}
+.active-delivery-dock-list{display:grid;gap:8px}
+.dock-delivery{
+  border:1px solid #2c456d;
+  background:#111d34;
+  border-radius:14px;
+  padding:10px;
+}
+.dock-delivery-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+.dock-delivery h5{margin:0;font-size:13px}
+.dock-delivery p{margin:3px 0 0!important;font-size:11px!important;color:#9fb3d2!important}
+.dock-delivery-time{
+  white-space:nowrap;
+  font-weight:900;
+  font-size:12px;
+  color:#b7d3ff;
+}
+.dock-delivery .progress{margin-top:8px;height:6px}
+.stack-legend{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.stack-chip{
+  border:1px solid #38567f;
+  background:#14233c;
+  border-radius:999px;
+  padding:6px 8px;
+  font-size:11px;
+  color:#bfd2ef;
+  font-weight:800;
+}
+.vehicle-capacity{
+  margin-top:8px;
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.vehicle-capacity .meta{padding:5px 7px}
+.starter-upgrade-box{
+  margin-top:10px;
+  border-top:1px solid #243653;
+  padding-top:10px;
+}
+.starter-upgrade-box button{margin-top:0}
+.contract-stack-summary{
+  margin-top:10px;
+  border:1px solid #2c466f;
+  background:#0e192e;
+  border-radius:14px;
+  padding:10px 11px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  font-size:12px;
+}
+.contract-stack-summary strong{font-size:13px}
+.contract-fleet-select{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.contract-fleet-option{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  border:1px solid #2c4368;
+  background:#101a2f;
+  border-radius:13px;
+  padding:9px 10px;
+  cursor:pointer;
+}
+.contract-fleet-option:hover{border-color:#4d6f9f}
+.contract-fleet-option input{accent-color:#6ea8ff}
+.contract-fleet-option.busy{opacity:.38;cursor:not-allowed}
+.contract-fleet-option span{display:flex;flex-direction:column}
+.contract-fleet-option strong{font-size:12px}
+.contract-fleet-option small{color:var(--muted);font-size:10px}
+.contract-actions-stacked{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+.contract-actions-stacked button{min-width:150px}
+.speed-badge{
+  display:inline-flex;
+  border-radius:10px;
+  padding:6px 8px;
+  font-size:11px;
+  font-weight:900;
+  border:1px solid transparent;
+}
+.speed-very-fast{
+  color:#9ec8ff;
+  background:#10233e;
+  border-color:#3566a0;
+}
+.speed-fast{
+  color:#8ff3bc;
+  background:#0f2c20;
+  border-color:#2d7652;
+}
+.speed-normal{
+  color:#ffe19b;
+  background:#302510;
+  border-color:#80632c;
+}
+.speed-slow{
+  color:#ffadb6;
+  background:#32161c;
+  border-color:#87404a;
+}
+.convoy-line{
+  margin-top:8px;
+  font-size:12px;
+  color:#a9c5ec;
+  line-height:1.5;
+}
+@media(max-width:720px){
+  .active-delivery-dock{
+    position:sticky;
+    top:8px;
+    left:auto;
+    width:auto;
+    max-height:none;
+    margin:8px 12px 0;
+  }
+  .contract-fleet-select{grid-template-columns:1fr}
+}
+
+
+/* ===== v0.5 · 자동 맞춤 배차 ===== */
+.auto-fit-setting{
+  margin-top:16px;
+  border:1px solid #2f4d79;
+  background:#101d34;
+  border-radius:16px;
+  padding:12px 13px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+.auto-fit-setting strong{font-size:13px}
+.auto-fit-setting p{font-size:11px!important;margin-top:4px!important}
+.switch{position:relative;display:inline-block;width:48px;height:26px;flex:0 0 auto}
+.switch input{opacity:0;width:0;height:0}
+.slider{
+  position:absolute;cursor:pointer;inset:0;background:#273854;
+  transition:.18s;border-radius:99px;border:1px solid #3d557b
+}
+.slider:before{
+  content:"";position:absolute;height:20px;width:20px;left:2px;top:2px;
+  background:#d8e6fb;transition:.18s;border-radius:50%
+}
+.switch input:checked + .slider{background:#3f7df0;border-color:#5d95f7}
+.switch input:checked + .slider:before{transform:translateX(22px);background:white}
+.auto-fit-preview{
+  margin-top:10px;
+  border:1px solid #345580;
+  background:#0d1a30;
+  border-radius:14px;
+  padding:10px 11px;
+}
+.auto-fit-preview strong{font-size:12px}
+.auto-fit-preview p{margin-top:4px!important;font-size:11px!important;color:#aec0dd!important}
+.contract-mode-actions{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.contract-mode-actions button{min-width:120px}
+.manual-select-hidden{display:none!important}
+
+
+/* ===== v0.6 · 속도 색상 범례 ===== */
+.speed-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:10px;
+}
+.speed-legend .speed-badge{
+  padding:5px 7px;
+}
+
+
+/* ===== v0.7 · S등급 물류 본부 / 직원 기사 ===== */
+.headquarters-panel{
+  overflow:hidden;
+}
+.hq-locked{
+  min-height:210px;
+  display:grid;
+  place-items:center;
+  text-align:center;
+}
+.hq-lock-icon{font-size:42px;margin-bottom:8px}
+.hq-locked h3{margin:0 0 7px}
+.hq-locked p{max-width:560px;line-height:1.6}
+.hq-top{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+}
+.hq-level{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.hq-level-number{
+  font-size:32px;
+  font-weight:950;
+  color:#bcd6ff;
+}
+.hq-title{color:var(--muted);font-size:12px}
+.hq-metrics{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:18px;
+}
+.hq-metric{
+  border:1px solid #2d4369;
+  background:#101a30;
+  border-radius:15px;
+  padding:12px;
+}
+.hq-metric span,.hq-metric small{display:block;color:var(--muted);font-size:11px}
+.hq-metric strong{display:block;margin:5px 0;font-size:18px}
+.hq-next{
+  margin-top:18px;
+  border:1px solid #35527e;
+  background:#0e1a30;
+  border-radius:18px;
+  padding:15px;
+}
+.hq-next-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+}
+.hq-requirements{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:12px;
+}
+.hq-req{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  border:1px solid #263b60;
+  background:#111c33;
+  border-radius:12px;
+  padding:9px 10px;
+  font-size:12px;
+}
+.hq-req.ok{border-color:#2e7651;background:#10271e}
+.hq-req strong{white-space:nowrap}
+.hq-next button{width:100%;margin-top:12px}
+.hq-roadmap{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+  margin-top:18px;
+}
+.hq-roadmap-item{
+  border:1px solid #283c60;
+  background:#10192d;
+  border-radius:13px;
+  padding:10px;
+  min-height:88px;
+}
+.hq-roadmap-item.active{border-color:#4f7cc0;background:#142747}
+.hq-roadmap-item.done{border-color:#367456;background:#10261e}
+.hq-roadmap-item strong{font-size:12px}
+.hq-roadmap-item small{display:block;color:var(--muted);font-size:10px;margin-top:5px;line-height:1.4}
+.hq-systems{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:18px;
+}
+.hq-system{
+  border:1px solid #2e456d;
+  background:#101a30;
+  border-radius:18px;
+  padding:15px;
+}
+.hq-system h4{margin:0 0 5px}
+.hq-system>p{font-size:12px!important;line-height:1.5}
+.driver-list{
+  display:grid;
+  gap:8px;
+  margin-top:12px;
+}
+.driver-card{
+  border:1px solid #2d4368;
+  background:#0d172b;
+  border-radius:14px;
+  padding:11px;
+}
+.driver-card.busy{border-color:#4b74ad}
+.driver-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+.driver-top h5{margin:0 0 3px;font-size:13px}
+.driver-top small{color:var(--muted)}
+.driver-skill{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  margin-top:8px;
+}
+.driver-card button{width:100%;margin-top:8px}
+.driver-controls{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+.driver-controls button{flex:1}
+.hq-toggle-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-top:12px;
+  border:1px solid #2d466f;
+  border-radius:14px;
+  padding:11px;
+}
+.hq-warehouse{
+  margin-top:12px;
+  border:1px solid #2c466f;
+  border-radius:14px;
+  padding:11px;
+}
+.hq-warehouse strong{display:block;margin-bottom:4px}
+.employee-contract-action{
+  margin-top:8px;
+  display:flex;
+  justify-content:flex-end;
+}
+.employee-contract-action button{
+  min-width:170px;
+}
+.employee-badge{
+  display:inline-flex;
+  padding:5px 7px;
+  border-radius:9px;
+  font-size:11px;
+  font-weight:850;
+  color:#d5c1ff;
+  background:#21163c;
+  border:1px solid #5f438d;
+}
+.category-longhaul{
+  color:#ffd897;
+  background:#2d2411;
+  border-color:#7a632c;
+}
+.category-overseas{
+  color:#b8e6ff;
+  background:#10293a;
+  border-color:#33718e;
+}
+@media(max-width:900px){
+  .hq-roadmap{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hq-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hq-systems{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .hq-top{flex-direction:column}
+  .hq-requirements{grid-template-columns:1fr}
+  .hq-roadmap{grid-template-columns:1fr}
+}
+
+
+/* ===== v0.8 · 기사 전용 자동수익 / 본부 특성 ===== */
+.hq-perk-panel{
+  margin-top:18px;border:1px solid #4a6594;background:#101d35;border-radius:18px;padding:15px
+}
+.hq-perk-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.hq-perk-head h4{margin:0 0 4px}
+.hq-perk-head p{font-size:12px!important;line-height:1.5}
+.hq-perk-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+.hq-perk-option{border:1px solid #304a73;background:#0f192d;border-radius:14px;padding:11px}
+.hq-perk-option strong{display:block;font-size:13px}
+.hq-perk-option small{display:block;color:var(--muted);margin:5px 0 10px;line-height:1.45}
+.hq-perk-option button{width:100%}
+.hq-perk-stats{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.driver-mission-select{margin-top:10px}
+.driver-mission-select select{
+  width:100%;background:#0d172a;color:var(--text);border:1px solid #30496f;
+  border-radius:11px;padding:9px 10px;font:inherit
+}
+.driver-mission-progress{
+  margin-top:10px;border:1px solid #34527d;background:#0d182c;border-radius:12px;padding:10px
+}
+.driver-mission-progress-head{
+  display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:12px;margin-bottom:7px
+}
+.driver-mission-progress strong{color:#bcd4fb}
+.driver-income-line{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:12px;color:var(--muted)}
+.driver-income-line b{color:var(--good)}
+.driver-card .driver-actions{display:flex;gap:8px;margin-top:9px}
+.driver-card .driver-actions button{margin-top:0;flex:1}
+.driver-mission-catalog{display:grid;gap:8px;margin-top:12px}
+.driver-mission-info{
+  display:grid;grid-template-columns:1fr auto;gap:12px;border:1px solid #2a4167;
+  background:#0e182b;border-radius:12px;padding:10px
+}
+.driver-mission-info strong{font-size:12px}
+.driver-mission-info small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.driver-mission-info span{font-weight:900;font-size:12px;color:#a9d4ff}
+@media(max-width:760px){.hq-perk-grid{grid-template-columns:1fr}}
+
+
+/* ===== v0.9 · 물류 본부 접기/펼치기 + 특성 초기화 ===== */
+.hq-collapsible{
+  margin-top:16px;
+  border:1px solid #2f476f;
+  background:#0f192e;
+  border-radius:16px;
+  overflow:hidden;
+}
+.hq-collapsible > summary{
+  list-style:none;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:13px 14px;
+  font-weight:900;
+  user-select:none;
+}
+.hq-collapsible > summary::-webkit-details-marker{display:none}
+.hq-collapsible > summary::after{
+  content:"＋";
+  font-size:18px;
+  line-height:1;
+  color:#a9c9f6;
+}
+.hq-collapsible[open] > summary::after{content:"－"}
+.hq-collapsible > summary:hover{background:#13213b}
+.hq-collapsible-body{
+  padding:0 14px 14px;
+}
+.hq-collapsible-body > .hq-next,
+.hq-collapsible-body > .hq-perk-panel,
+.hq-collapsible-body > .hq-roadmap,
+.hq-collapsible-body > .hq-systems,
+.hq-collapsible-body > .hq-system{
+  margin-top:0;
+}
+.hq-reset-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid #2e456b;
+}
+.hq-reset-row p{
+  margin:0!important;
+  font-size:11px!important;
+  color:var(--muted)!important;
+}
+.hq-reset-row button{
+  flex:0 0 auto;
+  border-color:#70414c;
+  color:#ffc1ca;
+  background:#26141a;
+}
+.hq-summary-note{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:700;
+}
+@media(max-width:560px){
+  .hq-reset-row{align-items:stretch;flex-direction:column}
+  .hq-reset-row button{width:100%}
+}
+
+
+/* ===== v0.11 · 계약 / 차량 관리 접기 ===== */
+.logistics-menu-collapsible,
+.logistics-section-collapsible{
+  overflow:hidden;
+}
+.logistics-menu-collapsible > summary,
+.logistics-section-collapsible > summary{
+  list-style:none;
+  cursor:pointer;
+  user-select:none;
+}
+.logistics-menu-collapsible > summary::-webkit-details-marker,
+.logistics-section-collapsible > summary::-webkit-details-marker{
+  display:none;
+}
+.logistics-menu-collapsible > summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.logistics-menu-collapsible > summary h3{
+  margin:0;
+}
+.logistics-menu-collapsible > summary p{
+  margin:4px 0 0!important;
+}
+.logistics-menu-collapsible > summary::after,
+.logistics-section-summary::after{
+  content:"＋";
+  font-size:20px;
+  color:#aac9f5;
+  line-height:1;
+  flex:0 0 auto;
+}
+.logistics-menu-collapsible[open] > summary::after,
+.logistics-section-collapsible[open] > .logistics-section-summary::after{
+  content:"－";
+}
+.logistics-menu-body{
+  padding-top:14px;
+}
+.logistics-menu-toolbar{
+  margin-bottom:12px;
+}
+.logistics-summary-meta{
+  display:inline-flex;
+  align-items:center;
+  border:1px solid #314b74;
+  background:#111d34;
+  color:#b8cae6;
+  border-radius:999px;
+  padding:5px 8px;
+  font-size:10px;
+  font-weight:850;
+  white-space:nowrap;
+}
+.logistics-section-collapsible{
+  margin-top:24px;
+  border-radius:18px;
+}
+.logistics-section-summary{
+  margin:0!important;
+  padding:0 2px 12px;
+  display:flex;
+  align-items:center;
+}
+.logistics-section-summary::after{
+  margin-left:8px;
+}
+.logistics-summary-right{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.logistics-section-body{
+  padding-top:2px;
+}
+@media(max-width:680px){
+  .logistics-menu-collapsible > summary{
+    align-items:flex-start;
+  }
+  .logistics-summary-right{
+    align-items:flex-end;
+    flex-direction:column;
+    gap:5px;
+  }
+  .logistics-menu-toolbar{
+    align-items:stretch;
+  }
+}
+
+
+/* ===== 홈페이지 온라인 연동 v1.0.0 ===== */
+.online-title{display:flex;flex-direction:column;gap:2px}
+.online-title small{color:var(--muted);margin-top:4px}
+.home-link{
+  width:max-content;
+  margin-bottom:8px;
+  color:#a8c7ff;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:850;
+}
+.home-link:hover{color:#fff}
+.wallet-pill{gap:3px}
+.wallet-pill small{font-size:10px;color:#8398b9}
+.wallet-refresh{
+  margin-top:7px;
+  padding:6px 9px;
+  border-radius:9px;
+  font-size:10px;
+}
+.account-link-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:0 15px;
+  border:1px solid #34527e;
+  border-radius:14px;
+  background:#14233e;
+  color:#c6dcff;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:850;
+}
+.online-status{
+  display:inline-flex;
+  margin-top:12px;
+  border:1px solid #35527e;
+  background:#10203b;
+  color:#b9d3f8;
+  border-radius:12px;
+  padding:8px 10px;
+  font-size:11px;
+  font-weight:750;
+}
+.online-status.success{border-color:#347451;background:#10271d;color:#a2e7bd}
+.online-status.error{border-color:#81404d;background:#31171d;color:#ffc0c8}
+.online-status.busy{border-color:#80642c;background:#30250f;color:#ffe09a}
+body.online-loading main{opacity:.5;pointer-events:none}
+.ledger-row .tx-platform{
+  display:inline-block;
+  margin-left:7px;
+  padding:2px 5px;
+  border:1px solid #2c4368;
+  border-radius:7px;
+  font-size:9px;
+  color:#8da7cd;
+}
+@media(max-width:560px){
+  .topbar{align-items:flex-start}
+  .wallet-pill{align-items:flex-start}
+}

@@ -1,6 +1,22 @@
 "use strict";
 window.SD_EXTENSION_PACKS = [
   {
+    id: "sd-logistics-center-web",
+    name: "SD 물류센터",
+    stage: "Season 0",
+    version: "Web v1.0.0",
+    category: "온라인 경영 확장팩",
+    icon: "assets/icons/center.png",
+    fileName: "홈페이지에서 실행",
+    downloadUrl: "logistics-center.html",
+    description: "운송 계약, 차량 운영, S등급 물류 본부, 기사 자동수익을 SD608 Online 공용 가상지갑과 연결해 홈페이지에서 바로 플레이합니다.",
+    requirements: "SD608 Online 계정 로그인 · Supabase 물류센터 SQL",
+    updatedAt: "2026-08-14",
+    tags: ["공용 SD지갑", "홈페이지 플레이", "물류 경영"],
+    featured: true,
+    webApp: true
+  },
+  {
     id: "sd-link",
     name: "SD Link",
     stage: "Stage 1",
@@ -61,3 +77,25 @@ window.SD_EXTENSION_PACKS = [
     featured: true
   }
 ];
+
+// 기존 홈페이지 확장팩 렌더러는 ZIP 버튼 전용입니다.
+// 물류센터 카드만 렌더링 직후 "홈페이지에서 실행" 버튼으로 바꿉니다.
+// 다른 확장팩 ZIP 동작은 건드리지 않습니다.
+document.addEventListener("DOMContentLoaded", () => {
+  window.setTimeout(() => {
+    const cards = [...document.querySelectorAll(".extension-card")];
+    const card = cards.find((item) => item.querySelector("h3")?.textContent?.trim() === "SD 물류센터");
+    if (!card) return;
+    const action = card.querySelector(".extension-download");
+    const hint = card.querySelector(".extension-file-hint");
+    if (!action) return;
+    action.removeAttribute("download");
+    action.href = "logistics-center.html";
+    action.setAttribute("aria-label", "SD 물류센터 홈페이지에서 실행");
+    const title = action.querySelector("span");
+    const small = action.querySelector("small");
+    if (title) title.textContent = "홈페이지에서 실행";
+    if (small) small.textContent = "공용 SD지갑 온라인 연동";
+    if (hint) hint.textContent = "설치 없이 로그인 후 바로 실행";
+  }, 0);
+});
