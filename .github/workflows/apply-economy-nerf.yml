@@ -1,0 +1,101 @@
+name: Apply Economy Nerf
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-economy-nerf.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch web and desktop logistics
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, shutil, zipfile
+
+          def patch_logic(path, desktop=False):
+              s=path.read_text(encoding='utf-8')
+              if 'DIRECT_PAYOUT_MULTIPLIER' not in s:
+                  marker = '  const OLD_KEY = "sd_logistics_center_desktop_progress_v100";\n' if desktop else '  const OLD_KEY = "sd_logistics_center_expansion_season0_v101";\n'
+                  s=s.replace(marker, marker + '''\n  // Economy Balance v2\n  const DIRECT_PAYOUT_MULTIPLIER = 0.15;\n  const DRIVER_PAYOUT_MULTIPLIER = 0.10;\n  const DELIVERY_DURATION_MULTIPLIER = 4;\n  const DRIVER_DURATION_MULTIPLIER = 4;\n  const FAST_DELIVERY_BONUS_MULTIPLIER = 1.10;\n''', 1)
+              s=s.replace('  function businessRevenueMultiplier(){\n    let mult=1;', '  function businessRevenueMultiplier(){\n    let mult=DIRECT_PAYOUT_MULTIPLIER;')
+              s=s.replace('  function driverIncomeMultiplier(){\n    let mult=1;', '  function driverIncomeMultiplier(){\n    let mult=DRIVER_PAYOUT_MULTIPLIER;')
+              s=s.replace('return Math.max(6,Math.round(mission.seconds*(1-reduction)));', 'return Math.max(12,Math.round(mission.seconds*DRIVER_DURATION_MULTIPLIER*(1-reduction)));')
+              s=s.replace('finalReward=Math.round(revenueBase*1.18);\n      eventText="빠른 배송 · 보너스 18%";', 'finalReward=Math.round(revenueBase*FAST_DELIVERY_BONUS_MULTIPLIER);\n      eventText="빠른 배송 · 보너스 10%";')
+              s=s.replace('const durationMs=Math.round((baseSeconds/speed+Math.random()*4)*1000);', 'const durationMs=Math.round((baseSeconds/speed+Math.random()*4)*DELIVERY_DURATION_MULTIPLIER*1000);')
+              path.write_text(s,encoding='utf-8')
+
+          # Web logistics: same economy as desktop so there is no bypass.
+          patch_logic(Path('assets/js/logistics-center.js'), desktop=False)
+          html=Path('logistics-center.html')
+          h=html.read_text(encoding='utf-8').replace('assets/js/logistics-center.js?v=100','assets/js/logistics-center.js?v=106')
+          html.write_text(h,encoding='utf-8')
+
+          # Desktop logistics ZIP.
+          zpath=Path('downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip')
+          work=Path('/tmp/sd-logistics-nerf')
+          if work.exists(): shutil.rmtree(work)
+          work.mkdir(parents=True)
+          with zipfile.ZipFile(zpath) as z: z.extractall(work)
+          dirs=[p for p in work.iterdir() if p.is_dir()]
+          app=dirs[0] if len(dirs)==1 else work
+          patch_logic(app/'public/app.js', desktop=True)
+          shutil.copy2('update/extension-policy-client.js', app/'src/update-policy.js')
+
+          main=app/'main.js'
+          s=main.read_text(encoding='utf-8')
+          s=s.replace('const {app,BrowserWindow,dialog,ipcMain}=require("electron");','const {app,BrowserWindow,dialog,ipcMain,shell}=require("electron");')
+          if 'checkRequiredUpdate' not in s:
+              s=s.replace('const {applyTransaction,inspectDatabase,listRecentTransactions}=require("./src/wallet-db");','const {applyTransaction,inspectDatabase,listRecentTransactions}=require("./src/wallet-db");\nconst {checkRequiredUpdate}=require("./src/update-policy");\nconst packageJson=require("./package.json");')
+              old='app.whenReady().then(()=>{configStore=new ConfigStore(app.getPath("userData"));registerIpc();createWindow();app.on("activate",()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});});'
+              new='app.whenReady().then(async()=>{const updateCheck=await checkRequiredUpdate({appId:"sd-logistics-center-desktop",currentVersion:packageJson.version,userDataPath:app.getPath("userData")});if(!updateCheck.ok){const detail=updateCheck.reason==="update-required"?`${updateCheck.message}\\n\\n현재 버전: v${packageJson.version}\\n필수 버전: v${updateCheck.minVersion}`:updateCheck.message;dialog.showErrorBox("SD 물류센터 · 필수 업데이트",detail);if(updateCheck.downloadUrl){try{await shell.openExternal(updateCheck.downloadUrl);}catch{}}app.quit();return;}configStore=new ConfigStore(app.getPath("userData"));registerIpc();createWindow();app.on("activate",()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});});'
+              if old not in s: raise SystemExit('desktop logistics startup marker not found')
+              s=s.replace(old,new)
+          main.write_text(s,encoding='utf-8')
+
+          pkg=app/'package.json'
+          data=json.loads(pkg.read_text(encoding='utf-8'))
+          data['version']='1.0.6'
+          data['description']='필수 밸런스 업데이트 확인과 SD지갑 연동을 지원하는 물류 경영 확장팩'
+          pkg.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          idx=app/'public/index.html'
+          idx.write_text(idx.read_text(encoding='utf-8').replace('Season 0 Desktop v1.0.5','Season 0 Desktop v1.0.6'),encoding='utf-8')
+
+          readme=app/'README.md'
+          r=readme.read_text(encoding='utf-8')
+          if 'v1.0.6 경제 밸런스 패치' not in r:
+              r+='''\n\n## v1.0.6 경제 밸런스 패치\n- 직접 배송 기본 보상: 기존의 15%\n- 직접 배송 시간: 기존의 4배\n- 기사 자동수익 기본 보상: 기존의 10%\n- 기사 임무 시간: 기존의 4배\n- 빠른 배송 보너스: 18% → 10%\n- 차량/본부/기사/기존 진행 데이터 유지\n- 필수 버전 미달 시 실행 차단\n'''
+          readme.write_text(r,encoding='utf-8')
+
+          with zipfile.ZipFile(zpath,'w',zipfile.ZIP_DEFLATED) as z:
+              for f in sorted(work.rglob('*')):
+                  if f.is_file(): z.write(f,f.relative_to(work))
+          shutil.rmtree(work)
+          PY
+          node --check assets/js/logistics-center.js
+          rm -rf /tmp/logi-verify && mkdir /tmp/logi-verify
+          unzip -q downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip -d /tmp/logi-verify
+          APPDIR=$(find /tmp/logi-verify -mindepth 1 -maxdepth 1 -type d | head -1)
+          [ -n "$APPDIR" ] || APPDIR=/tmp/logi-verify
+          node --check "$APPDIR/main.js"
+          node --check "$APPDIR/public/app.js"
+          node --check "$APPDIR/src/update-policy.js"
+          grep -q 'DIRECT_PAYOUT_MULTIPLIER = 0.15' assets/js/logistics-center.js
+          grep -q 'DRIVER_PAYOUT_MULTIPLIER = 0.10' "$APPDIR/public/app.js"
+          grep -q '"version": "1.0.6"' "$APPDIR/package.json"
+      - name: Commit nerf
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/js/logistics-center.js logistics-center.html downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip
+          git commit -m "balance: nerf logistics economy and require updates" || exit 0
+          git push
