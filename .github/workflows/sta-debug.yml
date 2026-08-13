@@ -1,0 +1,25 @@
+name: STA Debug Inspect
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sta-debug.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract STA
+        shell: bash
+        run: |
+          rm -rf /tmp/sta
+          mkdir -p /tmp/sta
+          unzip -q downloads/extensions/STA_Version6_Desktop.zip -d /tmp/sta
+          echo '=== FILES ==='
+          find /tmp/sta -maxdepth 4 -type f | sort
+          echo '=== KEYWORD MATCHES ==='
+          grep -RniE -C 8 'cash|money|tap|click|rapid|spam|loot|현금|연타|습격|다음|next|stage|phase|screen|window|complete|finish' /tmp/sta --include='*.js' --include='*.html' --include='*.json' --include='*.ts' || true
