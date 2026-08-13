@@ -1,0 +1,30 @@
+name: Apply STA v1.5.1 Hotfix
+on:
+  push:
+    paths:
+      - '.github/workflows/sta-hotfix-apply.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch and verify STA
+        run: |
+          rm -rf /tmp/sta
+          mkdir -p /tmp/sta
+          unzip -q downloads/extensions/STA_Version6_Desktop.zip -d /tmp/sta
+          python tools/patch_sta_loot_transition.py
+          cd /tmp/sta/STA_Version6_Desktop
+          node tools/test-operation.js
+          node --check public/js/app.js
+          cd /tmp/sta
+          zip -qr "$GITHUB_WORKSPACE/downloads/extensions/STA_Version6_Desktop.zip" STA_Version6_Desktop
+      - name: Commit fixed STA package
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add downloads/extensions/STA_Version6_Desktop.zip
+          git commit -m "fix: STA v1.5.1 cash loot transition" || exit 0
+          git push
