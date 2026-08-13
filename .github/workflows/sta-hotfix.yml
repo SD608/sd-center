@@ -1,0 +1,19 @@
+name: STA Hotfix Build
+on:
+  push:
+    paths:
+      - '.github/workflows/sta-hotfix.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          rm -rf /tmp/sta
+          mkdir -p /tmp/sta
+          unzip -q downloads/extensions/STA_Version6_Desktop.zip -d /tmp/sta
+          cd /tmp/sta/STA_Version6_Desktop
+          sed -n '1,35p' preload.js
+          sed -n '850,905p' public/js/app.js
