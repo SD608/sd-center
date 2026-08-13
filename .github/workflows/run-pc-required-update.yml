@@ -1,0 +1,22 @@
+name: Run PC Required Update
+on:
+  push:
+    paths:
+      - '.github/workflows/run-pc-required-update.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python tools/apply_pc_required_update.py
+      - run: |
+          unzip -p downloads/extensions/SDLink_v1.2.4_Desktop.zip package.json | grep -q '"version": "1.2.4"'
+          unzip -p downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip '*/package.json' | grep -q '"version": "1.0.7"'
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add downloads/extensions/SDLink_v1.2.4_Desktop.zip downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip update/desktop-policy.json assets/js/extensions-data.js extensions-data.js
+          git commit -m "policy: require current SD Link and logistics clients"
+          git push
