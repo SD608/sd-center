@@ -1,0 +1,112 @@
+name: Publish SDCenter v2.1.3 extension updater
+
+on:
+  push:
+    branches:
+      - build-v213-extension-updater-20260814
+    paths:
+      - '.github/workflows/publish-v213-extension-updater.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  BUILD_RUN_ID: '31796232755'
+  ARTIFACT_NAME: 'SDCenter-v2.1.3-Extension-Auto-Updater'
+  RELEASE_TAG: 'v.2.1.3'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Wait for verified v2.1.3 build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 80); do
+            status=$(gh run view "$BUILD_RUN_ID" --repo "$GITHUB_REPOSITORY" --json status -q .status)
+            conclusion=$(gh run view "$BUILD_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion -q .conclusion)
+            echo "build run $BUILD_RUN_ID: status=$status conclusion=$conclusion"
+            if [ "$status" = "completed" ]; then
+              if [ "$conclusion" != "success" ]; then
+                echo "Verified build did not succeed: $conclusion" >&2
+                exit 1
+              fi
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for build run $BUILD_RUN_ID" >&2
+          exit 1
+
+      - name: Download and verify installer artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf release-v213
+          mkdir -p release-v213
+          gh run download "$BUILD_RUN_ID" --repo "$GITHUB_REPOSITORY" -n "$ARTIFACT_NAME" -D release-v213
+          test -f release-v213/SDCenterSetup.exe
+          test -f release-v213/SHA256.txt
+          size=$(stat -c '%s' release-v213/SDCenterSetup.exe)
+          if [ "$size" -lt 104857600 ]; then
+            echo "Installer unexpectedly small: $size" >&2
+            exit 1
+          fi
+          expected=$(awk '{print $1}' release-v213/SHA256.txt | tr '[:upper:]' '[:lower:]')
+          actual=$(sha256sum release-v213/SDCenterSetup.exe | awk '{print $1}')
+          echo "Installer bytes: $size"
+          echo "Installer SHA256: $actual"
+          test "$actual" = "$expected"
+
+      - name: Create or replace GitHub Release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          notes=$'SD종합센터 v2.1.3\n\n- 종합센터 실행 시 홈페이지 확장팩 최신 버전 자동 확인\n- 앱 카드에서 원클릭 업데이트\n- 업데이트 가능한 확장팩 모두 업데이트\n- 업데이트 전 실행 중인 해당 앱 자동 종료\n- 앱 파일만 교체하고 기존 저장 데이터 유지\n- 물류센터 필수 최소 버전 v1.0.9\n\n※ v2.1.2에서 v2.1.3 센터 자체 업데이트는 이번 설치 파일을 한 번 실행해야 합니다. 이후 확장팩은 종합센터 안에서 업데이트할 수 있습니다.'
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-v213/SDCenterSetup.exe release-v213/SHA256.txt release-v213/BUILD_INFO.txt --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --title 'SD종합센터 v2.1.3' --notes "$notes"
+          else
+            gh release create "$RELEASE_TAG" release-v213/SDCenterSetup.exe release-v213/SHA256.txt release-v213/BUILD_INFO.txt --repo "$GITHUB_REPOSITORY" --target build-v213-extension-updater-20260814 --title 'SD종합센터 v2.1.3' --notes "$notes" --latest
+          fi
+
+      - name: Point website Windows download to v2.1.3
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git checkout -B main origin/main
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('site-config.js')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('version: "2.1.2"', 'version: "2.1.3"')
+          s=s.replace('releases/download/v.2.1.2/SDCenterSetup.exe', 'releases/download/v.2.1.3/SDCenterSetup.exe')
+          s=s.replace('releases/tag/v.2.1.2', 'releases/tag/v.2.1.3')
+          p.write_text(s,encoding='utf-8')
+          PY
+          grep -q 'version: "2.1.3"' site-config.js
+          grep -q 'v.2.1.3/SDCenterSetup.exe' site-config.js
+          git add site-config.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'release: publish SDCenter v2.1.3 extension updater'
+            git push origin main
+          fi
+
+      - name: Verify published release metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,name,isLatest,assets
