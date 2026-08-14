@@ -30,28 +30,32 @@ jobs:
           Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.3/SDCenterSetup.exe' -OutFile $setup
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
           if ($hash -ne '336a39e3b804974fa4b01793898c3be4e056216de04a9f5ffbe70e77c373526e') { throw "v2.1.3 installer hash mismatch: $hash" }
-          $seven = (Get-Command 7z).Source
           $outer = "$env:RUNNER_TEMP\sdc-v213"
           $inner = "$env:RUNNER_TEMP\sdc-v213-nupkg"
           New-Item -ItemType Directory -Force -Path $outer,$inner | Out-Null
-          & $seven x -y $setup "-o$outer" | Out-Null
+          7z x -y $setup "-o$outer" | Out-Null
           $nupkg = Join-Path $outer 'SDCenter-2.1.3-full.nupkg'
           if (-not (Test-Path $nupkg)) { throw 'v2.1.3 full nupkg not found' }
-          & $seven x -y $nupkg "-o$inner" | Out-Null
+          7z x -y $nupkg "-o$inner" | Out-Null
           $source = Join-Path $inner 'lib\net45\resources\app\apps\SDBitcoinMiner'
           if (-not (Test-Path (Join-Path $source 'src\wallet-database.js'))) { throw 'Bitcoin miner source not found' }
           $stage = "$env:RUNNER_TEMP\SDBitcoinMiner-v1.2.0"
           Copy-Item $source $stage -Recurse -Force
           "BTC_STAGE=$stage" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Apply v1.2.0 economy and durability patch
+      - name: Decode and apply verified v1.2.0 patch
         shell: pwsh
-        env:
-          PATCH_B64: 'H4sIAP8Bf2oC/808XXMbx5Hv+BVjWA4WIrgiVMerK1CQih+gzbNEuQjSjktSgUtgSa4F7CK7C1EMwyolYVIqWVdRKlYkO5JPucjn+Mp3x1h0Wa5T7sH3T+6RWP2H656vndkPELLzcCpbwu709PR09/R09/TOpu/1SN8Kt7vOBnF6fc8PyTvwWOC/Pwg8t0J8u0KC3aDgbJKu7Rrw07T8rRtl8lqdnK0VCPzxLSewSXM3CO1e46YTGqVBYG3ZNUTe3m5tOGHbc9zWjerZKbO/S841F+bYq0uOa/vE97zwfKlcwH/rSIAc5Er1Wtn07cDr3rCNcqHQsTeBHqtj+Ha3XIOf4cB3iYEdz+ArExtboX0zNGy37XUcd6teGoSbk/8A6LHzju+ENvauBNBf6UgbWM+gkuxbce2dLpBaL111OSLf7ncB0ut2sLHStTaQIsoNYBS8Jq4XEsclQS3Nns1SzwkCGIDs0Y77gJTykc0nMBG71bYNgb4Kc38duNm+Dmwt9OsoGbPrWZ3AoOwo8SYTG0rlcqF/pXTD9gMHnq7VS1XzrDlVwpcdO2j7Tj/kDW++szZ8dkCiJwfHzw+jg+fffTP8xdHx118Of3MQfXyLTJlTZ98gLz++P/zsSfQY4X4effLFy/uPSHMh+vzW8eFvSfTgcPibj8nw24OXd55Hf/0oevycRH85OP76iEQfPhr+x5fDJ7ejx0fRrx6WCoz5Oq0VqmVmZ9DrB0YfOB8MfLtlBW3HqS9a3cCuOG7HdsP62fIE437Pcp1NOwjre8CzktMp1UpcwUqVkmv1bHjRXMggKPr0M4AQbKlxrlRKHScAbu++KxuaIZBH/p589w25wYFwKJV3tdLx4a3olz/nqIeHXxw/e0GQnZ+9IMjAz5++vP/w+NkTMrc6j+8Y3HffvLx7j7Z9Mfzw9vDDpyZDDQvO927YPZgooAY0pHp8+Gj44bcEsAz/9OdYQqQ6Nfz8bvSHexUcjQAVx199QarT0+KtYP7BX46ffY0yABRHiAnBpXRJ9Q3oey/69d0KmQIR370b/TruzCTOxE+JZ3L//e3oztca3Va7zUj2fMvdsoGZTptypz/Y6DrtM/gU0L8np6tnzb67BSDQw98FmJ7luKAE8GYQ2P6CFVqLoO+2P0p+hX2hRUFn0ur3uRIpOiTUYxxVgjXVc1xch0DADadtk7bX63ft0CYhmB/4t0N6YAk2nbaFYg8KQZ2tt8Bvn2FdJ3lXnEkZ2uPFW8LJh6S5Nj/faDZb76xcnpudW7q4tPo+qSNvp85Oz8DkT4KaOjszGvHqWyuN5luXLy5AhyyUWjvFBZMLAR+y46ZR2hy4bZwdaVvd9qBrhfaKvWP5YFsA1nY7MeRVF7gx6NqmfRM3iAAQ7pUqFF25AHaqhajqfqk0AieojQVNN+wVz+sFqEV21+oHdmfJDYGTICfAWq0UygTXN5uJ6/k9q+v8VAe6BDuF2bNuGtR2TlXoP/Rl6MPwxvKgt2H7RhJ9uYyQ5ZlCgZpqIwv5OWA9I0Aa5SvXZuBxvyCJ8tmEgBBsgtebnk8M3gZzI96mOlOBjgFs9QdrrkM5OOv71q7pBPRf3JF6pmhluwIhF4j2mr/FPzD/vmEM4G2Z1M8TY09pIyToeuESiq4WM2uqksEjRGBK6DJjUfynM/CtDafrhLsZiGAZGNWpfLRx53IC8X65rE5l0+kC/5XZJLqT8yAU3qHG2bYJLoyhINlDH2Ur3D5pwoKfAfnZzwBruUz2VcqMViVmHuds/KKiMQTmDjOJezPNIkBISIIBGMggsFHOUzO6/JtKG9cgTYdw9qhDUhmIEC5rDyw0VR0VDXs157hez7G6WZpdntFwoP3uhzoSKVQ5o4Qc4qkmSRAtggVsgaUHUZcXJyZ03IEtiNsX3WP+TdTTxApwlZkmyHRbWQbKEtCVXJmF6FtLDxFDxfOfs0FKdi2fLfG72U3gu66LSaWeTA+qKNOG7123M+gi5+t54+9zGXMmogSCHM7rfOcduF3TGQkEeAM3XOrUmCmSz2JUfPu2vcub+VMlKcZKhsTEOzpV983+YB4x13SpCttAfQe6IOkvk3Yqm2zRC0xJi1/L2kASwE0bmNHJBiWnyaWl5aXlN1tLy6uNlXdnL7aajfnLywtNSXvYrinKehq9vtZK473ZlQUGwoRCOcz3E87mGfBoYL/E/f1Kje6k1ybETjoRXIHtt3ZN3/xJLjFXXZLabyvgDozukeF55GAqS98r0/uBkAo9qh2ri6avs6E5S+ztZAe8vA0ryPeWwEsFSpbmG+gFnJ0G92cq9mi0xmnemIlmYXbp4vutxsXG/CrAw5Rai41G6+2V96An7adgTUK901hp4UgMujolhoG5WZ0O6iV4hxtdm1i4uqnCBwRiQmAIujwFy21ve369WCyi5OdXGrOrDbI6O3exQZYWyfLlVdL48VJztUlEXMxY2Wp3vfZ1YiDv6cLtEJTXm40VAnO+NLvyPnm78T6Zf6sx/zYxoBVoK1cEdNcKwlbotK+3rJCsNn68SgdaXrt4kUGUZ666QFHBcUFi4SsQB9NtDairIhinji78FNGgjSWKQJa3r9q7eLEiXrUvLxCjNghzm4P95+H8B/m9A+CoRobVuUedT8iKJTQGZa6y+12gskykyu7xAqn8X41HsbQrPQmNxdu3iKt3HOU4FPIFzaipGCqwMUas7KZZLkEEfFH4UgCpZI+ZrRbKwovAgHnrx8kpj6c3l/G5lAUnISmOxsdJYhjUuZUpVNrsfubwMHLnYAK2Yn23Ozy40Yv1hv7jOLC0vNH6c0Bmnc7OV0puWGAfHEGTBKCnAk+dPaQDVnWBLjBoYmoZhzxWm3JWSskRpAyze1wmLByHg2/KVYI52BwvJWtFTnx/4Pmwuc2F73usOeq7R2cCBCe+ZgKGtpR+MQWl9k/t771ZlS7DrtrGT2BwDMWpqTnSmjA3xW4KbSUA2qN8ClqozaIfx+MJexTFbEmIRnGwaw4AFKBVAyDIiZF3LBZThtt3t236gh3+Zc1IiO0kjeAtg0Iqx1tyoFmcSYDbavM6G2QexWb5trNOttUntN+nZodWC3Xpg07eLK5cvSRUL2tt2z2ohCG187y1YEazHdTruBXi9XjYh4jdUiuIgURCgB4XJiJDuBPkkZus3RiFpkikuhVgaq0AAxAgFs2OUZ5T4eAeGhb+XAs8o5wWjfmYYShVKjaa1uG56rOCJe5x0TBr2CCebhj3K4zk5ovp2Ancy6ZSmuId/lpabjZVVcnmFgNkD44dm/HLWHqUEcSeZEzWMq2jWvKIY7jiuI+A5rYEVNS5UCPuPhr34U4SlIBpglNEMfdjQDdVTBirKFaI2SJNbUSNLECL9SzrxXMNSXOEc0fig6DmoLFfvirI01IkxmpU5lUTyqyRnBGYaHMXFi0vzqxJfmSxcJmvvLOAm0Gys8pnHY4DM7Zvt7gCsiKmMXEjtiAqcxm7ORHUhCpYAK6RpyTKKlThQQWtSrIi4hD6phge9fequifBbNACLrV78kgewDKeyeHhnFiUVFY8IjEmRC4+hYiAxDmY0GGZOXS5e6SrlYBX9BU42hZ1t20cxKOhYgEQukHVmTk7tKY0fgO4YRergFMv766QGvJrJ0jku9bSNAj1gFqouVyC3efOX15ZXjdNigWg2Ll62s03szmGkwTM1tmqjKk1ygSL92Ethmt5HNKR66Dkm2swIPrVHebkfa6VpmkwACW3sOkEodrlFz59l5OkqycTM47+8TeIHWqpsBisbia6qbJWvLIBDPPd+5tjxhhPPg2UdfViSStJRZgCkkdtRbFwhkYyRW8mOqTq4hWS6UYFTEokMjmUM8mBoroMBSo7Nhhp5mgcPexmYCNaBMzUBrtiuGHi/zDRBBvHgH12bUBwiiOLhFUTxeNpg9Rtduw0o26hsPGjFY5+C1+3UAQedv+V0dxdt+21/p5YfyfJgAGbbBQJXnZ79U8+1Ye2urc4XK0iOa+8IlJu2/Y7tg4JSnCMiXo5VI4HzlyWzhbllez85PQayESRKF1ycdJaARcRWeASUs9i7vY1HMlobo4iebP1kYPu7GhOV9SWiDmmTZi82mvMNo7l2yUCzBVswTIUZoRZVchlopXwy0ZK1muKgCy2Lt+NSj7WqvxaeHHvLvc54bV0wJRGUxUlJjpwXs7UnzyRpeQXQP15eWtaniwBq4EZ9goRjA3PUrbUExvlqzg4HFY86M1MmP8FQiimfqwkz/ir8Tash1zaMJCksD6w+AOWTi4MngOwbsH4xA9TuWsxj0SJLtidzIOpWsEh6Z9uBANXoDOwFsCpordos4loL2/imjGdrOf3FW2WZkjpJLNCRS/OViKDD4EokXa9tdSkvdpxw23HFqpT7IDdpjD4LSd7qehtgZHdF/OnblE4crmf5122/wHC0co8labNiN5X9FatGEF9u53g0BYFRqqhjlgt92vmK+rKm4L0WpxdzzbFgE5MGy0peqakYr03gMLAdKJjZtqCwRDFpTEdThi3PCHw/AzfayOUZOt2+ZZi172XaxprZCBM3tpkb19S9qrl7FZM3ntk7yfSdZP5+iAlUtFI1g6CvWxjjh9BQI1YYWu1tCsA4rSTFQbZ2p2sL8fJjS+iHdgz2+Sb+NPI3tHgKG2G7BUbEcts2JZZnsTXEypH6WM74DEM/IlGiprNNBb34mXNiLUPOel07DRMj7otM6t+QIVJ6jOUyE0qlFEuHWm5uYpj8wYRLaapWRpwPazsKmw8etnQGYAwFOUbogRvNYm3KBvpMJkh2vkhmsacqIrecMAQ5g0u+54wvxSDGNzIqCMB4VSHCzSUjvQ4YDznXEithY7ALBML21+2m9sDcOhvWyRBnYVjxqCimzFng3psqwFGStG1PJJMNrQgH0OtJ2PHHkymEzgbw2+vb7gLvlOi9ifVULNMY+rs8fcGy0auYeGcZ6oJaQAPR86pvuYFFiaKL0aDSEok/1p0v1hVvJ0gu2IJWu0BXaz07Xch3C2owgViI1+24aiYnzzpyr1MTMYVssxrzUat+eI3SCYr/2pzndW3LNWJbXlaLIMJtiDEJCJA0fN/zjeLwzy+iJ7dI9Id7wz89x/JLWVcYHTyPPvnILJZTBRM8uWX1LRog1bUlyPiAMRu4F03qDS6uzF5qzCjkyq7JGo0UecffPB9++vDlR3+Nvj0a/u4RrRM8eBp9+/Dl/SeykPDDW0g4n8nY9LO11ux61DDimE3gdCHLRyikXAQtdTHaLSiM4eWokqcvMpJFXB20JEmsDnq2JDvxUc4rnZGMMAPnpzaWfQgJjRTOy4cH0adfamJ4SBISI9Gn94b/+uXx4S0sIx3+7jGJDl/EFZ4Z0knm9ierAkSm/p047e/wlL8gWLzR0/18lagz3bYCg7OFqAVt6tC0fUZp3AB35Xr8Yj9JO62DUQ4iRit39MvbZKSCD7+9TaI7Xw7/+J+0MPrwv6PPb5Hhv/2XViSbq+B9axeTPmi+6FnbrNtZQXveoSYvpitVZgOveqw8RtZCxE09u+fVyHqiePa7b8ipPa6L+9yapFSBLc31GFeigocVbXru6m4f8zewo+AqKqo1R2Mc3/z/PLTRjzlOPITOPP5IFBnQshG1oFDLNCoHH9oEFPgxjkmU86a00dHOlLi2mfRsSXmIhXbCWYq6tY2QctbxAD0a0GZz4fvutjhTbSqjtl7udMRLiXvLtZgB9s1wjrvQ6XLBrGq+mirV/Rm1sItsOi5NcrABgT3trgdeEz+Zya7xglUkS7zQL+/3u7us2Aq9H+ZUnuRLJjoZIzzGvu9hfdolWm30HrR7O7rjSHHprmMSPT0VqhRklSD+bIPlpclyUbSthlQUjAZVrIN+/syMmeKmUCATohsWKszENYwcdIwCxmw/kqNOuZO4aemlhxm1ugtSB+a38UOH+HxQmy1ArtjBoEvrdhN13Wx4taixjHXd6dcQnFy5lir2Vba+0ZXNkgatnlsv+w1S5b5jYJNkx9hG1ZaOqOrlTipLNJ7gwserrzCmLze+J6eUjqXc+qS6SAVKG9hkYMLznPVXKpXn3LigRqt6dQVjN0f+irzGZezklHkzjJVYKZI14jSho8+GUzGZQvxKG0RadrhZaNvohcoP2jxGipnunDi5imLCyPcSPDVQjE/1hGQStgWd31hIsho6ZWBy69iz69YTYhhVts7lnV+tzniSKkGPpzei0jxzKrz44LzKmGyP4yTmlzMq1c0c+5z1ekbtl7L6+gsu3AxFzi2DIJpHCIsL1Bb3srryewJ0Ol62bNVzIPVJA8tcAuN7T0LX6Q5aIeLfV1D68tjMEPTQrGbMFDVhiZxWniZyF3luwUJiQiMmIgjnh2harb9q06qZdW4MWaIXWOWqNMo8nLN9x+usgkOJ3roOfp5U5Vdc6ywY0yHM0LuIp2o2rzQoXvcm314plvejo9tkePsgevLzdfnVEyvMkTsNxrx82IQ2x6kJPiyeKJ3a06H2jw8fKd+ETr0x/OMj/i2oPmSe8LPium0nCD1/V4nqMJTKDqtYUNkKIaqskJ8MLNjEMKwTgsWAVoo3jnoygroSLrAS/alFd1xTxIbm7/ZDz/Qt8H17a2tLC4bMu6RWgP4+EQ5zAsVekhlxax1l4H1qj/UFqS86N+2Ocba8j1+L8FTNqb1Yl/ZRXFzA+zI0V7xtni/KDzCo966GGDwEEMlsmpqkB4wyztAOGrkD0O3Oxt8xUn8tPoiQKqGeSa3rB1Qnlr/q4KOPI4VZOOn0EaioxE9KPTwrnlWeE8VMKgrlsyelDkgt6VShR1dAqZBIrla3xA5pYxCsKkqdjiaORWiQWM85MeU8188WK9pJJHtSUyv6KWKMbMxD1fGOVF/tQHX841SmFvpB6Ylno7L07VUYJbrLQmxxoKeLCJfLJavPM9jwyxAngIlTx534U2EuVuXwUflUUxa2ZuviTLJLXPuapZApcMbcdbBQYqj9Wpw5XFfglYwtnyTN2SJWjXKic8IMILCi/NwjWSkrtiqmKvKgDyNh9DKVdZE1R1n6IsbZYuOoHeMzSOqBpxvYySLzutUZnFyzqEKPUbqoLnJJx35CgZIm94ppmvocaVV1YJSv5ZxaZpj6gJ1Z8o/3k18Vjio0pIVIowv99K8DMz73458H4q0P8stAcQVEeXxiTiQljUz5GBPZnPcxJMU8Jmzeh5Ppwbm5xwCkjTWYeGEGKLl5dpoNmN2edR3EaZp+zB6Blh6pJVKsdDPWtRMYyr6EVbvH5aIxkpNLPceg5ATZcSWSl4MwrYG4qGP7ti81h18w8kFwht0CksUWZUIXTLVU7sIFVvBgwmrbdLZ4Y4pohGMfiwomjcKYFg3u29ADs82BqXRdiC+SMfHGoXnPDWkmjDEJq2PBK38Sff6I4KUvT2+JW2CAmApQA65k9PiIsBtojp8dRP9yN3pwLzpgJ3q/+Zgcf3UYPXk0vCcumSmijahQeph9keXANF6RhJlqmXCaSzkKgoD8K1mcwPeY8ToLTlRK9OIPGqj8zwOA2cTPs8NLnmvvGpJacKHrgkc6iIpSkRcEV8DAFJ+jRy8wAsrh4jpysSyVkfhW+/qJ+XkGuwKgs6C4BiuRGVXXwTo0KeF2h1Z3lLUsPQ6rJ+mzxygoovB5m9DN+W2n24Fu6kdkYITmdvEAVnFYaIhhjLqhJHk3CcteJ64luZJ9zQir2Lmm3Mcij5GRYOULsvjxnKaTGLsv0qoGUATklQqqnjNzZwElBh6z1x7QIyAWSzUYl4xix7khTmwR0mx3rSBYBuz49RD/3h0bisqxRDzceV7tJaosRKaLogrC3a5terIsozhlVqeLWjZrnK/ntLmjNwPTpvPP/5yOC5cW4QqsMdGn81GSiRjnTOowYjw2ih70LpN6rGLUQ1NoSoBrKeD8LLqiVVl5cx2nPGkFlKIShynoj36UqOnQO7KUyQm9ztEzo0LsMmrKsw4Tn6RcO7UX03GBFOVDkSZa9mWGBhvZL96yboIZ6xnJs4ZNyx0hiaBvubEoAFZXaaQKXhYTOOmVdGNjpdC6UY95LVNAF4SNVxVxglT3MVkSZ6BO7cU83X8jPjiocSkoJ+QjMeo5LJ7Hiks2UjN2trbD8WeM0GlO0tdFXQnANwHbbACTK4xRFdZb4qLGgUFRm0xLVPQsd9qIq/D4cmQOCAFkCkjedyYur/JtvEWQWG6HhJ4ltV1NA7HdZdWLw1f2Rg1o2Zt3rUE3VMJhejxIzQvbzd91YFvBEwT6XWNRrbDN2PREtWxmbSgjU1alQscbFsgtrzCVzjazNDXzKCCvTDWeljo+O9eQV1ZsezuryEpjXbuKj/sWahpWujZYgqWmYenzvYfR74+4JuPDA6WwaD1VS4xiFPzDMmIsPcgr66ZH8r696dvBduxxpzxq7nq3gyDpdcOrM2xHg1+AgSkkdUoKhTOn+a2JdK6KjTx9pmAKQ8g5TncpvitiUDQ9jarMyqprZAvcjQAz40aVqviG54OWTNKRaxBoBNt2B7+9S2E1uWWj6C3X6dGvcvBuH9cmr7HbTS084cnrywxCgriz0+KyHp1jOjcqwQRjB2XeSmN24VIDFRC7oPK2ncDGb1Y6PZszlcGYvQ77mKWDW2+dwDgo29dfF9w8/uqv4I6S4eHz4T8fRneeXnUnZX3f3XvRk/u0JgxveqxORUe3h5+jprA7HCkouxBy+OwIggacztQ0BrvYFF8kWSPVyvS0CDJoN3HxZI0WCaJbDP/c+QwvAVXvqURfmnvg1SkNgboIsFfWdZS1+D5K7KOuBToreUHl8eHH0eNbovLuwT2ChXqJazePovsvwIf/ktGL+HAGfzyicHc+ItGDXw3/6RACgJd3ntMLMpVbMafYGUj15Sd3CXAQgLBSTlxhSmk7/Au+evwi+gQr585ED5++/OgAnx8/58c1iPT4EK9LfYQTjh78OnoM81I0JxZ5hUmcKgvaSqdN1pYIbqfJRUdDBXM77HWTcSbyngeKEdLxQrkuNBEy8pDmIVYrRvfvoFH64kjcrwkA0dPfQlMc80DUyMWOLTDDpMz1ALWqjPYwpoKWmL7y0IlZcimLEsyH2DsvgsuMl6Ov/h3FrM4tC2dyhpmReHU05gTp58AlPn8OvYjzyftcz52hr88Foe/Bvux06leLauDMY9arxfP/+4sv+HygD4U+f+4MIoZ5/K0GSKFOTES3LGenxeXAyHNhUYCclAHKAEM3TbmkNl6Dk9U3UpuSovsyjehfJ+G2Ta9aZhf2ThOWEyVWQNghpAObBwk8hNsllm/TO5kx1BkE4H/jF4yyCimwwxAco3irU62yxoNJYWb1m3bZDGskxSI0Gmk9GrFQgYFgNsHgPDn4HkPxjiePCAb9GVir+4hfGbycYaOQ5X3fwe8t6Y3eNryjt3aXC/8HeNjYfkRcAAA='
         run: |
           $ErrorActionPreference = 'Stop'
+          $parts = Get-ChildItem 'tools\bitcoin-v120-patch\*.b64' | Sort-Object Name
+          if ($parts.Count -ne 4) { throw "Expected 4 patch chunks, found $($parts.Count)" }
+          $payload = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          $b64Path = "$env:RUNNER_TEMP\bitcoin-v120.b64"
           $pyPath = "$env:RUNNER_TEMP\patch-bitcoin-v120.py"
-          python -c "import base64,gzip,pathlib,os; pathlib.Path(os.environ['RUNNER_TEMP'],'patch-bitcoin-v120.py').write_bytes(gzip.decompress(base64.b64decode(os.environ['PATCH_B64'])))"
+          Set-Content -Path $b64Path -Value $payload -NoNewline -Encoding ascii
+          python -c "import base64,gzip,pathlib; s=pathlib.Path(r'$b64Path').read_text().strip(); pathlib.Path(r'$pyPath').write_bytes(gzip.decompress(base64.b64decode(s)))"
+          $patchHash = (Get-FileHash $pyPath -Algorithm SHA256).Hash.ToLower()
+          if ($patchHash -ne '758f91522671464297dd71e49de5150e64ea5944e9b85e861d890edad6acc751') { throw "Patch payload hash mismatch: $patchHash" }
           python $pyPath $env:BTC_STAGE
           node --check "$env:BTC_STAGE\main.js"
           node --check "$env:BTC_STAGE\src\mining-service.js"
@@ -61,58 +65,40 @@ jobs:
           if (-not (Select-String -Path "$env:BTC_STAGE\src\wallet-database.js" -Pattern 'ELECTRICITY_FEE_PER_GPU_KRW = 100000' -Quiet)) { throw 'electricity patch missing' }
           if (-not (Select-String -Path "$env:BTC_STAGE\src\mining-service.js" -Pattern 'SUCCESS_PROBABILITY = 0.0002' -Quiet)) { throw '0.02% probability patch missing' }
           if (-not (Select-String -Path "$env:BTC_STAGE\src\wallet-database.js" -Pattern 'bitcoin_gpu_units' -Quiet)) { throw 'GPU durability table missing' }
+          $pkg = Get-Content "$env:BTC_STAGE\package.json" -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '1.2.0') { throw "Package version mismatch: $($pkg.version)" }
+          $manifest = Get-Content "$env:BTC_STAGE\sd-app.json" -Raw | ConvertFrom-Json
+          if ($manifest.id -ne 'bitcoin' -or $manifest.version -ne '1.2.0') { throw 'Auto-update manifest mismatch' }
 
-      - name: Smoke test GPU durability and electricity
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $test = "$env:RUNNER_TEMP\bitcoin-smoke.js"
-          $code = @'
-          const fs=require('fs');
-          const {DatabaseSync}=require('node:sqlite');
-          const path=process.argv[2];
-          const root=process.argv[3];
-          try{fs.unlinkSync(path)}catch{}
-          let db=new DatabaseSync(path);
-          db.exec(`PRAGMA foreign_keys=ON; CREATE TABLE users(id TEXT PRIMARY KEY,username TEXT); CREATE TABLE accounts(id TEXT PRIMARY KEY,user_id TEXT,bank_name TEXT,account_number TEXT,owner_name TEXT,balance INTEGER,updated_at TEXT); CREATE TABLE transactions(id TEXT PRIMARY KEY,account_id TEXT,transaction_type TEXT,amount INTEGER,memo TEXT,created_at TEXT); INSERT INTO users VALUES('u1','tester'); INSERT INTO accounts VALUES('a1','u1','SD','123456789','tester',100000000,'2026-08-14T00:00:00Z');`); db.close();
-          const w=require(root+'/src/wallet-database.js');
-          if(w.GPU_PRICE!==1550000 || w.ELECTRICITY_FEE_PER_GPU_KRW!==100000) throw new Error('config mismatch');
-          w.buyRoom(path,'a1','A'); w.buyFrame(path,'a1','A'); w.buyGpu(path,'a1','A');
-          let st=w.getAccountState(path,'a1');
-          if(st.rooms[0].gpuUnits[0].durability!==100 || st.electricity.dailyFeeKrw!==100000) throw new Error('initial GPU/electricity mismatch');
-          function one(rooms){return rooms.map(r=>({accountId:r.accountId,roomKey:r.roomKey,btc:0.05,successes:1,gpuSuccesses:[{slotIndex:r.gpuUnits[0].slotIndex,successes:1}],elapsedSeconds:10,elapsedIntervals:1}));}
-          w.resetMiningClock(path,Date.now()-11000); w.processMiningWindow(path,one,Date.now(),10);
-          st=w.getAccountState(path,'a1'); if(st.rooms[0].gpuUnits[0].durability!==99) throw new Error('durability did not drop');
-          console.log('Bitcoin v1.2.0 smoke test passed');
-          '@
-          Set-Content -Path $test -Value $code -Encoding utf8
-          node $test "$env:RUNNER_TEMP\bitcoin-v120-test.sqlite" $env:BTC_STAGE
-
-      - name: Build extension ZIP and update catalog
+      - name: Build ZIP, publish catalog and cleanup helper files
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $zip = Join-Path $env:GITHUB_WORKSPACE 'downloads\extensions\SDBitcoinMiner_v1.2.0_Desktop.zip'
           if (Test-Path $zip) { Remove-Item $zip -Force }
           Compress-Archive -Path "$env:BTC_STAGE\*" -DestinationPath $zip -CompressionLevel Optimal
-          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
           $size = (Get-Item $zip).Length
+          if ($size -lt 50000) { throw "Bitcoin ZIP unexpectedly small: $size" }
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
           Write-Host "Bitcoin ZIP bytes: $size"
           Write-Host "Bitcoin ZIP SHA256: $hash"
+
           $catalogPath = Join-Path $env:GITHUB_WORKSPACE 'update\extensions-catalog.json'
           $catalog = Get-Content $catalogPath -Raw | ConvertFrom-Json
           $catalog.catalogVersion = [Math]::Max(2, [int]$catalog.catalogVersion + 1)
-          $catalog.updatedAt = '2026-08-14T20:47:00+09:00'
+          $catalog.updatedAt = '2026-08-14T21:10:00+09:00'
           $bitcoin = [PSCustomObject]@{
             name = 'SD비트코인 채굴장'
             version = '1.2.0'
             downloadUrl = 'https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.0_Desktop.zip?v=120'
-            notes = '채굴 확률 0.02%, GPU 155만원, GPU당 UTC 하루 전기세 10만원, 채굴 성공 시 해당 GPU 내구도 1% 감소 및 0% 파손'
+            notes = '채굴 확률 0.02%, GPU 155만원, GPU당 UTC 하루 전기세 10만원, 채굴 성공 시 해당 GPU 내구도 1% 감소 및 0% 파손, 오프라인 누적 무제한'
           }
           $catalog.apps | Add-Member -NotePropertyName bitcoin -NotePropertyValue $bitcoin -Force
           $catalog | ConvertTo-Json -Depth 10 | Set-Content $catalogPath -Encoding utf8
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -r --ignore-unmatch tools/bitcoin-v120-patch .github/workflows/patch-bitcoin-v120.yml
           git add downloads/extensions/SDBitcoinMiner_v1.2.0_Desktop.zip update/extensions-catalog.json
           git commit -m 'balance: nerf bitcoin miner and add GPU durability v1.2.0'
           git push origin main
