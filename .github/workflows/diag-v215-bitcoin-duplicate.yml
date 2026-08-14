@@ -1,0 +1,41 @@
+name: Diagnose v2.1.5 bitcoin duplicate
+
+on:
+  push:
+    branches:
+      - build-v215-updater-state-fix-20260814
+    paths:
+      - '.github/workflows/diag-v215-bitcoin-duplicate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install v2.1.5 and dump relevant main.js functions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.5.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.5/SDCenterSetup.exe' -OutFile $setup
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.5\resources\app'
+          $js=Get-Content (Join-Path $root 'main.js') -Raw
+          $script=Join-Path $env:RUNNER_TEMP 'dump.js'
+          @'
+          const fs=require('fs');
+          const text=fs.readFileSync(process.argv[2],'utf8').replace(/\r\n/g,'\n');
+          const names=['reloadCatalog','loadBuiltinApps','loadInstalledApps','getChildDirectory','installCatalogUpdate','installZipApp','addZipApp','publicAppState','catalogRuleFor'];
+          for(const name of names){
+            let s=text.indexOf(`function ${name}`); if(s<0) s=text.indexOf(`async function ${name}`);
+            if(s>=0){ let e=text.indexOf('\n  function ',s+20); const ea=text.indexOf('\n  async function ',s+20); if(e<0||(ea>=0&&ea<e)) e=ea; if(e<0)e=Math.min(text.length,s+9000); console.log(`--- ${name} ---\n${text.slice(s,e)}\n--- END ---`); }
+          }
+          for(const line of text.split('\n')) if(/bitcoin|installed-apps|builtin/i.test(line)) console.log('MATCH',line);
+          '@ | Set-Content $script -Encoding utf8
+          node $script (Join-Path $root 'main.js')
