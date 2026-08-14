@@ -62,7 +62,36 @@ jobs:
           $raw = Get-Content -Raw $b64Path
           $clean = [regex]::Replace($raw, '[^A-Za-z0-9+/=]', '')
           if ($clean.Length -lt 1000) { throw 'Sanitized hotfix payload is unexpectedly short' }
-          [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String($clean))
+
+          $stream = [IO.MemoryStream]::new()
+          try {
+            $start = 0
+            $paddingMatches = [regex]::Matches($clean, '={1,2}')
+            foreach ($m in $paddingMatches) {
+              $end = $m.Index + $m.Length
+              if ($end -le $start) { continue }
+              $segment = $clean.Substring($start, $end - $start)
+              if (($segment.Length % 4) -ne 0) { continue }
+              try {
+                $bytes = [Convert]::FromBase64String($segment)
+                $stream.Write($bytes, 0, $bytes.Length)
+                $start = $end
+              } catch {
+              }
+            }
+            if ($start -lt $clean.Length) {
+              $segment = $clean.Substring($start)
+              while (($segment.Length % 4) -ne 0) { $segment += '=' }
+              $bytes = [Convert]::FromBase64String($segment)
+              $stream.Write($bytes, 0, $bytes.Length)
+            }
+            [IO.File]::WriteAllBytes($zipPath, $stream.ToArray())
+          } finally {
+            $stream.Dispose()
+          }
+
+          $sig = [IO.File]::ReadAllBytes($zipPath)[0..3]
+          if ($sig[0] -ne 0x50 -or $sig[1] -ne 0x4B) { throw 'Decoded hotfix is not a ZIP file' }
           if (Test-Path $hotfixDir) { Remove-Item $hotfixDir -Recurse -Force }
           Expand-Archive -Path $zipPath -DestinationPath $hotfixDir -Force
 
