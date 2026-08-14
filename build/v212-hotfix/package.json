@@ -1,0 +1,28 @@
+{
+  "name": "sdcenter-desktop",
+  "productName": "SD종합센터",
+  "version": "2.1.2",
+  "private": true,
+  "description": "물류센터 필수 경제 밸런스 업데이트를 실행 전에 검사하고 구버전 실행을 차단하는 SD종합센터",
+  "author": "SDWallet",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "make": "electron-forge make",
+    "package": "electron-forge package",
+    "check": "node tools/check-all.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "@electron-forge/maker-squirrel": "latest",
+    "electron": "latest"
+  },
+  "dependencies": {
+    "adm-zip": "latest",
+    "electron-squirrel-startup": "latest"
+  },
+  "homepage": "https://sd608.github.io/sd-center/"
+}
