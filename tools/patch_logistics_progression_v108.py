@@ -17,7 +17,6 @@ OLD_VEHICLES = '''  const vehicleTypes = [
     {key:"large",  label:"대형",   name:"대형 카고",       cost:1500000, order:2, stack:6,  speed:0.72, desc:"적재 6스택 · 보통"},
     {key:"xlarge", label:"초대형", name:"초대형 트레일러", cost:3000000, order:3, stack:12, speed:0.58, desc:"적재 12스택 · 가장 느림"},
   ];'''
-
 NEW_VEHICLES = '''  const vehicleTypes = [
     {key:"small",  label:"소형",   name:"소형 밴",         cost:250000,  order:0, stack:1,  speed:1.00, minRank:"F", desc:"적재 1스택 · 가장 빠름"},
     {key:"medium", label:"중형",   name:"중형 트럭",       cost:700000,  order:1, stack:3,  speed:0.86, minRank:"E", desc:"적재 3스택 · 빠름"},
@@ -34,7 +33,6 @@ OLD_RANKS = '''  const ranks = [
     {rank:"A", min:1450, next:2200},
     {rank:"S", min:2200, next:null},
   ];'''
-
 NEW_RANKS = '''  const ranks = [
     {rank:"F", min:0, next:300},
     {rank:"E", min:300, next:800},
@@ -59,15 +57,18 @@ VEHICLE_DEF_REPLACEMENT = '''  function vehicleDef(type){
   }
 '''
 
-BUY_ANCHOR = '''  async function buyVehicle(type){
+BUY_WEB_OLD = '''  async function buyVehicle(type){
     const def=vehicleDef(type);
     const limit=fleetLimit();'''
-BUY_REPLACEMENT = '''  async function buyVehicle(type){
+BUY_WEB_NEW = '''  async function buyVehicle(type){
     const def=vehicleDef(type);
-    if(!vehicleRankUnlocked(def)){
-      toast(`${def.label} 차량은 회사 ${def.minRank}등급부터 구매할 수 있습니다.`);
-      return;
-    }
+    if(!vehicleRankUnlocked(def)){toast(`${def.label} 차량은 회사 ${def.minRank}등급부터 구매할 수 있습니다.`);return;}
+    const limit=fleetLimit();'''
+BUY_DESKTOP_OLD = '''  async function buyVehicle(type){
+    const def=vehicleDef(type),limit=fleetLimit();'''
+BUY_DESKTOP_NEW = '''  async function buyVehicle(type){
+    const def=vehicleDef(type);
+    if(!vehicleRankUnlocked(def)){toast(`${def.label} 차량은 회사 ${def.minRank}등급부터 구매할 수 있습니다.`);return;}
     const limit=fleetLimit();'''
 
 STARTER_INFO_OLD = '''  function starterUpgradeInfo(vehicle){
@@ -87,53 +88,23 @@ STARTER_INFO_NEW = '''  function starterUpgradeInfo(vehicle){
     return {current,next,cost,unlocked:vehicleRankUnlocked(next)};
   }'''
 
-UPGRADE_CHECK_OLD = '''    const info=starterUpgradeInfo(vehicle);
+UPGRADE_WEB_OLD = '''    const info=starterUpgradeInfo(vehicle);
     if(!info){toast("스타터 차량이 이미 초대형입니다.");return;}
     if(state.balance<info.cost){toast("업그레이드 비용이 부족합니다.");return;}'''
-UPGRADE_CHECK_NEW = '''    const info=starterUpgradeInfo(vehicle);
+UPGRADE_WEB_NEW = '''    const info=starterUpgradeInfo(vehicle);
     if(!info){toast("스타터 차량이 이미 초대형입니다.");return;}
     if(!info.unlocked){toast(`스타터 ${info.next.label} 업그레이드는 회사 ${info.next.minRank}등급부터 가능합니다.`);return;}
     if(state.balance<info.cost){toast("업그레이드 비용이 부족합니다.");return;}'''
-
-SHOP_OLD = '''      ${vehicleTypes.map(def=>{
-        const disabled=full||state.balance<def.cost;
-        let label=`구매 · ${won(def.cost)}`;
-        if(full)label=`차량 슬롯 가득 참 (${limit}대)`;
-        else if(state.balance<def.cost)label=`잔액 부족 · ${won(def.cost)}`;
-
-        return `<article class="shop-vehicle">
-          <div class="shop-vehicle-top">
-            <div>
-              <h4>${def.label} · ${def.name}</h4>
-              <small>${def.desc}</small>
-            </div>
-            <strong>${won(def.cost)}</strong>
-          </div>
-          <button class="${disabled?"":"primary"}" data-buy-vehicle="${def.key}" ${disabled?"disabled":""}>${label}</button>
-        </article>`;
-      }).join("")}'''
-SHOP_NEW = '''      ${vehicleTypes.map(def=>{
-        const rankLocked=!vehicleRankUnlocked(def);
-        const disabled=full||state.balance<def.cost||rankLocked;
-        let label=`구매 · ${won(def.cost)}`;
-        if(rankLocked)label=`회사 ${def.minRank}등급에서 해금`;
-        else if(full)label=`차량 슬롯 가득 참 (${limit}대)`;
-        else if(state.balance<def.cost)label=`잔액 부족 · ${won(def.cost)}`;
-
-        return `<article class="shop-vehicle">
-          <div class="shop-vehicle-top">
-            <div>
-              <h4>${def.label} · ${def.name}</h4>
-              <small>${def.desc} · 구매 조건 ${def.minRank}등급</small>
-            </div>
-            <strong>${won(def.cost)}</strong>
-          </div>
-          <button class="${disabled?"":"primary"}" data-buy-vehicle="${def.key}" ${disabled?"disabled":""}>${label}</button>
-        </article>`;
-      }).join("")}'''
+UPGRADE_DESKTOP_OLD = '''    const info=starterUpgradeInfo(vehicle);
+    if(!info){toast("스타터 차량이 이미 초대형입니다.");return;}
+    if(state.balance<info.cost){toast("SD지갑 업그레이드 비용이 부족합니다.");return;}'''
+UPGRADE_DESKTOP_NEW = '''    const info=starterUpgradeInfo(vehicle);
+    if(!info){toast("스타터 차량이 이미 초대형입니다.");return;}
+    if(!info.unlocked){toast(`스타터 ${info.next.label} 업그레이드는 회사 ${info.next.minRank}등급부터 가능합니다.`);return;}
+    if(state.balance<info.cost){toast("SD지갑 업그레이드 비용이 부족합니다.");return;}'''
 
 
-def require_replace(text: str, old: str, new: str, label: str) -> str:
+def replace_required(text: str, old: str, new: str, label: str) -> str:
     if new in text:
         return text
     if old not in text:
@@ -141,20 +112,72 @@ def require_replace(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
+def patch_shop_ui(text: str) -> str:
+    if "const rankLocked=!vehicleRankUnlocked(def);" not in text:
+        old = "        const disabled=full||state.balance<def.cost;\n        let label=`구매 · ${won(def.cost)}`;"
+        new = "        const rankLocked=!vehicleRankUnlocked(def);\n        const disabled=full||state.balance<def.cost||rankLocked;\n        let label=`구매 · ${won(def.cost)}`;"
+        if old not in text:
+            raise RuntimeError("Patch target missing: vehicle shop disabled state")
+        text = text.replace(old, new, 1)
+
+    if "if(rankLocked)label=`회사 ${def.minRank}등급에서 해금`;" not in text:
+        old = "        if(full)label=`차량 슬롯 가득 참 (${limit}대)`;\n        else if(state.balance<def.cost)label=`잔액 부족 · ${won(def.cost)}`;"
+        new = "        if(rankLocked)label=`회사 ${def.minRank}등급에서 해금`;\n        else if(full)label=`차량 슬롯 가득 참 (${limit}대)`;\n        else if(state.balance<def.cost)label=`잔액 부족 · ${won(def.cost)}`;"
+        if old not in text:
+            raise RuntimeError("Patch target missing: vehicle shop label")
+        text = text.replace(old, new, 1)
+
+    if "${def.desc} · 구매 조건 ${def.minRank}등급" not in text:
+        if "<small>${def.desc}</small>" not in text:
+            raise RuntimeError("Patch target missing: vehicle shop rank description")
+        text = text.replace("<small>${def.desc}</small>", "<small>${def.desc} · 구매 조건 ${def.minRank}등급</small>", 1)
+    return text
+
+
+def patch_starter_button_ui(text: str) -> str:
+    old = '''            <button class="${busy||state.balance<upgrade.cost?"":"primary"}" data-upgrade-starter="${v.id}" ${busy||state.balance<upgrade.cost?"disabled":""}>
+              ${busy ? "운송 중 · 업그레이드 불가" : `스타터 ${upgrade.next.label} 업그레이드 · ${won(upgrade.cost)}`}
+            </button>'''
+    new = '''            <button class="${busy||!upgrade.unlocked||state.balance<upgrade.cost?"":"primary"}" data-upgrade-starter="${v.id}" ${busy||!upgrade.unlocked||state.balance<upgrade.cost?"disabled":""}>
+              ${!upgrade.unlocked ? `회사 ${upgrade.next.minRank}등급에서 ${upgrade.next.label} 해금` : busy ? "운송 중 · 업그레이드 불가" : `스타터 ${upgrade.next.label} 업그레이드 · ${won(upgrade.cost)}`}
+            </button>'''
+    if new in text:
+        return text
+    if old in text:
+        return text.replace(old, new, 1)
+    raise RuntimeError("Patch target missing: starter upgrade button")
+
+
 def patch_js(path: Path) -> bool:
     text = path.read_text(encoding="utf-8")
     original = text
 
-    text = require_replace(text, OLD_VEHICLES, NEW_VEHICLES, "vehicle rank requirements")
-    text = require_replace(text, OLD_RANKS, NEW_RANKS, "company rank thresholds")
-    text = require_replace(text, VEHICLE_DEF_ANCHOR, VEHICLE_DEF_REPLACEMENT, "vehicle rank helper")
-    text = require_replace(text, BUY_ANCHOR, BUY_REPLACEMENT, "vehicle purchase rank gate")
-    text = require_replace(text, STARTER_INFO_OLD, STARTER_INFO_NEW, "starter upgrade rank data")
-    text = require_replace(text, UPGRADE_CHECK_OLD, UPGRADE_CHECK_NEW, "starter upgrade rank gate")
-    text = require_replace(text, SHOP_OLD, SHOP_NEW, "vehicle shop rank UI")
+    text = replace_required(text, OLD_VEHICLES, NEW_VEHICLES, "vehicle rank requirements")
+    text = replace_required(text, OLD_RANKS, NEW_RANKS, "company rank thresholds")
+    text = replace_required(text, VEHICLE_DEF_ANCHOR, VEHICLE_DEF_REPLACEMENT, "vehicle rank helper")
 
-    # 이전에 준비만 해두었던 '경험치 50% 지급' 방식은 적용하지 않는다.
-    # 이번 버전은 계약당 실적은 유지하고, 등급 요구 실적 자체를 크게 올린다.
+    if "차량은 회사 ${def.minRank}등급부터 구매할 수 있습니다." not in text:
+        if BUY_WEB_OLD in text:
+            text = text.replace(BUY_WEB_OLD, BUY_WEB_NEW, 1)
+        elif BUY_DESKTOP_OLD in text:
+            text = text.replace(BUY_DESKTOP_OLD, BUY_DESKTOP_NEW, 1)
+        else:
+            raise RuntimeError("Patch target missing: vehicle purchase rank gate")
+
+    text = replace_required(text, STARTER_INFO_OLD, STARTER_INFO_NEW, "starter upgrade rank data")
+
+    if "스타터 ${info.next.label} 업그레이드는 회사 ${info.next.minRank}등급부터 가능합니다." not in text:
+        if UPGRADE_WEB_OLD in text:
+            text = text.replace(UPGRADE_WEB_OLD, UPGRADE_WEB_NEW, 1)
+        elif UPGRADE_DESKTOP_OLD in text:
+            text = text.replace(UPGRADE_DESKTOP_OLD, UPGRADE_DESKTOP_NEW, 1)
+        else:
+            raise RuntimeError("Patch target missing: starter upgrade rank gate")
+
+    text = patch_shop_ui(text)
+    text = patch_starter_button_ui(text)
+
+    # 계약당 실적 지급량은 그대로 유지하고, 등급 요구 실적을 크게 올린다.
     text = text.replace("  const REP_GAIN_MULTIPLIER = 0.50;\n", "")
     text = text.replace(
         "      const repGain=Math.max(1,Math.round((c.rep||0)*REP_GAIN_MULTIPLIER));\n      state.logisticsRep+=repGain;",
@@ -163,7 +186,13 @@ def patch_js(path: Path) -> bool:
 
     if text != original:
         path.write_text(text, encoding="utf-8")
-    return "minRank:\"A\"" in text and "next:7000" in text and "vehicleRankUnlocked" in text
+    return all(marker in text for marker in [
+        'minRank:"A"',
+        'next:7000',
+        'vehicleRankUnlocked',
+        '회사 ${def.minRank}등급부터 구매할 수 있습니다.',
+        '업그레이드는 회사 ${info.next.minRank}등급부터 가능합니다.',
+    ])
 
 
 # 1) Website progression patch.
