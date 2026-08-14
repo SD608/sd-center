@@ -34,11 +34,11 @@ window.SD_EXTENSION_PACKS = [
     id: "sd-bitcoin-miner",
     name: "SD비트코인 채굴장",
     stage: "Version 1.2",
-    version: "v1.2.1",
+    version: "v1.2.2",
     category: "자동 수익 확장팩",
     icon: "assets/icons/bitcoin.png",
-    fileName: "SDBitcoinMiner_v1.2.1_Desktop.zip",
-    downloadUrl: "downloads/extensions/SDBitcoinMiner_v1.2.1_Desktop.zip?v=121",
+    fileName: "SDBitcoinMiner_v1.2.2_Desktop.zip",
+    downloadUrl: "downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
     description: "v1.2.1에서 종합센터 확장팩 설치 경로의 공용 모듈 누락으로 실행되지 않던 문제를 수정했습니다. 채굴 확률 0.02%, GPU 155만원, GPU당 하루 전기세 10만원, 성공 시 해당 GPU 내구도 1% 감소 및 0% 파손 규칙을 유지합니다.",
     requirements: "SD종합센터 v2.1.3 이상 · SD지갑 · Windows 10/11",
     updatedAt: "2026-08-14",
@@ -91,3 +91,4 @@ window.SD_EXTENSION_PACKS = [
     featured: true
   }
 ];
+

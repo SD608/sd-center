@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 3,
-  "updatedAt": "2026-08-14T21:20:00+09:00",
+  "catalogVersion": 4,
+  "updatedAt": "2026-08-14T21:27:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -34,9 +34,9 @@
     },
     "bitcoin": {
       "name": "SD비트코인 채굴장",
-      "version": "1.2.1",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.1_Desktop.zip?v=121",
-      "notes": "v1.2.1 실행 오류 수정. v1.2.0 밸런스와 GPU 내구도 규칙 유지."
+      "version": "1.2.2",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
+      "notes": "v1.2.2 강제 핫픽스. 공용 모듈을 ZIP 내부에 포함해 실행 오류를 수정하고 v1.2.0 밸런스/GPU 내구도 규칙을 유지합니다."
     }
   }
 }
