@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 2,
-  "updatedAt": "2026-08-14T21:10:00+09:00",
+  "catalogVersion": 3,
+  "updatedAt": "2026-08-14T21:20:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -34,9 +34,9 @@
     },
     "bitcoin": {
       "name": "SD비트코인 채굴장",
-      "version": "1.2.0",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.0_Desktop.zip?v=120",
-      "notes": "채굴 확률 0.02%, GPU 155만원, GPU당 UTC 하루 전기세 10만원, 채굴 성공 시 해당 GPU 내구도 1% 감소 및 0% 파손, 오프라인 누적 무제한"
+      "version": "1.2.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.1_Desktop.zip?v=121",
+      "notes": "v1.2.1 실행 오류 수정. v1.2.0 밸런스와 GPU 내구도 규칙 유지."
     }
   }
 }
