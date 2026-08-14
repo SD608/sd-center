@@ -36,7 +36,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.1.exe"
-          $p = Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
           Start-Sleep -Seconds 5
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           $candidates = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
@@ -50,7 +50,6 @@ jobs:
           if (-not $appDir) { throw 'Could not locate installed SDCenter.exe' }
           "APP_DIR=$appDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Installed app directory: $appDir"
-          Get-ChildItem $appDir | Format-Table Name,Length
 
       - name: Apply v2.1.2 hotfix directly to packaged app
         shell: pwsh
@@ -60,7 +59,10 @@ jobs:
           if (-not (Test-Path $b64Path)) { throw "Missing hotfix payload: $b64Path" }
           $zipPath = "$env:RUNNER_TEMP\required-update-hotfix.zip"
           $hotfixDir = "$env:RUNNER_TEMP\required-update-hotfix"
-          [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String((Get-Content -Raw $b64Path).Trim()))
+          $raw = Get-Content -Raw $b64Path
+          $clean = [regex]::Replace($raw, '[^A-Za-z0-9+/=]', '')
+          if ($clean.Length -lt 1000) { throw 'Sanitized hotfix payload is unexpectedly short' }
+          [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String($clean))
           if (Test-Path $hotfixDir) { Remove-Item $hotfixDir -Recurse -Force }
           Expand-Archive -Path $zipPath -DestinationPath $hotfixDir -Force
 
@@ -124,7 +126,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          $p = Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
           Start-Sleep -Seconds 5
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           $installed = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
