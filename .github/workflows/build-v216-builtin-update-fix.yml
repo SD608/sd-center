@@ -1,0 +1,203 @@
+name: Build and publish SDCenter v2.1.6 builtin update fix
+
+on:
+  push:
+    branches:
+      - build-v216-builtin-update-fix-20260814
+    paths:
+      - '.github/workflows/build-v216-builtin-update-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download and verify official v2.1.5 installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.5.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.5/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($size -ne 140369920) { throw "Unexpected v2.1.5 installer size: $size" }
+          if ($hash -ne '4511f97ea9a0050cd1fb4cf5e0608b37b482cad0da1fbc53517b2d5f0e3db564') { throw "v2.1.5 hash mismatch: $hash" }
+
+      - name: Install v2.1.5 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.5.exe"
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.5'
+          if (-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))) { throw "v2.1.5 install missing: $appDir" }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Embed Bitcoin v1.2.2 into builtin app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $zip="$env:RUNNER_TEMP\SDBitcoinMiner-v1.2.2.zip"
+          Invoke-WebRequest -Uri 'https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122' -OutFile $zip
+          $stage="$env:RUNNER_TEMP\bitcoin-v122"
+          Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath $stage -Force
+          $manifest=Get-Content (Join-Path $stage 'sd-app.json') -Raw | ConvertFrom-Json
+          if ($manifest.id -ne 'bitcoin') { throw "Bitcoin id mismatch: $($manifest.id)" }
+          if ($manifest.version -ne '1.2.2') { throw "Bitcoin version mismatch: $($manifest.version)" }
+          if (-not (Test-Path (Join-Path $stage 'shared\open-center.js'))) { throw 'shared/open-center.js missing from Bitcoin v1.2.2' }
+          $builtin=Join-Path $env:APP_DIR 'resources\app\apps\SDBitcoinMiner'
+          Remove-Item $builtin -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $builtin -Force | Out-Null
+          Copy-Item (Join-Path $stage '*') $builtin -Recurse -Force
+          $embedded=Get-Content (Join-Path $builtin 'sd-app.json') -Raw | ConvertFrom-Json
+          if ($embedded.version -ne '1.2.2') { throw 'Embedded Bitcoin version mismatch' }
+
+      - name: Patch builtin updater and duplicate cleanup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:APP_DIR 'resources\app'
+          $patch="$env:RUNNER_TEMP\patch-v216.js"
+          @'
+          "use strict";
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const root=process.argv[2];
+          const mainPath=path.join(root,'main.js');
+          const pkgPath=path.join(root,'package.json');
+          let text=fs.readFileSync(mainPath,'utf8').replace(/\r\n/g,'\n');
+
+          const registryLoad='let registry = loadRegistry(REGISTRY_PATH);\n';
+          if (!text.includes('function cleanupBitcoinBuiltinDuplicate()')) {
+            if (!text.includes(registryLoad)) throw new Error('registry load marker missing');
+            const cleanup=`let registry = loadRegistry(REGISTRY_PATH);\n\nfunction cleanupBitcoinBuiltinDuplicate() {\n  const builtinId = "bitcoin";\n  const duplicateDirectory = path.join(INSTALLED_APPS_ROOT, builtinId);\n  const duplicatePackage = path.join(APP_PACKAGES_ROOT, \`${'${builtinId}'} .zip\`.replace(" ", ""));\n  registry = permanentlyRemoveApp(registry, builtinId, false);\n  fs.rmSync(duplicateDirectory, { recursive: true, force: true });\n  fs.rmSync(duplicatePackage, { force: true });\n  saveRegistry(REGISTRY_PATH, registry);\n}\n\ncleanupBitcoinBuiltinDuplicate();\n`;
+            text=text.replace(registryLoad,cleanup);
+          }
+
+          const oldDestination=`      const destinationDirectory = path.join(\n        INSTALLED_APPS_ROOT,\n        inspected.metadata.id,\n      );\n      installInspectedZip(inspected, destinationDirectory);\n      const packagePath = archiveAppZip(\n        temporaryZipPath,\n        inspected.metadata.id,\n      );\n      const appEntry = {\n        ...inspected.metadata,\n        directory: destinationDirectory,\n        packagePath,\n        importedAt: entry.importedAt || new Date().toISOString(),\n        updatedAt: new Date().toISOString(),\n      };\n\n      registry = upsertCustomApp(registry, appEntry);\n      saveRegistry(REGISTRY_PATH, registry);\n      refreshCatalogAndUi();\n      return appById.get(appEntry.id);`;
+          const newDestination=`      const destinationDirectory = entry.builtin\n        ? entry.directory\n        : path.join(INSTALLED_APPS_ROOT, inspected.metadata.id);\n      installInspectedZip(inspected, destinationDirectory);\n\n      if (entry.builtin) {\n        const staleCustomDirectory = path.join(\n          INSTALLED_APPS_ROOT,\n          inspected.metadata.id,\n        );\n        registry = permanentlyRemoveApp(registry, entry.id, false);\n        saveRegistry(REGISTRY_PATH, registry);\n        if (path.resolve(staleCustomDirectory) !== path.resolve(destinationDirectory)) {\n          fs.rmSync(staleCustomDirectory, { recursive: true, force: true });\n        }\n        fs.rmSync(path.join(APP_PACKAGES_ROOT, \`${'${entry.id}'} .zip\`.replace(" ", "")), { force: true });\n        refreshCatalogAndUi();\n        return appById.get(entry.id);\n      }\n\n      const packagePath = archiveAppZip(\n        temporaryZipPath,\n        inspected.metadata.id,\n      );\n      const appEntry = {\n        ...inspected.metadata,\n        directory: destinationDirectory,\n        packagePath,\n        importedAt: entry.importedAt || new Date().toISOString(),\n        updatedAt: new Date().toISOString(),\n      };\n\n      registry = upsertCustomApp(registry, appEntry);\n      saveRegistry(REGISTRY_PATH, registry);\n      refreshCatalogAndUi();\n      return appById.get(appEntry.id);`;
+          if (text.includes(oldDestination)) text=text.replace(oldDestination,newDestination);
+          else if (!text.includes('const destinationDirectory = entry.builtin')) throw new Error('installCatalogUpdate patch target missing');
+
+          fs.writeFileSync(mainPath,text,'utf8');
+          const pkg=JSON.parse(fs.readFileSync(pkgPath,'utf8'));
+          pkg.version='2.1.6';
+          fs.writeFileSync(pkgPath,JSON.stringify(pkg,null,2)+'\n','utf8');
+          '@ | Set-Content $patch -Encoding utf8
+          node $patch $root
+          node --check (Join-Path $root 'main.js')
+          node --check (Join-Path $root 'preload.js')
+          node --check (Join-Path $root 'public\js\app.js')
+          $main=Get-Content (Join-Path $root 'main.js') -Raw
+          if ($main -notmatch 'cleanupBitcoinBuiltinDuplicate') { throw 'Bitcoin duplicate cleanup missing' }
+          if ($main -notmatch 'destinationDirectory = entry\.builtin') { throw 'Builtin update destination fix missing' }
+          if ($main -notmatch 'permanentlyRemoveApp\(registry, entry\.id, false\)') { throw 'Builtin registry cleanup missing' }
+          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.6') { throw "Package version mismatch: $($pkg.version)" }
+
+      - name: Build genuine in-place Squirrel installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder="$env:RUNNER_TEMP\squirrel-builder-v216"
+          New-Item -ItemType Directory -Path $builder -Force | Out-Null
+          Set-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          @'
+          const path=require('node:path');
+          const {createWindowsInstaller}=require('electron-winstaller');
+          const appDirectory=process.env.APP_DIR;
+          const outputDirectory=path.join(process.env.RUNNER_TEMP,'squirrel-v216');
+          createWindowsInstaller({
+            appDirectory,
+            outputDirectory,
+            name:'SDCenter',
+            productName:'SD종합센터',
+            version:'2.1.6',
+            authors:'SDWallet',
+            description:'기본 확장팩 자동 업데이트 중복 등록 수정 및 비트코인 중복 자동 정리',
+            exe:'SDCenter.exe',
+            setupExe:'SDCenterSetup.exe',
+            noMsi:true,
+            setupIcon:path.join(appDirectory,'resources','app','public','icons','icon.ico')
+          }).then(()=>console.log('Squirrel v2.1.6 build complete')).catch(e=>{console.error(e);process.exit(1);});
+          '@ | Set-Content build.js -Encoding utf8
+          node build.js
+          $setup="$env:RUNNER_TEMP\squirrel-v216\SDCenterSetup.exe"
+          if (-not (Test-Path $setup)) { throw 'v2.1.6 installer missing' }
+          $size=(Get-Item $setup).Length
+          if ($size -lt 100MB) { throw "Installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "v2.1.6 installer: $size / $hash"
+
+      - name: Install-test v2.1.6 and duplicate cleanup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $roaming=Join-Path $env:APPDATA 'SD종합센터'
+          $stale=Join-Path $roaming 'installed-apps\bitcoin'
+          New-Item -ItemType Directory -Path $stale -Force | Out-Null
+          'stale duplicate' | Set-Content (Join-Path $stale 'marker.txt') -Encoding utf8
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          $exe=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.6\SDCenter.exe'
+          if (-not (Test-Path $exe)) { throw "In-place v2.1.6 install failed: $exe" }
+          Start-Process -FilePath $exe -PassThru | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          if (Test-Path $stale) { throw 'Stale installed-apps\bitcoin duplicate was not removed on startup' }
+          $root=Join-Path (Split-Path $exe -Parent) 'resources\app'
+          $bitcoin=Get-Content (Join-Path $root 'apps\SDBitcoinMiner\sd-app.json') -Raw | ConvertFrom-Json
+          if ($bitcoin.id -ne 'bitcoin' -or $bitcoin.version -ne '1.2.2') { throw "Builtin Bitcoin mismatch: $($bitcoin.id) v$($bitcoin.version)" }
+          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.6') { throw 'Installed Center version mismatch' }
+          if (Test-Path (Join-Path $env:LOCALAPPDATA 'sdcenter-desktop\app-2.1.6\SDCenter.exe')) { throw 'Parallel package identity detected' }
+          Write-Host 'v2.1.6 in-place + duplicate cleanup test passed'
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $dir="$env:GITHUB_WORKSPACE\release-v2.1.6"
+          New-Item -ItemType Directory -Path $dir -Force | Out-Null
+          Copy-Item $env:BUILT_SETUP "$dir\SDCenterSetup.exe" -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content "$dir\SHA256.txt" -Encoding ascii
+          @"
+          SD종합센터 v2.1.6
+          - 기본 앱 자동 업데이트는 installed-apps에 중복 등록하지 않고 기본 앱 폴더를 교체
+          - v2.1.5에서 생성된 비트코인 중복 installed-apps/registry 자동 정리
+          - 비트코인 기본 앱을 v1.2.2로 내장
+          - SD지갑/비트코인 진행 데이터 폴더는 삭제하지 않음
+          Installer bytes: $env:BUILT_SIZE
+          SHA256: $env:BUILT_HASH
+          "@ | Set-Content "$dir\BUILD_INFO.txt" -Encoding utf8
+
+      - name: Publish v2.1.6 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.1.6' `
+            'release-v2.1.6/SDCenterSetup.exe' `
+            'release-v2.1.6/SHA256.txt' `
+            'release-v2.1.6/BUILD_INFO.txt' `
+            --repo 'SD608/sd-center' `
+            --target 'build-v216-builtin-update-fix-20260814' `
+            --title 'SD종합센터 v2.1.6' `
+            --notes '기본 앱 업데이트가 installed-apps에 같은 ID를 다시 등록해 카드가 중복되던 문제를 수정했습니다. v2.1.5에서 생긴 비트코인 중복 등록은 시작 시 자동 정리되며, 비트코인 v1.2.2를 기본 앱으로 내장합니다. 진행 데이터는 삭제하지 않습니다.'
