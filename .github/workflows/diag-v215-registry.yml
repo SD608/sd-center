@@ -1,0 +1,35 @@
+name: Diagnose v2.1.5 registry helpers
+
+on:
+  push:
+    branches:
+      - build-v215-updater-state-fix-20260814
+    paths:
+      - '.github/workflows/diag-v215-registry.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dump registry helper usage
+        shell: pwsh
+        run: |
+          $setup="$env:RUNNER_TEMP\v215.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.5/SDCenterSetup.exe' -OutFile $setup
+          Start-Process $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $main=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.5\resources\app\main.js'
+          $script="$env:RUNNER_TEMP\dump.js"
+          @'
+          const fs=require('fs'); const t=fs.readFileSync(process.argv[2],'utf8').replace(/\r\n/g,'\n');
+          for(const line of t.split('\n')) if(/require\(|registry|CustomApp|removeApp|deleteApp|archiveAppZip|INSTALLED_APPS_ROOT|APP_PACKAGES_ROOT/.test(line)) console.log(line);
+          const names=['removeApp','removeCenterApp','deleteApp','removeCustomApp','restoreApp'];
+          for(const name of names){let s=t.indexOf(`function ${name}`);if(s<0)s=t.indexOf(`async function ${name}`);if(s>=0){let e=t.indexOf('\n  function ',s+20);const ea=t.indexOf('\n  async function ',s+20);if(e<0||(ea>=0&&ea<e))e=ea;if(e<0)e=Math.min(t.length,s+9000);console.log(`---${name}---\n${t.slice(s,e)}`)}}
+          '@ | Set-Content $script -Encoding utf8
+          node $script $main
