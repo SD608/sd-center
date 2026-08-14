@@ -1,0 +1,453 @@
+      if (deleteData) {
+        const dataDirectory = safeDataDirectory(entry);
+        fs.rmSync(dataDirectory, {
+          recursive: true,
+          force: true,
+        });
+      }
+
+      if (confirmation.response === 2 && !entry.builtin) {
+        removeFileIfManaged(
+          entry.directory,
+          INSTALLED_APPS_ROOT,
+        );
+
+        if (entry.packagePath) {
+          removeFileIfManaged(
+            entry.packagePath,
+            APP_PACKAGES_ROOT,
+          );
+        }
+
+        registry = permanentlyRemoveApp(
+          registry,
+          entry.id,
+          false,
+        );
+        saveRegistry(REGISTRY_PATH, registry);
+        refreshCatalogAndUi();
+
+        return {
+          ok: true,
+          permanentlyDeleted: true,
+          deletedData: true,
+          movedToBin: false,
+          builtin: false,
+          name: entry.name,
+        };
+      }
+
+      let removedEntry = { ...entry };
+
+      if (!entry.builtin) {
+        const recycleDirectory = path.join(
+          REMOVED_APPS_ROOT,
+          entry.id,
+        );
+
+        if (fs.existsSync(entry.directory)) {
+          moveDirectory(entry.directory, recycleDirectory);
+        }
+
+        removedEntry = {
+          ...entry,
+          originalDirectory: entry.directory,
+          recycleDirectory,
+        };
+      }
+
+      registry = moveAppToRemoved(
+        registry,
+        removedEntry,
+      );
+      saveRegistry(REGISTRY_PATH, registry);
+      refreshCatalogAndUi();
+
+      return {
+        ok: true,
+        permanentlyDeleted: false,
+        deletedData: deleteData,
+        movedToBin: true,
+        builtin: entry.builtin,
+        name: entry.name,
+      };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async function restoreRemovedApp(id) {
+    const entry = removedById.get(id);
+
+    if (!entry) {
+      return {
+        ok: false,
+        error: "삭제된 앱 보관함에서 해당 앱을 찾지 못했습니다.",
+      };
+    }
+
+    try {
+      if (entry.builtin) {
+        registry = restoreAppInRegistry(registry, entry);
+      } else {
+        const destinationDirectory = path.join(
+          INSTALLED_APPS_ROOT,
+          entry.id,
+        );
+        const recycleDirectory =
+          entry.recycleDirectory || entry.directory || "";
+        const recycledMainPath = recycleDirectory
+          ? path.join(
+              recycleDirectory,
+              entry.entry || "main.js",
+            )
+          : "";
+
+        if (recycledMainPath && fs.existsSync(recycledMainPath)) {
+          if (fs.existsSync(destinationDirectory)) {
+            removeFileIfManaged(
+              destinationDirectory,
+              INSTALLED_APPS_ROOT,
+            );
+          }
+          moveDirectory(recycleDirectory, destinationDirectory);
+        } else if (
+          entry.packagePath &&
+          fs.existsSync(entry.packagePath)
+        ) {
+          const inspected = inspectZip(entry.packagePath);
+          installInspectedZip(inspected, destinationDirectory);
+        } else {
+          return {
+            ok: false,
+            error:
+              "재설치에 필요한 앱 파일과 ZIP 백업을 찾지 못했습니다. 새 ZIP으로 다시 추가해 주세요.",
+          };
+        }
+
+        registry = restoreAppInRegistry(registry, {
+          ...entry,
+          builtin: false,
+          directory: destinationDirectory,
+        });
+      }
+
+      saveRegistry(REGISTRY_PATH, registry);
+      refreshCatalogAndUi();
+
+      return {
+        ok: true,
+        app: publicAppState(appById.get(id)),
+      };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async function permanentlyDeleteRemovedApp(id) {
+    const entry = removedById.get(id);
+
+    if (!entry) {
+      return {
+        ok: false,
+        error: "삭제된 앱 보관함에서 해당 앱을 찾지 못했습니다.",
+      };
+    }
+
+    if (entry.builtin) {
+      const confirmation = await dialog.showMessageBox(mainWindow, {
+        type: "warning",
+        title: "기본 앱 데이터 삭제",
+        message: `${entry.name}의 저장 데이터를 삭제할까요?`,
+        detail:
+          "기본 앱 원본은 종합센터에 포함되어 있으므로 보관함에는 계속 남으며, 나중에 재설치할 수 있습니다.",
+        buttons: ["취소", "저장 데이터 삭제"],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      });
+
+      if (confirmation.response !== 1) {
+        return { ok: false, canceled: true };
+      }
+
+      try {
+        fs.rmSync(safeDataDirectory(entry), {
+          recursive: true,
+          force: true,
+        });
+        return {
+          ok: true,
+          builtin: true,
+          deletedData: true,
+          remainsInBin: true,
+          name: entry.name,
+        };
+      } catch (error) {
+        return { ok: false, error: error.message };
+      }
+    }
+
+    const confirmation = await dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      title: "앱 완전 삭제",
+      message: `${entry.name}을 삭제된 앱 보관함에서도 지울까요?`,
+      detail:
+        "앱 파일과 ZIP 백업을 삭제하면 원클릭 재설치를 사용할 수 없습니다.",
+      buttons: ["취소", "앱 파일 완전 삭제", "앱과 저장 데이터 완전 삭제"],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    });
+
+    if (confirmation.response === 0) {
+      return { ok: false, canceled: true };
+    }
+
+    try {
+      const recycleDirectory =
+        entry.recycleDirectory || entry.directory || "";
+
+      if (recycleDirectory) {
+        removeFileIfManaged(
+          recycleDirectory,
+          REMOVED_APPS_ROOT,
+        );
+      }
+
+      if (entry.packagePath) {
+        removeFileIfManaged(
+          entry.packagePath,
+          APP_PACKAGES_ROOT,
+        );
+      }
+
+      const deleteData = confirmation.response === 2;
+
+      if (deleteData) {
+        fs.rmSync(safeDataDirectory(entry), {
+          recursive: true,
+          force: true,
+        });
+      }
+
+      registry = permanentlyRemoveApp(
+        registry,
+        entry.id,
+        false,
+      );
+      saveRegistry(REGISTRY_PATH, registry);
+      refreshCatalogAndUi();
+
+      return {
+        ok: true,
+        builtin: false,
+        deletedData: deleteData,
+        remainsInBin: false,
+        name: entry.name,
+      };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async function quitCenterCompletely() {
+    const runningCount = [...runningApps.values()].filter(
+      (child) => child && child.exitCode === null,
+    ).length;
+    const confirmation = await dialog.showMessageBox(mainWindow, {
+      type: "question",
+      title: "종합센터 완전 종료",
+      message: "SD종합센터를 완전히 종료할까요?",
+      detail:
+        runningCount > 0
+          ? `현재 실행 중인 연결 앱 ${runningCount}개도 함께 종료됩니다.`
+          : "시스템 트레이와 단축키를 포함해 종합센터가 완전히 종료됩니다.",
+      buttons: ["취소", "완전히 종료"],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    });
+
+    if (confirmation.response !== 1) {
+      return { ok: false, canceled: true };
+    }
+
+    isQuitting = true;
+    await Promise.all(
+      appCatalog.map((entry) => terminateAppAndWait(entry.id)),
+    );
+    app.quit();
+    return { ok: true };
+  }
+
+  function createMainWindow() {
+    mainWindow = new BrowserWindow({
+      width: 1380,
+      height: 900,
+      minWidth: 980,
+      minHeight: 700,
+      title: "SD종합센터",
+      backgroundColor: "#07101d",
+      autoHideMenuBar: true,
+      show: false,
+      icon: path.join(
+        __dirname,
+        "public",
+        "icons",
+        "icon-512.png",
+      ),
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        webSecurity: true,
+        allowRunningInsecureContent: false,
+      },
+    });
+
+    mainWindow.webContents.setWindowOpenHandler(() => ({
+      action: "deny",
+    }));
+
+    mainWindow.webContents.on(
+      "will-attach-webview",
+      (event) => event.preventDefault(),
+    );
+
+    mainWindow.webContents.on(
+      "will-navigate",
+      (event, navigationUrl) => {
+        try {
+          const target = new URL(navigationUrl);
+
+          if (target.protocol !== "file:") {
+            event.preventDefault();
+          }
+        } catch {
+          event.preventDefault();
+        }
+      },
+    );
+
+    mainWindow.on("close", (event) => {
+      if (isQuitting) {
+        return;
+      }
+
+      event.preventDefault();
+      mainWindow.hide();
+    });
+
+    mainWindow.once("ready-to-show", () => {
+      showCenter();
+      sendAppStates();
+    });
+
+    mainWindow.loadFile(
+      path.join(__dirname, "public", "index.html"),
+    );
+  }
+
+  function createTray() {
+    tray = new Tray(
+      path.join(
+        __dirname,
+        "public",
+        "icons",
+        "icon.ico",
+      ),
+    );
+    tray.setToolTip("SD종합센터");
+    updateTrayMenu();
+    tray.on("double-click", showCenter);
+  }
+
+  function registerIpcHandlers() {
+    ipcMain.handle("center:list-apps", () => getAllAppStates());
+    ipcMain.handle("center:list-removed-apps", () =>
+      getRemovedAppStates(),
+    );
+    ipcMain.handle("center:launch-app", (event, id) =>
+      launchApp(id),
+    );
+    ipcMain.handle("center:terminate-app", (event, id) =>
+      terminateApp(id),
+    );
+    ipcMain.handle("center:add-app-zip", addAppFromZip);
+    ipcMain.handle("center:delete-app", (event, id) =>
+      deleteApp(id),
+    );
+    ipcMain.handle("center:restore-app", (event, id) =>
+      restoreRemovedApp(id),
+    );
+    ipcMain.handle(
+      "center:permanently-delete-removed-app",
+      (event, id) => permanentlyDeleteRemovedApp(id),
+    );
+    ipcMain.handle("center:launch-all", async () => {
+      const results = [];
+
+      for (const entry of appCatalog) {
+        results.push({
+          id: entry.id,
+          ...(await launchApp(entry.id)),
+        });
+      }
+
+      return {
+        ok: results.every((result) => result.ok),
+        count: appCatalog.length,
+        results,
+      };
+    });
+    ipcMain.handle("center:terminate-all", () => {
+      terminateAllApps();
+      return { ok: true };
+    });
+    ipcMain.handle("center:show", () => {
+      showCenter();
+      return { ok: true };
+    });
+    ipcMain.handle("center:hide", () => {
+      mainWindow?.hide();
+      return { ok: true };
+    });
+    ipcMain.handle("center:quit-completely", () =>
+      quitCenterCompletely(),
+    );
+    ipcMain.handle("center:open-app-folder", async (event, id) => {
+      const entry = appById.get(id);
+
+      if (!entry) {
+        return { ok: false, error: "등록되지 않은 앱입니다." };
+      }
+
+      const error = await shell.openPath(getChildDirectory(entry));
+      return error ? { ok: false, error } : { ok: true };
+    });
+  }
+
+  app.whenReady().then(() => {
+    app.setAppUserModelId("com.sdcenter.desktop");
+    createMainWindow();
+    createTray();
+    registerIpcHandlers();
+    void refreshRequiredPolicy({ force: true }).then(() => {
+      sendAppStates();
+    });
+
+    globalShortcut.register("CommandOrControl+Shift+S", showCenter);
+  });
+
+  app.on("second-instance", showCenter);
+  app.on("activate", showCenter);
+  app.on("window-all-closed", () => {
+    // 종합센터는 시스템 트레이와 단축키를 위해 계속 실행합니다.
+  });
+  app.on("before-quit", () => {
+    isQuitting = true;
+    globalShortcut.unregisterAll();
+  });
+}
