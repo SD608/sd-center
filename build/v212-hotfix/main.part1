@@ -1,0 +1,500 @@
+"use strict";
+
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { pathToFileURL } = require("node:url");
+const { spawn } = require("node:child_process");
+const {
+  app,
+  BrowserWindow,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  shell,
+  Tray,
+} = require("electron");
+
+// Squirrel.Windows 설치·업데이트·제거 이벤트 처리
+if (require("electron-squirrel-startup")) {
+  app.quit();
+}
+
+const {
+  inspectZip,
+  installInspectedZip,
+  loadRegistry,
+  moveAppToRemoved,
+  permanentlyRemoveApp,
+  resolveCatalog,
+  resolveRemovedCatalog,
+  restoreAppInRegistry,
+  saveRegistry,
+  upsertCustomApp,
+} = require("./src/app-registry");
+
+const {
+  compareVersions,
+  downloadFile,
+  fetchRequiredPolicy,
+} = require("./src/required-updates");
+
+const BUILTIN_CATALOG = [
+  {
+    id: "wallet",
+    name: "SD지갑",
+    version: "Stage 11 · v1.1.1",
+    folder: "SDWallet",
+    productName: "SD지갑",
+    userDataFolder: "SD지갑",
+    description: "직접 입출금 없이 모든 SD 앱이 함께 사용하는 가상 계좌와 거래 내역을 관리합니다.",
+    improvement: "초기 시뮬레이션 금액 없이 25만원 가상 민생지원금만 지급하며, 이 PC에서 24시간 최대 3개 생성으로 제한합니다.",
+    accent: "blue",
+    icon: "public/icons/icon-512.png",
+  },
+  {
+    id: "vault",
+    name: "SD금고",
+    version: "V16 · v1.2.0",
+    folder: "SDVault",
+    productName: "SD금고",
+    userDataFolder: "SD금고",
+    description: "가상 계좌 잔액을 금 중량과 금괴 보관 모습으로 환산합니다.",
+    improvement: "금괴 501개부터 한 줄 50개·고정 크기의 초대형 금고로 자동 전환합니다.",
+    accent: "gold",
+    icon: "public/icons/icon-512.png",
+  },
+  {
+    id: "odd-even",
+    name: "SD홀짝",
+    version: "Stage 4 · v1.1.0",
+    folder: "SDOddEven",
+    productName: "SD홀짝",
+    userDataFolder: "SD홀짝",
+    description: "보안 난수 주사위로 진행하는 가상 잔액 홀짝 시뮬레이션입니다.",
+    improvement: "게임 결과와 계좌 잔액 변경을 하나의 원자적 거래로 처리합니다.",
+    accent: "purple",
+    icon: "public/icons/icon-512.png",
+  },
+  {
+    id: "miner",
+    name: "SD광부",
+    version: "Stage 3 · v1.1.0",
+    folder: "SDMiner",
+    productName: "SD광부",
+    userDataFolder: "SD광부",
+    description: "광물을 채굴하고 보관한 뒤 SD지갑 가상 잔액으로 판매합니다.",
+    improvement: "판매 기록과 총채굴량·누적 판매량·누적 수익 통계를 추가했습니다.",
+    accent: "green",
+    icon: "public/icons/icon-512.png",
+  },
+  {
+    id: "bitcoin",
+    name: "SD비트코인 채굴장",
+    version: "Stage 5 · v1.1.0",
+    folder: "SDBitcoinMiner",
+    productName: "SD비트코인 채굴장",
+    userDataFolder: "SD비트코인 채굴장",
+    description: "가상 채굴방과 GPU를 구매하고 BTC를 채굴·판매합니다.",
+    improvement: "UTC 일일 전기세 50만원·미납 정지·납부 후 재가동과 0.25% 채굴 확률을 적용했습니다.",
+    accent: "orange",
+    icon: "public/icons/icon-512.png",
+  },
+];
+
+function getAppDataRoot() {
+  if (process.platform === "win32") {
+    return (
+      process.env.APPDATA ||
+      path.join(os.homedir(), "AppData", "Roaming")
+    );
+  }
+
+  if (process.platform === "darwin") {
+    return path.join(os.homedir(), "Library", "Application Support");
+  }
+
+  return process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
+}
+
+const APP_DATA_ROOT = getAppDataRoot();
+const CENTER_DATA_ROOT = path.join(APP_DATA_ROOT, "SD종합센터");
+const REGISTRY_PATH = path.join(CENTER_DATA_ROOT, "apps.json");
+const INSTALLED_APPS_ROOT = path.join(
+  CENTER_DATA_ROOT,
+  "installed-apps",
+);
+const REMOVED_APPS_ROOT = path.join(
+  CENTER_DATA_ROOT,
+  "removed-apps",
+);
+const APP_PACKAGES_ROOT = path.join(
+  CENTER_DATA_ROOT,
+  "app-packages",
+);
+
+const FALLBACK_REQUIRED_APPS = {
+  "sd-logistics-center-desktop": {
+    required: true,
+    minVersion: "1.0.7",
+    downloadUrl:
+      "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
+    message:
+      "물류회사 경제 밸런스/버전 증명 패치가 필수입니다. v1.0.7 이상으로 업데이트해야 실행할 수 있습니다.",
+  },
+  "sdlink-desktop": {
+    required: true,
+    minVersion: "1.2.4",
+    downloadUrl:
+      "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+    message:
+      "구 센터 우회 차단을 위해 SD Link v1.2.4 이상이 필수입니다.",
+  },
+};
+const REQUIRED_POLICY_TTL_MS = 5 * 60 * 1000;
+
+let registry = loadRegistry(REGISTRY_PATH);
+let appCatalog = [];
+let appById = new Map();
+let removedCatalog = [];
+let removedById = new Map();
+let requiredPolicy = { apps: { ...FALLBACK_REQUIRED_APPS } };
+let requiredPolicyFetchedAt = 0;
+let requiredPolicyPromise = null;
+
+function reloadCatalog() {
+  const builtinRoot = path.join(__dirname, "apps");
+
+  appCatalog = resolveCatalog({
+    builtinCatalog: BUILTIN_CATALOG,
+    registry,
+    builtinRoot,
+  });
+  removedCatalog = resolveRemovedCatalog({
+    builtinCatalog: BUILTIN_CATALOG,
+    registry,
+    builtinRoot,
+  });
+  appById = new Map(
+    appCatalog.map((entry) => [entry.id, entry]),
+  );
+  removedById = new Map(
+    removedCatalog.map((entry) => [entry.id, entry]),
+  );
+}
+
+reloadCatalog();
+
+function parseChildId() {
+  const prefix = "--sd-child-app=";
+  const argument = process.argv.find((value) =>
+    value.startsWith(prefix),
+  );
+
+  return argument ? argument.slice(prefix.length) : "";
+}
+
+function getChildDirectory(entry) {
+  return entry.directory;
+}
+
+function runChildMode(childId) {
+  const entry = appById.get(childId);
+
+  if (!entry) {
+    app.quit();
+    return;
+  }
+
+  const childDirectory = getChildDirectory(entry);
+  const childMainPath = path.join(
+    childDirectory,
+    entry.entry || "main.js",
+  );
+
+  if (!fs.existsSync(childMainPath)) {
+    app.quit();
+    return;
+  }
+
+  app.setName(entry.productName || entry.name);
+  app.setPath(
+    "userData",
+    path.join(APP_DATA_ROOT, entry.userDataFolder),
+  );
+  app.setAppUserModelId(`com.sdcenter.${entry.id}`);
+
+  process.env.SD_CENTER_MANAGED = "1";
+  process.env.SD_CENTER_EXECUTABLE = process.execPath;
+  process.env.SD_CENTER_ROOT = __dirname;
+  process.env.SD_CENTER_CHILD_ID = entry.id;
+
+  require(childMainPath);
+}
+
+const childId = parseChildId();
+
+if (childId) {
+  runChildMode(childId);
+} else {
+  runCenterMode();
+}
+
+function runCenterMode() {
+  const singleInstanceLock = app.requestSingleInstanceLock();
+
+  if (!singleInstanceLock) {
+    app.quit();
+    return;
+  }
+
+  let mainWindow = null;
+  let tray = null;
+  let isQuitting = false;
+  const runningApps = new Map();
+
+  function rawEntryVersion(entry) {
+    if (entry?.rawVersion) {
+      return String(entry.rawVersion);
+    }
+
+    const match = String(entry?.version || "").match(/v?(\d+(?:\.\d+){1,3})/i);
+    return match ? match[1] : "0.0.0";
+  }
+
+  function requiredRuleFor(entry) {
+    const fallbackRule = FALLBACK_REQUIRED_APPS[entry?.id];
+
+    // v2.1.2 핫픽스에서는 물류센터와 SD Link만 강제 업데이트 대상으로 허용합니다.
+    // 서버 정책에 다른 앱이 있어도 여기 등록되지 않은 앱은 차단하지 않습니다.
+    if (!fallbackRule) {
+      return null;
+    }
+
+    const remoteRule = requiredPolicy?.apps?.[entry?.id];
+    const rule = {
+      ...fallbackRule,
+      ...(remoteRule || {}),
+    };
+
+    if (rule.required === false) {
+      return null;
+    }
+
+    return rule;
+  }
+
+  function updateRequirementFor(entry) {
+    const rule = requiredRuleFor(entry);
+    if (!rule) {
+      return { updateRequired: false, requiredVersion: "" };
+    }
+
+    const currentVersion = rawEntryVersion(entry);
+    const requiredVersion = String(rule.minVersion || "0.0.0");
+
+    return {
+      updateRequired:
+        compareVersions(currentVersion, requiredVersion) < 0,
+      requiredVersion,
+      currentVersion,
+    };
+  }
+
+  async function refreshRequiredPolicy({ force = false } = {}) {
+    if (
+      !force &&
+      requiredPolicyFetchedAt > 0 &&
+      Date.now() - requiredPolicyFetchedAt < REQUIRED_POLICY_TTL_MS
+    ) {
+      return requiredPolicy;
+    }
+
+    if (requiredPolicyPromise) {
+      return requiredPolicyPromise;
+    }
+
+    requiredPolicyPromise = (async () => {
+      try {
+        const remotePolicy = await fetchRequiredPolicy();
+        requiredPolicy = {
+          ...remotePolicy,
+          apps: {
+            ...FALLBACK_REQUIRED_APPS,
+            ...(remotePolicy?.apps || {}),
+          },
+        };
+        requiredPolicyFetchedAt = Date.now();
+        return requiredPolicy;
+      } catch (error) {
+        requiredPolicy = {
+          ...requiredPolicy,
+          apps: {
+            ...FALLBACK_REQUIRED_APPS,
+            ...(requiredPolicy?.apps || {}),
+          },
+        };
+        requiredPolicyFetchedAt = Date.now();
+        console.warn(
+          "필수 업데이트 정책을 불러오지 못해 내장 정책을 사용합니다.",
+          error?.message || error,
+        );
+        return requiredPolicy;
+      } finally {
+        requiredPolicyPromise = null;
+      }
+    })();
+
+    return requiredPolicyPromise;
+  }
+
+  async function installRequiredUpdate(entry, rule) {
+    const downloadUrl = String(rule.downloadUrl || "").trim();
+    if (!downloadUrl) {
+      throw new Error("필수 업데이트 다운로드 주소가 없습니다.");
+    }
+
+    ensureManagedDirectory(APP_PACKAGES_ROOT);
+    const temporaryZipPath = path.join(
+      APP_PACKAGES_ROOT,
+      `.required-${entry.id}-${Date.now()}.zip`,
+    );
+
+    try {
+      await downloadFile(downloadUrl, temporaryZipPath);
+      const inspected = inspectZip(temporaryZipPath);
+      const requiredVersion = String(rule.minVersion || "0.0.0");
+
+      if (inspected.metadata.id !== entry.id) {
+        throw new Error(
+          `업데이트 앱 ID가 다릅니다. (${inspected.metadata.id})`,
+        );
+      }
+
+      if (
+        compareVersions(
+          inspected.metadata.rawVersion,
+          requiredVersion,
+        ) < 0
+      ) {
+        throw new Error(
+          `다운로드된 버전(v${inspected.metadata.rawVersion})이 필수 버전(v${requiredVersion})보다 낮습니다.`,
+        );
+      }
+
+      await terminateAppAndWait(entry.id);
+      const destinationDirectory = path.join(
+        INSTALLED_APPS_ROOT,
+        inspected.metadata.id,
+      );
+      installInspectedZip(inspected, destinationDirectory);
+      const packagePath = archiveAppZip(
+        temporaryZipPath,
+        inspected.metadata.id,
+      );
+      const appEntry = {
+        ...inspected.metadata,
+        directory: destinationDirectory,
+        packagePath,
+        importedAt: entry.importedAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      registry = upsertCustomApp(registry, appEntry);
+      saveRegistry(REGISTRY_PATH, registry);
+      refreshCatalogAndUi();
+      return appById.get(appEntry.id);
+    } finally {
+      fs.rmSync(temporaryZipPath, { force: true });
+    }
+  }
+
+  async function ensureRequiredVersion(entry) {
+    await refreshRequiredPolicy();
+    const rule = requiredRuleFor(entry);
+
+    if (!rule) {
+      return { ok: true, entry };
+    }
+
+    const requirement = updateRequirementFor(entry);
+    if (!requirement.updateRequired) {
+      return { ok: true, entry };
+    }
+
+    const confirmation = await dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      title: "필수 업데이트",
+      message: `${entry.name}을 실행하려면 업데이트가 필요합니다.`,
+      detail: `${rule.message || "경제 밸런스 필수 업데이트입니다."}\n\n현재 버전: v${requirement.currentVersion}\n필수 버전: v${requirement.requiredVersion}\n\n업데이트하지 않으면 이 앱은 실행할 수 없습니다.`,
+      buttons: ["취소", "지금 업데이트"],
+      defaultId: 1,
+      cancelId: 0,
+      noLink: true,
+    });
+
+    if (confirmation.response !== 1) {
+      return {
+        ok: false,
+        blockedByRequiredUpdate: true,
+        error: `${entry.name} v${requirement.requiredVersion} 필수 업데이트가 필요합니다.`,
+      };
+    }
+
+    try {
+      const updatedEntry = await installRequiredUpdate(entry, rule);
+      await dialog.showMessageBox(mainWindow, {
+        type: "info",
+        title: "업데이트 완료",
+        message: `${entry.name} 업데이트가 완료되었습니다.`,
+        detail: `v${rawEntryVersion(updatedEntry)} 버전으로 교체했습니다. 기존 저장 데이터는 유지됩니다.`,
+        buttons: ["확인"],
+        defaultId: 0,
+        noLink: true,
+      });
+      return {
+        ok: true,
+        entry: updatedEntry,
+        mandatoryUpdated: true,
+      };
+    } catch (error) {
+      await dialog.showMessageBox(mainWindow, {
+        type: "error",
+        title: "필수 업데이트 실패",
+        message: `${entry.name}을 업데이트하지 못했습니다.`,
+        detail: `${error.message}\n\n업데이트가 완료되기 전에는 앱을 실행할 수 없습니다.`,
+        buttons: ["확인"],
+        defaultId: 0,
+        noLink: true,
+      });
+      return {
+        ok: false,
+        blockedByRequiredUpdate: true,
+        error: error.message,
+      };
+    }
+  }
+
+  function appIconUrl(entry) {
+    const fallbackPath = path.join(
+      __dirname,
+      "public",
+      "icons",
+      "icon-512.png",
+    );
+    const candidatePath = entry.icon
+      ? path.join(entry.directory, entry.icon)
+      : fallbackPath;
+    const iconPath = fs.existsSync(candidatePath)
+      ? candidatePath
+      : fallbackPath;
+
+    return pathToFileURL(iconPath).href;
+  }
+
+  function publicAppState(entry) {
+    const child = runningApps.get(entry.id);
+
+    return {
+      id: entry.id,
