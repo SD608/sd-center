@@ -1,0 +1,153 @@
+name: Build genuine SDCenter v2.1.2 Squirrel
+
+on:
+  push:
+    branches:
+      - build-v212-squirrel-20260814
+    paths:
+      - '.github/workflows/build-v212-squirrel.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download official v2.1.1 Squirrel installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.1/SDCenterSetup.exe' -OutFile "$env:RUNNER_TEMP\SDCenterSetup-v2.1.1.exe"
+          $size = (Get-Item "$env:RUNNER_TEMP\SDCenterSetup-v2.1.1.exe").Length
+          if ($size -lt 100MB) { throw "Official v2.1.1 installer is unexpectedly small: $size" }
+
+      - name: Install official v2.1.1 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.1.exe"
+          $p = Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $candidates = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match 'app-2\.1\.1' } |
+            Select-Object -ExpandProperty DirectoryName
+          if (-not $candidates) {
+            $candidates = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -ExpandProperty DirectoryName
+          }
+          $appDir = $candidates | Select-Object -First 1
+          if (-not $appDir) { throw 'Could not locate installed SDCenter.exe' }
+          "APP_DIR=$appDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Installed app directory: $appDir"
+          Get-ChildItem $appDir | Format-Table Name,Length
+
+      - name: Apply v2.1.2 hotfix directly to packaged app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $b64Path = Join-Path $env:GITHUB_WORKSPACE 'build\no-powershell\required-update-hotfix.b64'
+          if (-not (Test-Path $b64Path)) { throw "Missing hotfix payload: $b64Path" }
+          $zipPath = "$env:RUNNER_TEMP\required-update-hotfix.zip"
+          $hotfixDir = "$env:RUNNER_TEMP\required-update-hotfix"
+          [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String((Get-Content -Raw $b64Path).Trim()))
+          if (Test-Path $hotfixDir) { Remove-Item $hotfixDir -Recurse -Force }
+          Expand-Archive -Path $zipPath -DestinationPath $hotfixDir -Force
+
+          $appRoot = Join-Path $env:APP_DIR 'resources\app'
+          if (-not (Test-Path (Join-Path $appRoot 'package.json'))) { throw "Packaged app root not found: $appRoot" }
+
+          Copy-Item (Join-Path $hotfixDir 'main.js') (Join-Path $appRoot 'main.js') -Force
+          Copy-Item (Join-Path $hotfixDir 'package.json') (Join-Path $appRoot 'package.json') -Force
+          Copy-Item (Join-Path $hotfixDir 'forge.config.js') (Join-Path $appRoot 'forge.config.js') -Force
+          Copy-Item (Join-Path $hotfixDir 'src\required-updates.js') (Join-Path $appRoot 'src\required-updates.js') -Force
+          Copy-Item (Join-Path $hotfixDir 'public\js\app.js') (Join-Path $appRoot 'public\js\app.js') -Force
+          Copy-Item (Join-Path $hotfixDir 'public\css\style.css') (Join-Path $appRoot 'public\css\style.css') -Force
+
+          $pkg = Get-Content (Join-Path $appRoot 'package.json') -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.2') { throw "Patched package version is $($pkg.version), expected 2.1.2" }
+          if (-not (Select-String -Path (Join-Path $appRoot 'main.js') -Pattern '1.2.4' -Quiet)) { throw 'SD Link v1.2.4 requirement missing from patched main.js' }
+          if (-not (Select-String -Path (Join-Path $appRoot 'main.js') -Pattern '1.0.7' -Quiet)) { throw 'Logistics v1.0.7 requirement missing from patched main.js' }
+          Write-Host 'Patched packaged application verified as v2.1.2.'
+
+      - name: Rebuild genuine Squirrel installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $builder = "$env:RUNNER_TEMP\squirrel-builder"
+          New-Item -ItemType Directory -Path $builder -Force | Out-Null
+          Set-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          @'
+          const path = require('node:path');
+          const { createWindowsInstaller } = require('electron-winstaller');
+          const appDirectory = process.env.APP_DIR;
+          const outputDirectory = path.join(process.env.RUNNER_TEMP, 'squirrel-v212');
+          createWindowsInstaller({
+            appDirectory,
+            outputDirectory,
+            authors: 'SDWallet',
+            description: '필수 확장팩 업데이트와 SD 앱을 통합 관리하는 Windows 데스크톱 센터',
+            exe: 'SDCenter.exe',
+            setupExe: 'SDCenterSetup.exe',
+            noMsi: true,
+            setupIcon: path.join(appDirectory, 'resources', 'app', 'public', 'icons', 'icon.ico')
+          }).then(() => {
+            console.log('Squirrel build complete:', outputDirectory);
+          }).catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          '@ | Set-Content -Path build.js -Encoding utf8
+          node build.js
+
+          $setup = "$env:RUNNER_TEMP\squirrel-v212\SDCenterSetup.exe"
+          if (-not (Test-Path $setup)) { throw 'SDCenterSetup.exe was not generated' }
+          $size = (Get-Item $setup).Length
+          if ($size -lt 100MB) { throw "Generated installer is unexpectedly small: $size" }
+          Get-FileHash $setup -Algorithm SHA256 | Format-List
+          "BUILT_SETUP=$setup" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install-test generated v2.1.2 package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $p = Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $installed = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match 'app-2\.1\.2' } |
+            Select-Object -First 1
+          if (-not $installed) { throw 'Generated installer did not install app-2.1.2' }
+          $pkgPath = Join-Path $installed.DirectoryName 'resources\app\package.json'
+          $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.2') { throw "Installed package version mismatch: $($pkg.version)" }
+          Write-Host "Install test passed: $($installed.FullName)"
+
+      - name: Prepare artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "$env:GITHUB_WORKSPACE\release-v2.1.2" -Force | Out-Null
+          Copy-Item $env:BUILT_SETUP "$env:GITHUB_WORKSPACE\release-v2.1.2\SDCenterSetup.exe" -Force
+          $hash = (Get-FileHash "$env:GITHUB_WORKSPACE\release-v2.1.2\SDCenterSetup.exe" -Algorithm SHA256).Hash.ToLower()
+          "$hash  SDCenterSetup.exe" | Set-Content "$env:GITHUB_WORKSPACE\release-v2.1.2\SHA256.txt" -Encoding ascii
+
+      - name: Upload genuine installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-v2.1.2-Genuine-Squirrel
+          path: release-v2.1.2/*
+          if-no-files-found: error
+          retention-days: 7
