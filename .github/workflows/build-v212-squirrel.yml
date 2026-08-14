@@ -40,9 +40,9 @@ jobs:
           Start-Sleep -Seconds 5
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           $appDir = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -match 'app-2\.1\.1' } |
+            Where-Object { $_.FullName -match '\\SDCenter\\app-2\.1\.1\\SDCenter\.exe$' } |
             Select-Object -First 1 -ExpandProperty DirectoryName
-          if (-not $appDir) { throw 'Could not locate installed app-2.1.1 SDCenter.exe' }
+          if (-not $appDir) { throw 'Could not locate official %LOCALAPPDATA%\SDCenter\app-2.1.1 base' }
           "APP_DIR=$appDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Write-Host "Installed official base: $appDir"
 
@@ -53,19 +53,16 @@ jobs:
           $hotfix = Join-Path $env:GITHUB_WORKSPACE 'build\v212-hotfix'
           $appRoot = Join-Path $env:APP_DIR 'resources\app'
           if (-not (Test-Path (Join-Path $appRoot 'package.json'))) { throw "Packaged app root not found: $appRoot" }
-
           $part1 = Get-Content -Raw (Join-Path $hotfix 'main.part1')
           $part2 = Get-Content -Raw (Join-Path $hotfix 'main.part2')
           $part3 = Get-Content -Raw (Join-Path $hotfix 'main.part3')
           $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
           [IO.File]::WriteAllText((Join-Path $appRoot 'main.js'), ($part1 + $part2 + $part3), $utf8NoBom)
-
           Copy-Item (Join-Path $hotfix 'package.json') (Join-Path $appRoot 'package.json') -Force
           Copy-Item (Join-Path $hotfix 'forge.config.js') (Join-Path $appRoot 'forge.config.js') -Force
           Copy-Item (Join-Path $hotfix 'required-updates.js') (Join-Path $appRoot 'src\required-updates.js') -Force
           Copy-Item (Join-Path $hotfix 'app.js') (Join-Path $appRoot 'public\js\app.js') -Force
           Copy-Item (Join-Path $hotfix 'style.css') (Join-Path $appRoot 'public\css\style.css') -Force
-
           node --check (Join-Path $appRoot 'main.js')
           node --check (Join-Path $appRoot 'src\required-updates.js')
           node --check (Join-Path $appRoot 'public\js\app.js')
@@ -76,7 +73,7 @@ jobs:
           if (-not (Select-String -Path (Join-Path $appRoot 'main.js') -Pattern '1.0.7' -Quiet)) { throw 'Logistics v1.0.7 requirement missing' }
           Write-Host 'Direct source hotfix verified.'
 
-      - name: Rebuild genuine Squirrel installer
+      - name: Rebuild genuine in-place Squirrel installer
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -93,6 +90,9 @@ jobs:
           createWindowsInstaller({
             appDirectory,
             outputDirectory,
+            name: 'SDCenter',
+            productName: 'SD종합센터',
+            version: '2.1.2',
             authors: 'SDWallet',
             description: '필수 확장팩 업데이트와 SD 앱을 통합 관리하는 Windows 데스크톱 센터',
             exe: 'SDCenter.exe',
@@ -103,7 +103,6 @@ jobs:
             .catch((error) => { console.error(error); process.exit(1); });
           '@ | Set-Content -Path build.js -Encoding utf8
           node build.js
-
           $setup = "$env:RUNNER_TEMP\squirrel-v212\SDCenterSetup.exe"
           if (-not (Test-Path $setup)) { throw 'SDCenterSetup.exe was not generated' }
           $size = (Get-Item $setup).Length
@@ -113,7 +112,7 @@ jobs:
           Write-Host "Generated installer SHA256: $hash"
           "BUILT_SETUP=$setup" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Install-test generated v2.1.2 package
+      - name: Install-test in-place v2.1.2 package
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -121,15 +120,14 @@ jobs:
           Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
           Start-Sleep -Seconds 6
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          $installed = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
-            Where-Object { $_.FullName -match 'app-2\.1\.2' } |
-            Select-Object -First 1
-          if (-not $installed) { throw 'Generated installer did not install app-2.1.2' }
-          $pkgPath = Join-Path $installed.DirectoryName 'resources\app\package.json'
+          $expected = Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.2\SDCenter.exe'
+          if (-not (Test-Path $expected)) { throw "Generated installer did not update in place to $expected" }
+          $pkgPath = Join-Path (Split-Path $expected -Parent) 'resources\app\package.json'
           $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
           if ($pkg.version -ne '2.1.2') { throw "Installed package version mismatch: $($pkg.version)" }
-          node --check (Join-Path $installed.DirectoryName 'resources\app\main.js')
-          Write-Host "Install test passed: $($installed.FullName)"
+          node --check (Join-Path (Split-Path $expected -Parent) 'resources\app\main.js')
+          if (Test-Path (Join-Path $env:LOCALAPPDATA 'sdcenter-desktop\app-2.1.2\SDCenter.exe')) { throw 'Installer incorrectly created a parallel sdcenter-desktop installation' }
+          Write-Host "In-place install test passed: $expected"
 
       - name: Prepare artifact
         shell: pwsh
@@ -142,7 +140,7 @@ jobs:
       - name: Upload genuine installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SDCenter-v2.1.2-Genuine-Squirrel
+          name: SDCenter-v2.1.2-Genuine-Squirrel-InPlace
           path: release-v2.1.2/*
           if-no-files-found: error
           retention-days: 7
