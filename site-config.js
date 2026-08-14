@@ -1,3 +1,4 @@
+// SD종합센터 최신 Windows 배포 정보 · v2.1.4 updater hotfix
 window.SD_SITE_CONFIG = {
   productName: "SD종합센터",
   version: "2.1.4",
