@@ -54,3 +54,5 @@ jobs:
           fi
           git commit -m "balance: logistics rank progression and vehicle unlocks v1.0.8"
           git push
+
+# retry after supporting both website and desktop logistics source layouts
