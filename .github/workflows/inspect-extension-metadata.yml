@@ -30,16 +30,7 @@ jobs:
             while IFS= read -r f; do
               found=1
               echo "--- ${f#$dir/} ---"
-              python - "$f" <<'PY'
-import json,sys
-p=sys.argv[1]
-try:
-  d=json.load(open(p,encoding='utf-8'))
-except Exception as e:
-  print('JSON_ERROR',e); raise SystemExit
-keys=['id','name','productName','version','stage','userDataFolder','entry','main']
-print({k:d.get(k) for k in keys if k in d})
-PY
+              python -c 'import json,sys; d=json.load(open(sys.argv[1],encoding="utf-8")); keys=["id","name","productName","version","stage","userDataFolder","entry","main"]; print({k:d.get(k) for k in keys if k in d})' "$f"
             done < <(find "$dir" -type f \( -name sd-app.json -o -name package.json \) | sort)
             if [ "$found" -eq 0 ]; then echo "NO METADATA"; fi
           done
