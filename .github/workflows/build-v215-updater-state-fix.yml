@@ -23,8 +23,8 @@ jobs:
       - name: Download and verify official v2.1.4 installer
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.4.exe"
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.4.exe"
           Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.4/SDCenterSetup.exe' -OutFile $setup
           $size=(Get-Item $setup).Length
           $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
@@ -34,7 +34,7 @@ jobs:
       - name: Install v2.1.4 base
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
+          $ErrorActionPreference='Stop'
           $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.4.exe"
           Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
           Start-Sleep -Seconds 6
@@ -55,34 +55,56 @@ jobs:
           const path=require('node:path');
           const root=process.argv[2];
           const mainPath=path.join(root,'main.js');
-          const rendererPath=path.join(root,'public/js/app.js');
           const pkgPath=path.join(root,'package.json');
           let main=fs.readFileSync(mainPath,'utf8').replace(/\r\n/g,'\n');
-          let renderer=fs.readFileSync(rendererPath,'utf8').replace(/\r\n/g,'\n');
 
           if (!main.includes('function displayEntryVersion(entry)')) {
             const pos=main.indexOf('  function requiredRuleFor(entry) {');
             if(pos<0) throw new Error('requiredRuleFor marker missing');
-            const helper=`  function displayEntryVersion(entry) {\n    const rawVersion = rawEntryVersion(entry);\n    const label = String(entry?.version || "");\n    if (!rawVersion || rawVersion === "0.0.0") {\n      return label;\n    }\n    if (/v?\\d+(?:\\.\\d+){1,3}/i.test(label)) {\n      return label.replace(/v?\\d+(?:\\.\\d+){1,3}/i, \`v\${rawVersion}\`);\n    }\n    return label ? \`\${label} · v\${rawVersion}\` : \`v\${rawVersion}\`;\n  }\n\n`;
+            const helper=[
+              '  function displayEntryVersion(entry) {',
+              '    const rawVersion = rawEntryVersion(entry);',
+              '    const label = String(entry?.version || "");',
+              '    if (!rawVersion || rawVersion === "0.0.0") {',
+              '      return label;',
+              '    }',
+              '    if (/v?\\d+(?:\\.\\d+){1,3}/i.test(label)) {',
+              '      return label.replace(/v?\\d+(?:\\.\\d+){1,3}/i, `v${rawVersion}`);',
+              '    }',
+              '    return label ? `${label} · v${rawVersion}` : `v${rawVersion}`;',
+              '  }',
+              '',
+              ''
+            ].join('\n');
             main=main.slice(0,pos)+helper+main.slice(pos);
           }
-          const versionLine='      version: entry.version,\n';
-          if(main.includes(versionLine)) main=main.replace(versionLine,'      version: displayEntryVersion(entry),\n');
-          else if(!main.includes('version: displayEntryVersion(entry)')) throw new Error('publicAppState version line missing');
 
-          const alreadyBlock=`    const availability = updateAvailabilityFor(entry);\n    if (!availability.updateAvailable) {\n      return {\n        ok: true,\n        alreadyLatest: true,\n        app: publicAppState(entry),\n      };\n    }\n\n`;
+          const versionLine='      version: entry.version,\n';
+          if(main.includes(versionLine)) {
+            main=main.replace(versionLine,'      version: displayEntryVersion(entry),\n');
+          } else if(!main.includes('version: displayEntryVersion(entry)')) {
+            throw new Error('publicAppState version line missing');
+          }
+
+          const alreadyBlock=[
+            '    const availability = updateAvailabilityFor(entry);',
+            '    if (!availability.updateAvailable) {',
+            '      return {',
+            '        ok: true,',
+            '        alreadyLatest: true,',
+            '        app: publicAppState(entry),',
+            '      };',
+            '    }',
+            '',
+            ''
+          ].join('\n');
           if(main.includes(alreadyBlock)) {
             main=main.replace(alreadyBlock,'    const availability = updateAvailabilityFor(entry);\n\n');
           } else if(main.includes('alreadyLatest: true')) {
             throw new Error('alreadyLatest block exists in unexpected shape');
           }
 
-          const rendererOld=`  if (result.alreadyLatest) {\n    showToast(\`${currentApp?.name || "앱"}은 이미 최신 버전입니다.\`);\n    return;\n  }\n`;
-          const rendererNew=`  if (result.alreadyLatest) {\n    await bridge.checkAppUpdates();\n    showToast(\`${currentApp?.name || "앱"}은 이미 최신 버전입니다.\`);\n    return;\n  }\n`;
-          if(renderer.includes(rendererOld)) renderer=renderer.replace(rendererOld,rendererNew);
-
           fs.writeFileSync(mainPath,main,'utf8');
-          fs.writeFileSync(rendererPath,renderer,'utf8');
           const pkg=JSON.parse(fs.readFileSync(pkgPath,'utf8'));
           pkg.version='2.1.5';
           fs.writeFileSync(pkgPath,JSON.stringify(pkg,null,2)+'\n','utf8');
@@ -93,7 +115,7 @@ jobs:
           node --check (Join-Path $root 'public\js\app.js')
           $main=Get-Content (Join-Path $root 'main.js') -Raw
           if ($main -notmatch 'function displayEntryVersion') { throw 'displayEntryVersion missing' }
-          if ($main -match 'alreadyLatest: true') { throw 'explicit updater still has early alreadyLatest return' }
+          if ($main -match 'alreadyLatest: true') { throw 'early alreadyLatest return remains' }
           if ($main -notmatch 'SDBitcoinMiner_v1\.2\.2_Desktop\.zip') { throw 'Bitcoin v1.2.2 fallback missing' }
           $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
           if ($pkg.version -ne '2.1.5') { throw "package mismatch: $($pkg.version)" }
@@ -128,11 +150,16 @@ jobs:
           const appDirectory=process.env.APP_DIR;
           const outputDirectory=path.join(process.env.RUNNER_TEMP,'squirrel-v215');
           createWindowsInstaller({
-            appDirectory, outputDirectory,
-            name:'SDCenter', productName:'SD종합센터', version:'2.1.5',
+            appDirectory,
+            outputDirectory,
+            name:'SDCenter',
+            productName:'SD종합센터',
+            version:'2.1.5',
             authors:'SDWallet',
             description:'확장팩 자동 업데이트 상태 동기화 및 실제 설치 버전 표시 수정',
-            exe:'SDCenter.exe', setupExe:'SDCenterSetup.exe', noMsi:true,
+            exe:'SDCenter.exe',
+            setupExe:'SDCenterSetup.exe',
+            noMsi:true,
             setupIcon:path.join(appDirectory,'resources','app','public','icons','icon.ico')
           }).then(()=>console.log('Squirrel v2.1.5 build complete')).catch(e=>{console.error(e);process.exit(1);});
           '@ | Set-Content build.js -Encoding utf8
@@ -175,7 +202,6 @@ jobs:
           SD종합센터 v2.1.5
           - 카드 버전을 실제 설치 rawVersion과 동기화
           - 업데이트 버튼을 눌렀을 때 stale 최신 판정이어도 최신 ZIP 재설치
-          - 이미 최신 응답 시 UI 상태 재확인
           - 비트코인 v1.2.2 내장/온라인 업데이트 규칙 유지
           Installer bytes: $env:BUILT_SIZE
           SHA256: $env:BUILT_HASH
