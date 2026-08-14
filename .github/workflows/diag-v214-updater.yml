@@ -1,0 +1,59 @@
+name: Diagnose SDCenter v2.1.4 updater state
+
+on:
+  push:
+    branches:
+      - build-v214-updater-fix-20260814
+    paths:
+      - '.github/workflows/diag-v214-updater.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install v2.1.4 and print updater functions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.4.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.4/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne 'e86e888e4027a506bbb03298ac594dd4e078034f84856fde1caa10baf0b25fff') { throw "hash mismatch: $hash" }
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.4\resources\app'
+          $script=Join-Path $env:RUNNER_TEMP 'dump.js'
+          @'
+          const fs=require('fs');
+          const path=require('path');
+          const root=process.argv[2];
+          const main=fs.readFileSync(path.join(root,'main.js'),'utf8').replace(/\r\n/g,'\n');
+          const renderer=fs.readFileSync(path.join(root,'public/js/app.js'),'utf8').replace(/\r\n/g,'\n');
+          function dump(text,name,next='\n  async function '){
+            const needle=`function ${name}`;
+            let s=text.indexOf(needle);
+            if(s<0){ s=text.indexOf(`async function ${name}`); }
+            if(s<0){ console.log(`--- ${name}: NOT FOUND ---`); return; }
+            let e=text.indexOf(next,s+needle.length);
+            if(e<0) e=Math.min(text.length,s+7000);
+            console.log(`--- ${name} ---\n${text.slice(s,e)}\n--- END ${name} ---`);
+          }
+          dump(main,'publicAppState','\n\n  function ');
+          dump(main,'rawEntryVersion','\n\n  function ');
+          dump(main,'updateAvailabilityFor','\n\n  async function ');
+          dump(main,'updateAppFromCatalog','\n\n  async function ');
+          dump(main,'refreshCatalogAndUi','\n\n  function ');
+          dump(renderer,'updateApp','\n\nasync function ');
+          const idx=renderer.indexOf('function createAppCard');
+          if(idx>=0) console.log('--- createAppCard ---\n'+renderer.slice(idx,idx+9000)+'\n--- END createAppCard ---');
+          '@ | Set-Content $script -Encoding utf8
+          node $script $root
