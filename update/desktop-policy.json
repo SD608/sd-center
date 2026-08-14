@@ -1,6 +1,6 @@
 {
-  "policyVersion": 4,
-  "updatedAt": "2026-08-14T19:40:00+09:00",
+  "policyVersion": 5,
+  "updatedAt": "2026-08-14T19:59:00+09:00",
   "required": true,
   "apps": {
     "sd-bitcoin-miner-desktop": {
@@ -11,9 +11,9 @@
     },
     "sd-logistics-center-desktop": {
       "required": true,
-      "minVersion": "1.0.8",
+      "minVersion": "1.0.9",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
-      "message": "물류회사 등급 실적/차량 랭크 해금 밸런스 패치 v1.0.8 이상이 필수입니다."
+      "message": "물류회사 v1.0.9 1회 진행도 초기화/랭크 밸런스 패치가 필수입니다. SD지갑 잔액은 유지됩니다."
     },
     "sdlink-desktop": {
       "required": true,

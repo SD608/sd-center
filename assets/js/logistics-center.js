@@ -8,6 +8,8 @@
   const DELIVERY_DURATION_MULTIPLIER = 4;
   const DRIVER_DURATION_MULTIPLIER = 4;
   const FAST_DELIVERY_BONUS_MULTIPLIER = 1.10;
+  const PROGRESSION_RESET_EPOCH = 109;
+  const PROGRESSION_RESET_MARKER_KEY = "sd_logistics_progress_reset_epoch";
 
   // 적재 스택: 소형 1 / 중형 3 / 대형 6 / 초대형 12
   // 작은 차량일수록 속도가 빠릅니다.
@@ -67,6 +69,7 @@
 
   const baseState = {
     balance:0,
+    progressResetEpoch:PROGRESSION_RESET_EPOCH,
     logisticsRep:0,
     completedContracts:0,
     autoFitEnabled:true,
@@ -1637,14 +1640,37 @@
       onlineProfile=profileResult.data;
       onlineWallet=walletResult.data;
 
-      // 서버 진행도가 있으면 우선 사용. 없으면 기존 브라우저 물류 확장팩 진행도를 마이그레이션.
-      if(progressResult.data?.state && typeof progressResult.data.state==="object"){
-        const serverProgress=progressResult.data.state;
+      // v1.0.9 업데이트 후 계정별로 딱 한 번만 물류 진행도를 초기화합니다.
+      // SD지갑 잔액/거래내역은 건드리지 않고 sd_logistics_progress만 새 기본 상태로 교체합니다.
+      const serverProgress=(progressResult.data?.state && typeof progressResult.data.state==="object")
+        ? progressResult.data.state
+        : null;
+      const serverResetEpoch=Number(serverProgress?.progressResetEpoch)||0;
+      let updateResetApplied=false;
+
+      if(serverResetEpoch<PROGRESSION_RESET_EPOCH){
+        state=structuredClone(baseState);
+        state.balance=Number(onlineWallet.balance||0);
+        state.progressResetEpoch=PROGRESSION_RESET_EPOCH;
+        localStorage.removeItem(KEY);
+        generateContracts();
+
+        const {error:resetError}=await onlineAuth.client
+          .from("sd_logistics_progress")
+          .upsert({
+            user_id:onlineSession.user.id,
+            state:progressPayload(),
+            updated_at:new Date().toISOString()
+          },{onConflict:"user_id"});
+        if(resetError)throw resetError;
+        updateResetApplied=true;
+      }else if(serverProgress){
         const migratedLocal=state;
         state={...migratedLocal,...serverProgress};
       }
 
       state.balance=Number(onlineWallet.balance||0);
+      state.progressResetEpoch=PROGRESSION_RESET_EPOCH;
       serverReady=true;
       save();
 
@@ -1656,6 +1682,7 @@
       render();
       await refreshServerLedger();
       setOnlineStatus("공용 SD지갑과 동기화됨","success");
+      if(updateResetApplied)toast("v1.0.9 업데이트 · 물류 진행도가 1회 초기화되었습니다. SD지갑은 유지됩니다.");
     }catch(error){
       console.error(error);
       setOnlineStatus(onlineAuth?.messageForError?.(error)||error?.message||"서버 연결 실패","error");
