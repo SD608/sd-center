@@ -23,37 +23,29 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $srcZip = Join-Path $env:GITHUB_WORKSPACE 'downloads\extensions\SDBitcoinMiner_v1.2.0_Desktop.zip'
-          if (-not (Test-Path $srcZip)) { throw 'v1.2.0 ZIP not found' }
           $stage = Join-Path $env:RUNNER_TEMP 'bitcoin-v121'
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Expand-Archive -Path $srcZip -DestinationPath $stage -Force
-
           $mainPath = Join-Path $stage 'main.js'
-          if (-not (Test-Path $mainPath)) { throw 'main.js missing from v1.2.0 ZIP' }
           $main = Get-Content $mainPath -Raw
-          if ($main -notmatch '\.\./\.\./shared/open-center') { throw 'Expected shared/open-center import not found' }
+          if ($main -notmatch '\.\./\.\./shared/open-center') { throw 'Expected external open-center import not found' }
 
-          # Pull the exact shared helper from the verified v2.1.3 packaged center.
           $setup = Join-Path $env:RUNNER_TEMP 'SDCenterSetup-v2.1.3.exe'
           Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.3/SDCenterSetup.exe' -OutFile $setup
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
-          if ($hash -ne '336a39e3b804974fa4b01793898c3be4e056216de04a9f5ffbe70e77c373526e') { throw "v2.1.3 installer hash mismatch: $hash" }
+          if ($hash -ne '336a39e3b804974fa4b01793898c3be4e056216de04a9f5ffbe70e77c373526e') { throw "Installer hash mismatch: $hash" }
           $outer = Join-Path $env:RUNNER_TEMP 'sdc-v213'
           $inner = Join-Path $env:RUNNER_TEMP 'sdc-v213-nupkg'
           New-Item -ItemType Directory -Force -Path $outer,$inner | Out-Null
           7z x -y $setup "-o$outer" | Out-Null
           $nupkg = Join-Path $outer 'SDCenter-2.1.3-full.nupkg'
-          if (-not (Test-Path $nupkg)) { throw 'v2.1.3 nupkg not found' }
           7z x -y $nupkg "-o$inner" | Out-Null
           $openCenter = Get-ChildItem $inner -Filter 'open-center.js' -Recurse -File | Where-Object { $_.FullName -match '\\shared\\open-center\.js$' } | Select-Object -First 1
-          if (-not $openCenter) { throw 'shared/open-center.js not found in v2.1.3 package' }
-          $sharedSource = $openCenter.Directory.FullName
-          Copy-Item $sharedSource (Join-Path $stage 'shared') -Recurse -Force
+          if (-not $openCenter) { throw 'open-center.js not found in v2.1.3 package' }
+          Copy-Item $openCenter.Directory.FullName (Join-Path $stage 'shared') -Recurse -Force
 
-          # Installed extensions live in roaming/installed-apps/<id>; never depend on ../../shared.
           $main = $main.Replace('../../shared/open-center','./shared/open-center')
           Set-Content -Path $mainPath -Value $main -Encoding utf8
-
           $pkgPath = Join-Path $stage 'package.json'
           $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
           $pkg.version = '1.2.1'
@@ -65,56 +57,28 @@ jobs:
 
           node --check $mainPath
           node --check (Join-Path $stage 'shared\open-center.js')
-          if ((Get-Content $mainPath -Raw) -match '\.\./\.\./shared/open-center') { throw 'External shared import still remains' }
-          if (-not (Test-Path (Join-Path $stage 'shared\open-center.js'))) { throw 'Bundled shared helper missing' }
+          if ((Get-Content $mainPath -Raw) -match '\.\./\.\./shared/open-center') { throw 'External shared import remains' }
 
           $outZip = Join-Path $env:GITHUB_WORKSPACE 'downloads\extensions\SDBitcoinMiner_v1.2.1_Desktop.zip'
-          if (Test-Path $outZip) { Remove-Item $outZip -Force }
-          Compress-Archive -Path "$stage\*" -DestinationPath $outZip -CompressionLevel Optimal
+          Compress-Archive -Path "$stage\*" -DestinationPath $outZip -CompressionLevel Optimal -Force
           $size = (Get-Item $outZip).Length
           $sha256 = (Get-FileHash $outZip -Algorithm SHA256).Hash.ToLower()
-          if ($size -lt 50000) { throw "v1.2.1 ZIP unexpectedly small: $size" }
+          if ($size -lt 50000) { throw "ZIP unexpectedly small: $size" }
           Write-Host "Bitcoin v1.2.1 ZIP bytes: $size"
           Write-Host "Bitcoin v1.2.1 SHA256: $sha256"
 
           $catalogPath = Join-Path $env:GITHUB_WORKSPACE 'update\extensions-catalog.json'
           $catalog = Get-Content $catalogPath -Raw | ConvertFrom-Json
           $catalog.catalogVersion = [int]$catalog.catalogVersion + 1
-          $catalog.updatedAt = '2026-08-14T21:18:00+09:00'
+          $catalog.updatedAt = '2026-08-14T21:20:00+09:00'
           $catalog.apps.bitcoin.version = '1.2.1'
           $catalog.apps.bitcoin.downloadUrl = 'https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.1_Desktop.zip?v=121'
-          $catalog.apps.bitcoin.notes = 'v1.2.1 실행 오류 수정. v1.2.0의 채굴 확률 0.02%, GPU 155만원, GPU당 하루 전기세 10만원, 성공 시 GPU 내구도 1% 감소 및 0% 파손, 오프라인 누적 무제한 유지.'
+          $catalog.apps.bitcoin.notes = 'v1.2.1 실행 오류 수정. v1.2.0 밸런스와 GPU 내구도 규칙 유지.'
           $catalog | ConvertTo-Json -Depth 20 | Set-Content $catalogPath -Encoding utf8
-
-          $extPath = Join-Path $env:GITHUB_WORKSPACE 'extensions-data.js'
-          $ext = Get-Content $extPath -Raw
-          if ($ext -notmatch 'id: "sd-bitcoin-miner"') {
-            $insert = @'
-  ,{
-    id: "sd-bitcoin-miner",
-    name: "SD비트코인 채굴장",
-    stage: "Version 1.2",
-    version: "v1.2.1",
-    category: "자동 수익 확장팩",
-    icon: "assets/icons/bitcoin.png",
-    fileName: "SDBitcoinMiner_v1.2.1_Desktop.zip",
-    downloadUrl: "downloads/extensions/SDBitcoinMiner_v1.2.1_Desktop.zip?v=121",
-    description: "v1.2.1에서 종합센터 확장팩 설치 경로의 공용 모듈 누락으로 실행되지 않던 문제를 수정했습니다. 0.02% 채굴 확률, GPU 155만원, GPU당 일 10만원 전기세, 성공 시 내구도 1% 감소 규칙을 적용합니다.",
-    requirements: "SD종합센터 v2.1.3 이상 · SD지갑 · Windows 10/11",
-    updatedAt: "2026-08-14",
-    tags: ["자동 업데이트", "GPU 내구도", "실행 오류 수정"],
-    featured: true
-  }
-'@
-            $ext = $ext -replace '\n\];\s*$', "$insert`n];`n"
-          } else {
-            $ext = $ext.Replace('version: "v1.2.0"','version: "v1.2.1"').Replace('SDBitcoinMiner_v1.2.0_Desktop.zip?v=120','SDBitcoinMiner_v1.2.1_Desktop.zip?v=121').Replace('SDBitcoinMiner_v1.2.0_Desktop.zip','SDBitcoinMiner_v1.2.1_Desktop.zip')
-          }
-          Set-Content $extPath -Value $ext -Encoding utf8
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git rm .github/workflows/hotfix-bitcoin-v121.yml
-          git add downloads/extensions/SDBitcoinMiner_v1.2.1_Desktop.zip update/extensions-catalog.json extensions-data.js
+          git add downloads/extensions/SDBitcoinMiner_v1.2.1_Desktop.zip update/extensions-catalog.json
           git commit -m 'fix: bundle bitcoin shared module v1.2.1'
           git push origin main
