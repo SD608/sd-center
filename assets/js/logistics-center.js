@@ -12,19 +12,19 @@
   // 적재 스택: 소형 1 / 중형 3 / 대형 6 / 초대형 12
   // 작은 차량일수록 속도가 빠릅니다.
   const vehicleTypes = [
-    {key:"small",  label:"소형",   name:"소형 밴",         cost:250000,  order:0, stack:1,  speed:1.00, desc:"적재 1스택 · 가장 빠름"},
-    {key:"medium", label:"중형",   name:"중형 트럭",       cost:700000,  order:1, stack:3,  speed:0.86, desc:"적재 3스택 · 빠름"},
-    {key:"large",  label:"대형",   name:"대형 카고",       cost:1500000, order:2, stack:6,  speed:0.72, desc:"적재 6스택 · 보통"},
-    {key:"xlarge", label:"초대형", name:"초대형 트레일러", cost:3000000, order:3, stack:12, speed:0.58, desc:"적재 12스택 · 가장 느림"},
+    {key:"small",  label:"소형",   name:"소형 밴",         cost:250000,  order:0, stack:1,  speed:1.00, minRank:"F", desc:"적재 1스택 · 가장 빠름"},
+    {key:"medium", label:"중형",   name:"중형 트럭",       cost:700000,  order:1, stack:3,  speed:0.86, minRank:"E", desc:"적재 3스택 · 빠름"},
+    {key:"large",  label:"대형",   name:"대형 카고",       cost:1500000, order:2, stack:6,  speed:0.72, minRank:"C", desc:"적재 6스택 · 보통"},
+    {key:"xlarge", label:"초대형", name:"초대형 트레일러", cost:3000000, order:3, stack:12, speed:0.58, minRank:"A", desc:"적재 12스택 · 가장 느림"},
   ];
   const ranks = [
-    {rank:"F", min:0, next:100},
-    {rank:"E", min:100, next:260},
-    {rank:"D", min:260, next:520},
-    {rank:"C", min:520, next:900},
-    {rank:"B", min:900, next:1450},
-    {rank:"A", min:1450, next:2200},
-    {rank:"S", min:2200, next:null},
+    {rank:"F", min:0, next:300},
+    {rank:"E", min:300, next:800},
+    {rank:"D", min:800, next:1600},
+    {rank:"C", min:1600, next:2800},
+    {rank:"B", min:2800, next:4500},
+    {rank:"A", min:4500, next:7000},
+    {rank:"S", min:7000, next:null},
   ];
   const headquartersLevels = {
     2:{contracts:35, xlarge:3, revenue:4000000, fleet:6, fee:500000, unlock:"기사 시스템 · 정원 2명"},
@@ -612,6 +612,11 @@
   function vehicleDef(type){
     return vehicleTypes.find(v=>v.key===type) || vehicleTypes[0];
   }
+  function vehicleRankUnlocked(typeOrDef){
+    const def=typeof typeOrDef==="string" ? vehicleDef(typeOrDef) : typeOrDef;
+    const currentRank=rankFromRep(state.logisticsRep).rank;
+    return rankIndex(currentRank)>=rankIndex(def?.minRank||"F");
+  }
   function vehicleLabel(vehicle){
     const def=vehicleDef(vehicle.type);
     return `${def.label} · ${vehicle.name || def.name}`;
@@ -1034,6 +1039,7 @@
 
   async function buyVehicle(type){
     const def=vehicleDef(type);
+    if(!vehicleRankUnlocked(def)){toast(`${def.label} 차량은 회사 ${def.minRank}등급부터 구매할 수 있습니다.`);return;}
     const limit=fleetLimit();
     if(state.fleet.length>=limit){toast(`현재 차량은 최대 ${limit}대까지 소유할 수 있습니다.`);return;}
     if(state.balance<def.cost){toast("가상잔액이 부족합니다.");return;}
@@ -1088,7 +1094,7 @@
     const next=vehicleTypes[current.order+1];
     if(!next)return null;
     const cost=Math.max(0,next.cost-current.cost);
-    return {current,next,cost};
+    return {current,next,cost,unlocked:vehicleRankUnlocked(next)};
   }
 
   async function upgradeStarterVehicle(vehicleId){
@@ -1098,6 +1104,7 @@
 
     const info=starterUpgradeInfo(vehicle);
     if(!info){toast("스타터 차량이 이미 초대형입니다.");return;}
+    if(!info.unlocked){toast(`스타터 ${info.next.label} 업그레이드는 회사 ${info.next.minRank}등급부터 가능합니다.`);return;}
     if(state.balance<info.cost){toast("업그레이드 비용이 부족합니다.");return;}
 
     try{
@@ -1133,8 +1140,8 @@
       if(v.starter){
         if(upgrade){
           action=`<div class="starter-upgrade-box">
-            <button class="${busy||state.balance<upgrade.cost?"":"primary"}" data-upgrade-starter="${v.id}" ${busy||state.balance<upgrade.cost?"disabled":""}>
-              ${busy ? "운송 중 · 업그레이드 불가" : `스타터 ${upgrade.next.label} 업그레이드 · ${won(upgrade.cost)}`}
+            <button class="${busy||!upgrade.unlocked||state.balance<upgrade.cost?"":"primary"}" data-upgrade-starter="${v.id}" ${busy||!upgrade.unlocked||state.balance<upgrade.cost?"disabled":""}>
+              ${!upgrade.unlocked ? `회사 ${upgrade.next.minRank}등급에서 ${upgrade.next.label} 해금` : busy ? "운송 중 · 업그레이드 불가" : `스타터 ${upgrade.next.label} 업그레이드 · ${won(upgrade.cost)}`}
             </button>
           </div>`;
         }else{
@@ -1187,16 +1194,18 @@
         <span class="speed-badge speed-slow">느림</span>
       </div>
       ${vehicleTypes.map(def=>{
-        const disabled=full||state.balance<def.cost;
+        const rankLocked=!vehicleRankUnlocked(def);
+        const disabled=full||state.balance<def.cost||rankLocked;
         let label=`구매 · ${won(def.cost)}`;
-        if(full)label=`차량 슬롯 가득 참 (${limit}대)`;
+        if(rankLocked)label=`회사 ${def.minRank}등급에서 해금`;
+        else if(full)label=`차량 슬롯 가득 참 (${limit}대)`;
         else if(state.balance<def.cost)label=`잔액 부족 · ${won(def.cost)}`;
 
         return `<article class="shop-vehicle">
           <div class="shop-vehicle-top">
             <div>
               <h4>${def.label} · ${def.name}</h4>
-              <small>${def.desc}</small>
+              <small>${def.desc} · 구매 조건 ${def.minRank}등급</small>
             </div>
             <strong>${won(def.cost)}</strong>
           </div>
