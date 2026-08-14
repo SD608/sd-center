@@ -1,0 +1,60 @@
+name: Apply logistics v1.0.9 one-time reset
+
+on:
+  push:
+    paths:
+      - ".github/workflows/apply-logistics-v109-reset.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply v1.0.9 reset patch
+        run: python tools/patch_logistics_v109_reset.py
+
+      - name: Verify website patch
+        run: |
+          node --check assets/js/logistics-center.js
+          grep -q 'const PROGRESSION_RESET_EPOCH = 109' assets/js/logistics-center.js
+          grep -q 'serverResetEpoch<PROGRESSION_RESET_EPOCH' assets/js/logistics-center.js
+          grep -q 'v1.0.9 업데이트 · 물류 진행도가 1회 초기화되었습니다' assets/js/logistics-center.js
+          grep -q 'logistics-center.js?v=109' logistics-center.html
+          grep -q 'version: "v1.0.9"' extensions-data.js
+          grep -q 'version: "v1.0.9"' assets/js/extensions-data.js
+          grep -q 'SDLogisticsCenter_Season0_Desktop.zip?v=109' extensions-data.js
+          grep -q '"minVersion": "1.0.9"' update/desktop-policy.json
+
+      - name: Verify desktop ZIP
+        run: |
+          unzip -t downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip >/dev/null
+          rm -rf /tmp/logistics-v109
+          mkdir -p /tmp/logistics-v109
+          unzip -q downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip -d /tmp/logistics-v109
+          JS=$(grep -rl 'PROGRESSION_RESET_MARKER_KEY' /tmp/logistics-v109 --include='*.js' | head -n 1)
+          test -n "$JS"
+          node --check "$JS"
+          grep -q 'const PROGRESSION_RESET_EPOCH = 109' "$JS"
+          grep -q 'const updateResetApplied=(()=>{' "$JS"
+          grep -q 'localStorage.removeItem(KEY)' "$JS"
+          grep -R -q '"version": "1.0.9"' /tmp/logistics-v109 --include='package.json' --include='sd-app.json'
+          sha256sum downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip
+          stat -c '%s bytes' downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip
+
+      - name: Commit v1.0.9
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/js/logistics-center.js logistics-center.html extensions-data.js assets/js/extensions-data.js update/desktop-policy.json downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "balance: logistics v1.0.9 one-time progression reset"
+          git push
