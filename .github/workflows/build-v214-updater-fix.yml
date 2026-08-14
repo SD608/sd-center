@@ -1,0 +1,187 @@
+name: Build and publish SDCenter v2.1.4 updater fix
+
+on:
+  push:
+    branches:
+      - build-v214-updater-fix-20260814
+    paths:
+      - '.github/workflows/build-v214-updater-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download and verify official v2.1.3 installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.3.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.3/SDCenterSetup.exe' -OutFile $setup
+          $size = (Get-Item $setup).Length
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($size -ne 140370432) { throw "Unexpected v2.1.3 installer size: $size" }
+          if ($hash -ne '336a39e3b804974fa4b01793898c3be4e056216de04a9f5ffbe70e77c373526e') { throw "v2.1.3 installer hash mismatch: $hash" }
+          Write-Host "Verified v2.1.3 base: $size bytes / $hash"
+
+      - name: Install official v2.1.3 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.3.exe"
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir = Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.3'
+          if (-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))) { throw "Could not locate v2.1.3 app directory: $appDir" }
+          "APP_DIR=$appDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch updater fallback and aliases
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $appRoot = Join-Path $env:APP_DIR 'resources\app'
+          $patch = Join-Path $env:RUNNER_TEMP 'patch-v214.js'
+          @'
+          "use strict";
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const appRoot = process.argv[2];
+          const mainPath = path.join(appRoot, "main.js");
+          const pkgPath = path.join(appRoot, "package.json");
+          let text = fs.readFileSync(mainPath, "utf8").replace(/\r\n/g, "\n");
+
+          const marker = "const FALLBACK_EXTENSION_CATALOG = {";
+          const start = text.indexOf(marker);
+          if (start < 0) throw new Error("FALLBACK_EXTENSION_CATALOG missing");
+          const end = text.indexOf("\n};", start);
+          if (end < 0) throw new Error("FALLBACK_EXTENSION_CATALOG end missing");
+          let block = text.slice(start, end + 3);
+          if (!block.includes('"bitcoin"')) {
+            const close = block.lastIndexOf("  },\n};");
+            if (close < 0) throw new Error("Fallback apps close marker missing");
+            const bitcoinRule = `    "bitcoin": {\n      name: "SD비트코인 채굴장",\n      version: "1.2.2",\n      downloadUrl:\n        "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",\n      notes: "v1.2.2 실행 오류 수정 · GPU 내구도/전기세/채굴 확률 밸런스",\n    },\n`;
+            block = block.slice(0, close) + bitcoinRule + block.slice(close);
+            text = text.slice(0, start) + block + text.slice(end + 3);
+          }
+
+          const oldRule = `  function catalogRuleFor(entry) {\n    const rule = extensionCatalog?.apps?.[entry?.id];\n    if (!rule || !rule.version || !rule.downloadUrl) {\n      return null;\n    }\n    return rule;\n  }`;
+          const newRule = `  function catalogRuleFor(entry) {\n    const entryId = String(entry?.id || "");\n    const lookupId =\n      entryId === "sd-bitcoin-miner-desktop" ? "bitcoin" : entryId;\n    const rule =\n      extensionCatalog?.apps?.[entryId] ||\n      extensionCatalog?.apps?.[lookupId];\n    if (!rule || !rule.version || !rule.downloadUrl) {\n      return null;\n    }\n    return rule;\n  }`;
+          if (text.includes(oldRule)) text = text.replace(oldRule, newRule);
+          else if (!text.includes('entryId === "sd-bitcoin-miner-desktop"')) throw new Error("catalogRuleFor patch target missing");
+
+          fs.writeFileSync(mainPath, text, "utf8");
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+          pkg.version = "2.1.4";
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
+          console.log("Patched SDCenter v2.1.4 updater fallback");
+          '@ | Set-Content -Path $patch -Encoding utf8
+          node $patch $appRoot
+          node --check (Join-Path $appRoot 'main.js')
+          node --check (Join-Path $appRoot 'preload.js')
+          node --check (Join-Path $appRoot 'public\js\app.js')
+          $main = Get-Content (Join-Path $appRoot 'main.js') -Raw
+          if ($main -notmatch 'SDBitcoinMiner_v1\.2\.2_Desktop\.zip') { throw 'Bitcoin v1.2.2 fallback missing' }
+          if ($main -notmatch 'sd-bitcoin-miner-desktop') { throw 'Bitcoin alias matching missing' }
+          $pkg = Get-Content (Join-Path $appRoot 'package.json') -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.4') { throw "Package version mismatch: $($pkg.version)" }
+
+      - name: Build genuine in-place Squirrel installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $builder = "$env:RUNNER_TEMP\squirrel-builder-v214"
+          New-Item -ItemType Directory -Path $builder -Force | Out-Null
+          Set-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          @'
+          const path = require('node:path');
+          const { createWindowsInstaller } = require('electron-winstaller');
+          const appDirectory = process.env.APP_DIR;
+          const outputDirectory = path.join(process.env.RUNNER_TEMP, 'squirrel-v214');
+          createWindowsInstaller({
+            appDirectory,
+            outputDirectory,
+            name: 'SDCenter',
+            productName: 'SD종합센터',
+            version: '2.1.4',
+            authors: 'SDWallet',
+            description: '확장팩 자동 업데이트 안정화 및 비트코인 업데이트 내장 감지 수정',
+            exe: 'SDCenter.exe',
+            setupExe: 'SDCenterSetup.exe',
+            noMsi: true,
+            setupIcon: path.join(appDirectory, 'resources', 'app', 'public', 'icons', 'icon.ico')
+          }).then(() => console.log('Squirrel v2.1.4 build complete'))
+            .catch((error) => { console.error(error); process.exit(1); });
+          '@ | Set-Content -Path build.js -Encoding utf8
+          node build.js
+          $setup = "$env:RUNNER_TEMP\squirrel-v214\SDCenterSetup.exe"
+          if (-not (Test-Path $setup)) { throw 'v2.1.4 installer not generated' }
+          $size = (Get-Item $setup).Length
+          if ($size -lt 100MB) { throw "Generated installer too small: $size" }
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "v2.1.4 installer: $size bytes / $hash"
+
+      - name: Install-test v2.1.4 in place
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $expected = Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.4\SDCenter.exe'
+          if (-not (Test-Path $expected)) { throw "In-place v2.1.4 install failed: $expected" }
+          $appRoot = Join-Path (Split-Path $expected -Parent) 'resources\app'
+          $pkg = Get-Content (Join-Path $appRoot 'package.json') -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.4') { throw "Installed package mismatch: $($pkg.version)" }
+          $main = Get-Content (Join-Path $appRoot 'main.js') -Raw
+          if ($main -notmatch 'SDBitcoinMiner_v1\.2\.2_Desktop\.zip') { throw 'Installed Bitcoin fallback missing' }
+          if ($main -notmatch 'center:check-app-updates') { throw 'Installed updater IPC missing' }
+          if (Test-Path (Join-Path $env:LOCALAPPDATA 'sdcenter-desktop\app-2.1.4\SDCenter.exe')) { throw 'Parallel package identity detected' }
+          Write-Host "In-place v2.1.4 install test passed: $expected"
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $dir = "$env:GITHUB_WORKSPACE\release-v2.1.4"
+          New-Item -ItemType Directory -Path $dir -Force | Out-Null
+          Copy-Item $env:BUILT_SETUP "$dir\SDCenterSetup.exe" -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content "$dir\SHA256.txt" -Encoding ascii
+          @"
+          SD종합센터 v2.1.4
+          - 비트코인 v1.2.2를 자동 업데이트 내장 목록에 추가
+          - 홈페이지 카탈로그 조회 실패 시에도 비트코인 업데이트 감지
+          - bitcoin / sd-bitcoin-miner-desktop ID 호환 처리
+          - 기존 v2.1.3 확장팩 자동 업데이트 기능 유지
+          Installer bytes: $env:BUILT_SIZE
+          SHA256: $env:BUILT_HASH
+          "@ | Set-Content "$dir\BUILD_INFO.txt" -Encoding utf8
+
+      - name: Publish v2.1.4 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release create 'v.2.1.4' `
+            'release-v2.1.4/SDCenterSetup.exe' `
+            'release-v2.1.4/SHA256.txt' `
+            'release-v2.1.4/BUILD_INFO.txt' `
+            --repo 'SD608/sd-center' `
+            --target 'build-v214-updater-fix-20260814' `
+            --title 'SD종합센터 v2.1.4' `
+            --notes '확장팩 자동 업데이트 감지 안정화. 비트코인 v1.2.2를 내장 카탈로그에 추가하여 홈페이지 카탈로그 조회 실패 시에도 업데이트가 표시되며, bitcoin / sd-bitcoin-miner-desktop ID 호환을 추가했습니다.'
