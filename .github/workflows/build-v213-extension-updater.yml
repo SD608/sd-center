@@ -60,6 +60,7 @@ jobs:
           $appRoot = Join-Path $env:APP_DIR 'resources\app'
           if (-not (Test-Path (Join-Path $appRoot 'package.json'))) { throw "Packaged app root not found: $appRoot" }
 
+          node (Join-Path $hotfix 'normalize-source.js') (Join-Path $appRoot 'main.js') (Join-Path $appRoot 'public\js\app.js')
           node (Join-Path $hotfix 'patch-main.js') (Join-Path $appRoot 'main.js')
           node (Join-Path $hotfix 'patch-renderer.js') (Join-Path $appRoot 'public\js\app.js')
           node (Join-Path $hotfix 'update-package.js') (Join-Path $appRoot 'package.json')
