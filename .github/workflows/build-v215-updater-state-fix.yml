@@ -1,1 +1,197 @@
-placeholder
+name: Build and publish SDCenter v2.1.5 updater state fix
+
+on:
+  push:
+    branches:
+      - build-v215-updater-state-fix-20260814
+    paths:
+      - '.github/workflows/build-v215-updater-state-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download and verify official v2.1.4 installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.4.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.4/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($size -ne 140369920) { throw "Unexpected v2.1.4 installer size: $size" }
+          if ($hash -ne 'e86e888e4027a506bbb03298ac594dd4e078034f84856fde1caa10baf0b25fff') { throw "v2.1.4 hash mismatch: $hash" }
+
+      - name: Install v2.1.4 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.4.exe"
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.4'
+          if (-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))) { throw "v2.1.4 install missing: $appDir" }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch updater state synchronization
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:APP_DIR 'resources\app'
+          $patch=Join-Path $env:RUNNER_TEMP 'patch-v215.js'
+          @'
+          "use strict";
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const root=process.argv[2];
+          const mainPath=path.join(root,'main.js');
+          const rendererPath=path.join(root,'public/js/app.js');
+          const pkgPath=path.join(root,'package.json');
+          let main=fs.readFileSync(mainPath,'utf8').replace(/\r\n/g,'\n');
+          let renderer=fs.readFileSync(rendererPath,'utf8').replace(/\r\n/g,'\n');
+
+          if (!main.includes('function displayEntryVersion(entry)')) {
+            const pos=main.indexOf('  function requiredRuleFor(entry) {');
+            if(pos<0) throw new Error('requiredRuleFor marker missing');
+            const helper=`  function displayEntryVersion(entry) {\n    const rawVersion = rawEntryVersion(entry);\n    const label = String(entry?.version || "");\n    if (!rawVersion || rawVersion === "0.0.0") {\n      return label;\n    }\n    if (/v?\\d+(?:\\.\\d+){1,3}/i.test(label)) {\n      return label.replace(/v?\\d+(?:\\.\\d+){1,3}/i, \`v\${rawVersion}\`);\n    }\n    return label ? \`\${label} · v\${rawVersion}\` : \`v\${rawVersion}\`;\n  }\n\n`;
+            main=main.slice(0,pos)+helper+main.slice(pos);
+          }
+          const versionLine='      version: entry.version,\n';
+          if(main.includes(versionLine)) main=main.replace(versionLine,'      version: displayEntryVersion(entry),\n');
+          else if(!main.includes('version: displayEntryVersion(entry)')) throw new Error('publicAppState version line missing');
+
+          const alreadyBlock=`    const availability = updateAvailabilityFor(entry);\n    if (!availability.updateAvailable) {\n      return {\n        ok: true,\n        alreadyLatest: true,\n        app: publicAppState(entry),\n      };\n    }\n\n`;
+          if(main.includes(alreadyBlock)) {
+            main=main.replace(alreadyBlock,'    const availability = updateAvailabilityFor(entry);\n\n');
+          } else if(main.includes('alreadyLatest: true')) {
+            throw new Error('alreadyLatest block exists in unexpected shape');
+          }
+
+          const rendererOld=`  if (result.alreadyLatest) {\n    showToast(\`${currentApp?.name || "앱"}은 이미 최신 버전입니다.\`);\n    return;\n  }\n`;
+          const rendererNew=`  if (result.alreadyLatest) {\n    await bridge.checkAppUpdates();\n    showToast(\`${currentApp?.name || "앱"}은 이미 최신 버전입니다.\`);\n    return;\n  }\n`;
+          if(renderer.includes(rendererOld)) renderer=renderer.replace(rendererOld,rendererNew);
+
+          fs.writeFileSync(mainPath,main,'utf8');
+          fs.writeFileSync(rendererPath,renderer,'utf8');
+          const pkg=JSON.parse(fs.readFileSync(pkgPath,'utf8'));
+          pkg.version='2.1.5';
+          fs.writeFileSync(pkgPath,JSON.stringify(pkg,null,2)+'\n','utf8');
+          '@ | Set-Content $patch -Encoding utf8
+          node $patch $root
+          node --check (Join-Path $root 'main.js')
+          node --check (Join-Path $root 'preload.js')
+          node --check (Join-Path $root 'public\js\app.js')
+          $main=Get-Content (Join-Path $root 'main.js') -Raw
+          if ($main -notmatch 'function displayEntryVersion') { throw 'displayEntryVersion missing' }
+          if ($main -match 'alreadyLatest: true') { throw 'explicit updater still has early alreadyLatest return' }
+          if ($main -notmatch 'SDBitcoinMiner_v1\.2\.2_Desktop\.zip') { throw 'Bitcoin v1.2.2 fallback missing' }
+          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.5') { throw "package mismatch: $($pkg.version)" }
+
+      - name: Verify Bitcoin catalog package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $zip="$env:RUNNER_TEMP\SDBitcoinMiner-v1.2.2.zip"
+          Invoke-WebRequest -Uri 'https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122' -OutFile $zip
+          $stage="$env:RUNNER_TEMP\bitcoin-v122-check"
+          Expand-Archive -Path $zip -DestinationPath $stage -Force
+          $manifest=Get-Content (Join-Path $stage 'sd-app.json') -Raw | ConvertFrom-Json
+          if ($manifest.id -ne 'bitcoin') { throw "bitcoin id mismatch: $($manifest.id)" }
+          if ($manifest.version -ne '1.2.2') { throw "bitcoin version mismatch: $($manifest.version)" }
+          if (-not (Test-Path (Join-Path $stage 'shared\open-center.js'))) { throw 'bitcoin shared/open-center.js missing' }
+          $main=Get-Content (Join-Path $stage 'main.js') -Raw
+          if ($main -match '\.\./\.\./shared/open-center') { throw 'external open-center import still present' }
+
+      - name: Build genuine in-place Squirrel installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder="$env:RUNNER_TEMP\squirrel-builder-v215"
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Set-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          @'
+          const path=require('node:path');
+          const {createWindowsInstaller}=require('electron-winstaller');
+          const appDirectory=process.env.APP_DIR;
+          const outputDirectory=path.join(process.env.RUNNER_TEMP,'squirrel-v215');
+          createWindowsInstaller({
+            appDirectory, outputDirectory,
+            name:'SDCenter', productName:'SD종합센터', version:'2.1.5',
+            authors:'SDWallet',
+            description:'확장팩 자동 업데이트 상태 동기화 및 실제 설치 버전 표시 수정',
+            exe:'SDCenter.exe', setupExe:'SDCenterSetup.exe', noMsi:true,
+            setupIcon:path.join(appDirectory,'resources','app','public','icons','icon.ico')
+          }).then(()=>console.log('Squirrel v2.1.5 build complete')).catch(e=>{console.error(e);process.exit(1);});
+          '@ | Set-Content build.js -Encoding utf8
+          node build.js
+          $setup="$env:RUNNER_TEMP\squirrel-v215\SDCenterSetup.exe"
+          if (-not (Test-Path $setup)) { throw 'v2.1.5 installer missing' }
+          $size=(Get-Item $setup).Length
+          if ($size -lt 100MB) { throw "installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install-test v2.1.5 in place
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $expected=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.5\SDCenter.exe'
+          if (-not (Test-Path $expected)) { throw "in-place install failed: $expected" }
+          $root=Join-Path (Split-Path $expected -Parent) 'resources\app'
+          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '2.1.5') { throw 'installed version mismatch' }
+          $main=Get-Content (Join-Path $root 'main.js') -Raw
+          if ($main -notmatch 'displayEntryVersion') { throw 'installed display version fix missing' }
+          if ($main -match 'alreadyLatest: true') { throw 'installed early-return bug remains' }
+          if (Test-Path (Join-Path $env:LOCALAPPDATA 'sdcenter-desktop\app-2.1.5\SDCenter.exe')) { throw 'parallel install identity detected' }
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $dir="$env:GITHUB_WORKSPACE\release-v2.1.5"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP "$dir\SDCenterSetup.exe" -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content "$dir\SHA256.txt" -Encoding ascii
+          @"
+          SD종합센터 v2.1.5
+          - 카드 버전을 실제 설치 rawVersion과 동기화
+          - 업데이트 버튼을 눌렀을 때 stale 최신 판정이어도 최신 ZIP 재설치
+          - 이미 최신 응답 시 UI 상태 재확인
+          - 비트코인 v1.2.2 내장/온라인 업데이트 규칙 유지
+          Installer bytes: $env:BUILT_SIZE
+          SHA256: $env:BUILT_HASH
+          "@ | Set-Content "$dir\BUILD_INFO.txt" -Encoding utf8
+
+      - name: Publish v2.1.5 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.1.5' `
+            'release-v2.1.5/SDCenterSetup.exe' `
+            'release-v2.1.5/SHA256.txt' `
+            'release-v2.1.5/BUILD_INFO.txt' `
+            --repo 'SD608/sd-center' `
+            --target 'build-v215-updater-state-fix-20260814' `
+            --title 'SD종합센터 v2.1.5' `
+            --notes '확장팩 업데이트 카드의 표시 버전과 실제 판정 버전이 어긋나 이미 최신이라고 나오던 문제를 수정했습니다. 카드에는 실제 설치 버전을 표시하고, 화면에 업데이트 버튼이 떠서 누른 경우 최신 ZIP을 재설치해 상태를 복구합니다.'
