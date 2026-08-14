@@ -39,77 +39,42 @@ jobs:
           Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
           Start-Sleep -Seconds 5
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          $candidates = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
+          $appDir = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
             Where-Object { $_.FullName -match 'app-2\.1\.1' } |
-            Select-Object -ExpandProperty DirectoryName
-          if (-not $candidates) {
-            $candidates = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
-              Select-Object -ExpandProperty DirectoryName
-          }
-          $appDir = $candidates | Select-Object -First 1
-          if (-not $appDir) { throw 'Could not locate installed SDCenter.exe' }
+            Select-Object -First 1 -ExpandProperty DirectoryName
+          if (-not $appDir) { throw 'Could not locate installed app-2.1.1 SDCenter.exe' }
           "APP_DIR=$appDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          Write-Host "Installed app directory: $appDir"
+          Write-Host "Installed official base: $appDir"
 
-      - name: Apply v2.1.2 hotfix directly to packaged app
+      - name: Apply direct v2.1.2 source hotfix
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $b64Path = Join-Path $env:GITHUB_WORKSPACE 'build\no-powershell\required-update-hotfix.b64'
-          if (-not (Test-Path $b64Path)) { throw "Missing hotfix payload: $b64Path" }
-          $zipPath = "$env:RUNNER_TEMP\required-update-hotfix.zip"
-          $hotfixDir = "$env:RUNNER_TEMP\required-update-hotfix"
-          $raw = Get-Content -Raw $b64Path
-          $clean = [regex]::Replace($raw, '[^A-Za-z0-9+/=]', '')
-          if ($clean.Length -lt 1000) { throw 'Sanitized hotfix payload is unexpectedly short' }
-
-          $stream = [IO.MemoryStream]::new()
-          try {
-            $start = 0
-            $paddingMatches = [regex]::Matches($clean, '={1,2}')
-            foreach ($m in $paddingMatches) {
-              $end = $m.Index + $m.Length
-              if ($end -le $start) { continue }
-              $segment = $clean.Substring($start, $end - $start)
-              if (($segment.Length % 4) -ne 0) { continue }
-              try {
-                $bytes = [Convert]::FromBase64String($segment)
-                $stream.Write($bytes, 0, $bytes.Length)
-                $start = $end
-              } catch {
-              }
-            }
-            if ($start -lt $clean.Length) {
-              $segment = $clean.Substring($start)
-              while (($segment.Length % 4) -ne 0) { $segment += '=' }
-              $bytes = [Convert]::FromBase64String($segment)
-              $stream.Write($bytes, 0, $bytes.Length)
-            }
-            [IO.File]::WriteAllBytes($zipPath, $stream.ToArray())
-          } finally {
-            $stream.Dispose()
-          }
-
-          $sig = [IO.File]::ReadAllBytes($zipPath)[0..3]
-          if ($sig[0] -ne 0x50 -or $sig[1] -ne 0x4B) { throw 'Decoded hotfix is not a ZIP file' }
-          if (Test-Path $hotfixDir) { Remove-Item $hotfixDir -Recurse -Force }
-          Expand-Archive -Path $zipPath -DestinationPath $hotfixDir -Force
-
+          $hotfix = Join-Path $env:GITHUB_WORKSPACE 'build\v212-hotfix'
           $appRoot = Join-Path $env:APP_DIR 'resources\app'
           if (-not (Test-Path (Join-Path $appRoot 'package.json'))) { throw "Packaged app root not found: $appRoot" }
 
-          Copy-Item (Join-Path $hotfixDir 'main.js') (Join-Path $appRoot 'main.js') -Force
-          Copy-Item (Join-Path $hotfixDir 'package.json') (Join-Path $appRoot 'package.json') -Force
-          Copy-Item (Join-Path $hotfixDir 'forge.config.js') (Join-Path $appRoot 'forge.config.js') -Force
-          Copy-Item (Join-Path $hotfixDir 'src\required-updates.js') (Join-Path $appRoot 'src\required-updates.js') -Force
-          Copy-Item (Join-Path $hotfixDir 'public\js\app.js') (Join-Path $appRoot 'public\js\app.js') -Force
-          Copy-Item (Join-Path $hotfixDir 'public\css\style.css') (Join-Path $appRoot 'public\css\style.css') -Force
+          $part1 = Get-Content -Raw (Join-Path $hotfix 'main.part1')
+          $part2 = Get-Content -Raw (Join-Path $hotfix 'main.part2')
+          $part3 = Get-Content -Raw (Join-Path $hotfix 'main.part3')
+          $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+          [IO.File]::WriteAllText((Join-Path $appRoot 'main.js'), ($part1 + $part2 + $part3), $utf8NoBom)
 
+          Copy-Item (Join-Path $hotfix 'package.json') (Join-Path $appRoot 'package.json') -Force
+          Copy-Item (Join-Path $hotfix 'forge.config.js') (Join-Path $appRoot 'forge.config.js') -Force
+          Copy-Item (Join-Path $hotfix 'required-updates.js') (Join-Path $appRoot 'src\required-updates.js') -Force
+          Copy-Item (Join-Path $hotfix 'app.js') (Join-Path $appRoot 'public\js\app.js') -Force
+          Copy-Item (Join-Path $hotfix 'style.css') (Join-Path $appRoot 'public\css\style.css') -Force
+
+          node --check (Join-Path $appRoot 'main.js')
+          node --check (Join-Path $appRoot 'src\required-updates.js')
+          node --check (Join-Path $appRoot 'public\js\app.js')
           $pkg = Get-Content (Join-Path $appRoot 'package.json') -Raw | ConvertFrom-Json
           if ($pkg.version -ne '2.1.2') { throw "Patched package version is $($pkg.version), expected 2.1.2" }
-          if (-not (Select-String -Path (Join-Path $appRoot 'main.js') -Pattern '1.2.4' -Quiet)) { throw 'SD Link v1.2.4 requirement missing from patched main.js' }
-          if (-not (Select-String -Path (Join-Path $appRoot 'main.js') -Pattern '1.0.7' -Quiet)) { throw 'Logistics v1.0.7 requirement missing from patched main.js' }
-          Write-Host 'Patched packaged application verified as v2.1.2.'
+          if (-not (Select-String -Path (Join-Path $appRoot 'main.js') -Pattern 'sdlink-desktop' -Quiet)) { throw 'SD Link enforcement missing' }
+          if (-not (Select-String -Path (Join-Path $appRoot 'main.js') -Pattern '1.2.4' -Quiet)) { throw 'SD Link v1.2.4 requirement missing' }
+          if (-not (Select-String -Path (Join-Path $appRoot 'main.js') -Pattern '1.0.7' -Quiet)) { throw 'Logistics v1.0.7 requirement missing' }
+          Write-Host 'Direct source hotfix verified.'
 
       - name: Rebuild genuine Squirrel installer
         shell: pwsh
@@ -134,12 +99,8 @@ jobs:
             setupExe: 'SDCenterSetup.exe',
             noMsi: true,
             setupIcon: path.join(appDirectory, 'resources', 'app', 'public', 'icons', 'icon.ico')
-          }).then(() => {
-            console.log('Squirrel build complete:', outputDirectory);
-          }).catch((error) => {
-            console.error(error);
-            process.exit(1);
-          });
+          }).then(() => console.log('Squirrel build complete:', outputDirectory))
+            .catch((error) => { console.error(error); process.exit(1); });
           '@ | Set-Content -Path build.js -Encoding utf8
           node build.js
 
@@ -147,7 +108,9 @@ jobs:
           if (-not (Test-Path $setup)) { throw 'SDCenterSetup.exe was not generated' }
           $size = (Get-Item $setup).Length
           if ($size -lt 100MB) { throw "Generated installer is unexpectedly small: $size" }
-          Get-FileHash $setup -Algorithm SHA256 | Format-List
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          Write-Host "Generated installer bytes: $size"
+          Write-Host "Generated installer SHA256: $hash"
           "BUILT_SETUP=$setup" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install-test generated v2.1.2 package
@@ -156,7 +119,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
-          Start-Sleep -Seconds 5
+          Start-Sleep -Seconds 6
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           $installed = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
             Where-Object { $_.FullName -match 'app-2\.1\.2' } |
@@ -165,6 +128,7 @@ jobs:
           $pkgPath = Join-Path $installed.DirectoryName 'resources\app\package.json'
           $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
           if ($pkg.version -ne '2.1.2') { throw "Installed package version mismatch: $($pkg.version)" }
+          node --check (Join-Path $installed.DirectoryName 'resources\app\main.js')
           Write-Host "Install test passed: $($installed.FullName)"
 
       - name: Prepare artifact
