@@ -1,0 +1,50 @@
+name: Inspect installed SDCenter v2.1.2 source
+
+on:
+  push:
+    branches:
+      - build-v213-extension-updater-20260814
+    paths:
+      - '.github/workflows/inspect-v212-installed-source.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify v2.1.2
+        shell: pwsh
+        run: |
+          $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.2.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.2/SDCenterSetup.exe' -OutFile $setup
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne 'e203e6b1e5e23f4f33c0ffada04c60dfd25d0167044138bd4c7cc3c840764fbc') { throw "hash mismatch $hash" }
+      - name: Install v2.1.2
+        shell: pwsh
+        run: |
+          $setup = "$env:RUNNER_TEMP\SDCenterSetup-v2.1.2.exe"
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir = Get-ChildItem $env:LOCALAPPDATA -Filter SDCenter.exe -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match '\\SDCenter\\app-2\.1\.2\\SDCenter\.exe$' } |
+            Select-Object -First 1 -ExpandProperty DirectoryName
+          if (-not $appDir) { throw 'v2.1.2 app dir not found' }
+          "APP_DIR=$appDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Print source anchors
+        shell: pwsh
+        run: |
+          $appRoot = Join-Path $env:APP_DIR 'resources\app'
+          $main = Join-Path $appRoot 'main.js'
+          $renderer = Join-Path $appRoot 'public\js\app.js'
+          $preload = Join-Path $appRoot 'preload.js'
+          python -c "from pathlib import Path; import sys; p=Path(sys.argv[1]); keys=sys.argv[2:]; lines=p.read_text(encoding='utf-8').splitlines(); print('===== '+str(p)+' ====='); [(print('--- '+k+' @ '+str(i+1)+' ---') or [print(f'{j+1:05d}: {lines[j]}') for j in range(max(0,i-8),min(len(lines),i+25))]) for k in keys for i,l in enumerate(lines) if k in l]" $main 'FALLBACK_REQUIRED_APPS' 'REQUIRED_POLICY_TTL_MS' 'requiredPolicyPromise' 'updateRequirementFor' 'refreshRequiredPolicy' 'installRequiredUpdate' 'ensureRequiredVersion' 'publicAppState' 'center:add-app-zip' 'refreshRequiredPolicy({ force: true })'
+          python -c "from pathlib import Path; import sys; p=Path(sys.argv[1]); keys=sys.argv[2:]; lines=p.read_text(encoding='utf-8').splitlines(); print('===== '+str(p)+' ====='); [(print('--- '+k+' @ '+str(i+1)+' ---') or [print(f'{j+1:05d}: {lines[j]}') for j in range(max(0,i-8),min(len(lines),i+25))]) for k in keys for i,l in enumerate(lines) if k in l]" $renderer 'const state' 'addingApp' 'installedAppCard' 'statusLabel' 'improvement-box' 'launch-button' 'async function deleteApp' 'function bindEvents' 'elements.addAppButton' 'async function initialize'
+          Write-Host '===== preload.js ====='
+          Get-Content $preload -Raw
+          Write-Host '===== package.json ====='
+          Get-Content (Join-Path $appRoot 'package.json') -Raw
