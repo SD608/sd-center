@@ -1,0 +1,498 @@
+      name: entry.name,
+      version: entry.version,
+      description: entry.description,
+      improvement: entry.improvement,
+      accent: entry.accent,
+      builtin: Boolean(entry.builtin),
+      sourceZipName: entry.sourceZipName || "",
+      running: Boolean(child && child.exitCode === null),
+      directory: getChildDirectory(entry),
+      iconUrl: appIconUrl(entry),
+      rawVersion: rawEntryVersion(entry),
+      ...updateRequirementFor(entry),
+    };
+  }
+
+  function getAllAppStates() {
+    return appCatalog.map(publicAppState);
+  }
+
+  function publicRemovedAppState(entry) {
+    const mainPath = entry.directory
+      ? path.join(entry.directory, entry.entry || "main.js")
+      : "";
+    const packageAvailable = Boolean(
+      entry.packagePath && fs.existsSync(entry.packagePath),
+    );
+    const filesAvailable = Boolean(
+      entry.builtin || (mainPath && fs.existsSync(mainPath)),
+    );
+
+    return {
+      id: entry.id,
+      name: entry.name,
+      version: entry.version,
+      description: entry.description,
+      improvement: entry.improvement,
+      accent: entry.accent,
+      builtin: Boolean(entry.builtin),
+      sourceZipName: entry.sourceZipName || "",
+      removedAt: entry.removedAt || "",
+      restorable: filesAvailable || packageAvailable,
+      iconUrl: appIconUrl(entry),
+    };
+  }
+
+  function getRemovedAppStates() {
+    return removedCatalog.map(publicRemovedAppState);
+  }
+
+  function sendAppStates() {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return;
+    }
+
+    mainWindow.webContents.send(
+      "center:app-states",
+      getAllAppStates(),
+    );
+    mainWindow.webContents.send(
+      "center:removed-app-states",
+      getRemovedAppStates(),
+    );
+  }
+
+  function showCenter() {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return;
+    }
+
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+
+    mainWindow.show();
+    mainWindow.focus();
+  }
+
+  function childLaunchArgs(id) {
+    const childArgument = `--sd-child-app=${id}`;
+
+    if (app.isPackaged) {
+      return [childArgument];
+    }
+
+    return [__dirname, childArgument];
+  }
+
+  function spawnChild(entry, { track = true } = {}) {
+    const environment = { ...process.env };
+    delete environment.ELECTRON_RUN_AS_NODE;
+
+    const child = spawn(
+      process.execPath,
+      childLaunchArgs(entry.id),
+      {
+        cwd: getChildDirectory(entry),
+        env: environment,
+        stdio: "ignore",
+        windowsHide: false,
+      },
+    );
+
+    if (!track) {
+      child.unref();
+      return child;
+    }
+
+    runningApps.set(entry.id, child);
+    sendAppStates();
+
+    child.once("exit", () => {
+      if (runningApps.get(entry.id) === child) {
+        runningApps.delete(entry.id);
+        sendAppStates();
+      }
+    });
+
+    child.once("error", () => {
+      if (runningApps.get(entry.id) === child) {
+        runningApps.delete(entry.id);
+        sendAppStates();
+      }
+    });
+
+    return child;
+  }
+
+  async function launchApp(id) {
+    let entry = appById.get(id);
+
+    if (!entry) {
+      return {
+        ok: false,
+        error: "등록되지 않은 앱입니다.",
+      };
+    }
+
+    const requiredCheck = await ensureRequiredVersion(entry);
+    if (!requiredCheck.ok) {
+      return requiredCheck;
+    }
+    entry = requiredCheck.entry || appById.get(id) || entry;
+
+    const running = runningApps.get(id);
+
+    if (running && running.exitCode === null) {
+      spawnChild(entry, { track: false });
+      return {
+        ok: true,
+        alreadyRunning: true,
+        mandatoryUpdated: Boolean(requiredCheck.mandatoryUpdated),
+      };
+    }
+
+    try {
+      spawnChild(entry);
+      return {
+        ok: true,
+        alreadyRunning: false,
+        mandatoryUpdated: Boolean(requiredCheck.mandatoryUpdated),
+      };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  function terminateApp(id) {
+    const child = runningApps.get(id);
+
+    if (!child || child.exitCode !== null) {
+      runningApps.delete(id);
+      sendAppStates();
+      return { ok: true, wasRunning: false };
+    }
+
+    try {
+      child.kill();
+      return { ok: true, wasRunning: true };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  async function terminateAppAndWait(id) {
+    const child = runningApps.get(id);
+
+    if (!child || child.exitCode !== null) {
+      runningApps.delete(id);
+      return;
+    }
+
+    await new Promise((resolve) => {
+      const timeout = setTimeout(resolve, 1500);
+
+      child.once("exit", () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+
+      try {
+        child.kill();
+      } catch {
+        clearTimeout(timeout);
+        resolve();
+      }
+    });
+  }
+
+  function terminateAllApps() {
+    for (const entry of appCatalog) {
+      terminateApp(entry.id);
+    }
+  }
+
+  function updateTrayMenu() {
+    if (!tray) {
+      return;
+    }
+
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        {
+          label: "SD종합센터 열기",
+          click: showCenter,
+        },
+        { type: "separator" },
+        ...appCatalog.map((entry) => ({
+          label: `${entry.name} 열기`,
+          click: () => { void launchApp(entry.id); },
+        })),
+        { type: "separator" },
+        {
+          label: "실행 중 앱 모두 종료",
+          click: terminateAllApps,
+        },
+        {
+          label: "종합센터 완전 종료",
+          click: quitCenterCompletely,
+        },
+      ]),
+    );
+  }
+
+  function refreshCatalogAndUi() {
+    reloadCatalog();
+    updateTrayMenu();
+    sendAppStates();
+  }
+
+  function ensureManagedDirectory(directoryPath) {
+    fs.mkdirSync(directoryPath, { recursive: true });
+  }
+
+  function isPathInside(rootDirectory, candidatePath) {
+    const root = `${path.resolve(rootDirectory)}${path.sep}`;
+    const candidate = path.resolve(candidatePath);
+    return candidate.startsWith(root);
+  }
+
+  function archiveAppZip(sourceZipPath, appId) {
+    ensureManagedDirectory(APP_PACKAGES_ROOT);
+    const finalPath = path.join(APP_PACKAGES_ROOT, `${appId}.zip`);
+    const temporaryPath = `${finalPath}.${process.pid}.tmp`;
+
+    fs.copyFileSync(sourceZipPath, temporaryPath);
+    fs.rmSync(finalPath, { force: true });
+    fs.renameSync(temporaryPath, finalPath);
+    return finalPath;
+  }
+
+  function moveDirectory(sourceDirectory, destinationDirectory) {
+    if (!isPathInside(CENTER_DATA_ROOT, sourceDirectory)) {
+      throw new Error("앱 폴더 경로가 안전하지 않습니다.");
+    }
+
+    if (!isPathInside(CENTER_DATA_ROOT, destinationDirectory)) {
+      throw new Error("보관함 경로가 안전하지 않습니다.");
+    }
+
+    ensureManagedDirectory(path.dirname(destinationDirectory));
+    fs.rmSync(destinationDirectory, {
+      recursive: true,
+      force: true,
+    });
+    fs.renameSync(sourceDirectory, destinationDirectory);
+  }
+
+  function removeFileIfManaged(filePath, rootDirectory) {
+    if (!filePath || !fs.existsSync(filePath)) {
+      return;
+    }
+
+    if (!isPathInside(rootDirectory, filePath)) {
+      throw new Error("삭제 대상 경로가 안전하지 않습니다.");
+    }
+
+    fs.rmSync(filePath, {
+      recursive: true,
+      force: true,
+    });
+  }
+
+  async function addAppFromZip() {
+    const selection = await dialog.showOpenDialog(mainWindow, {
+      title: "종합센터에 추가할 앱 ZIP 선택",
+      properties: ["openFile"],
+      filters: [
+        { name: "ZIP 앱 패키지", extensions: ["zip"] },
+      ],
+    });
+
+    if (selection.canceled || selection.filePaths.length === 0) {
+      return { ok: false, canceled: true };
+    }
+
+    try {
+      const inspected = inspectZip(selection.filePaths[0]);
+      const builtinCollision = BUILTIN_CATALOG.some(
+        (entry) => entry.id === inspected.metadata.id,
+      );
+
+      if (builtinCollision) {
+        return {
+          ok: false,
+          error:
+            "기본 앱과 같은 ID입니다. 기본 앱은 삭제된 앱 보관함에서 재설치해 주세요.",
+        };
+      }
+
+      const protectedDataFolders = new Set([
+        "SD종합센터",
+        ...BUILTIN_CATALOG.map((entry) => entry.userDataFolder),
+      ]);
+
+      if (protectedDataFolders.has(inspected.metadata.userDataFolder)) {
+        return {
+          ok: false,
+          error:
+            "기본 앱 또는 종합센터와 같은 저장 폴더 이름입니다. sd-app.json의 userDataFolder를 다른 이름으로 바꿔주세요.",
+        };
+      }
+
+      const allKnownApps = [
+        ...appCatalog,
+        ...removedCatalog,
+      ];
+      const dataFolderCollision = allKnownApps.find(
+        (entry) =>
+          entry.id !== inspected.metadata.id &&
+          entry.userDataFolder === inspected.metadata.userDataFolder,
+      );
+
+      if (dataFolderCollision) {
+        return {
+          ok: false,
+          error: `${dataFolderCollision.name}과 같은 저장 폴더를 사용합니다. sd-app.json의 userDataFolder를 다른 이름으로 바꿔주세요.`,
+        };
+      }
+
+      const existing = appById.get(inspected.metadata.id);
+      const removedExisting = removedById.get(
+        inspected.metadata.id,
+      );
+
+      if (existing || removedExisting) {
+        const target = existing || removedExisting;
+        const confirmation = await dialog.showMessageBox(mainWindow, {
+          type: "question",
+          title: existing ? "앱 업데이트" : "삭제된 앱 재설치",
+          message: `${target.name} 앱이 이미 ${existing ? "등록" : "보관"}되어 있습니다.`,
+          detail: `${inspected.metadata.version} 버전으로 교체할까요? 저장 데이터는 유지됩니다.`,
+          buttons: ["취소", existing ? "업데이트" : "새 ZIP으로 재설치"],
+          defaultId: 1,
+          cancelId: 0,
+          noLink: true,
+        });
+
+        if (confirmation.response !== 1) {
+          return { ok: false, canceled: true };
+        }
+
+        if (existing) {
+          await terminateAppAndWait(existing.id);
+        }
+      }
+
+      const destinationDirectory = path.join(
+        INSTALLED_APPS_ROOT,
+        inspected.metadata.id,
+      );
+      installInspectedZip(inspected, destinationDirectory);
+      const packagePath = archiveAppZip(
+        inspected.zipPath,
+        inspected.metadata.id,
+      );
+
+      const appEntry = {
+        ...inspected.metadata,
+        directory: destinationDirectory,
+        packagePath,
+        importedAt: new Date().toISOString(),
+      };
+
+      if (removedExisting && !removedExisting.builtin) {
+        const oldRecycleDirectory =
+          removedExisting.recycleDirectory || "";
+        const oldPackagePath = removedExisting.packagePath || "";
+
+        if (
+          oldRecycleDirectory &&
+          fs.existsSync(oldRecycleDirectory)
+        ) {
+          removeFileIfManaged(
+            oldRecycleDirectory,
+            REMOVED_APPS_ROOT,
+          );
+        }
+
+        if (
+          oldPackagePath &&
+          oldPackagePath !== packagePath &&
+          fs.existsSync(oldPackagePath)
+        ) {
+          removeFileIfManaged(
+            oldPackagePath,
+            APP_PACKAGES_ROOT,
+          );
+        }
+      }
+
+      registry = upsertCustomApp(registry, appEntry);
+      saveRegistry(REGISTRY_PATH, registry);
+      refreshCatalogAndUi();
+
+      return {
+        ok: true,
+        updated: Boolean(existing || removedExisting),
+        restoredFromBin: Boolean(removedExisting),
+        app: publicAppState(appById.get(appEntry.id)),
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error.message,
+      };
+    }
+  }
+
+  function safeDataDirectory(entry) {
+    const candidate = path.resolve(
+      APP_DATA_ROOT,
+      entry.userDataFolder,
+    );
+    const rootPrefix = `${path.resolve(APP_DATA_ROOT)}${path.sep}`;
+    const protectedCenterDirectory = path.resolve(CENTER_DATA_ROOT);
+
+    if (
+      !candidate.startsWith(rootPrefix) ||
+      candidate === protectedCenterDirectory
+    ) {
+      throw new Error("저장 데이터 경로가 안전하지 않습니다.");
+    }
+
+    return candidate;
+  }
+
+  async function deleteApp(id) {
+    const entry = appById.get(id);
+
+    if (!entry) {
+      return { ok: false, error: "등록되지 않은 앱입니다." };
+    }
+
+    const detail = entry.builtin
+      ? "센터에서 제거하면 삭제된 앱 보관함으로 이동합니다. 기본 앱 원본은 센터에 포함되어 있어 언제든 원클릭 재설치할 수 있습니다."
+      : "센터에서 제거하면 앱 파일을 삭제된 앱 보관함으로 옮기고 저장 데이터와 ZIP 백업은 유지합니다.";
+    const destructiveLabel = entry.builtin
+      ? "데이터까지 삭제 후 보관함 이동"
+      : "앱과 저장 데이터 완전 삭제";
+    const confirmation = await dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      title: "앱 제거",
+      message: `${entry.name}을 센터에서 제거할까요?`,
+      detail: `${detail}\n\n진행 데이터를 삭제하면 복구하기 어렵습니다.`,
+      buttons: ["취소", "삭제된 앱 보관함으로 이동", destructiveLabel],
+      defaultId: 1,
+      cancelId: 0,
+      noLink: true,
+    });
+
+    if (confirmation.response === 0) {
+      return { ok: false, canceled: true };
+    }
+
+    try {
+      await terminateAppAndWait(id);
+      const deleteData = confirmation.response === 2;
+
