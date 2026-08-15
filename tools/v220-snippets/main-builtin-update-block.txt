@@ -1,0 +1,32 @@
+      const destinationDirectory = entry.builtin
+        ? entry.directory
+        : path.join(INSTALLED_APPS_ROOT, inspected.metadata.id);
+      installInspectedZip(inspected, destinationDirectory);
+
+      if (entry.builtin) {
+        registry = {
+          ...registry,
+          hiddenBuiltinIds: (registry.hiddenBuiltinIds || []).filter(
+            (knownId) => knownId !== entry.id,
+          ),
+          customApps: (registry.customApps || []).filter(
+            (knownEntry) => knownEntry.id !== entry.id,
+          ),
+          removedApps: (registry.removedApps || []).filter(
+            (knownEntry) => knownEntry.id !== entry.id,
+          ),
+        };
+        saveRegistry(REGISTRY_PATH, registry);
+        const staleCustomDirectory = path.join(INSTALLED_APPS_ROOT, entry.id);
+        if (path.resolve(staleCustomDirectory) !== path.resolve(destinationDirectory)) {
+          fs.rmSync(staleCustomDirectory, { recursive: true, force: true });
+        }
+        fs.rmSync(path.join(APP_PACKAGES_ROOT, `${entry.id}.zip`), { force: true });
+        refreshCatalogAndUi();
+        return appById.get(entry.id);
+      }
+
+      const packagePath = archiveAppZip(
+        temporaryZipPath,
+        inspected.metadata.id,
+      );
