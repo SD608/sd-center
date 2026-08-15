@@ -1,0 +1,86 @@
+name: Diagnose v2.1.8 Center QoL hooks
+
+on:
+  push:
+    branches:
+      - build-v219-center-qol-20260816
+    paths:
+      - '.github/workflows/diag-v218-center-qol.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install verified v2.1.8
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.8.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.8/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140372992){ throw "Unexpected installer size: $size" }
+          if($hash -ne 'ea2a5f0af99012cd01a98f71e114c5fc6263a2be870f015b8a04fc119cc6b78b'){ throw "hash mismatch: $hash" }
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.8\resources\app'
+          if(-not (Test-Path (Join-Path $root 'main.js'))){ throw 'installed app root missing' }
+          "ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Capture relevant source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $out=Join-Path $env:GITHUB_WORKSPACE 'diag-v218-center-qol.txt'
+          $root=$env:ROOT
+          "===== FILE TREE =====" | Set-Content $out -Encoding utf8
+          Get-ChildItem $root -Depth 2 -File | Where-Object { $_.FullName -notmatch '\\node_modules\\' } | Select-Object -First 250 -ExpandProperty FullName | Add-Content $out
+          foreach($rel in @('package.json','main.js','preload.js','renderer.js','index.html','styles.css','src/app-registry.js')){
+            $p=Join-Path $root $rel
+            if(Test-Path $p){
+              "`n===== $rel =====" | Add-Content $out
+              $lines=Get-Content $p
+              if($rel -eq 'main.js'){
+                $patterns=@('FALLBACK_EXTENSION_CATALOG','refreshExtensionCatalog','download','center:list-apps','center:check-app-updates','center:update-all-apps','publicAppState','registerIpcHandlers','createMainWindow','app.getVersion')
+                foreach($pat in $patterns){
+                  "`n--- $pat ---" | Add-Content $out
+                  $m=Select-String -Path $p -Pattern $pat -SimpleMatch | Select-Object -First 4
+                  foreach($hit in $m){
+                    $s=[Math]::Max(1,$hit.LineNumber-25); $e=[Math]::Min($lines.Count,$hit.LineNumber+55)
+                    for($i=$s;$i -le $e;$i++){ "${i}: $($lines[$i-1])" | Add-Content $out }
+                  }
+                }
+              } elseif($rel -eq 'renderer.js'){
+                $patterns=@('render','app-card','update-all','add-app','listApps','launchApp','openAppFolder')
+                foreach($pat in $patterns){
+                  "`n--- $pat ---" | Add-Content $out
+                  $m=Select-String -Path $p -Pattern $pat -SimpleMatch | Select-Object -First 6
+                  foreach($hit in $m){
+                    $s=[Math]::Max(1,$hit.LineNumber-35); $e=[Math]::Min($lines.Count,$hit.LineNumber+90)
+                    for($i=$s;$i -le $e;$i++){ "${i}: $($lines[$i-1])" | Add-Content $out }
+                  }
+                }
+              } else {
+                $lines | Select-Object -First 1400 | Add-Content $out
+              }
+            }
+          }
+
+      - name: Commit diagnostic
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diag-v218-center-qol.txt
+          git commit -m 'diag: capture v2.1.8 center QoL hooks'
+          git push
