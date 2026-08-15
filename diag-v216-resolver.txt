@@ -1,0 +1,745 @@
+===== main.js lines 930-1060 =====
+930: 
+931:   function sendAppStates() {
+932:     if (!mainWindow || mainWindow.isDestroyed()) {
+933:       return;
+934:     }
+935: 
+936:     mainWindow.webContents.send(
+937:       "center:app-states",
+938:       getAllAppStates(),
+939:     );
+940:     mainWindow.webContents.send(
+941:       "center:removed-app-states",
+942:       getRemovedAppStates(),
+943:     );
+944:   }
+945: 
+946:   function showCenter() {
+947:     if (!mainWindow || mainWindow.isDestroyed()) {
+948:       return;
+949:     }
+950: 
+951:     if (mainWindow.isMinimized()) {
+952:       mainWindow.restore();
+953:     }
+954: 
+955:     mainWindow.show();
+956:     mainWindow.focus();
+957:   }
+958: 
+959:   function childLaunchArgs(id) {
+960:     const childArgument = `--sd-child-app=${id}`;
+961: 
+962:     if (app.isPackaged) {
+963:       return [childArgument];
+964:     }
+965: 
+966:     return [__dirname, childArgument];
+967:   }
+968: 
+969:   function spawnChild(entry, { track = true } = {}) {
+970:     const environment = { ...process.env };
+971:     delete environment.ELECTRON_RUN_AS_NODE;
+972: 
+973:     const child = spawn(
+974:       process.execPath,
+975:       childLaunchArgs(entry.id),
+976:       {
+977:         cwd: getChildDirectory(entry),
+978:         env: environment,
+979:         stdio: "ignore",
+980:         windowsHide: false,
+981:       },
+982:     );
+983: 
+984:     if (!track) {
+985:       child.unref();
+986:       return child;
+987:     }
+988: 
+989:     runningApps.set(entry.id, child);
+990:     sendAppStates();
+991: 
+992:     child.once("exit", () => {
+993:       if (runningApps.get(entry.id) === child) {
+994:         runningApps.delete(entry.id);
+995:         sendAppStates();
+996:       }
+997:     });
+998: 
+999:     child.once("error", () => {
+1000:       if (runningApps.get(entry.id) === child) {
+1001:         runningApps.delete(entry.id);
+1002:         sendAppStates();
+1003:       }
+1004:     });
+1005: 
+1006:     return child;
+1007:   }
+1008: 
+1009:   async function launchApp(id) {
+1010:     let entry = appById.get(id);
+1011: 
+1012:     if (!entry) {
+1013:       return {
+1014:         ok: false,
+1015:         error: "등록되지 않은 앱입니다.",
+1016:       };
+1017:     }
+1018: 
+1019:     const requiredCheck = await ensureRequiredVersion(entry);
+1020:     if (!requiredCheck.ok) {
+1021:       return requiredCheck;
+1022:     }
+1023:     entry = requiredCheck.entry || appById.get(id) || entry;
+1024: 
+1025:     const running = runningApps.get(id);
+1026: 
+1027:     if (running && running.exitCode === null) {
+1028:       spawnChild(entry, { track: false });
+1029:       return {
+1030:         ok: true,
+1031:         alreadyRunning: true,
+1032:         mandatoryUpdated: Boolean(requiredCheck.mandatoryUpdated),
+1033:       };
+1034:     }
+1035: 
+1036:     try {
+1037:       spawnChild(entry);
+1038:       return {
+1039:         ok: true,
+1040:         alreadyRunning: false,
+1041:         mandatoryUpdated: Boolean(requiredCheck.mandatoryUpdated),
+1042:       };
+1043:     } catch (error) {
+1044:       return { ok: false, error: error.message };
+1045:     }
+1046:   }
+1047: 
+1048:   function terminateApp(id) {
+1049:     const child = runningApps.get(id);
+1050: 
+1051:     if (!child || child.exitCode !== null) {
+1052:       runningApps.delete(id);
+1053:       sendAppStates();
+1054:       return { ok: true, wasRunning: false };
+1055:     }
+1056: 
+1057:     try {
+1058:       child.kill();
+1059:       return { ok: true, wasRunning: true };
+1060:     } catch (error) {
+
+===== main.js lines 1815-1840 =====
+1815:     ipcMain.handle("center:hide", () => {
+1816:       mainWindow?.hide();
+1817:       return { ok: true };
+1818:     });
+1819:     ipcMain.handle("center:quit-completely", () =>
+1820:       quitCenterCompletely(),
+1821:     );
+1822:     ipcMain.handle("center:open-app-folder", async (event, id) => {
+1823:       const entry = appById.get(id);
+1824: 
+1825:       if (!entry) {
+1826:         return { ok: false, error: "등록되지 않은 앱입니다." };
+1827:       }
+1828: 
+1829:       const error = await shell.openPath(getChildDirectory(entry));
+1830:       return error ? { ok: false, error } : { ok: true };
+1831:     });
+1832:   }
+1833: 
+1834:   app.whenReady().then(() => {
+1835:     app.setAppUserModelId("com.sdcenter.desktop");
+1836:     createMainWindow();
+1837:     createTray();
+1838:     registerIpcHandlers();
+1839:     void Promise.all([
+1840:       refreshRequiredPolicy({ force: true }),
+
+===== src/app-registry.js =====
+"use strict";
+
+const fs = require("node:fs");
+const path = require("node:path");
+const crypto = require("node:crypto");
+const AdmZip = require("adm-zip");
+
+const MAX_ZIP_ENTRIES = 20000;
+const MAX_UNCOMPRESSED_BYTES = 2 * 1024 * 1024 * 1024;
+const ALLOWED_ACCENTS = new Set([
+  "blue",
+  "gold",
+  "purple",
+  "green",
+  "orange",
+  "cyan",
+  "red",
+]);
+
+function emptyRegistry() {
+  return {
+    version: 2,
+    hiddenBuiltinIds: [],
+    customApps: [],
+    removedApps: [],
+  };
+}
+
+function ensureDirectory(directoryPath) {
+  fs.mkdirSync(directoryPath, { recursive: true });
+}
+
+function uniqueStrings(values) {
+  return [...new Set(
+    (Array.isArray(values) ? values : [])
+      .filter((value) => typeof value === "string" && value.trim())
+      .map((value) => value.trim()),
+  )];
+}
+
+function loadRegistry(registryPath) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+
+    return {
+      version: 2,
+      hiddenBuiltinIds: uniqueStrings(parsed.hiddenBuiltinIds),
+      customApps: Array.isArray(parsed.customApps)
+        ? parsed.customApps.filter(
+            (entry) => entry && typeof entry.id === "string",
+          )
+        : [],
+      removedApps: Array.isArray(parsed.removedApps)
+        ? parsed.removedApps.filter(
+            (entry) => entry && typeof entry.id === "string",
+          )
+        : [],
+    };
+  } catch {
+    return emptyRegistry();
+  }
+}
+
+function saveRegistry(registryPath, registry) {
+  ensureDirectory(path.dirname(registryPath));
+  const temporaryPath = `${registryPath}.${process.pid}.tmp`;
+  fs.writeFileSync(
+    temporaryPath,
+    `${JSON.stringify({
+      version: 2,
+      hiddenBuiltinIds: uniqueStrings(registry.hiddenBuiltinIds),
+      customApps: Array.isArray(registry.customApps)
+        ? registry.customApps
+        : [],
+      removedApps: Array.isArray(registry.removedApps)
+        ? registry.removedApps
+        : [],
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  fs.renameSync(temporaryPath, registryPath);
+}
+
+function sanitizeAppId(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+
+  return normalized || `sd-app-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function sanitizeFolderName(value, fallback = "SD앱") {
+  const sanitized = String(value || "")
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[. ]+$/g, "")
+    .slice(0, 80);
+
+  return sanitized || fallback;
+}
+
+function normalizeZipPath(value) {
+  const normalized = String(value || "").replaceAll("\\", "/");
+
+  if (
+    !normalized ||
+    normalized.includes("\u0000") ||
+    normalized.startsWith("/") ||
+    /^[a-zA-Z]:/.test(normalized)
+  ) {
+    throw new Error("ZIP 안에 허용되지 않는 경로가 있습니다.");
+  }
+
+  const parts = normalized.split("/").filter(Boolean);
+
+  if (parts.some((part) => part === "." || part === "..")) {
+    throw new Error("ZIP 안에 상위 폴더로 이동하는 위험한 경로가 있습니다.");
+  }
+
+  return parts.join("/");
+}
+
+function isSymlinkEntry(entry) {
+  const unixMode = (Number(entry.attr || 0) >>> 16) & 0o170000;
+  return unixMode === 0o120000;
+}
+
+function readJsonEntry(entry, label) {
+  try {
+    return JSON.parse(entry.getData().toString("utf8"));
+  } catch {
+    throw new Error(`${label} 파일을 읽을 수 없습니다.`);
+  }
+}
+
+function isIgnoredManifestPath(entryName) {
+  const lower = entryName.toLowerCase();
+  return (
+    lower.includes("/node_modules/") ||
+    lower.startsWith("node_modules/") ||
+    lower.includes("/__macosx/") ||
+    lower.startsWith("__macosx/")
+  );
+}
+
+function pathDepth(entryName) {
+  return entryName.split("/").filter(Boolean).length;
+}
+
+function joinZipPath(prefix, relativePath) {
+  const cleanRelative = normalizeZipPath(relativePath);
+  return prefix ? `${prefix}${cleanRelative}` : cleanRelative;
+}
+
+function inspectZip(zipPath) {
+  if (!zipPath || path.extname(zipPath).toLowerCase() !== ".zip") {
+    throw new Error("ZIP 파일만 추가할 수 있습니다.");
+  }
+
+  const zip = new AdmZip(zipPath);
+  const entries = zip.getEntries();
+
+  if (entries.length === 0) {
+    throw new Error("ZIP 파일이 비어 있습니다.");
+  }
+
+  if (entries.length > MAX_ZIP_ENTRIES) {
+    throw new Error("ZIP 안의 파일 수가 너무 많습니다.");
+  }
+
+  let totalBytes = 0;
+  const entryByName = new Map();
+
+  for (const entry of entries) {
+    const normalizedName = normalizeZipPath(entry.entryName);
+
+    if (isSymlinkEntry(entry)) {
+      throw new Error("심볼릭 링크가 포함된 ZIP은 추가할 수 없습니다.");
+    }
+
+    totalBytes += Number(entry.header?.size || 0);
+
+    if (totalBytes > MAX_UNCOMPRESSED_BYTES) {
+      throw new Error("압축을 푼 뒤 용량이 2GB를 넘는 앱은 추가할 수 없습니다.");
+    }
+
+    entryByName.set(normalizedName, entry);
+  }
+
+  const packageEntries = entries
+    .filter((entry) => {
+      const normalizedName = normalizeZipPath(entry.entryName);
+      return (
+        !entry.isDirectory &&
+        normalizedName.toLowerCase().endsWith("package.json") &&
+        !isIgnoredManifestPath(normalizedName) &&
+        pathDepth(normalizedName) <= 4
+      );
+    })
+    .sort((left, right) => {
+      const leftName = normalizeZipPath(left.entryName);
+      const rightName = normalizeZipPath(right.entryName);
+      return pathDepth(leftName) - pathDepth(rightName);
+    });
+
+  if (packageEntries.length === 0) {
+    throw new Error("앱의 package.json을 찾지 못했습니다.");
+  }
+
+  const packageEntry = packageEntries[0];
+  const packageEntryName = normalizeZipPath(packageEntry.entryName);
+  const rootDirectory = path.posix.dirname(packageEntryName);
+  const rootPrefix = rootDirectory === "." ? "" : `${rootDirectory}/`;
+  const packageJson = readJsonEntry(packageEntry, "package.json");
+  const sdManifestName = `${rootPrefix}sd-app.json`;
+  const sdManifestEntry = entryByName.get(sdManifestName);
+  const sdManifest = sdManifestEntry
+    ? readJsonEntry(sdManifestEntry, "sd-app.json")
+    : {};
+
+  const entryFile = normalizeZipPath(
+    sdManifest.entry || packageJson.main || "main.js",
+  );
+  const fullEntryName = joinZipPath(rootPrefix, entryFile);
+  const mainEntry = entryByName.get(fullEntryName);
+
+  if (!mainEntry || mainEntry.isDirectory) {
+    throw new Error(`앱 실행 파일(${entryFile})을 ZIP에서 찾지 못했습니다.`);
+  }
+
+  const productName = sanitizeFolderName(
+    sdManifest.name ||
+      packageJson.productName ||
+      packageJson.name ||
+      "SD 새 앱",
+    "SD 새 앱",
+  );
+  const id = sanitizeAppId(
+    sdManifest.id || packageJson.name || productName,
+  );
+  const version = String(
+    sdManifest.version || packageJson.version || "1.0.0",
+  ).slice(0, 40);
+  const displayVersion = String(
+    sdManifest.displayVersion || `ZIP 앱 · v${version}`,
+  ).slice(0, 80);
+  const description = String(
+    sdManifest.description ||
+      packageJson.description ||
+      "ZIP 파일로 추가된 SD 앱입니다.",
+  ).slice(0, 300);
+  const improvement = String(
+    sdManifest.improvement ||
+      "종합센터의 ZIP 앱 추가 기능으로 설치되었습니다.",
+  ).slice(0, 300);
+  const accent = ALLOWED_ACCENTS.has(sdManifest.accent)
+    ? sdManifest.accent
+    : "cyan";
+
+  let icon = String(
+    sdManifest.icon || "public/icons/icon-512.png",
+  );
+
+  try {
+    icon = normalizeZipPath(icon);
+  } catch {
+    icon = "";
+  }
+
+  if (icon && !entryByName.has(joinZipPath(rootPrefix, icon))) {
+    icon = "";
+  }
+
+  return {
+    zipPath,
+    rootPrefix,
+    metadata: {
+      id,
+      name: productName,
+      productName,
+      version: displayVersion,
+      rawVersion: version,
+      description,
+      improvement,
+      accent,
+      icon,
+      entry: entryFile,
+      userDataFolder: sanitizeFolderName(
+        sdManifest.userDataFolder || productName,
+        `SD앱-${id}`,
+      ),
+      builtin: false,
+      sourceZipName: path.basename(zipPath),
+    },
+  };
+}
+
+function isEntryInsideRoot(entryName, rootPrefix) {
+  if (!rootPrefix) {
+    return true;
+  }
+
+  return entryName === rootPrefix.slice(0, -1) || entryName.startsWith(rootPrefix);
+}
+
+function installInspectedZip(inspected, destinationDirectory) {
+  const zip = new AdmZip(inspected.zipPath);
+  const entries = zip.getEntries();
+  const parentDirectory = path.dirname(destinationDirectory);
+  const stagingDirectory = path.join(
+    parentDirectory,
+    `.install-${inspected.metadata.id}-${crypto.randomUUID()}`,
+  );
+
+  ensureDirectory(parentDirectory);
+  ensureDirectory(stagingDirectory);
+
+  try {
+    for (const entry of entries) {
+      const entryName = normalizeZipPath(entry.entryName);
+
+      if (!isEntryInsideRoot(entryName, inspected.rootPrefix)) {
+        continue;
+      }
+
+      const relativeName = inspected.rootPrefix
+        ? entryName.slice(inspected.rootPrefix.length)
+        : entryName;
+
+      if (!relativeName) {
+        continue;
+      }
+
+      const safeRelativeName = normalizeZipPath(relativeName);
+      const outputPath = path.resolve(stagingDirectory, safeRelativeName);
+      const stagingRoot = `${path.resolve(stagingDirectory)}${path.sep}`;
+
+      if (!outputPath.startsWith(stagingRoot)) {
+        throw new Error("ZIP 압축 해제 경로 검증에 실패했습니다.");
+      }
+
+      if (entry.isDirectory) {
+        ensureDirectory(outputPath);
+        continue;
+      }
+
+      ensureDirectory(path.dirname(outputPath));
+      fs.writeFileSync(outputPath, entry.getData());
+    }
+
+    const installedMainPath = path.join(
+      stagingDirectory,
+      inspected.metadata.entry,
+    );
+
+    if (!fs.existsSync(installedMainPath)) {
+      throw new Error("압축 해제 후 앱 실행 파일을 찾지 못했습니다.");
+    }
+
+    const backupDirectory = `${destinationDirectory}.backup-${crypto.randomUUID()}`;
+    const hadExistingInstall = fs.existsSync(destinationDirectory);
+
+    if (hadExistingInstall) {
+      fs.renameSync(destinationDirectory, backupDirectory);
+    }
+
+    try {
+      fs.renameSync(stagingDirectory, destinationDirectory);
+
+      if (hadExistingInstall) {
+        fs.rmSync(backupDirectory, {
+          recursive: true,
+          force: true,
+        });
+      }
+    } catch (error) {
+      if (hadExistingInstall && fs.existsSync(backupDirectory)) {
+        if (fs.existsSync(destinationDirectory)) {
+          fs.rmSync(destinationDirectory, {
+            recursive: true,
+            force: true,
+          });
+        }
+
+        fs.renameSync(backupDirectory, destinationDirectory);
+      }
+
+      throw error;
+    }
+  } catch (error) {
+    fs.rmSync(stagingDirectory, {
+      recursive: true,
+      force: true,
+    });
+    throw error;
+  }
+}
+
+function resolveCatalog({
+  builtinCatalog,
+  registry,
+  builtinRoot,
+}) {
+  const hiddenIds = new Set(registry.hiddenBuiltinIds || []);
+  const builtins = builtinCatalog
+    .filter((entry) => !hiddenIds.has(entry.id))
+    .map((entry) => ({
+      ...entry,
+      builtin: true,
+      entry: entry.entry || "main.js",
+      directory: path.join(builtinRoot, entry.folder),
+    }));
+
+  const customApps = (registry.customApps || [])
+    .filter((entry) => {
+      return (
+        entry &&
+        typeof entry.id === "string" &&
+        typeof entry.directory === "string" &&
+        fs.existsSync(path.join(entry.directory, entry.entry || "main.js"))
+      );
+    })
+    .map((entry) => ({
+      ...entry,
+      builtin: false,
+    }));
+
+  return [...builtins, ...customApps];
+}
+
+function resolveRemovedCatalog({
+  builtinCatalog,
+  registry,
+  builtinRoot,
+}) {
+  const removedById = new Map(
+    (registry.removedApps || []).map((entry) => [entry.id, entry]),
+  );
+  const hiddenIds = new Set(registry.hiddenBuiltinIds || []);
+
+  const removedBuiltins = builtinCatalog
+    .filter((entry) => hiddenIds.has(entry.id))
+    .map((entry) => ({
+      ...entry,
+      ...(removedById.get(entry.id) || {}),
+      builtin: true,
+      entry: entry.entry || "main.js",
+      directory: path.join(builtinRoot, entry.folder),
+      removedAt:
+        removedById.get(entry.id)?.removedAt || "",
+    }));
+
+  const removedCustomApps = (registry.removedApps || [])
+    .filter((entry) => entry && !entry.builtin)
+    .map((entry) => ({
+      ...entry,
+      builtin: false,
+      directory:
+        entry.recycleDirectory || entry.directory || "",
+    }));
+
+  return [...removedBuiltins, ...removedCustomApps];
+}
+
+function upsertCustomApp(registry, appEntry) {
+  const next = {
+    ...registry,
+    customApps: [...(registry.customApps || [])],
+    removedApps: [...(registry.removedApps || [])].filter(
+      (entry) => entry.id !== appEntry.id,
+    ),
+  };
+  const existingIndex = next.customApps.findIndex(
+    (entry) => entry.id === appEntry.id,
+  );
+
+  if (existingIndex >= 0) {
+    next.customApps[existingIndex] = appEntry;
+  } else {
+    next.customApps.push(appEntry);
+  }
+
+  return next;
+}
+
+function moveAppToRemoved(registry, appEntry) {
+  const next = {
+    ...registry,
+    hiddenBuiltinIds: [...(registry.hiddenBuiltinIds || [])],
+    customApps: [...(registry.customApps || [])],
+    removedApps: [...(registry.removedApps || [])].filter(
+      (entry) => entry.id !== appEntry.id,
+    ),
+  };
+
+  if (appEntry.builtin) {
+    if (!next.hiddenBuiltinIds.includes(appEntry.id)) {
+      next.hiddenBuiltinIds.push(appEntry.id);
+    }
+  } else {
+    next.customApps = next.customApps.filter(
+      (entry) => entry.id !== appEntry.id,
+    );
+  }
+
+  next.removedApps.push({
+    ...appEntry,
+    removedAt: new Date().toISOString(),
+  });
+
+  return next;
+}
+
+function restoreAppInRegistry(registry, appEntry) {
+  const next = {
+    ...registry,
+    hiddenBuiltinIds: (registry.hiddenBuiltinIds || []).filter(
+      (id) => id !== appEntry.id,
+    ),
+    customApps: [...(registry.customApps || [])],
+    removedApps: (registry.removedApps || []).filter(
+      (entry) => entry.id !== appEntry.id,
+    ),
+  };
+
+  if (!appEntry.builtin) {
+    const cleanedEntry = { ...appEntry };
+    delete cleanedEntry.removedAt;
+    delete cleanedEntry.recycleDirectory;
+    delete cleanedEntry.originalDirectory;
+    delete cleanedEntry.restorable;
+
+    const existingIndex = next.customApps.findIndex(
+      (entry) => entry.id === cleanedEntry.id,
+    );
+
+    if (existingIndex >= 0) {
+      next.customApps[existingIndex] = cleanedEntry;
+    } else {
+      next.customApps.push(cleanedEntry);
+    }
+  }
+
+  return next;
+}
+
+function permanentlyRemoveApp(registry, appId, builtin) {
+  return {
+    ...registry,
+    hiddenBuiltinIds: builtin
+      ? uniqueStrings([
+          ...(registry.hiddenBuiltinIds || []),
+          appId,
+        ])
+      : [...(registry.hiddenBuiltinIds || [])],
+    customApps: (registry.customApps || []).filter(
+      (entry) => entry.id !== appId,
+    ),
+    removedApps: (registry.removedApps || []).filter(
+      (entry) => entry.id !== appId,
+    ),
+  };
+}
+
+module.exports = {
+  emptyRegistry,
+  inspectZip,
+  installInspectedZip,
+  loadRegistry,
+  moveAppToRemoved,
+  permanentlyRemoveApp,
+  resolveCatalog,
+  resolveRemovedCatalog,
+  restoreAppInRegistry,
+  saveRegistry,
+  sanitizeAppId,
+  upsertCustomApp,
+};
+
