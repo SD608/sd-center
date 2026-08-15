@@ -1,0 +1,249 @@
+name: Build and publish SDCenter v2.1.9 Center QoL
+
+on:
+  push:
+    branches:
+      - build-v219-center-qol-20260816
+    paths:
+      - '.github/workflows/build-v219-center-qol.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download and verify official v2.1.8 installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.8.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.8/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140372992){ throw "Unexpected v2.1.8 installer size: $size" }
+          if($hash -ne 'ea2a5f0af99012cd01a98f71e114c5fc6263a2be870f015b8a04fc119cc6b78b'){ throw "v2.1.8 hash mismatch: $hash" }
+
+      - name: Install v2.1.8 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.8.exe"
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.8'
+          if(-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))){ throw "v2.1.8 install missing: $appDir" }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch v2.1.9 features
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:APP_DIR 'resources\app'
+          $patch=Join-Path $env:RUNNER_TEMP 'patch-v219.js'
+          @'
+          "use strict";
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const root=process.argv[2];
+          const read=(rel)=>fs.readFileSync(path.join(root,rel),'utf8').replace(/\r\n/g,'\n');
+          const write=(rel,src)=>fs.writeFileSync(path.join(root,rel),src,'utf8');
+          function replaceOnce(src,needle,replacement,label){
+            const pos=src.indexOf(needle);
+            if(pos<0) throw new Error(`patch marker missing: ${label}`);
+            return src.slice(0,pos)+replacement+src.slice(pos+needle.length);
+          }
+
+          // package version
+          const pkgPath=path.join(root,'package.json');
+          const pkg=JSON.parse(fs.readFileSync(pkgPath,'utf8'));
+          pkg.version='2.1.9';
+          pkg.description='SD종합센터 버전 표시, 확장팩 ZIP 일괄 다운로드, 즐겨찾기를 지원하는 통합 센터';
+          fs.writeFileSync(pkgPath,JSON.stringify(pkg,null,2)+'\n','utf8');
+
+          // main.js
+          let main=read('main.js');
+          const settingsCode=`const CENTER_SETTINGS_PATH = path.join(\n  CENTER_DATA_ROOT,\n  "center-settings.json",\n);\n\nfunction loadCenterSettings() {\n  try {\n    const parsed = JSON.parse(fs.readFileSync(CENTER_SETTINGS_PATH, "utf8"));\n    const favoriteIds = Array.isArray(parsed?.favoriteIds)\n      ? [...new Set(parsed.favoriteIds\n          .filter((id) => typeof id === "string" && id.trim())\n          .map((id) => id.trim()))]\n      : [];\n    return { favoriteIds };\n  } catch {\n    return { favoriteIds: [] };\n  }\n}\n\nfunction saveCenterSettings(settings) {\n  fs.mkdirSync(CENTER_DATA_ROOT, { recursive: true });\n  fs.writeFileSync(\n    CENTER_SETTINGS_PATH,\n    JSON.stringify({\n      favoriteIds: Array.isArray(settings?.favoriteIds)\n        ? [...new Set(settings.favoriteIds)]\n        : [],\n    }, null, 2) + "\\n",\n    "utf8",\n  );\n}\n\nlet centerSettings = loadCenterSettings();\n\nfunction isFavoriteId(id) {\n  return (centerSettings.favoriteIds || []).includes(String(id || ""));\n}\n\nfunction setFavoriteId(id, favorite) {\n  const appId = String(id || "").trim();\n  const next = new Set(centerSettings.favoriteIds || []);\n  if (favorite) next.add(appId);\n  else next.delete(appId);\n  centerSettings = { ...centerSettings, favoriteIds: [...next] };\n  saveCenterSettings(centerSettings);\n  return favorite;\n}\n\n`;
+          main=replaceOnce(main,'const FALLBACK_REQUIRED_APPS = {',settingsCode+'const FALLBACK_REQUIRED_APPS = {','settings');
+
+          const featureFunctions=`  function downloadableExtensionEntries() {\n    const seenUrls = new Set();\n    return Object.entries(extensionCatalog?.apps || {})\n      .map(([id, rule]) => ({\n        id: String(id || ""),\n        name: String(rule?.name || id || "확장팩"),\n        version: String(rule?.version || ""),\n        downloadUrl: String(rule?.downloadUrl || "").trim(),\n      }))\n      .filter((entry) => {\n        if (!entry.id || !entry.version || !entry.downloadUrl) return false;\n        if (!/^https:\\/\\//i.test(entry.downloadUrl)) return false;\n        if (seenUrls.has(entry.downloadUrl)) return false;\n        seenUrls.add(entry.downloadUrl);\n        return true;\n      });\n  }\n\n  function safeExtensionFileName(entry) {\n    let candidate = "";\n    try {\n      const parsed = new URL(entry.downloadUrl);\n      candidate = decodeURIComponent(path.posix.basename(parsed.pathname));\n    } catch {}\n    if (!/\\.zip$/i.test(candidate)) {\n      candidate = `${entry.name}_v${entry.version}.zip`;\n    }\n    const safe = candidate\n      .replace(/[<>:\"/\\\\|?*\\u0000-\\u001f]/g, "_")\n      .replace(/[. ]+$/g, "")\n      .slice(0, 160);\n    return safe || `${entry.id}_v${entry.version}.zip`;\n  }\n\n  function bulkDownloadStamp(date = new Date()) {\n    const pad = (value) => String(value).padStart(2, "0");\n    return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;\n  }\n\n  function sendBulkDownloadProgress(payload) {\n    if (!mainWindow || mainWindow.isDestroyed()) return;\n    mainWindow.webContents.send("center:bulk-download-progress", payload);\n  }\n\n  async function downloadAllExtensionZips() {\n    try {\n      await refreshExtensionCatalog({ force: true });\n      const entries = downloadableExtensionEntries();\n      if (entries.length === 0) {\n        return { ok: false, error: "다운로드 가능한 확장팩 ZIP이 없습니다." };\n      }\n\n      const confirmation = await dialog.showMessageBox(mainWindow, {\n        type: "question",\n        title: "확장팩 ZIP 일괄 다운로드",\n        message: `최신 확장팩 ZIP ${entries.length}개를 한 번에 다운로드할까요?`,\n        detail: entries.map((entry) => `• ${entry.name} v${entry.version}`).join("\\n") + "\\n\\n설치하지 않고 ZIP 파일만 저장합니다.",\n        buttons: ["취소", "저장 위치 선택"],\n        defaultId: 1,\n        cancelId: 0,\n        noLink: true,\n      });\n      if (confirmation.response !== 1) {\n        return { ok: false, canceled: true };\n      }\n\n      const selection = await dialog.showOpenDialog(mainWindow, {\n        title: "확장팩 ZIP 저장 폴더 선택",\n        defaultPath: app.getPath("downloads"),\n        properties: ["openDirectory", "createDirectory"],\n      });\n      if (selection.canceled || !selection.filePaths?.[0]) {\n        return { ok: false, canceled: true };\n      }\n\n      const targetDirectory = path.join(\n        selection.filePaths[0],\n        `SD확장팩_${bulkDownloadStamp()}`,\n      );\n      fs.mkdirSync(targetDirectory, { recursive: true });\n      const results = [];\n      const usedNames = new Set();\n      sendBulkDownloadProgress({ completed: 0, total: entries.length, name: "준비 중" });\n\n      for (let index = 0; index < entries.length; index += 1) {\n        const entry = entries[index];\n        let fileName = safeExtensionFileName(entry);\n        if (usedNames.has(fileName.toLowerCase())) {\n          fileName = `${entry.id}_${fileName}`;\n        }\n        usedNames.add(fileName.toLowerCase());\n        const destination = path.join(targetDirectory, fileName);\n        const temporary = `${destination}.part`;\n        sendBulkDownloadProgress({\n          completed: index,\n          total: entries.length,\n          name: entry.name,\n        });\n\n        try {\n          fs.rmSync(temporary, { force: true });\n          await downloadFile(entry.downloadUrl, temporary);\n          const stat = fs.statSync(temporary);\n          if (!stat.isFile() || stat.size <= 0) {\n            throw new Error("다운로드된 ZIP 파일이 비어 있습니다.");\n          }\n          inspectZip(temporary);\n          fs.rmSync(destination, { force: true });\n          fs.renameSync(temporary, destination);\n          results.push({ id: entry.id, name: entry.name, ok: true, fileName });\n        } catch (error) {\n          fs.rmSync(temporary, { force: true });\n          results.push({ id: entry.id, name: entry.name, ok: false, error: error.message });\n        }\n\n        sendBulkDownloadProgress({\n          completed: index + 1,\n          total: entries.length,\n          name: entry.name,\n        });\n      }\n\n      const failed = results.filter((result) => !result.ok);\n      await shell.openPath(targetDirectory);\n      return {\n        ok: failed.length === 0,\n        count: entries.length,\n        downloadedCount: results.length - failed.length,\n        failedCount: failed.length,\n        folder: targetDirectory,\n        results,\n      };\n    } catch (error) {\n      return { ok: false, error: error.message };\n    }\n  }\n\n  function toggleFavorite(id) {\n    const entry = appById.get(String(id || ""));\n    if (!entry) {\n      return { ok: false, error: "등록되지 않은 앱입니다." };\n    }\n    const favorite = !isFavoriteId(entry.id);\n    setFavoriteId(entry.id, favorite);\n    sendAppStates();\n    return { ok: true, id: entry.id, favorite };\n  }\n\n`;
+          main=replaceOnce(main,'  async function installRequiredUpdate(entry, rule) {',featureFunctions+'  async function installRequiredUpdate(entry, rule) {','feature functions');
+          main=replaceOnce(main,'      rawVersion: rawEntryVersion(entry),\n      ...updateRequirementFor(entry),','      rawVersion: rawEntryVersion(entry),\n      favorite: isFavoriteId(entry.id),\n      ...updateRequirementFor(entry),','favorite state');
+          main=replaceOnce(main,'  function registerIpcHandlers() {\n    ipcMain.handle("center:list-apps", () => getAllAppStates());','  function registerIpcHandlers() {\n    ipcMain.handle("center:get-center-info", () => ({\n      name: "SD종합센터",\n      version: app.getVersion(),\n    }));\n    ipcMain.handle("center:toggle-favorite", (event, id) => toggleFavorite(id));\n    ipcMain.handle("center:download-extension-zips", () => downloadAllExtensionZips());\n    ipcMain.handle("center:list-apps", () => getAllAppStates());','IPC handlers');
+          write('main.js',main);
+
+          // preload.js
+          let preload=read('preload.js');
+          preload=replaceOnce(preload,'  openAppFolder: (id) => invoke("center:open-app-folder", id),','  openAppFolder: (id) => invoke("center:open-app-folder", id),\n  getCenterInfo: () => invoke("center:get-center-info"),\n  toggleFavorite: (id) => invoke("center:toggle-favorite", id),\n  downloadExtensionZips: () => invoke("center:download-extension-zips"),','preload commands');
+          preload=replaceOnce(preload,'  onRemovedAppStates: (callback) =>\n    subscribe("center:removed-app-states", callback),','  onRemovedAppStates: (callback) =>\n    subscribe("center:removed-app-states", callback),\n  onBulkDownloadProgress: (callback) =>\n    subscribe("center:bulk-download-progress", callback),','preload progress');
+          write('preload.js',preload);
+
+          // index.html
+          let html=read('public/index.html');
+          html=replaceOnce(html,'    <div class="topbar-actions">\n      <div class="shortcut-chip">','    <div class="topbar-actions">\n      <div id="centerVersionChip" class="center-version-chip" title="현재 SD종합센터 버전">v...</div>\n      <div class="shortcut-chip">','version chip');
+          html=replaceOnce(html,'        <div class="hero-actions">\n          <button id="addAppButton" class="button button-add" type="button">ZIP 앱 추가</button>','        <div class="hero-actions">\n          <button id="downloadExtensionsButton" class="button button-download" type="button">확장팩 ZIP 일괄 다운로드</button>\n          <button id="addAppButton" class="button button-add" type="button">ZIP 앱 추가</button>','download button');
+          html=replaceOnce(html,'    <section id="installedPanel" class="app-panel">\n      <section class="section-heading">','    <section id="installedPanel" class="app-panel">\n      <section id="favoritesSection" class="favorites-section hidden" aria-live="polite">\n        <div class="favorites-heading">\n          <div>\n            <p class="eyebrow">FAVORITES</p>\n            <h2>즐겨찾기</h2>\n          </div>\n          <p>★를 누른 앱을 여기서 바로 실행할 수 있습니다.</p>\n        </div>\n        <div id="favoriteGrid" class="favorite-grid"></div>\n      </section>\n\n      <section class="section-heading">','favorites section');
+          write('public/index.html',html);
+
+          // renderer app.js
+          let ui=read('public/js/app.js');
+          ui=replaceOnce(ui,'  toast: document.getElementById("toast"),','  toast: document.getElementById("toast"),\n  centerVersionChip: document.getElementById("centerVersionChip"),\n  downloadExtensionsButton: document.getElementById("downloadExtensionsButton"),\n  favoritesSection: document.getElementById("favoritesSection"),\n  favoriteGrid: document.getElementById("favoriteGrid"),','elements');
+          ui=replaceOnce(ui,'  updatingAll: false,\n  quitting: false,','  updatingAll: false,\n  downloadingExtensions: false,\n  downloadProgress: null,\n  quitting: false,','state');
+          ui=replaceOnce(ui,'  if (elements.updateAllButton) {\n    elements.updateAllButton.disabled =\n      updateCount === 0 || state.updatingAll || state.checkingUpdates;\n    elements.updateAllButton.textContent = state.updatingAll\n      ? "업데이트 중..."\n      : updateCount > 0\n        ? `모두 업데이트 (${updateCount})`\n        : "모두 업데이트";\n  }','  if (elements.updateAllButton) {\n    elements.updateAllButton.disabled =\n      updateCount === 0 || state.updatingAll || state.checkingUpdates;\n    elements.updateAllButton.textContent = state.updatingAll\n      ? "업데이트 중..."\n      : updateCount > 0\n        ? `모두 업데이트 (${updateCount})`\n        : "모두 업데이트";\n  }\n  if (elements.downloadExtensionsButton) {\n    const progress = state.downloadProgress;\n    elements.downloadExtensionsButton.disabled = state.downloadingExtensions;\n    elements.downloadExtensionsButton.textContent = state.downloadingExtensions\n      ? progress?.total\n        ? `ZIP 다운로드 중 (${progress.completed}/${progress.total})`\n        : "ZIP 다운로드 준비 중..."\n      : "확장팩 ZIP 일괄 다운로드";\n  }','bulk render');
+          ui=replaceOnce(ui,'        <div class="status-group">\n          <span class="source-pill">${sourceLabel}</span>','        <div class="status-group">\n          <button class="favorite-button${app.favorite ? " is-favorite" : ""}" type="button" title="${app.favorite ? "즐겨찾기 해제" : "즐겨찾기에 추가"}" aria-label="${app.favorite ? "즐겨찾기 해제" : "즐겨찾기에 추가"}">${app.favorite ? "★" : "☆"}</button>\n          <span class="source-pill">${sourceLabel}</span>','favorite card button');
+
+          const favoriteFunctions=`function favoriteShortcut(app) {\n  const status = app.updateRequired\n    ? `필수 v${app.requiredVersion}`\n    : app.running\n      ? "실행 중"\n      : app.updateAvailable\n        ? `v${app.latestVersion} 업데이트 가능`\n        : "바로 실행";\n  return `\n    <button class="favorite-shortcut${app.running ? " is-running" : ""}" type="button" data-id="${escapeHtml(app.id)}">\n      <img src="${escapeHtml(iconPath(app))}" alt="" draggable="false">\n      <span>\n        <strong>${escapeHtml(app.name)}</strong>\n        <small>${escapeHtml(status)}</small>\n      </span>\n      <b>열기</b>\n    </button>\n  `;\n}\n\nfunction renderFavorites() {\n  const favorites = state.apps\n    .filter((app) => app.favorite)\n    .sort((a, b) => String(a.name).localeCompare(String(b.name), "ko"));\n  elements.favoritesSection?.classList.toggle("hidden", favorites.length === 0);\n  if (elements.favoriteGrid) {\n    elements.favoriteGrid.innerHTML = favorites.map(favoriteShortcut).join("");\n  }\n}\n\n`;
+          ui=replaceOnce(ui,'function renderApps() {\n  renderOverview();\n  elements.appGrid.innerHTML = state.apps\n    .map(installedAppCard)\n    .join("");','function renderApps() {\n  renderOverview();\n  renderFavorites();\n  const orderedApps = [...state.apps].sort((a, b) => {\n    const favoriteOrder = Number(Boolean(b.favorite)) - Number(Boolean(a.favorite));\n    if (favoriteOrder !== 0) return favoriteOrder;\n    return String(a.name).localeCompare(String(b.name), "ko");\n  });\n  elements.appGrid.innerHTML = orderedApps\n    .map(installedAppCard)\n    .join("");','render favorites order');
+
+          const actionFunctions=`async function toggleFavorite(id) {\n  const currentApp = state.apps.find((entry) => entry.id === id);\n  const result = await bridge.toggleFavorite(id);\n  if (!result?.ok) {\n    showToast(result?.error || "즐겨찾기를 변경하지 못했습니다.");\n    return;\n  }\n  showToast(\n    result.favorite\n      ? `${currentApp?.name || "앱"}을 즐겨찾기에 추가했습니다.`\n      : `${currentApp?.name || "앱"}을 즐겨찾기에서 해제했습니다.`,\n  );\n}\n\nasync function downloadExtensionZips() {\n  if (state.downloadingExtensions) return;\n  state.downloadingExtensions = true;\n  state.downloadProgress = null;\n  renderOverview();\n  try {\n    const result = await bridge.downloadExtensionZips();\n    if (result?.canceled) return;\n    if (!result?.ok && !result?.downloadedCount) {\n      showToast(result?.error || "확장팩 ZIP을 다운로드하지 못했습니다.", 5000);\n      return;\n    }\n    showToast(\n      result.failedCount\n        ? `${result.downloadedCount}개 ZIP 다운로드 완료 · ${result.failedCount}개 실패`\n        : `확장팩 ZIP ${result.downloadedCount}개를 모두 다운로드했습니다.`,\n      4800,\n    );\n  } finally {\n    state.downloadingExtensions = false;\n    state.downloadProgress = null;\n    renderOverview();\n  }\n}\n\n`;
+          ui=replaceOnce(ui,'async function deleteApp(id) {',actionFunctions+'async function deleteApp(id) {','actions');
+          ui=replaceOnce(ui,'    const id = card.dataset.id;\n\n    if (event.target.closest(".update-button")) {','    const id = card.dataset.id;\n\n    if (event.target.closest(".favorite-button")) {\n      await toggleFavorite(id);\n      return;\n    }\n\n    if (event.target.closest(".update-button")) {','favorite click');
+          ui=replaceOnce(ui,'  elements.removedAppGrid.addEventListener("click", async (event) => {','  elements.favoriteGrid?.addEventListener("click", async (event) => {\n    const shortcut = event.target.closest(".favorite-shortcut");\n    if (!shortcut) return;\n    await launchApp(shortcut.dataset.id);\n  });\n\n  elements.removedAppGrid.addEventListener("click", async (event) => {','favorite shortcut click');
+          ui=replaceOnce(ui,'  elements.updateAllButton?.addEventListener("click", updateAllApps);','  elements.updateAllButton?.addEventListener("click", updateAllApps);\n  elements.downloadExtensionsButton?.addEventListener("click", downloadExtensionZips);','bulk listener');
+          ui=replaceOnce(ui,'  bridge.onAppStates(setApps);\n  bridge.onRemovedAppStates(setRemovedApps);','  bridge.onAppStates(setApps);\n  bridge.onRemovedAppStates(setRemovedApps);\n  bridge.onBulkDownloadProgress?.((progress) => {\n    state.downloadProgress = progress || null;\n    renderOverview();\n  });','progress subscribe');
+          ui=replaceOnce(ui,'  const [apps, removedApps] = await Promise.all([\n    bridge.listApps(),\n    bridge.listRemovedApps(),\n  ]);\n  setApps(apps);\n  setRemovedApps(removedApps);','  const [apps, removedApps, centerInfo] = await Promise.all([\n    bridge.listApps(),\n    bridge.listRemovedApps(),\n    bridge.getCenterInfo(),\n  ]);\n  if (elements.centerVersionChip && centerInfo?.version) {\n    elements.centerVersionChip.textContent = `v${centerInfo.version}`;\n    elements.centerVersionChip.title = `현재 SD종합센터 버전: v${centerInfo.version}`;\n  }\n  setApps(apps);\n  setRemovedApps(removedApps);','center info init');
+          write('public/js/app.js',ui);
+
+          // CSS additions
+          let css=read('public/css/style.css');
+          css += `\n\n/* v2.1.9: Center version, bulk ZIP download, favorites */\n.center-version-chip { display:grid;min-height:34px;padding:0 11px;place-items:center;border:1px solid rgba(100,215,255,.22);border-radius:10px;background:rgba(36,112,158,.16);color:#9ee8ff;font-size:.68rem;font-weight:900;letter-spacing:.04em; }\n.button-download { border-color:rgba(99,211,255,.28);background:linear-gradient(135deg,rgba(45,150,215,.92),rgba(65,102,203,.92));color:#effbff;box-shadow:0 12px 30px rgba(44,123,211,.18); }\n.favorites-section { margin-top:22px;padding:18px;border:1px solid rgba(255,211,95,.16);border-radius:19px;background:linear-gradient(145deg,rgba(52,43,18,.24),rgba(9,22,37,.72)); }\n.favorites-heading { display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:13px; }\n.favorites-heading h2 { margin:0;font-size:1.2rem;letter-spacing:-.04em; }\n.favorites-heading p:last-child { margin:0;color:#8da1b3;font-size:.72rem;font-weight:700; }\n.favorite-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px; }\n.favorite-shortcut { display:flex;min-width:0;min-height:64px;padding:9px 12px;align-items:center;gap:10px;border:1px solid rgba(255,211,95,.14);border-radius:14px;background:rgba(8,19,32,.78);color:#dce8f3;text-align:left;cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease; }\n.favorite-shortcut:hover { transform:translateY(-1px);border-color:rgba(255,211,95,.4);background:rgba(28,34,37,.9); }\n.favorite-shortcut.is-running { border-color:rgba(78,225,157,.28); }\n.favorite-shortcut img { width:42px;height:42px;flex:0 0 auto;border-radius:11px;object-fit:cover;background:#0a1726; }\n.favorite-shortcut span { min-width:0;flex:1; }\n.favorite-shortcut strong,.favorite-shortcut small { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }\n.favorite-shortcut strong { font-size:.78rem; }\n.favorite-shortcut small { margin-top:4px;color:#7e95aa;font-size:.62rem;font-weight:750; }\n.favorite-shortcut b { color:#ffd86e;font-size:.65rem; }\n.favorite-button { display:grid;width:34px;height:34px;flex:0 0 auto;place-items:center;padding:0;border:1px solid rgba(255,211,95,.16);border-radius:10px;background:rgba(7,17,29,.62);color:#7d8fa0;font-size:1.16rem;line-height:1;cursor:pointer;transition:border-color .16s ease,color .16s ease,background .16s ease,transform .16s ease; }\n.favorite-button:hover { transform:translateY(-1px);border-color:rgba(255,211,95,.5);color:#ffe38b; }\n.favorite-button.is-favorite { border-color:rgba(255,211,95,.42);background:rgba(119,87,12,.2);color:#ffd35f;box-shadow:0 0 18px rgba(255,211,95,.1); }\n@media (max-width:1100px) { .favorite-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }\n@media (max-width:760px) { .favorite-grid { grid-template-columns:1fr; } .favorites-heading { align-items:flex-start;flex-direction:column; } .center-version-chip { display:none; } }\n`;
+          write('public/css/style.css',css);
+          '@ | Set-Content $patch -Encoding utf8
+          node $patch $root
+
+      - name: Validate v2.1.9 source and features
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:APP_DIR 'resources\app'
+          node --check (Join-Path $root 'main.js')
+          node --check (Join-Path $root 'preload.js')
+          node --check (Join-Path $root 'public\js\app.js')
+          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.1.9'){ throw "package version mismatch: $($pkg.version)" }
+          $main=Get-Content (Join-Path $root 'main.js') -Raw
+          $preload=Get-Content (Join-Path $root 'preload.js') -Raw
+          $ui=Get-Content (Join-Path $root 'public\js\app.js') -Raw
+          $html=Get-Content (Join-Path $root 'public\index.html') -Raw
+          foreach($marker in @('center:get-center-info','center:toggle-favorite','center:download-extension-zips','center:bulk-download-progress','center-settings.json','downloadAllExtensionZips','favorite: isFavoriteId')){ if($main -notmatch [regex]::Escape($marker)){ throw "main marker missing: $marker" } }
+          foreach($marker in @('getCenterInfo','toggleFavorite','downloadExtensionZips','onBulkDownloadProgress')){ if($preload -notmatch $marker){ throw "preload marker missing: $marker" } }
+          foreach($marker in @('centerVersionChip','favoritesSection','favoriteGrid','downloadExtensionsButton')){ if($html -notmatch $marker){ throw "html marker missing: $marker" } }
+          foreach($marker in @('renderFavorites','favoriteShortcut','downloadExtensionZips','toggleFavorite')){ if($ui -notmatch $marker){ throw "ui marker missing: $marker" } }
+          $manifest=Get-Content (Join-Path $root 'apps\SDBitcoinMiner\sd-app.json') -Raw | ConvertFrom-Json
+          if($manifest.version -ne '1.2.2'){ throw 'Bitcoin v1.2.2 must remain embedded' }
+
+      - name: Verify current extension catalog ZIPs are reachable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $catalog=Invoke-RestMethod -Uri 'https://sd608.github.io/sd-center/update/extensions-catalog.json'
+          $apps=$catalog.apps.psobject.Properties
+          if($apps.Count -lt 6){ throw "Unexpected catalog size: $($apps.Count)" }
+          foreach($prop in $apps){
+            $url=[string]$prop.Value.downloadUrl
+            if($url -notmatch '^https://'){ throw "Invalid catalog URL for $($prop.Name)" }
+            if($url -notmatch '\.zip'){ throw "Non-ZIP catalog URL for $($prop.Name): $url" }
+          }
+          Write-Host "Catalog ZIP entries: $($apps.Count)"
+
+      - name: Build genuine in-place Squirrel installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder="$env:RUNNER_TEMP\squirrel-builder-v219"
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Set-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          @'
+          const path=require('node:path');
+          const {createWindowsInstaller}=require('electron-winstaller');
+          createWindowsInstaller({
+            appDirectory:process.env.APP_DIR,
+            outputDirectory:path.join(process.env.RUNNER_TEMP,'squirrel-v219'),
+            name:'SDCenter',
+            productName:'SD종합센터',
+            version:'2.1.9',
+            authors:'SDWallet',
+            description:'센터 버전 표시 · 확장팩 ZIP 일괄 다운로드 · 즐겨찾기',
+            exe:'SDCenter.exe',
+            setupExe:'SDCenterSetup.exe',
+            noMsi:true,
+            setupIcon:path.join(process.env.APP_DIR,'resources','app','public','icons','icon.ico')
+          }).then(()=>console.log('Squirrel v2.1.9 build complete')).catch(e=>{console.error(e);process.exit(1);});
+          '@ | Set-Content build.js -Encoding utf8
+          node build.js
+          $setup="$env:RUNNER_TEMP\squirrel-v219\SDCenterSetup.exe"
+          if(-not (Test-Path $setup)){ throw 'v2.1.9 installer missing' }
+          $size=(Get-Item $setup).Length
+          if($size -lt 100MB){ throw "installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install-test v2.1.9
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.9'
+          $exe=Join-Path $appDir 'SDCenter.exe'
+          if(-not (Test-Path $exe)){ throw "in-place install failed: $exe" }
+          $root=Join-Path $appDir 'resources\app'
+          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.1.9'){ throw 'installed Center version mismatch' }
+          $main=Get-Content (Join-Path $root 'main.js') -Raw
+          $ui=Get-Content (Join-Path $root 'public\js\app.js') -Raw
+          if($main -notmatch 'center:download-extension-zips' -or $main -notmatch 'center:toggle-favorite'){ throw 'installed main feature missing' }
+          if($ui -notmatch 'centerVersionChip' -or $ui -notmatch 'renderFavorites'){ throw 'installed UI feature missing' }
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "SDCenter exited during smoke test with code $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $dir="$env:GITHUB_WORKSPACE\release-v2.1.9"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP "$dir\SDCenterSetup.exe" -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content "$dir\SHA256.txt" -Encoding ascii
+          @"
+          SD종합센터 v2.1.9
+          - 종합센터 앱 상단에 현재 센터 버전 표시
+          - 홈페이지 확장팩 카탈로그의 최신 ZIP 파일 일괄 다운로드
+          - 저장 위치 선택 후 SD확장팩_날짜시간 폴더에 ZIP들을 개별 저장하고 자동으로 폴더 열기
+          - 앱별 즐겨찾기 ★/☆ 및 즐겨찾기 빠른 실행 영역
+          - 즐겨찾기 설정은 Roaming/SD종합센터/center-settings.json에 유지
+          - v2.1.8 실제 기본 앱 버전 동기화 및 v2.1.7 Bitcoin 경로 수정 유지
+          - 홈페이지 '확장팩 통합 ZIP 1개 다운로드' 기능은 이번 버전에 포함하지 않음 (사용자 확인 후 별도 진행)
+          Installer bytes: $env:BUILT_SIZE
+          SHA256: $env:BUILT_HASH
+          "@ | Set-Content "$dir\BUILD_INFO.txt" -Encoding utf8
+
+      - name: Publish v2.1.9 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.1.9' `
+            'release-v2.1.9/SDCenterSetup.exe' `
+            'release-v2.1.9/SHA256.txt' `
+            'release-v2.1.9/BUILD_INFO.txt' `
+            --repo 'SD608/sd-center' `
+            --target 'build-v219-center-qol-20260816' `
+            --title 'SD종합센터 v2.1.9' `
+            --notes '1) 종합센터 내부 현재 버전 표시, 3) 최신 확장팩 ZIP 일괄 다운로드, 4) 앱 즐겨찾기/빠른 실행 기능을 추가했습니다. 즐겨찾기는 업데이트 후에도 유지됩니다. 홈페이지 확장팩 통합 ZIP 기능은 사용자 확인 전이라 이번 릴리스에는 포함하지 않았습니다.'
