@@ -1,0 +1,219 @@
+  function extensionStoreRule(id) {
+    const appId = String(id || "").trim();
+    const rule = extensionCatalog?.apps?.[appId];
+    if (!rule || !rule.version || !rule.downloadUrl) return null;
+    return rule;
+  }
+
+  function extensionStoreEntry(id, rule) {
+    const appId = String(id || "");
+    const installed = appById.get(appId) || null;
+    const removed = removedById.get(appId) || null;
+    const builtin = BUILTIN_CATALOG.some((entry) => entry.id === appId);
+    const latestVersion = String(rule?.version || "0.0.0");
+    const currentVersion = installed ? rawEntryVersion(installed) : "";
+    const updateAvailable = Boolean(
+      installed && compareVersions(currentVersion, latestVersion) < 0,
+    );
+    const visualEntry = installed || removed;
+
+    return {
+      id: appId,
+      name: String(rule?.name || visualEntry?.name || appId),
+      latestVersion,
+      currentVersion,
+      notes: String(rule?.notes || ""),
+      description: String(
+        visualEntry?.description ||
+        rule?.description ||
+        "SD 홈페이지 카탈로그에서 제공하는 공식 확장팩입니다.",
+      ),
+      accent: String(visualEntry?.accent || rule?.accent || "cyan"),
+      iconUrl: visualEntry ? appIconUrl(visualEntry) : "",
+      installed: Boolean(installed),
+      removed: Boolean(removed),
+      builtin,
+      running: Boolean(installed && runningApps.get(appId)?.exitCode === null),
+      updateAvailable,
+      status: installed
+        ? updateAvailable
+          ? "update"
+          : "installed"
+        : "available",
+    };
+  }
+
+  async function getExtensionStoreState({ force = false } = {}) {
+    try {
+      await refreshExtensionCatalog({ force });
+      const apps = Object.entries(extensionCatalog?.apps || {})
+        .filter(([, rule]) => rule?.version && rule?.downloadUrl)
+        .map(([id, rule]) => extensionStoreEntry(id, rule))
+        .sort((a, b) => String(a.name).localeCompare(String(b.name), "ko"));
+      return {
+        ok: true,
+        catalogVersion: extensionCatalog?.catalogVersion || 0,
+        updatedAt: extensionCatalog?.updatedAt || "",
+        count: apps.length,
+        apps,
+      };
+    } catch (error) {
+      return { ok: false, error: error.message, apps: [] };
+    }
+  }
+
+  function clearRemovedStoreFiles(entry, replacementPackagePath = "") {
+    if (!entry || entry.builtin) return;
+    const recycleDirectory = entry.recycleDirectory || "";
+    const oldPackagePath = entry.packagePath || "";
+    if (recycleDirectory && fs.existsSync(recycleDirectory)) {
+      removeFileIfManaged(recycleDirectory, REMOVED_APPS_ROOT);
+    }
+    if (
+      oldPackagePath &&
+      oldPackagePath !== replacementPackagePath &&
+      fs.existsSync(oldPackagePath)
+    ) {
+      removeFileIfManaged(oldPackagePath, APP_PACKAGES_ROOT);
+    }
+  }
+
+  async function installFreshStoreApp(appId, rule) {
+    ensureManagedDirectory(APP_PACKAGES_ROOT);
+    const temporaryZipPath = path.join(
+      APP_PACKAGES_ROOT,
+      `.store-${appId}-${Date.now()}.zip`,
+    );
+
+    try {
+      await downloadFile(String(rule.downloadUrl), temporaryZipPath);
+      const inspected = inspectZip(temporaryZipPath);
+      if (inspected.metadata.id !== appId) {
+        throw new Error(
+          `상점 앱 ID가 다릅니다. 카탈로그: ${appId} / ZIP: ${inspected.metadata.id}`,
+        );
+      }
+      if (
+        compareVersions(
+          inspected.metadata.rawVersion,
+          String(rule.version || "0.0.0"),
+        ) < 0
+      ) {
+        throw new Error(
+          `다운로드된 버전(v${inspected.metadata.rawVersion})이 상점 최신 버전(v${rule.version})보다 낮습니다.`,
+        );
+      }
+
+      const protectedDataFolders = new Set([
+        "SD종합센터",
+        ...BUILTIN_CATALOG.map((entry) => entry.userDataFolder),
+      ]);
+      if (protectedDataFolders.has(inspected.metadata.userDataFolder)) {
+        throw new Error("상점 확장팩의 저장 폴더가 기본 앱과 충돌합니다.");
+      }
+
+      const collision = [...appCatalog, ...removedCatalog].find(
+        (entry) =>
+          entry.id !== appId &&
+          entry.userDataFolder === inspected.metadata.userDataFolder,
+      );
+      if (collision) {
+        throw new Error(`${collision.name}과 같은 저장 폴더를 사용합니다.`);
+      }
+
+      const removedExisting = removedById.get(appId) || null;
+      const destinationDirectory = path.join(INSTALLED_APPS_ROOT, appId);
+      installInspectedZip(inspected, destinationDirectory);
+      const packagePath = archiveAppZip(temporaryZipPath, appId);
+      clearRemovedStoreFiles(removedExisting, packagePath);
+
+      const appEntry = {
+        ...inspected.metadata,
+        directory: destinationDirectory,
+        packagePath,
+        importedAt: removedExisting?.importedAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      registry = upsertCustomApp(registry, appEntry);
+      saveRegistry(REGISTRY_PATH, registry);
+      refreshCatalogAndUi();
+      return appById.get(appId);
+    } finally {
+      fs.rmSync(temporaryZipPath, { force: true });
+    }
+  }
+
+  async function installStoreApp(id) {
+    const appId = String(id || "").trim();
+    if (!appId) return { ok: false, error: "확장팩 ID가 없습니다." };
+
+    try {
+      await refreshExtensionCatalog({ force: true });
+      const rule = extensionStoreRule(appId);
+      if (!rule) {
+        return { ok: false, error: "홈페이지 확장팩 카탈로그에서 앱을 찾지 못했습니다." };
+      }
+
+      let entry = appById.get(appId) || null;
+      const latestVersion = String(rule.version || "0.0.0");
+      if (entry) {
+        if (compareVersions(rawEntryVersion(entry), latestVersion) >= 0) {
+          return {
+            ok: true,
+            alreadyLatest: true,
+            action: "installed",
+            store: await getExtensionStoreState(),
+          };
+        }
+        const updatedEntry = await installCatalogUpdate(entry, rule);
+        return {
+          ok: true,
+          action: "updated",
+          app: publicAppState(updatedEntry),
+          store: await getExtensionStoreState(),
+        };
+      }
+
+      const builtinDefinition = BUILTIN_CATALOG.find(
+        (candidate) => candidate.id === appId,
+      );
+      if (builtinDefinition) {
+        registry = {
+          ...registry,
+          hiddenBuiltinIds: (registry.hiddenBuiltinIds || []).filter(
+            (knownId) => knownId !== appId,
+          ),
+          customApps: (registry.customApps || []).filter(
+            (knownEntry) => knownEntry.id !== appId,
+          ),
+          removedApps: (registry.removedApps || []).filter(
+            (knownEntry) => knownEntry.id !== appId,
+          ),
+        };
+        saveRegistry(REGISTRY_PATH, registry);
+        refreshCatalogAndUi();
+        entry = appById.get(appId);
+        if (!entry) throw new Error("기본 앱을 상점에서 복원하지 못했습니다.");
+        if (compareVersions(rawEntryVersion(entry), latestVersion) < 0) {
+          entry = await installCatalogUpdate(entry, rule);
+        }
+        return {
+          ok: true,
+          action: "installed",
+          app: publicAppState(entry),
+          store: await getExtensionStoreState(),
+        };
+      }
+
+      const installedEntry = await installFreshStoreApp(appId, rule);
+      return {
+        ok: true,
+        action: "installed",
+        app: publicAppState(installedEntry),
+        store: await getExtensionStoreState(),
+      };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
