@@ -127,6 +127,7 @@
     const labels = {
       "index.html": "홈페이지",
       "account.html": "내 지갑",
+      "ranking.html": "잔액 랭킹",
       "mobile.html": "모바일 센터",
       "wallet-mobile.html": "모바일 지갑",
       "vault-mobile.html": "SD금고",
