@@ -1,0 +1,149 @@
+name: Build final SDCenter v2.1.9
+
+on:
+  push:
+    branches:
+      - build-v219-center-qol-20260816
+    paths:
+      - '.github/workflows/build-v219-final.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified v2.1.8
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.8.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.8/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140372992){ throw "Unexpected v2.1.8 size: $size" }
+          if($hash -ne 'ea2a5f0af99012cd01a98f71e114c5fc6263a2be870f015b8a04fc119cc6b78b'){ throw "v2.1.8 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.1.8 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.8'
+          if(-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))){ throw 'v2.1.8 install missing' }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Apply v2.1.9 feature patch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/patch-v219-center-qol.js "$env:APP_DIR\resources\app"
+
+      - name: Validate patched source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root="$env:APP_DIR\resources\app"
+          node --check "$root\main.js"
+          node --check "$root\preload.js"
+          node --check "$root\public\js\app.js"
+          $pkg=Get-Content "$root\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.1.9'){ throw "Center version mismatch: $($pkg.version)" }
+          $main=Get-Content "$root\main.js" -Raw
+          $pre=Get-Content "$root\preload.js" -Raw
+          $ui=Get-Content "$root\public\js\app.js" -Raw
+          $html=Get-Content "$root\public\index.html" -Raw
+          foreach($marker in @('center:get-center-info','center:toggle-favorite','center:download-extension-zips','center:bulk-download-progress','center-settings.json','downloadAllExtensionZips','favorite: isFavoriteId')){ if(-not $main.Contains($marker)){ throw "Missing main marker: $marker" } }
+          foreach($marker in @('getCenterInfo','toggleFavorite','downloadExtensionZips','onBulkDownloadProgress')){ if(-not $pre.Contains($marker)){ throw "Missing preload marker: $marker" } }
+          foreach($marker in @('centerVersionChip','favoritesSection','favoriteGrid','downloadExtensionsButton')){ if(-not $html.Contains($marker)){ throw "Missing HTML marker: $marker" } }
+          foreach($marker in @('renderFavorites','favoriteShortcut','downloadExtensionZips','toggleFavorite')){ if(-not $ui.Contains($marker)){ throw "Missing UI marker: $marker" } }
+          $btc=Get-Content "$root\apps\SDBitcoinMiner\sd-app.json" -Raw | ConvertFrom-Json
+          if($btc.version -ne '1.2.2'){ throw 'Embedded Bitcoin v1.2.2 was not preserved' }
+
+      - name: Validate extension catalog
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $catalog=Invoke-RestMethod -Uri 'https://sd608.github.io/sd-center/update/extensions-catalog.json'
+          $entries=@($catalog.apps.psobject.Properties)
+          if($entries.Count -lt 6){ throw "Unexpected catalog size: $($entries.Count)" }
+          foreach($entry in $entries){
+            $url=[string]$entry.Value.downloadUrl
+            if($url -notmatch '^https://.*\.zip'){ throw "Invalid ZIP URL for $($entry.Name): $url" }
+          }
+          Write-Host "Catalog entries validated: $($entries.Count)"
+
+      - name: Install Squirrel builder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder=Join-Path $env:RUNNER_TEMP 'squirrel-builder-v219'
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Push-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          Pop-Location
+          "NODE_PATH=$builder\node_modules" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          $output=Join-Path $env:RUNNER_TEMP 'squirrel-v219-final'
+          "BUILD_OUTPUT=$output" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build SDCenter v2.1.9
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/build-v219-installer.js
+          $setup=Join-Path $env:BUILD_OUTPUT 'SDCenterSetup.exe'
+          if(-not (Test-Path $setup)){ throw 'v2.1.9 installer missing' }
+          $size=(Get-Item $setup).Length
+          if($size -lt 100MB){ throw "Installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install and smoke test v2.1.9
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $dir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.9'
+          $exe=Join-Path $dir 'SDCenter.exe'
+          if(-not (Test-Path $exe)){ throw 'v2.1.9 in-place install failed' }
+          $pkg=Get-Content (Join-Path $dir 'resources\app\package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.1.9'){ throw 'Installed Center version mismatch' }
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "Center exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:GITHUB_WORKSPACE 'release-v2.1.9'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP (Join-Path $dir 'SDCenterSetup.exe') -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $dir 'SHA256.txt') -Encoding ascii
+          $info=@('SD종합센터 v2.1.9','- 앱 내부 현재 버전 표시','- 최신 확장팩 ZIP 일괄 다운로드 (각 ZIP 개별 저장)','- 저장 위치 선택 및 완료 후 폴더 열기','- 앱 카드 즐겨찾기 및 빠른 실행 영역','- 즐겨찾기 설정 업데이트 후 유지','- Bitcoin v1.2.2 및 이전 경로/버전 수정 유지','- 홈페이지 통합 확장팩 ZIP은 사용자 확인 전이므로 미포함',"Installer bytes: $env:BUILT_SIZE","SHA256: $env:BUILT_HASH")
+          $info | Set-Content (Join-Path $dir 'BUILD_INFO.txt') -Encoding utf8
+
+      - name: Publish v2.1.9 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.1.9' 'release-v2.1.9/SDCenterSetup.exe' 'release-v2.1.9/SHA256.txt' 'release-v2.1.9/BUILD_INFO.txt' --repo 'SD608/sd-center' --target 'build-v219-center-qol-20260816' --title 'SD종합센터 v2.1.9' --notes '종합센터 내부 버전 표시, 확장팩 ZIP 일괄 다운로드, 앱 즐겨찾기/빠른 실행 기능을 추가했습니다. 홈페이지에서 모든 확장팩을 ZIP 하나로 받는 기능은 사용자 확인 전이라 아직 추가하지 않았습니다.'
