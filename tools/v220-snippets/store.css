@@ -1,0 +1,35 @@
+
+/* v2.2.0 · SD Extension Store */
+.store-tab { color:#a9e8ff; }
+.store-banner { display:flex;margin-top:20px;padding:30px 32px;align-items:center;justify-content:space-between;gap:28px;border:1px solid rgba(102,215,255,.2);border-radius:24px;background:radial-gradient(circle at 78% 15%,rgba(88,210,255,.16),transparent 36%),linear-gradient(135deg,rgba(18,52,78,.94),rgba(8,22,38,.95));box-shadow:0 20px 55px rgba(0,0,0,.2); }
+.store-banner-copy { max-width:850px; }
+.store-banner h2 { margin:0;font-size:2rem;letter-spacing:-.05em; }
+.store-banner-copy>p:not(.eyebrow) { margin:13px 0 0;color:#9fb4c7;font-size:.84rem;line-height:1.7; }
+.store-badges { display:flex;margin-top:18px;gap:8px;flex-wrap:wrap; }
+.store-badges span { padding:7px 10px;border:1px solid rgba(103,211,255,.18);border-radius:999px;background:rgba(7,20,34,.55);color:#9edfff;font-size:.65rem;font-weight:850; }
+.store-section-heading { margin-top:26px!important; }
+.store-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px; }
+.store-card { padding:22px;position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:linear-gradient(150deg,rgba(18,37,58,.94),rgba(8,19,32,.94));box-shadow:0 18px 55px rgba(0,0,0,.18); }
+.store-card::after { width:190px;height:190px;content:"";position:absolute;top:-120px;right:-80px;border-radius:50%;background:#63d8ff;filter:blur(55px);opacity:.08;pointer-events:none; }
+.store-card-top,.store-card-footer,.store-app-identity,.store-name-row { display:flex;align-items:center; }
+.store-card-top { position:relative;z-index:1;justify-content:space-between;gap:16px; }
+.store-app-identity { min-width:0;gap:13px; }
+.store-app-icon { display:grid;width:56px;height:56px;flex:0 0 auto;place-items:center;overflow:hidden;border:1px solid rgba(190,226,249,.15);border-radius:17px;background:rgba(7,18,31,.9); }
+.store-app-icon img { width:100%;height:100%;object-fit:cover; }
+.store-generic-icon { color:#82ddff;font-size:.82rem;font-weight:950;letter-spacing:.06em; }
+.store-name-row { min-width:0;gap:8px;flex-wrap:wrap; }
+.store-name-row strong { font-size:1.02rem; }
+.store-type-badge { padding:4px 7px;border:1px solid rgba(110,213,255,.18);border-radius:999px;color:#88dfff;font-size:.56rem;font-weight:900; }
+.store-version { display:block;margin-top:5px;color:#7f98ae;font-size:.67rem;font-weight:800; }
+.store-price { padding:7px 10px;border:1px solid rgba(77,226,160,.23);border-radius:999px;background:rgba(28,92,65,.18);color:#73eab0;font-size:.62rem;font-weight:950;letter-spacing:.08em; }
+.store-description { min-height:45px;margin:19px 0 14px;position:relative;z-index:1;color:#a8bacb;font-size:.8rem;line-height:1.6; }
+.store-notes { min-height:74px;padding:12px 13px;position:relative;z-index:1;border:1px solid rgba(143,197,227,.1);border-radius:13px;background:rgba(5,15,27,.54); }
+.store-notes span { display:block;margin-bottom:5px;color:#6ed7ff;font-size:.59rem;font-weight:950;letter-spacing:.1em; }
+.store-notes p { margin:0;color:#8ea5ba;font-size:.71rem;line-height:1.55; }
+.store-card-footer { margin-top:16px;position:relative;z-index:1;justify-content:space-between;gap:12px; }
+.store-state { color:#8297aa;font-size:.67rem;font-weight:850; }
+.store-state.installed { color:#65dea7; }
+.store-state.needs-update { color:#ffd27a; }
+.store-action-button { min-width:126px; }
+.store-action-button.is-installed { cursor:default;opacity:.72; }
+@media (max-width:900px) { .store-grid { grid-template-columns:1fr; } .store-banner { align-items:flex-start;flex-direction:column; } }
