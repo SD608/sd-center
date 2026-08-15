@@ -1,0 +1,227 @@
+name: Build and publish SDCenter v2.1.8 builtin version sync
+
+on:
+  push:
+    branches:
+      - build-v218-builtin-version-sync-20260816
+    paths:
+      - '.github/workflows/build-v218-builtin-version-sync.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download and verify official v2.1.7 installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.7.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.7/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140372480){ throw "Unexpected v2.1.7 installer size: $size" }
+          if($hash -ne '78c9dc31a811ff6e177eaf233b5686ba6a9e9b04de9145d5b4fab6fab31a089f'){ throw "v2.1.7 hash mismatch: $hash" }
+
+      - name: Install v2.1.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.7.exe"
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.7'
+          if(-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))){ throw "v2.1.7 install missing: $appDir" }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch builtin apps to read real installed version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:APP_DIR 'resources\app'
+          $registryPath=Join-Path $root 'src\app-registry.js'
+          $pkgPath=Join-Path $root 'package.json'
+          $patch=Join-Path $env:RUNNER_TEMP 'patch-v218.js'
+          @'
+          "use strict";
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const root=process.argv[2];
+          const registryPath=path.join(root,'src','app-registry.js');
+          const pkgPath=path.join(root,'package.json');
+          let src=fs.readFileSync(registryPath,'utf8').replace(/\r\n/g,'\n');
+
+          if(!src.includes('function readBuiltinRawVersion(')){
+            const marker='function resolveCatalog({\n';
+            const pos=src.indexOf(marker);
+            if(pos<0) throw new Error('resolveCatalog marker missing');
+            const helper=`function readBuiltinRawVersion(directory, fallbackVersion = "") {\n  const candidates = [\n    path.join(directory, "sd-app.json"),\n    path.join(directory, "package.json"),\n  ];\n\n  for (const candidate of candidates) {\n    try {\n      const parsed = JSON.parse(fs.readFileSync(candidate, "utf8"));\n      const version = String(parsed?.version || "").trim();\n      if (/^\\d+(?:\\.\\d+){1,3}$/.test(version)) {\n        return version;\n      }\n    } catch {\n      // Missing/invalid manifest: continue to the next source.\n    }\n  }\n\n  const match = String(fallbackVersion || "").match(/v?(\\d+(?:\\.\\d+){1,3})/i);\n  return match ? match[1] : "0.0.0";\n}\n\n`;
+            src=src.slice(0,pos)+helper+src.slice(pos);
+          }
+
+          const oldBlock=`  const builtins = builtinCatalog\n    .filter((entry) => !hiddenIds.has(entry.id))\n    .map((entry) => ({\n      ...entry,\n      builtin: true,\n      entry: entry.entry || "main.js",\n      directory: path.join(builtinRoot, entry.folder),\n    }));`;
+          const newBlock=`  const builtins = builtinCatalog\n    .filter((entry) => !hiddenIds.has(entry.id))\n    .map((entry) => {\n      const directory = path.join(builtinRoot, entry.folder);\n\n      return {\n        ...entry,\n        builtin: true,\n        entry: entry.entry || "main.js",\n        directory,\n        rawVersion: readBuiltinRawVersion(\n          directory,\n          entry.rawVersion || entry.version,\n        ),\n      };\n    });`;
+          if(src.includes(oldBlock)){
+            src=src.replace(oldBlock,newBlock);
+          }else if(!src.includes('rawVersion: readBuiltinRawVersion(')){
+            throw new Error('builtin map block missing/unexpected');
+          }
+
+          fs.writeFileSync(registryPath,src,'utf8');
+          const pkg=JSON.parse(fs.readFileSync(pkgPath,'utf8'));
+          pkg.version='2.1.8';
+          fs.writeFileSync(pkgPath,JSON.stringify(pkg,null,2)+'\n','utf8');
+          '@ | Set-Content $patch -Encoding utf8
+          node $patch $root
+          node --check $registryPath
+          node --check (Join-Path $root 'main.js')
+          $pkg=Get-Content $pkgPath -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.1.8'){ throw "package version mismatch: $($pkg.version)" }
+
+      - name: Verify actual embedded Bitcoin resolves as v1.2.2
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:APP_DIR 'resources\app'
+          $test=Join-Path $env:RUNNER_TEMP 'verify-v218.js'
+          @'
+          const path=require('node:path');
+          const root=process.argv[2];
+          const {resolveCatalog}=require(path.join(root,'src','app-registry.js'));
+          const catalog=resolveCatalog({
+            builtinCatalog:[{
+              id:'bitcoin',
+              name:'SD비트코인 채굴장',
+              version:'Stage 5 · v1.1.0',
+              folder:'SDBitcoinMiner',
+              productName:'SD비트코인 채굴장',
+              userDataFolder:'SD비트코인 채굴장'
+            }],
+            registry:{hiddenBuiltinIds:[],customApps:[{
+              id:'bitcoin',
+              directory:path.join(process.env.RUNNER_TEMP,'fake-old-bitcoin'),
+              entry:'main.js'
+            }],removedApps:[]},
+            builtinRoot:path.join(root,'apps')
+          });
+          if(catalog.length!==1) throw new Error(`expected one bitcoin entry, got ${catalog.length}`);
+          const entry=catalog[0];
+          if(!entry.builtin) throw new Error('bitcoin must stay builtin');
+          if(entry.rawVersion!=='1.2.2') throw new Error(`expected rawVersion 1.2.2, got ${entry.rawVersion}`);
+          if(!entry.directory.endsWith(path.join('apps','SDBitcoinMiner'))) throw new Error(`wrong builtin path: ${entry.directory}`);
+          const display=String(entry.version).replace(/v?\d+(?:\.\d+){1,3}/i,`v${entry.rawVersion}`);
+          if(display!=='Stage 5 · v1.2.2') throw new Error(`wrong display: ${display}`);
+          console.log(JSON.stringify({id:entry.id,rawVersion:entry.rawVersion,display,directory:entry.directory},null,2));
+          '@ | Set-Content $test -Encoding utf8
+          node $test $root
+          $manifest=Get-Content (Join-Path $root 'apps\SDBitcoinMiner\sd-app.json') -Raw | ConvertFrom-Json
+          $bpkg=Get-Content (Join-Path $root 'apps\SDBitcoinMiner\package.json') -Raw | ConvertFrom-Json
+          if($manifest.version -ne '1.2.2' -or $bpkg.version -ne '1.2.2'){ throw 'embedded Bitcoin manifest mismatch' }
+
+      - name: Build genuine in-place Squirrel installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder="$env:RUNNER_TEMP\squirrel-builder-v218"
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Set-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          @'
+          const path=require('node:path');
+          const {createWindowsInstaller}=require('electron-winstaller');
+          createWindowsInstaller({
+            appDirectory:process.env.APP_DIR,
+            outputDirectory:path.join(process.env.RUNNER_TEMP,'squirrel-v218'),
+            name:'SDCenter',
+            productName:'SD종합센터',
+            version:'2.1.8',
+            authors:'SDWallet',
+            description:'기본 앱 실제 설치 버전 자동 동기화 수정',
+            exe:'SDCenter.exe',
+            setupExe:'SDCenterSetup.exe',
+            noMsi:true,
+            setupIcon:path.join(process.env.APP_DIR,'resources','app','public','icons','icon.ico')
+          }).then(()=>console.log('Squirrel v2.1.8 build complete')).catch(e=>{console.error(e);process.exit(1);});
+          '@ | Set-Content build.js -Encoding utf8
+          node build.js
+          $setup="$env:RUNNER_TEMP\squirrel-v218\SDCenterSetup.exe"
+          if(-not (Test-Path $setup)){ throw 'v2.1.8 installer missing' }
+          $size=(Get-Item $setup).Length
+          if($size -lt 100MB){ throw "installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install-test v2.1.8 and reverify card source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.8'
+          $exe=Join-Path $appDir 'SDCenter.exe'
+          if(-not (Test-Path $exe)){ throw "in-place install failed: $exe" }
+          $root=Join-Path $appDir 'resources\app'
+          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.1.8'){ throw 'installed Center version mismatch' }
+          $registry=Get-Content (Join-Path $root 'src\app-registry.js') -Raw
+          if($registry -notmatch 'readBuiltinRawVersion'){ throw 'installed version resolver fix missing' }
+          $test=Join-Path $env:RUNNER_TEMP 'verify-installed-v218.js'
+          @'
+          const path=require('node:path');
+          const root=process.argv[2];
+          const {resolveCatalog}=require(path.join(root,'src','app-registry.js'));
+          const [entry]=resolveCatalog({
+            builtinCatalog:[{id:'bitcoin',name:'SD비트코인 채굴장',version:'Stage 5 · v1.1.0',folder:'SDBitcoinMiner'}],
+            registry:{hiddenBuiltinIds:[],customApps:[],removedApps:[]},
+            builtinRoot:path.join(root,'apps')
+          });
+          if(entry.rawVersion!=='1.2.2') throw new Error(`installed rawVersion ${entry.rawVersion}`);
+          console.log(`installed bitcoin rawVersion=${entry.rawVersion}`);
+          '@ | Set-Content $test -Encoding utf8
+          node $test $root
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $dir="$env:GITHUB_WORKSPACE\release-v2.1.8"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP "$dir\SDCenterSetup.exe" -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content "$dir\SHA256.txt" -Encoding ascii
+          @"
+          SD종합센터 v2.1.8
+          - 기본 앱의 실제 sd-app.json/package.json 버전을 자동 읽음
+          - 비트코인 실제 v1.2.2를 카드/업데이트 판정에 반영
+          - Stage 5 · v1.1.0 표시 및 잘못된 v1.2.2 업데이트 버튼 수정
+          - v2.1.7 기본 앱 우선/구 bitcoin 경로 차단 로직 유지
+          Installer bytes: $env:BUILT_SIZE
+          SHA256: $env:BUILT_HASH
+          "@ | Set-Content "$dir\BUILD_INFO.txt" -Encoding utf8
+
+      - name: Publish v2.1.8 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.1.8' `
+            'release-v2.1.8/SDCenterSetup.exe' `
+            'release-v2.1.8/SHA256.txt' `
+            'release-v2.1.8/BUILD_INFO.txt' `
+            --repo 'SD608/sd-center' `
+            --target 'build-v218-builtin-version-sync-20260816' `
+            --title 'SD종합센터 v2.1.8' `
+            --notes '기본 앱 카드가 하드코딩된 구버전을 표시하던 문제를 수정했습니다. 종합센터가 각 기본 앱의 실제 sd-app.json/package.json 버전을 읽으므로, 비트코인 v1.2.2가 Stage 5 · v1.2.2로 표시되고 이미 최신이면 업데이트 버튼도 사라집니다.'
