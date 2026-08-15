@@ -1,0 +1,52 @@
+name: Diagnose v2.1.8 Center UI files
+
+on:
+  push:
+    branches:
+      - build-v219-center-qol-20260816
+    paths:
+      - '.github/workflows/diag-v218-center-ui2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install v2.1.8 and capture UI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.8.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.8/SDCenterSetup.exe' -OutFile $setup
+          if((Get-FileHash $setup -Algorithm SHA256).Hash.ToLower() -ne 'ea2a5f0af99012cd01a98f71e114c5fc6263a2be870f015b8a04fc119cc6b78b'){ throw 'hash mismatch' }
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.8\resources\app'
+          $out=Join-Path $env:GITHUB_WORKSPACE 'diag-v218-center-ui2.txt'
+          foreach($rel in @('preload.js','public/index.html','public/js/app.js','public/css/style.css')){
+            "===== $rel =====" | Add-Content $out
+            Get-Content (Join-Path $root $rel) | Add-Content $out
+            "`n" | Add-Content $out
+          }
+          $main=Join-Path $root 'main.js'; $lines=Get-Content $main
+          foreach($pat in @('async function download','function download','function publicAppState','ipcMain.handle("center:update-all-apps"','ipcMain.handle("center:add-app-zip"','ipcMain.handle("center:open-app-folder"','async function updateAllApps','async function refreshExtensionCatalog')){
+            "===== main.js :: $pat =====" | Add-Content $out
+            $hits=Select-String -Path $main -Pattern $pat -SimpleMatch | Select-Object -First 2
+            foreach($hit in $hits){
+              $s=[Math]::Max(1,$hit.LineNumber-50); $e=[Math]::Min($lines.Count,$hit.LineNumber+140)
+              for($i=$s;$i -le $e;$i++){ "${i}: $($lines[$i-1])" | Add-Content $out }
+            }
+          }
+      - name: Commit diagnostic
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diag-v218-center-ui2.txt
+          git commit -m 'diag: capture v2.1.8 public center UI'
+          git push
