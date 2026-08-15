@@ -1,0 +1,77 @@
+name: Add balance ranking links
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/add-ranking-links.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch website navigation
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if new in text:
+                  return
+              if old not in text:
+                  raise SystemExit(f'marker not found: {path}: {old[:80]}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'index.html',
+              '<nav aria-label="주요 메뉴" class="nav-links"><a href="#online-account">온라인 계정</a>',
+              '<nav aria-label="주요 메뉴" class="nav-links"><a href="#online-account">온라인 계정</a>\n<a data-auth-user="" hidden="" href="ranking.html">잔액 랭킹</a>'
+          )
+
+          replace_once(
+              'account.html',
+              '<a href="mobile.html">모바일 센터</a><a href="members.html">회원 계좌</a><a href="device-link.html">연결된 기기</a>',
+              '<a href="mobile.html">모바일 센터</a><a href="ranking.html">잔액 랭킹</a><a href="members.html">회원 계좌</a><a href="device-link.html">연결된 기기</a>'
+          )
+          replace_once(
+              'account.html',
+              '<a class="secondary-button" href="members.html">회원 계좌 조회</a><a class="secondary-button" href="device-link.html">PC 연결 관리</a>',
+              '<a class="secondary-button" href="ranking.html">잔액 랭킹 보기</a><a class="secondary-button" href="members.html">회원 계좌 조회</a><a class="secondary-button" href="device-link.html">PC 연결 관리</a>'
+          )
+
+          replace_once(
+              'members.html',
+              '<nav class="nav-links"><a href="account.html">내 지갑</a><a href="mobile.html">모바일 센터</a><a href="device-link.html">연결된 기기</a></nav>',
+              '<nav class="nav-links"><a href="account.html">내 지갑</a><a href="ranking.html">잔액 랭킹</a><a href="mobile.html">모바일 센터</a><a href="device-link.html">연결된 기기</a></nav>'
+          )
+
+          replace_once(
+              'assets/js/auth-common.js',
+              '      "account.html": "내 지갑",',
+              '      "account.html": "내 지갑",\n      "ranking.html": "잔액 랭킹",'
+          )
+
+      - name: Validate ranking files and links
+        run: |
+          test -f ranking.html
+          test -f assets/js/ranking-page.js
+          grep -q 'ranking.html' index.html
+          grep -q 'ranking.html' account.html
+          grep -q 'ranking.html' members.html
+          node --check assets/js/ranking-page.js
+          node --check assets/js/auth-common.js
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html account.html members.html assets/js/auth-common.js
+          git commit -m 'site: link member balance ranking' || exit 0
+          git push origin main
