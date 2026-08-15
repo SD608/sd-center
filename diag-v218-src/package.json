@@ -1,0 +1,28 @@
+{
+  "name": "sdcenter-desktop",
+  "productName": "SD종합센터",
+  "version": "2.1.8",
+  "private": true,
+  "description": "홈페이지 확장팩 카탈로그를 확인해 종합센터 안에서 앱별/전체 자동 업데이트를 지원하는 SD종합센터",
+  "author": "SDWallet",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "make": "electron-forge make",
+    "package": "electron-forge package",
+    "check": "node tools/check-all.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "@electron-forge/maker-squirrel": "latest",
+    "electron": "latest"
+  },
+  "dependencies": {
+    "adm-zip": "latest",
+    "electron-squirrel-startup": "latest"
+  },
+  "homepage": "https://sd608.github.io/sd-center/"
+}
