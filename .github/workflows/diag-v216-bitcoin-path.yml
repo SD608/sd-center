@@ -1,0 +1,53 @@
+name: Diagnose v2.1.6 Bitcoin path handling
+
+on:
+  push:
+    branches:
+      - build-v217-bitcoin-path-force-20260816
+    paths:
+      - '.github/workflows/diag-v216-bitcoin-path.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install v2.1.6 and inspect app discovery/launch code
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.6.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.6/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne '900134a3abe35f8848129f8af0fe938b2ce6c4f0b89f7d4d658b6ee60e525c88') { throw "hash mismatch: $hash" }
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.6\resources\app'
+          $script=Join-Path $env:RUNNER_TEMP 'inspect.js'
+          @'
+          const fs=require('fs');
+          const path=require('path');
+          const root=process.argv[2];
+          const text=fs.readFileSync(path.join(root,'main.js'),'utf8').replace(/\r\n/g,'\n');
+          const needles=['cleanupBitcoinBuiltinDuplicate','buildAppCatalog','customApps','BUILTIN_APPS','appById','launchApp','openApp','child_process','spawn(','fork(','entry.directory','ipcMain.handle'];
+          for(const needle of needles){
+            let from=0, count=0;
+            while(true){
+              const i=text.indexOf(needle,from);
+              if(i<0) break;
+              count++;
+              console.log(`\n===== ${needle} #${count} @${i} =====\n${text.slice(Math.max(0,i-1800),Math.min(text.length,i+4200))}`);
+              from=i+needle.length;
+              if(count>=6) break;
+            }
+          }
+          '@ | Set-Content $script -Encoding utf8
+          node $script $root
