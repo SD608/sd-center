@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SD 플리마켓</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">SD</span><div><strong>플리마켓</strong><small>PC RECOVERY TERMINAL</small></div></div>
+    <div class="wallet-panel"><span>개발용 잔액</span><strong id="balance">₩0</strong><span class="divider"></span><span>락픽</span><strong id="lockpicks">0개</strong></div>
+  </header>
+
+  <main class="shell">
+    <nav class="tabs">
+      <button class="tab active" data-tab="mission">임무</button>
+      <button class="tab" data-tab="boxes">상자 보관함 <b id="boxCount">0</b></button>
+      <button class="tab" data-tab="shop">장비 상점</button>
+      <button class="tab" data-tab="items">아이템 보관함 <b id="itemCount">0</b></button>
+    </nav>
+
+    <section id="missionPanel" class="panel active">
+      <div class="panel-heading"><div><p class="eyebrow">MISSION 01</p><h1>폐창고 회수</h1><p>WASD로 이동하고 수색 지점 가까이에서 <kbd>E</kbd>를 눌러 상자를 찾으세요. 한 임무에서 최대 3개의 상자를 회수할 수 있습니다.</p></div><div class="mission-controls"><span id="missionTimer" class="timer">01:15</span><button id="missionButton" class="primary">임무 시작</button></div></div>
+      <div id="warehouse" class="warehouse">
+        <div class="warehouse-grid"></div>
+        <div class="rack rack-a"></div><div class="rack rack-b"></div><div class="rack rack-c"></div>
+        <div id="player" class="player"><span></span></div>
+        <div id="missionHint" class="mission-hint">임무를 시작하면 수색 지점이 표시됩니다.</div>
+      </div>
+      <div class="mission-footer"><span>회수 상자 <strong id="foundBoxes">0 / 3</strong></span><span>등급 확률 · 낡은 55% · 평범한 29% · 고급진 11% · 최고급 3% · 금고 2%</span></div>
+    </section>
+
+    <section id="boxesPanel" class="panel">
+      <div class="panel-heading"><div><p class="eyebrow">STORAGE</p><h1>상자 보관함</h1><p>임무에서 가져온 상자는 자동으로 여기에 보관됩니다. 원하는 만큼 모아뒀다가 한꺼번에 개봉할 수 있습니다.</p></div></div>
+      <div id="boxSummary" class="summary-grid"></div>
+      <div id="boxList" class="card-grid"></div>
+      <div id="boxEmpty" class="empty">보관 중인 상자가 없습니다.</div>
+    </section>
+
+    <section id="shopPanel" class="panel">
+      <div class="panel-heading"><div><p class="eyebrow">GEAR SHOP</p><h1>플리마켓 장비 상점</h1><p>커터칼은 영구 장비이며, 락픽은 금고 자물쇠를 잘못 다루다 부러질 수 있는 소모품입니다.</p></div></div>
+      <div class="shop-grid">
+        <article class="shop-card"><div class="gear-icon">🔪</div><div><h2>커터칼</h2><p>낡은/평범한/고급진/최고급 상자의 테이프를 자릅니다. 한 번 구매하면 영구 사용합니다.</p><strong>₩100,000</strong></div><button id="buyCutter" class="primary">구매</button></article>
+        <article class="shop-card"><div class="gear-icon">🪛</div><div><h2>락픽</h2><p>금고 개봉용 소모품입니다. 잘못된 각도에서 힘을 주면 내구도가 줄고 결국 부러집니다.</p><strong>개당 ₩10,000</strong></div><div class="lockpick-actions"><button data-picks="1">1개</button><button data-picks="10">10개</button><button data-picks="50">50개</button></div></article>
+      </div>
+      <p class="prototype-note">현재 개발 단계에서는 실제 SD지갑 대신 로컬 테스트 잔액을 사용합니다. 정식 연동 단계에서 서버/SD지갑 거래로 교체합니다.</p>
+      <button id="devReset" class="ghost hidden">개발 데이터 초기화</button>
+    </section>
+
+    <section id="itemsPanel" class="panel">
+      <div class="panel-heading"><div><p class="eyebrow">ITEM VAULT</p><h1>아이템 보관함</h1><p>현재는 PC 프로토타입 로컬 보관함입니다. 다음 개발 단계에서 홈페이지 계정 보관함과 연결합니다.</p></div></div>
+      <div id="itemList" class="card-grid"></div>
+      <div id="itemEmpty" class="empty">아직 획득한 아이템이 없습니다.</div>
+    </section>
+  </main>
+
+  <div id="openModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button id="closeModal" class="modal-close">×</button>
+      <div id="openStage"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
