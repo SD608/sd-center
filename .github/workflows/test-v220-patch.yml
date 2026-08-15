@@ -1,0 +1,44 @@
+name: Validate SDCenter v2.2.0 store patch
+on:
+  push:
+    branches: [build-v220-extension-store-20260816]
+    paths: ['.github/workflows/test-v220-patch.yml']
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Copy exact v2.1.9 snapshot
+        shell: pwsh
+        run: |
+          Copy-Item 'diag-v219-src' "$env:RUNNER_TEMP\v220test" -Recurse -Force
+      - name: Apply store patch
+        shell: pwsh
+        run: |
+          node tools/patch-v220-extension-store.js "$env:RUNNER_TEMP\v220test"
+      - name: Validate source
+        shell: pwsh
+        run: |
+          $root="$env:RUNNER_TEMP\v220test"
+          node --check "$root\main.js"
+          node --check "$root\preload.js"
+          node --check "$root\public\js\app.js"
+          $pkg=Get-Content "$root\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.0'){throw 'version mismatch'}
+          $main=Get-Content "$root\main.js" -Raw
+          $pre=Get-Content "$root\preload.js" -Raw
+          $ui=Get-Content "$root\public\js\app.js" -Raw
+          $html=Get-Content "$root\public\index.html" -Raw
+          foreach($m in @('center:get-extension-store','center:install-store-app','installFreshStoreApp','entry.builtin')){if(-not $main.Contains($m)){throw "main marker missing: $m"}}
+          foreach($m in @('getExtensionStore','installStoreApp')){if(-not $pre.Contains($m)){throw "preload marker missing: $m"}}
+          foreach($m in @('storeTabButton','storePanel','storeGrid','storeRefreshButton')){if(-not $html.Contains($m)){throw "html marker missing: $m"}}
+          foreach($m in @('storeCard','renderStore','installFromStore','getExtensionStore')){if(-not $ui.Contains($m)){throw "ui marker missing: $m"}}
+          if($html.Contains('확장팩 ZIP 일괄 다운로드')){throw 'bulk download button still present'}
+          if($ui.Contains('ensureUpdateControls();')){throw 'legacy update controls still enabled'}
+          Write-Host 'v2.2.0 store patch validation passed'
