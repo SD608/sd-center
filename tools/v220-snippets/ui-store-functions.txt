@@ -1,0 +1,126 @@
+function storeCard(app) {
+  const busy = state.storeBusyIds.has(app.id);
+  const actionLabel = app.installed
+    ? app.updateAvailable
+      ? "업데이트"
+      : "설치됨"
+    : app.removed
+      ? "다시 설치"
+      : "설치";
+  const statusLabel = app.installed
+    ? app.updateAvailable
+      ? `v${app.currentVersion} → v${app.latestVersion}`
+      : `최신 v${app.latestVersion}`
+    : `v${app.latestVersion}`;
+  const buttonClass = app.installed && !app.updateAvailable
+    ? "button button-secondary store-action-button is-installed"
+    : "button button-primary store-action-button";
+  const disabled = busy || (app.installed && !app.updateAvailable);
+  const icon = app.iconUrl
+    ? `<img src="${escapeHtml(app.iconUrl)}" alt="" draggable="false">`
+    : `<span class="store-generic-icon">SD</span>`;
+
+  return `
+    <article class="store-card" data-id="${escapeHtml(app.id)}" data-accent="${escapeHtml(app.accent)}">
+      <div class="store-card-top">
+        <div class="store-app-identity">
+          <div class="store-app-icon">${icon}</div>
+          <div>
+            <div class="store-name-row">
+              <strong>${escapeHtml(app.name)}</strong>
+              ${app.builtin ? '<span class="store-type-badge">기본 앱</span>' : '<span class="store-type-badge">확장팩</span>'}
+            </div>
+            <span class="store-version">${escapeHtml(statusLabel)}</span>
+          </div>
+        </div>
+        <span class="store-price">FREE</span>
+      </div>
+      <p class="store-description">${escapeHtml(app.description)}</p>
+      <div class="store-notes">
+        <span>UPDATE NOTES</span>
+        <p>${escapeHtml(app.notes || "최신 공식 확장팩 버전입니다.")}</p>
+      </div>
+      <div class="store-card-footer">
+        <span class="store-state ${app.updateAvailable ? "needs-update" : app.installed ? "installed" : "available"}">
+          ${app.updateAvailable ? "업데이트 가능" : app.installed ? "설치 완료" : app.removed ? "보관함에 있음" : "설치 가능"}
+        </span>
+        <button class="${buttonClass}" type="button" ${disabled ? "disabled" : ""}>
+          ${busy ? "처리 중..." : actionLabel}
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderStore() {
+  if (!elements.storeGrid) return;
+  elements.storeTabCount.textContent = String(state.storeApps.length);
+  elements.storeGrid.innerHTML = state.storeApps.map(storeCard).join("");
+  elements.storeEmpty?.classList.toggle(
+    "hidden",
+    state.storeLoading || state.storeApps.length > 0,
+  );
+  const installed = state.storeApps.filter((app) => app.installed).length;
+  const updates = state.storeApps.filter((app) => app.updateAvailable).length;
+  if (elements.storeStatusSummary) {
+    elements.storeStatusSummary.textContent = state.storeLoading
+      ? "홈페이지 카탈로그 새로고침 중..."
+      : updates > 0
+        ? `${state.storeApps.length}개 상품 · ${updates}개 업데이트 가능`
+        : `${state.storeApps.length}개 상품 · ${installed}개 설치됨`;
+  }
+  if (elements.storeRefreshButton) {
+    elements.storeRefreshButton.disabled = state.storeLoading;
+    elements.storeRefreshButton.textContent = state.storeLoading
+      ? "새로고침 중..."
+      : "상점 새로고침";
+  }
+}
+
+async function loadStore(force = false) {
+  if (state.storeLoading) return;
+  state.storeLoading = true;
+  renderStore();
+  try {
+    const result = await bridge.getExtensionStore(force);
+    if (!result?.ok) {
+      showToast(result?.error || "확장팩 상점을 불러오지 못했습니다.", 4500);
+      return;
+    }
+    state.storeApps = Array.isArray(result.apps) ? result.apps : [];
+  } finally {
+    state.storeLoading = false;
+    renderStore();
+  }
+}
+
+async function installFromStore(id) {
+  if (state.storeBusyIds.has(id)) return;
+  const current = state.storeApps.find((entry) => entry.id === id);
+  state.storeBusyIds.add(id);
+  renderStore();
+  try {
+    const result = await bridge.installStoreApp(id);
+    if (!result?.ok) {
+      showToast(result?.error || "확장팩을 설치하지 못했습니다.", 5000);
+      return;
+    }
+    if (result.store?.apps) {
+      state.storeApps = result.store.apps;
+    } else {
+      await loadStore(false);
+    }
+    showToast(
+      result.alreadyLatest
+        ? `${current?.name || "확장팩"}은 이미 최신 버전입니다.`
+        : result.action === "updated"
+          ? `${current?.name || "확장팩"} 업데이트를 완료했습니다.`
+          : `${current?.name || "확장팩"} 설치를 완료했습니다.`,
+      4200,
+    );
+  } finally {
+    state.storeBusyIds.delete(id);
+    renderStore();
+  }
+}
+
