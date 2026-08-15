@@ -37,7 +37,7 @@ begin
   from public.profiles
   where id = v_admin_id;
 
-  if v_admin_role <> 'admin' or v_admin_status <> 'active' then
+  if coalesce(v_admin_role, '') <> 'admin' or coalesce(v_admin_status, '') <> 'active' then
     raise exception '관리자 권한이 필요합니다.';
   end if;
 
