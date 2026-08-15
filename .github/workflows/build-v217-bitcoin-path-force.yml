@@ -1,0 +1,267 @@
+name: Build and publish SDCenter v2.1.7 Bitcoin path force fix
+
+on:
+  push:
+    branches:
+      - build-v217-bitcoin-path-force-20260816
+    paths:
+      - '.github/workflows/build-v217-bitcoin-path-force.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download and verify official v2.1.6 installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.6.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.6/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($size -ne 140372992) { throw "Unexpected v2.1.6 installer size: $size" }
+          if ($hash -ne '900134a3abe35f8848129f8af0fe938b2ce6c4f0b89f7d4d658b6ee60e525c88') { throw "v2.1.6 hash mismatch: $hash" }
+
+      - name: Install v2.1.6 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.6.exe"
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.6'
+          if (-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))) { throw "v2.1.6 install missing: $appDir" }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch catalog collision and force Bitcoin builtin path
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:APP_DIR 'resources\app'
+          $patch="$env:RUNNER_TEMP\patch-v217.js"
+          @'
+          "use strict";
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const root=process.argv[2];
+          const mainPath=path.join(root,'main.js');
+          const registryPath=path.join(root,'src','app-registry.js');
+          const pkgPath=path.join(root,'package.json');
+          let main=fs.readFileSync(mainPath,'utf8').replace(/\r\n/g,'\n');
+          let registry=fs.readFileSync(registryPath,'utf8').replace(/\r\n/g,'\n');
+
+          // Legacy v2.1.5/v2.1.6 custom Bitcoin registrations must never survive startup.
+          const cleanupStart=main.indexOf('function cleanupBitcoinBuiltinDuplicate() {');
+          const cleanupEnd=main.indexOf('\n}\n\ncleanupBitcoinBuiltinDuplicate();', cleanupStart);
+          if(cleanupStart<0 || cleanupEnd<0) throw new Error('cleanup function not found');
+          const cleanup=`function cleanupBitcoinBuiltinDuplicate() {\n  const aliases = new Set(["bitcoin", "sd-bitcoin-miner-desktop"]);\n  const duplicateDirectory = path.join(INSTALLED_APPS_ROOT, "bitcoin");\n  const duplicateDirectoryResolved = path.resolve(duplicateDirectory);\n  const isBitcoinDuplicateEntry = (entry) => {\n    if (!entry || typeof entry !== "object") return false;\n    if (aliases.has(String(entry.id || "").toLowerCase())) return true;\n    if (typeof entry.directory === "string" && entry.directory) {\n      try {\n        if (path.resolve(entry.directory) === duplicateDirectoryResolved) return true;\n      } catch {}\n    }\n    if (typeof entry.originalDirectory === "string" && entry.originalDirectory) {\n      try {\n        if (path.resolve(entry.originalDirectory) === duplicateDirectoryResolved) return true;\n      } catch {}\n    }\n    return false;\n  };\n\n  registry = {\n    ...registry,\n    hiddenBuiltinIds: (registry.hiddenBuiltinIds || []).filter(\n      (id) => !aliases.has(String(id || "").toLowerCase()),\n    ),\n    customApps: (registry.customApps || []).filter(\n      (entry) => !isBitcoinDuplicateEntry(entry),\n    ),\n    removedApps: (registry.removedApps || []).filter(\n      (entry) => !isBitcoinDuplicateEntry(entry),\n    ),\n  };\n\n  fs.rmSync(duplicateDirectory, { recursive: true, force: true });\n  fs.rmSync(path.join(APP_PACKAGES_ROOT, "bitcoin.zip"), { force: true });\n  fs.rmSync(path.join(APP_PACKAGES_ROOT, "sd-bitcoin-miner-desktop.zip"), { force: true });\n  saveRegistry(REGISTRY_PATH, registry);\n}`;
+          main=main.slice(0,cleanupStart)+cleanup+main.slice(cleanupEnd+2);
+
+          // Even if a stale entry somehow reaches appById, Bitcoin always launches/opens its builtin directory.
+          const oldChild='function getChildDirectory(entry) {\n  return entry.directory;\n}';
+          const newChild='function getChildDirectory(entry) {\n  if (entry?.id === "bitcoin") {\n    return path.join(__dirname, "apps", "SDBitcoinMiner");\n  }\n  return entry.directory;\n}';
+          if(!main.includes(oldChild)) throw new Error('getChildDirectory target missing');
+          main=main.replace(oldChild,newChild);
+
+          // Builtin IDs always win catalog collisions. Legacy custom rows cannot override a builtin Map entry.
+          const oldCustom='  const customApps = (registry.customApps || [])\n    .filter((entry) => {\n      return (\n        entry &&\n        typeof entry.id === "string" &&\n        typeof entry.directory === "string" &&\n        fs.existsSync(path.join(entry.directory, entry.entry || "main.js"))\n      );\n    })';
+          const newCustom='  const builtinIds = new Set(builtinCatalog.map((entry) => entry.id));\n  const customApps = (registry.customApps || [])\n    .filter((entry) => {\n      return (\n        entry &&\n        typeof entry.id === "string" &&\n        !builtinIds.has(entry.id) &&\n        typeof entry.directory === "string" &&\n        fs.existsSync(path.join(entry.directory, entry.entry || "main.js"))\n      );\n    })';
+          if(!registry.includes(oldCustom)) throw new Error('resolveCatalog custom filter target missing');
+          registry=registry.replace(oldCustom,newCustom);
+
+          fs.writeFileSync(mainPath,main,'utf8');
+          fs.writeFileSync(registryPath,registry,'utf8');
+          const pkg=JSON.parse(fs.readFileSync(pkgPath,'utf8'));
+          pkg.version='2.1.7';
+          fs.writeFileSync(pkgPath,JSON.stringify(pkg,null,2)+'\n','utf8');
+          '@ | Set-Content $patch -Encoding utf8
+          node $patch $root
+          node --check (Join-Path $root 'main.js')
+          node --check (Join-Path $root 'src\app-registry.js')
+          node --check (Join-Path $root 'preload.js')
+          node --check (Join-Path $root 'public\js\app.js')
+
+      - name: Verify embedded Bitcoin v1.2.2 rules
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $bitcoin=Join-Path $env:APP_DIR 'resources\app\apps\SDBitcoinMiner'
+          $manifest=Get-Content (Join-Path $bitcoin 'sd-app.json') -Raw | ConvertFrom-Json
+          if ($manifest.id -ne 'bitcoin' -or $manifest.version -ne '1.2.2') { throw "Builtin Bitcoin mismatch: $($manifest.id) v$($manifest.version)" }
+          if (-not (Test-Path (Join-Path $bitcoin 'shared\open-center.js'))) { throw 'Bitcoin shared module missing' }
+          if (-not (Select-String -Path (Join-Path $bitcoin 'src\mining-service.js') -Pattern 'SUCCESS_PROBABILITY = 0.0002' -Quiet)) { throw 'Bitcoin 0.02% rule missing' }
+          if (-not (Select-String -Path (Join-Path $bitcoin 'src\wallet-database.js') -Pattern 'GPU_PRICE = 1550000' -Quiet)) { throw 'Bitcoin GPU price rule missing' }
+          if (-not (Select-String -Path (Join-Path $bitcoin 'src\wallet-database.js') -Pattern 'ELECTRICITY_FEE_PER_GPU_KRW = 100000' -Quiet)) { throw 'Bitcoin electricity rule missing' }
+          if (-not (Select-String -Path (Join-Path $bitcoin 'src\wallet-database.js') -Pattern 'bitcoin_gpu_units' -Quiet)) { throw 'Bitcoin durability table missing' }
+
+      - name: Unit-test builtin collision precedence
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:APP_DIR 'resources\app'
+          $test="$env:RUNNER_TEMP\test-resolver.js"
+          @'
+          const fs=require('fs');
+          const path=require('path');
+          const root=process.argv[2];
+          const {resolveCatalog}=require(path.join(root,'src','app-registry.js'));
+          const tmp=fs.mkdtempSync(path.join(process.env.RUNNER_TEMP,'sd-v217-resolver-'));
+          const stale=path.join(tmp,'bitcoin');
+          const normal=path.join(tmp,'normal');
+          fs.mkdirSync(stale,{recursive:true});
+          fs.mkdirSync(normal,{recursive:true});
+          fs.writeFileSync(path.join(stale,'main.js'),'');
+          fs.writeFileSync(path.join(normal,'main.js'),'');
+          const catalog=resolveCatalog({
+            builtinCatalog:[{id:'bitcoin',folder:'SDBitcoinMiner',name:'builtin'}],
+            registry:{hiddenBuiltinIds:[],customApps:[
+              {id:'bitcoin',directory:stale,entry:'main.js',name:'stale'},
+              {id:'other',directory:normal,entry:'main.js',name:'other'}
+            ]},
+            builtinRoot:path.join(root,'apps')
+          });
+          const bitcoin=catalog.filter(x=>x.id==='bitcoin');
+          if(bitcoin.length!==1) throw new Error(`bitcoin count ${bitcoin.length}`);
+          if(!bitcoin[0].builtin) throw new Error('custom bitcoin overrode builtin');
+          if(path.resolve(bitcoin[0].directory)!==path.resolve(path.join(root,'apps','SDBitcoinMiner'))) throw new Error('bitcoin directory is not builtin');
+          if(!catalog.some(x=>x.id==='other' && !x.builtin)) throw new Error('normal custom app was incorrectly filtered');
+          console.log('resolver collision test passed');
+          '@ | Set-Content $test -Encoding utf8
+          node $test $root
+
+      - name: Build genuine in-place Squirrel installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder="$env:RUNNER_TEMP\squirrel-builder-v217"
+          New-Item -ItemType Directory -Path $builder -Force | Out-Null
+          Set-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          @'
+          const path=require('node:path');
+          const {createWindowsInstaller}=require('electron-winstaller');
+          const appDirectory=process.env.APP_DIR;
+          const outputDirectory=path.join(process.env.RUNNER_TEMP,'squirrel-v217');
+          createWindowsInstaller({
+            appDirectory,
+            outputDirectory,
+            name:'SDCenter',
+            productName:'SD종합센터',
+            version:'2.1.7',
+            authors:'SDWallet',
+            description:'기본 앱과 커스텀 앱 경로 충돌 방지 및 비트코인 내장 경로 강제 수정',
+            exe:'SDCenter.exe',
+            setupExe:'SDCenterSetup.exe',
+            noMsi:true,
+            setupIcon:path.join(appDirectory,'resources','app','public','icons','icon.ico')
+          }).then(()=>console.log('Squirrel v2.1.7 build complete')).catch(e=>{console.error(e);process.exit(1);});
+          '@ | Set-Content build.js -Encoding utf8
+          node build.js
+          $setup="$env:RUNNER_TEMP\squirrel-v217\SDCenterSetup.exe"
+          if (-not (Test-Path $setup)) { throw 'v2.1.7 installer missing' }
+          $size=(Get-Item $setup).Length
+          if ($size -lt 100MB) { throw "Installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "v2.1.7 installer: $size / $hash"
+
+      - name: Reproduce real stale path and install-test v2.1.7
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          # Run v2.1.6 once so its real registry path exists.
+          $v216=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.6\SDCenter.exe'
+          Start-Process -FilePath $v216 -PassThru | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+          $roaming=Join-Path $env:APPDATA 'SD종합센터'
+          $stale=Join-Path $roaming 'installed-apps\bitcoin'
+          New-Item -ItemType Directory -Path $stale -Force | Out-Null
+          'module.exports={};' | Set-Content (Join-Path $stale 'main.js') -Encoding utf8
+
+          $registryFile=Get-ChildItem $roaming -File -Recurse -Filter '*.json' -ErrorAction SilentlyContinue | Where-Object {
+            try { (Get-Content $_.FullName -Raw) -match '"customApps"' } catch { $false }
+          } | Select-Object -First 1
+          if (-not $registryFile) { throw "Could not locate real registry under $roaming" }
+          $reg=Get-Content $registryFile.FullName -Raw | ConvertFrom-Json
+          if (-not $reg.customApps) { $reg | Add-Member -NotePropertyName customApps -NotePropertyValue @() -Force }
+          $staleEntry=[pscustomobject]@{
+            id='bitcoin'; name='SD비트코인 채굴장'; productName='SD비트코인 채굴장';
+            version='Stage 5 · v1.1.0'; rawVersion='1.1.0'; entry='main.js';
+            directory=$stale; userDataFolder='SD비트코인 채굴장'; builtin=$false
+          }
+          $reg.customApps=@($reg.customApps | Where-Object { $_.id -ne 'bitcoin' }) + @($staleEntry)
+          $reg | ConvertTo-Json -Depth 20 | Set-Content $registryFile.FullName -Encoding utf8
+
+          # Install v2.1.7 over the existing Center, then start it so startup cleanup runs.
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          $exe=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.7\SDCenter.exe'
+          if (-not (Test-Path $exe)) { throw "In-place v2.1.7 install failed: $exe" }
+          Start-Process -FilePath $exe -PassThru | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+          if (Test-Path $stale) { throw 'Real stale installed-apps\bitcoin folder survived v2.1.7 startup' }
+          $regAfter=Get-Content $registryFile.FullName -Raw | ConvertFrom-Json
+          if (@($regAfter.customApps | Where-Object { $_.id -in @('bitcoin','sd-bitcoin-miner-desktop') }).Count -gt 0) { throw 'Bitcoin custom registry entry survived' }
+          if (@($regAfter.hiddenBuiltinIds | Where-Object { $_ -in @('bitcoin','sd-bitcoin-miner-desktop') }).Count -gt 0) { throw 'Bitcoin builtin remained hidden' }
+
+          $root=Join-Path (Split-Path $exe -Parent) 'resources\app'
+          $main=Get-Content (Join-Path $root 'main.js') -Raw
+          if ($main -notmatch 'entry\?\.id === "bitcoin"') { throw 'Canonical Bitcoin child directory guard missing' }
+          $registrySource=Get-Content (Join-Path $root 'src\app-registry.js') -Raw
+          if ($registrySource -notmatch '!builtinIds\.has\(entry\.id\)') { throw 'Builtin collision filter missing' }
+          $manifest=Get-Content (Join-Path $root 'apps\SDBitcoinMiner\sd-app.json') -Raw | ConvertFrom-Json
+          if ($manifest.id -ne 'bitcoin' -or $manifest.version -ne '1.2.2') { throw 'Installed Bitcoin is not v1.2.2 builtin' }
+          if (Test-Path (Join-Path $env:LOCALAPPDATA 'sdcenter-desktop\app-2.1.7\SDCenter.exe')) { throw 'Parallel package identity detected' }
+          Write-Host "v2.1.7 stale-path cleanup + builtin force test passed"
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $dir="$env:GITHUB_WORKSPACE\release-v2.1.7"
+          New-Item -ItemType Directory -Path $dir -Force | Out-Null
+          Copy-Item $env:BUILT_SETUP "$dir\SDCenterSetup.exe" -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content "$dir\SHA256.txt" -Encoding ascii
+          @"
+          SD종합센터 v2.1.7
+          - 기본 앱 ID와 동일한 커스텀 앱이 기본 앱을 덮어쓰지 못하도록 카탈로그 충돌 차단
+          - bitcoin 실행/폴더 열기 경로를 내장 apps/SDBitcoinMiner로 강제
+          - legacy bitcoin / sd-bitcoin-miner-desktop 등록과 installed-apps/bitcoin 자동 정리
+          - 비트코인 v1.2.2 밸런스/GPU 내구도 규칙 유지
+          - 앱 진행/사용자 데이터 폴더는 삭제하지 않음
+          Installer bytes: $env:BUILT_SIZE
+          SHA256: $env:BUILT_HASH
+          "@ | Set-Content "$dir\BUILD_INFO.txt" -Encoding utf8
+
+      - name: Publish v2.1.7 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.1.7' `
+            'release-v2.1.7/SDCenterSetup.exe' `
+            'release-v2.1.7/SHA256.txt' `
+            'release-v2.1.7/BUILD_INFO.txt' `
+            --repo 'SD608/sd-center' `
+            --target 'build-v217-bitcoin-path-force-20260816' `
+            --title 'SD종합센터 v2.1.7' `
+            --notes '비트코인이 구 installed-apps 경로로 실행되던 원인을 수정했습니다. 기본 앱 ID와 커스텀 앱 ID가 충돌해도 기본 앱이 우선되며, bitcoin은 내장 SDBitcoinMiner 경로로 강제됩니다. 기존 중복 등록과 installed-apps/bitcoin은 자동 정리하고 진행 데이터는 유지합니다.'
