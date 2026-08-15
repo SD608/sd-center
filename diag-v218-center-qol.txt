@@ -1,0 +1,2564 @@
+===== FILE TREE =====
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\.gitignore
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\BUILD_INSTALLER.cmd
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\forge.config.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\main.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\package.json
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\preload.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\README.md
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDBitcoinMiner\.gitignore
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDBitcoinMiner\forge.config.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDBitcoinMiner\main.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDBitcoinMiner\package.json
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDBitcoinMiner\preload.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDBitcoinMiner\README.md
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDBitcoinMiner\sd-app.json
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDMiner\.gitignore
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDMiner\forge.config.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDMiner\main.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDMiner\package.json
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDMiner\preload.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDMiner\README.md
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDOddEven\.gitignore
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDOddEven\forge.config.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDOddEven\main.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDOddEven\package.json
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDOddEven\preload.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDOddEven\README.md
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDVault\.gitignore
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDVault\forge.config.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDVault\main.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDVault\package.json
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDVault\preload.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDVault\README.md
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\.dockerignore
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\.env.example
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\.gitignore
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\docker-compose.yml
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\Dockerfile
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\forge.config.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\main.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\package.json
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\README_DESKTOP.md
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\README.md
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\server.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\apps\SDWallet\STAGE11_DISTRIBUTION_OK.txt
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\public\index.html
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\public\css\style.css
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\public\icons\icon-192.png
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\public\icons\icon-512.png
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\public\icons\icon.ico
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\public\js\app.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\shared\open-center.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\src\app-registry.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\src\required-updates.js
+C:\Users\runneradmin\AppData\Local\SDCenter\app-2.1.8\resources\app\tools\check-all.js
+
+===== package.json =====
+{
+  "name": "sdcenter-desktop",
+  "productName": "SD종합센터",
+  "version": "2.1.8",
+  "private": true,
+  "description": "홈페이지 확장팩 카탈로그를 확인해 종합센터 안에서 앱별/전체 자동 업데이트를 지원하는 SD종합센터",
+  "author": "SDWallet",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "make": "electron-forge make",
+    "package": "electron-forge package",
+    "check": "node tools/check-all.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "@electron-forge/maker-squirrel": "latest",
+    "electron": "latest"
+  },
+  "dependencies": {
+    "adm-zip": "latest",
+    "electron-squirrel-startup": "latest"
+  },
+  "homepage": "https://sd608.github.io/sd-center/"
+}
+
+===== main.js =====
+
+--- FALLBACK_EXTENSION_CATALOG ---
+134:   "app-packages",
+135: );
+136: 
+137: const FALLBACK_REQUIRED_APPS = {
+138:   "sd-logistics-center-desktop": {
+139:     required: true,
+140:     minVersion: "1.0.9",
+141:     downloadUrl:
+142:       "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
+143:     message:
+144:       "물류회사 진행도 1회 초기화/랭크 밸런스 패치가 필수입니다. v1.0.9 이상으로 업데이트해야 실행할 수 있습니다.",
+145:   },
+146:   "sdlink-desktop": {
+147:     required: true,
+148:     minVersion: "1.2.4",
+149:     downloadUrl:
+150:       "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+151:     message:
+152:       "구 센터 우회 차단을 위해 SD Link v1.2.4 이상이 필수입니다.",
+153:   },
+154: };
+155: const REQUIRED_POLICY_TTL_MS = 5 * 60 * 1000;
+156: const EXTENSION_CATALOG_URL =
+157:   "https://sd608.github.io/sd-center/update/extensions-catalog.json";
+158: const EXTENSION_CATALOG_TTL_MS = 5 * 60 * 1000;
+159: const FALLBACK_EXTENSION_CATALOG = {
+160:   apps: {
+161:     "sdlink-desktop": {
+162:       name: "SD Link",
+163:       version: "1.2.4",
+164:       downloadUrl:
+165:         "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+166:       notes: "SD Link 안정화 및 센터 버전 증명",
+167:     },
+168:     "sd-logistics-center-desktop": {
+169:       name: "SD 물류센터",
+170:       version: "1.0.9",
+171:       downloadUrl:
+172:         "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=109",
+173:       notes: "회사 랭크·차량 해금 밸런스 및 진행도 1회 초기화",
+174:     },
+175:     "sd-slot": {
+176:       name: "SD슬롯",
+177:       version: "1.0.6",
+178:       downloadUrl:
+179:         "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_Stage7_Desktop.zip",
+180:       notes: "SD지갑 연동 슬롯 확장팩",
+181:     },
+182:     "sd-mukjippa": {
+183:       name: "SD묵찌빠",
+184:       version: "1.0.1",
+185:       downloadUrl:
+186:         "https://sd608.github.io/sd-center/downloads/extensions/SDMukjippa_Version1_1_Desktop.zip",
+187:       notes: "SD지갑 연동 묵찌빠 확장팩",
+188:     },
+189:     "sta-expansion": {
+190:       name: "STA",
+191:       version: "1.5.1",
+192:       downloadUrl:
+193:         "https://sd608.github.io/sd-center/downloads/extensions/STA_Version6_Desktop.zip?v=151",
+194:       notes: "현금 획득 종료 후 다음 단계 전환 버그 수정",
+195:     },
+196:     "bitcoin": {
+197:       name: "SD비트코인 채굴장",
+198:       version: "1.2.2",
+199:       downloadUrl:
+200:         "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
+201:       notes: "v1.2.2 실행 오류 수정 · GPU 내구도/전기세/채굴 확률 밸런스",
+202:     },
+203:   },
+204: };
+205: 
+206: let registry = loadRegistry(REGISTRY_PATH);
+207: 
+208: function cleanupBitcoinBuiltinDuplicate() {
+209:   const aliases = new Set(["bitcoin", "sd-bitcoin-miner-desktop"]);
+210:   const duplicateDirectory = path.join(INSTALLED_APPS_ROOT, "bitcoin");
+211:   const duplicateDirectoryResolved = path.resolve(duplicateDirectory);
+212:   const isBitcoinDuplicateEntry = (entry) => {
+213:     if (!entry || typeof entry !== "object") return false;
+214:     if (aliases.has(String(entry.id || "").toLowerCase())) return true;
+230:     hiddenBuiltinIds: (registry.hiddenBuiltinIds || []).filter(
+231:       (id) => !aliases.has(String(id || "").toLowerCase()),
+232:     ),
+233:     customApps: (registry.customApps || []).filter(
+234:       (entry) => !isBitcoinDuplicateEntry(entry),
+235:     ),
+236:     removedApps: (registry.removedApps || []).filter(
+237:       (entry) => !isBitcoinDuplicateEntry(entry),
+238:     ),
+239:   };
+240: 
+241:   fs.rmSync(duplicateDirectory, { recursive: true, force: true });
+242:   fs.rmSync(path.join(APP_PACKAGES_ROOT, "bitcoin.zip"), { force: true });
+243:   fs.rmSync(path.join(APP_PACKAGES_ROOT, "sd-bitcoin-miner-desktop.zip"), { force: true });
+244:   saveRegistry(REGISTRY_PATH, registry);
+245: }
+246: 
+247: cleanupBitcoinBuiltinDuplicate();
+248: let appCatalog = [];
+249: let appById = new Map();
+250: let removedCatalog = [];
+251: let removedById = new Map();
+252: let requiredPolicy = { apps: { ...FALLBACK_REQUIRED_APPS } };
+253: let requiredPolicyFetchedAt = 0;
+254: let requiredPolicyPromise = null;
+255: let extensionCatalog = { ...FALLBACK_EXTENSION_CATALOG };
+256: let extensionCatalogFetchedAt = 0;
+257: let extensionCatalogPromise = null;
+258: 
+259: function reloadCatalog() {
+260:   const builtinRoot = path.join(__dirname, "apps");
+261: 
+262:   appCatalog = resolveCatalog({
+263:     builtinCatalog: BUILTIN_CATALOG,
+264:     registry,
+265:     builtinRoot,
+266:   });
+267:   removedCatalog = resolveRemovedCatalog({
+268:     builtinCatalog: BUILTIN_CATALOG,
+269:     registry,
+270:     builtinRoot,
+271:   });
+272:   appById = new Map(
+273:     appCatalog.map((entry) => [entry.id, entry]),
+274:   );
+275:   removedById = new Map(
+276:     removedCatalog.map((entry) => [entry.id, entry]),
+277:   );
+278: }
+279: 
+280: reloadCatalog();
+281: 
+282: function parseChildId() {
+283:   const prefix = "--sd-child-app=";
+284:   const argument = process.argv.find((value) =>
+285:     value.startsWith(prefix),
+286:   );
+287: 
+288:   return argument ? argument.slice(prefix.length) : "";
+289: }
+290: 
+291: function getChildDirectory(entry) {
+292:   if (entry?.id === "bitcoin") {
+293:     return path.join(__dirname, "apps", "SDBitcoinMiner");
+294:   }
+295:   return entry.directory;
+296: }
+297: 
+298: function runChildMode(childId) {
+299:   const entry = appById.get(childId);
+300: 
+301:   if (!entry) {
+302:     app.quit();
+303:     return;
+304:   }
+305: 
+306:   const childDirectory = getChildDirectory(entry);
+307:   const childMainPath = path.join(
+308:     childDirectory,
+309:     entry.entry || "main.js",
+310:   );
+498:       Date.now() - extensionCatalogFetchedAt < EXTENSION_CATALOG_TTL_MS
+499:     ) {
+500:       return extensionCatalog;
+501:     }
+502: 
+503:     if (extensionCatalogPromise) {
+504:       return extensionCatalogPromise;
+505:     }
+506: 
+507:     extensionCatalogPromise = (async () => {
+508:       try {
+509:         const response = await fetch(EXTENSION_CATALOG_URL, {
+510:           cache: "no-store",
+511:           headers: { Accept: "application/json" },
+512:         });
+513:         if (!response.ok) {
+514:           throw new Error(`확장팩 카탈로그 HTTP ${response.status}`);
+515:         }
+516:         const remote = await response.json();
+517:         if (!remote || typeof remote !== "object" || !remote.apps) {
+518:           throw new Error("확장팩 카탈로그 형식이 올바르지 않습니다.");
+519:         }
+520:         extensionCatalog = {
+521:           ...remote,
+522:           apps: {
+523:             ...(FALLBACK_EXTENSION_CATALOG.apps || {}),
+524:             ...(remote.apps || {}),
+525:           },
+526:         };
+527:       } catch (error) {
+528:         extensionCatalog = {
+529:           ...extensionCatalog,
+530:           apps: {
+531:             ...(FALLBACK_EXTENSION_CATALOG.apps || {}),
+532:             ...(extensionCatalog?.apps || {}),
+533:           },
+534:         };
+535:         console.warn(
+536:           "확장팩 업데이트 카탈로그를 불러오지 못해 내장 목록을 사용합니다.",
+537:           error?.message || error,
+538:         );
+539:       } finally {
+540:         extensionCatalogFetchedAt = Date.now();
+541:         extensionCatalogPromise = null;
+542:       }
+543:       return extensionCatalog;
+544:     })();
+545: 
+546:     return extensionCatalogPromise;
+547:   }
+548: 
+549:   async function installRequiredUpdate(entry, rule) {
+550:     const downloadUrl = String(rule.downloadUrl || "").trim();
+551:     if (!downloadUrl) {
+552:       throw new Error("필수 업데이트 다운로드 주소가 없습니다.");
+553:     }
+554: 
+555:     ensureManagedDirectory(APP_PACKAGES_ROOT);
+556:     const temporaryZipPath = path.join(
+557:       APP_PACKAGES_ROOT,
+558:       `.required-${entry.id}-${Date.now()}.zip`,
+559:     );
+560: 
+561:     try {
+562:       await downloadFile(downloadUrl, temporaryZipPath);
+563:       const inspected = inspectZip(temporaryZipPath);
+564:       const requiredVersion = String(rule.minVersion || "0.0.0");
+565: 
+566:       if (inspected.metadata.id !== entry.id) {
+567:         throw new Error(
+568:           `업데이트 앱 ID가 다릅니다. (${inspected.metadata.id})`,
+569:         );
+570:       }
+571: 
+572:       if (
+573:         compareVersions(
+574:           inspected.metadata.rawVersion,
+575:           requiredVersion,
+576:         ) < 0
+577:       ) {
+578:         throw new Error(
+506: 
+507:     extensionCatalogPromise = (async () => {
+508:       try {
+509:         const response = await fetch(EXTENSION_CATALOG_URL, {
+510:           cache: "no-store",
+511:           headers: { Accept: "application/json" },
+512:         });
+513:         if (!response.ok) {
+514:           throw new Error(`확장팩 카탈로그 HTTP ${response.status}`);
+515:         }
+516:         const remote = await response.json();
+517:         if (!remote || typeof remote !== "object" || !remote.apps) {
+518:           throw new Error("확장팩 카탈로그 형식이 올바르지 않습니다.");
+519:         }
+520:         extensionCatalog = {
+521:           ...remote,
+522:           apps: {
+523:             ...(FALLBACK_EXTENSION_CATALOG.apps || {}),
+524:             ...(remote.apps || {}),
+525:           },
+526:         };
+527:       } catch (error) {
+528:         extensionCatalog = {
+529:           ...extensionCatalog,
+530:           apps: {
+531:             ...(FALLBACK_EXTENSION_CATALOG.apps || {}),
+532:             ...(extensionCatalog?.apps || {}),
+533:           },
+534:         };
+535:         console.warn(
+536:           "확장팩 업데이트 카탈로그를 불러오지 못해 내장 목록을 사용합니다.",
+537:           error?.message || error,
+538:         );
+539:       } finally {
+540:         extensionCatalogFetchedAt = Date.now();
+541:         extensionCatalogPromise = null;
+542:       }
+543:       return extensionCatalog;
+544:     })();
+545: 
+546:     return extensionCatalogPromise;
+547:   }
+548: 
+549:   async function installRequiredUpdate(entry, rule) {
+550:     const downloadUrl = String(rule.downloadUrl || "").trim();
+551:     if (!downloadUrl) {
+552:       throw new Error("필수 업데이트 다운로드 주소가 없습니다.");
+553:     }
+554: 
+555:     ensureManagedDirectory(APP_PACKAGES_ROOT);
+556:     const temporaryZipPath = path.join(
+557:       APP_PACKAGES_ROOT,
+558:       `.required-${entry.id}-${Date.now()}.zip`,
+559:     );
+560: 
+561:     try {
+562:       await downloadFile(downloadUrl, temporaryZipPath);
+563:       const inspected = inspectZip(temporaryZipPath);
+564:       const requiredVersion = String(rule.minVersion || "0.0.0");
+565: 
+566:       if (inspected.metadata.id !== entry.id) {
+567:         throw new Error(
+568:           `업데이트 앱 ID가 다릅니다. (${inspected.metadata.id})`,
+569:         );
+570:       }
+571: 
+572:       if (
+573:         compareVersions(
+574:           inspected.metadata.rawVersion,
+575:           requiredVersion,
+576:         ) < 0
+577:       ) {
+578:         throw new Error(
+579:           `다운로드된 버전(v${inspected.metadata.rawVersion})이 필수 버전(v${requiredVersion})보다 낮습니다.`,
+580:         );
+581:       }
+582: 
+583:       await terminateAppAndWait(entry.id);
+584:       const destinationDirectory = entry.builtin
+585:         ? entry.directory
+586:         : path.join(INSTALLED_APPS_ROOT, inspected.metadata.id);
+
+--- refreshExtensionCatalog ---
+469:         };
+470:         requiredPolicyFetchedAt = Date.now();
+471:         return requiredPolicy;
+472:       } catch (error) {
+473:         requiredPolicy = {
+474:           ...requiredPolicy,
+475:           apps: {
+476:             ...FALLBACK_REQUIRED_APPS,
+477:             ...(requiredPolicy?.apps || {}),
+478:           },
+479:         };
+480:         requiredPolicyFetchedAt = Date.now();
+481:         console.warn(
+482:           "필수 업데이트 정책을 불러오지 못해 내장 정책을 사용합니다.",
+483:           error?.message || error,
+484:         );
+485:         return requiredPolicy;
+486:       } finally {
+487:         requiredPolicyPromise = null;
+488:       }
+489:     })();
+490: 
+491:     return requiredPolicyPromise;
+492:   }
+493: 
+494:   async function refreshExtensionCatalog({ force = false } = {}) {
+495:     if (
+496:       !force &&
+497:       extensionCatalogFetchedAt > 0 &&
+498:       Date.now() - extensionCatalogFetchedAt < EXTENSION_CATALOG_TTL_MS
+499:     ) {
+500:       return extensionCatalog;
+501:     }
+502: 
+503:     if (extensionCatalogPromise) {
+504:       return extensionCatalogPromise;
+505:     }
+506: 
+507:     extensionCatalogPromise = (async () => {
+508:       try {
+509:         const response = await fetch(EXTENSION_CATALOG_URL, {
+510:           cache: "no-store",
+511:           headers: { Accept: "application/json" },
+512:         });
+513:         if (!response.ok) {
+514:           throw new Error(`확장팩 카탈로그 HTTP ${response.status}`);
+515:         }
+516:         const remote = await response.json();
+517:         if (!remote || typeof remote !== "object" || !remote.apps) {
+518:           throw new Error("확장팩 카탈로그 형식이 올바르지 않습니다.");
+519:         }
+520:         extensionCatalog = {
+521:           ...remote,
+522:           apps: {
+523:             ...(FALLBACK_EXTENSION_CATALOG.apps || {}),
+524:             ...(remote.apps || {}),
+525:           },
+526:         };
+527:       } catch (error) {
+528:         extensionCatalog = {
+529:           ...extensionCatalog,
+530:           apps: {
+531:             ...(FALLBACK_EXTENSION_CATALOG.apps || {}),
+532:             ...(extensionCatalog?.apps || {}),
+533:           },
+534:         };
+535:         console.warn(
+536:           "확장팩 업데이트 카탈로그를 불러오지 못해 내장 목록을 사용합니다.",
+537:           error?.message || error,
+538:         );
+539:       } finally {
+540:         extensionCatalogFetchedAt = Date.now();
+541:         extensionCatalogPromise = null;
+542:       }
+543:       return extensionCatalog;
+544:     })();
+545: 
+546:     return extensionCatalogPromise;
+547:   }
+548: 
+549:   async function installRequiredUpdate(entry, rule) {
+664:         inspected.metadata.id,
+665:       );
+666:       const appEntry = {
+667:         ...inspected.metadata,
+668:         directory: destinationDirectory,
+669:         packagePath,
+670:         importedAt: entry.importedAt || new Date().toISOString(),
+671:         updatedAt: new Date().toISOString(),
+672:       };
+673: 
+674:       registry = upsertCustomApp(registry, appEntry);
+675:       saveRegistry(REGISTRY_PATH, registry);
+676:       refreshCatalogAndUi();
+677:       return appById.get(appEntry.id);
+678:     } finally {
+679:       fs.rmSync(temporaryZipPath, { force: true });
+680:     }
+681:   }
+682: 
+683:   async function updateAppFromCatalog(id) {
+684:     const entry = appById.get(id);
+685:     if (!entry) {
+686:       return { ok: false, error: "등록되지 않은 앱입니다." };
+687:     }
+688: 
+689:     await refreshExtensionCatalog();
+690:     const rule = catalogRuleFor(entry);
+691:     if (!rule) {
+692:       return {
+693:         ok: false,
+694:         error: "이 앱은 종합센터 자동 업데이트 목록에 없습니다.",
+695:       };
+696:     }
+697: 
+698:     const availability = updateAvailabilityFor(entry);
+699: 
+700:     const confirmation = await dialog.showMessageBox(mainWindow, {
+701:       type: "question",
+702:       title: "확장팩 업데이트",
+703:       message: `${entry.name}을 v${availability.latestVersion}으로 업데이트할까요?`,
+704:       detail: `현재 버전: v${rawEntryVersion(entry)}\n최신 버전: v${availability.latestVersion}\n\n${availability.updateNotes || "최신 확장팩 파일로 교체합니다."}\n\n앱 파일만 교체하며 저장 데이터는 유지합니다.`,
+705:       buttons: ["취소", "업데이트"],
+706:       defaultId: 1,
+707:       cancelId: 0,
+708:       noLink: true,
+709:     });
+710: 
+711:     if (confirmation.response !== 1) {
+712:       return { ok: false, canceled: true };
+713:     }
+714: 
+715:     try {
+716:       const updatedEntry = await installCatalogUpdate(entry, rule);
+717:       await dialog.showMessageBox(mainWindow, {
+718:         type: "info",
+719:         title: "업데이트 완료",
+720:         message: `${entry.name} 업데이트가 완료되었습니다.`,
+721:         detail: `v${rawEntryVersion(updatedEntry)} 버전으로 교체했습니다. 기존 저장 데이터는 유지됩니다.`,
+722:         buttons: ["확인"],
+723:         defaultId: 0,
+724:         noLink: true,
+725:       });
+726:       return {
+727:         ok: true,
+728:         updated: true,
+729:         app: publicAppState(updatedEntry),
+730:       };
+731:     } catch (error) {
+732:       await dialog.showMessageBox(mainWindow, {
+733:         type: "error",
+734:         title: "업데이트 실패",
+735:         message: `${entry.name}을 업데이트하지 못했습니다.`,
+736:         detail: error.message,
+737:         buttons: ["확인"],
+738:         defaultId: 0,
+739:         noLink: true,
+740:       });
+741:       return { ok: false, error: error.message };
+742:     }
+743:   }
+744: 
+721:         detail: `v${rawEntryVersion(updatedEntry)} 버전으로 교체했습니다. 기존 저장 데이터는 유지됩니다.`,
+722:         buttons: ["확인"],
+723:         defaultId: 0,
+724:         noLink: true,
+725:       });
+726:       return {
+727:         ok: true,
+728:         updated: true,
+729:         app: publicAppState(updatedEntry),
+730:       };
+731:     } catch (error) {
+732:       await dialog.showMessageBox(mainWindow, {
+733:         type: "error",
+734:         title: "업데이트 실패",
+735:         message: `${entry.name}을 업데이트하지 못했습니다.`,
+736:         detail: error.message,
+737:         buttons: ["확인"],
+738:         defaultId: 0,
+739:         noLink: true,
+740:       });
+741:       return { ok: false, error: error.message };
+742:     }
+743:   }
+744: 
+745:   async function updateAllAvailableApps() {
+746:     await refreshExtensionCatalog({ force: true });
+747:     const targets = appCatalog.filter(
+748:       (entry) => updateAvailabilityFor(entry).updateAvailable,
+749:     );
+750: 
+751:     if (targets.length === 0) {
+752:       sendAppStates();
+753:       return { ok: true, count: 0, updatedCount: 0, results: [] };
+754:     }
+755: 
+756:     const confirmation = await dialog.showMessageBox(mainWindow, {
+757:       type: "question",
+758:       title: "확장팩 모두 업데이트",
+759:       message: `업데이트 가능한 확장팩 ${targets.length}개를 모두 업데이트할까요?`,
+760:       detail: targets
+761:         .map((entry) => {
+762:           const availability = updateAvailabilityFor(entry);
+763:           return `• ${entry.name}: v${rawEntryVersion(entry)} → v${availability.latestVersion}`;
+764:         })
+765:         .join("\n"),
+766:       buttons: ["취소", "모두 업데이트"],
+767:       defaultId: 1,
+768:       cancelId: 0,
+769:       noLink: true,
+770:     });
+771: 
+772:     if (confirmation.response !== 1) {
+773:       return { ok: false, canceled: true };
+774:     }
+775: 
+776:     const results = [];
+777:     for (const originalEntry of targets) {
+778:       const entry = appById.get(originalEntry.id) || originalEntry;
+779:       const rule = catalogRuleFor(entry);
+780:       try {
+781:         const updatedEntry = await installCatalogUpdate(entry, rule);
+782:         results.push({
+783:           id: entry.id,
+784:           name: entry.name,
+785:           ok: true,
+786:           version: rawEntryVersion(updatedEntry),
+787:         });
+788:       } catch (error) {
+789:         results.push({
+790:           id: entry.id,
+791:           name: entry.name,
+792:           ok: false,
+793:           error: error.message,
+794:         });
+795:       }
+796:     }
+797: 
+798:     const updatedCount = results.filter((result) => result.ok).length;
+799:     const failed = results.filter((result) => !result.ok);
+800:     refreshCatalogAndUi();
+801: 
+1767:         __dirname,
+1768:         "public",
+1769:         "icons",
+1770:         "icon.ico",
+1771:       ),
+1772:     );
+1773:     tray.setToolTip("SD종합센터");
+1774:     updateTrayMenu();
+1775:     tray.on("double-click", showCenter);
+1776:   }
+1777: 
+1778:   function registerIpcHandlers() {
+1779:     ipcMain.handle("center:list-apps", () => getAllAppStates());
+1780:     ipcMain.handle("center:list-removed-apps", () =>
+1781:       getRemovedAppStates(),
+1782:     );
+1783:     ipcMain.handle("center:launch-app", (event, id) =>
+1784:       launchApp(id),
+1785:     );
+1786:     ipcMain.handle("center:terminate-app", (event, id) =>
+1787:       terminateApp(id),
+1788:     );
+1789:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+1790:     ipcMain.handle("center:check-app-updates", async () => {
+1791:       try {
+1792:         await refreshExtensionCatalog({ force: true });
+1793:         sendAppStates();
+1794:         const available = appCatalog
+1795:           .filter((entry) => updateAvailabilityFor(entry).updateAvailable)
+1796:           .map((entry) => ({
+1797:             id: entry.id,
+1798:             name: entry.name,
+1799:             currentVersion: rawEntryVersion(entry),
+1800:             latestVersion: updateAvailabilityFor(entry).latestVersion,
+1801:           }));
+1802:         return { ok: true, count: available.length, apps: available };
+1803:       } catch (error) {
+1804:         return { ok: false, error: error.message };
+1805:       }
+1806:     });
+1807:     ipcMain.handle("center:update-app", (event, id) =>
+1808:       updateAppFromCatalog(id),
+1809:     );
+1810:     ipcMain.handle("center:update-all-apps", () =>
+1811:       updateAllAvailableApps(),
+1812:     );
+1813:     ipcMain.handle("center:delete-app", (event, id) =>
+1814:       deleteApp(id),
+1815:     );
+1816:     ipcMain.handle("center:restore-app", (event, id) =>
+1817:       restoreRemovedApp(id),
+1818:     );
+1819:     ipcMain.handle(
+1820:       "center:permanently-delete-removed-app",
+1821:       (event, id) => permanentlyDeleteRemovedApp(id),
+1822:     );
+1823:     ipcMain.handle("center:launch-all", async () => {
+1824:       const results = [];
+1825: 
+1826:       for (const entry of appCatalog) {
+1827:         results.push({
+1828:           id: entry.id,
+1829:           ...(await launchApp(entry.id)),
+1830:         });
+1831:       }
+1832: 
+1833:       return {
+1834:         ok: results.every((result) => result.ok),
+1835:         count: appCatalog.length,
+1836:         results,
+1837:       };
+1838:     });
+1839:     ipcMain.handle("center:terminate-all", () => {
+1840:       terminateAllApps();
+1841:       return { ok: true };
+1842:     });
+1843:     ipcMain.handle("center:show", () => {
+1844:       showCenter();
+1845:       return { ok: true };
+1846:     });
+1847:     ipcMain.handle("center:hide", () => {
+
+--- download ---
+14:   Menu,
+15:   shell,
+16:   Tray,
+17: } = require("electron");
+18: 
+19: // Squirrel.Windows 설치·업데이트·제거 이벤트 처리
+20: if (require("electron-squirrel-startup")) {
+21:   app.quit();
+22: }
+23: 
+24: const {
+25:   inspectZip,
+26:   installInspectedZip,
+27:   loadRegistry,
+28:   moveAppToRemoved,
+29:   permanentlyRemoveApp,
+30:   resolveCatalog,
+31:   resolveRemovedCatalog,
+32:   restoreAppInRegistry,
+33:   saveRegistry,
+34:   upsertCustomApp,
+35: } = require("./src/app-registry");
+36: 
+37: const {
+38:   compareVersions,
+39:   downloadFile,
+40:   fetchRequiredPolicy,
+41: } = require("./src/required-updates");
+42: 
+43: const BUILTIN_CATALOG = [
+44:   {
+45:     id: "wallet",
+46:     name: "SD지갑",
+47:     version: "Stage 11 · v1.1.1",
+48:     folder: "SDWallet",
+49:     productName: "SD지갑",
+50:     userDataFolder: "SD지갑",
+51:     description: "직접 입출금 없이 모든 SD 앱이 함께 사용하는 가상 계좌와 거래 내역을 관리합니다.",
+52:     improvement: "초기 시뮬레이션 금액 없이 25만원 가상 민생지원금만 지급하며, 이 PC에서 24시간 최대 3개 생성으로 제한합니다.",
+53:     accent: "blue",
+54:     icon: "public/icons/icon-512.png",
+55:   },
+56:   {
+57:     id: "vault",
+58:     name: "SD금고",
+59:     version: "V16 · v1.2.0",
+60:     folder: "SDVault",
+61:     productName: "SD금고",
+62:     userDataFolder: "SD금고",
+63:     description: "가상 계좌 잔액을 금 중량과 금괴 보관 모습으로 환산합니다.",
+64:     improvement: "금괴 501개부터 한 줄 50개·고정 크기의 초대형 금고로 자동 전환합니다.",
+65:     accent: "gold",
+66:     icon: "public/icons/icon-512.png",
+67:   },
+68:   {
+69:     id: "odd-even",
+70:     name: "SD홀짝",
+71:     version: "Stage 4 · v1.1.0",
+72:     folder: "SDOddEven",
+73:     productName: "SD홀짝",
+74:     userDataFolder: "SD홀짝",
+75:     description: "보안 난수 주사위로 진행하는 가상 잔액 홀짝 시뮬레이션입니다.",
+76:     improvement: "게임 결과와 계좌 잔액 변경을 하나의 원자적 거래로 처리합니다.",
+77:     accent: "purple",
+78:     icon: "public/icons/icon-512.png",
+79:   },
+80:   {
+81:     id: "miner",
+82:     name: "SD광부",
+83:     version: "Stage 3 · v1.1.0",
+84:     folder: "SDMiner",
+85:     productName: "SD광부",
+86:     userDataFolder: "SD광부",
+87:     description: "광물을 채굴하고 보관한 뒤 SD지갑 가상 잔액으로 판매합니다.",
+88:     improvement: "판매 기록과 총채굴량·누적 판매량·누적 수익 통계를 추가했습니다.",
+89:     accent: "green",
+90:     icon: "public/icons/icon-512.png",
+91:   },
+92:   {
+93:     id: "bitcoin",
+94:     name: "SD비트코인 채굴장",
+116:   }
+117: 
+118:   return process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
+119: }
+120: 
+121: const APP_DATA_ROOT = getAppDataRoot();
+122: const CENTER_DATA_ROOT = path.join(APP_DATA_ROOT, "SD종합센터");
+123: const REGISTRY_PATH = path.join(CENTER_DATA_ROOT, "apps.json");
+124: const INSTALLED_APPS_ROOT = path.join(
+125:   CENTER_DATA_ROOT,
+126:   "installed-apps",
+127: );
+128: const REMOVED_APPS_ROOT = path.join(
+129:   CENTER_DATA_ROOT,
+130:   "removed-apps",
+131: );
+132: const APP_PACKAGES_ROOT = path.join(
+133:   CENTER_DATA_ROOT,
+134:   "app-packages",
+135: );
+136: 
+137: const FALLBACK_REQUIRED_APPS = {
+138:   "sd-logistics-center-desktop": {
+139:     required: true,
+140:     minVersion: "1.0.9",
+141:     downloadUrl:
+142:       "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
+143:     message:
+144:       "물류회사 진행도 1회 초기화/랭크 밸런스 패치가 필수입니다. v1.0.9 이상으로 업데이트해야 실행할 수 있습니다.",
+145:   },
+146:   "sdlink-desktop": {
+147:     required: true,
+148:     minVersion: "1.2.4",
+149:     downloadUrl:
+150:       "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+151:     message:
+152:       "구 센터 우회 차단을 위해 SD Link v1.2.4 이상이 필수입니다.",
+153:   },
+154: };
+155: const REQUIRED_POLICY_TTL_MS = 5 * 60 * 1000;
+156: const EXTENSION_CATALOG_URL =
+157:   "https://sd608.github.io/sd-center/update/extensions-catalog.json";
+158: const EXTENSION_CATALOG_TTL_MS = 5 * 60 * 1000;
+159: const FALLBACK_EXTENSION_CATALOG = {
+160:   apps: {
+161:     "sdlink-desktop": {
+162:       name: "SD Link",
+163:       version: "1.2.4",
+164:       downloadUrl:
+165:         "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+166:       notes: "SD Link 안정화 및 센터 버전 증명",
+167:     },
+168:     "sd-logistics-center-desktop": {
+169:       name: "SD 물류센터",
+170:       version: "1.0.9",
+171:       downloadUrl:
+172:         "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=109",
+173:       notes: "회사 랭크·차량 해금 밸런스 및 진행도 1회 초기화",
+174:     },
+175:     "sd-slot": {
+176:       name: "SD슬롯",
+177:       version: "1.0.6",
+178:       downloadUrl:
+179:         "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_Stage7_Desktop.zip",
+180:       notes: "SD지갑 연동 슬롯 확장팩",
+181:     },
+182:     "sd-mukjippa": {
+183:       name: "SD묵찌빠",
+184:       version: "1.0.1",
+185:       downloadUrl:
+186:         "https://sd608.github.io/sd-center/downloads/extensions/SDMukjippa_Version1_1_Desktop.zip",
+187:       notes: "SD지갑 연동 묵찌빠 확장팩",
+188:     },
+189:     "sta-expansion": {
+190:       name: "STA",
+191:       version: "1.5.1",
+192:       downloadUrl:
+193:         "https://sd608.github.io/sd-center/downloads/extensions/STA_Version6_Desktop.zip?v=151",
+194:       notes: "현금 획득 종료 후 다음 단계 전환 버그 수정",
+195:     },
+196:     "bitcoin": {
+117: 
+118:   return process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
+119: }
+120: 
+121: const APP_DATA_ROOT = getAppDataRoot();
+122: const CENTER_DATA_ROOT = path.join(APP_DATA_ROOT, "SD종합센터");
+123: const REGISTRY_PATH = path.join(CENTER_DATA_ROOT, "apps.json");
+124: const INSTALLED_APPS_ROOT = path.join(
+125:   CENTER_DATA_ROOT,
+126:   "installed-apps",
+127: );
+128: const REMOVED_APPS_ROOT = path.join(
+129:   CENTER_DATA_ROOT,
+130:   "removed-apps",
+131: );
+132: const APP_PACKAGES_ROOT = path.join(
+133:   CENTER_DATA_ROOT,
+134:   "app-packages",
+135: );
+136: 
+137: const FALLBACK_REQUIRED_APPS = {
+138:   "sd-logistics-center-desktop": {
+139:     required: true,
+140:     minVersion: "1.0.9",
+141:     downloadUrl:
+142:       "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
+143:     message:
+144:       "물류회사 진행도 1회 초기화/랭크 밸런스 패치가 필수입니다. v1.0.9 이상으로 업데이트해야 실행할 수 있습니다.",
+145:   },
+146:   "sdlink-desktop": {
+147:     required: true,
+148:     minVersion: "1.2.4",
+149:     downloadUrl:
+150:       "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+151:     message:
+152:       "구 센터 우회 차단을 위해 SD Link v1.2.4 이상이 필수입니다.",
+153:   },
+154: };
+155: const REQUIRED_POLICY_TTL_MS = 5 * 60 * 1000;
+156: const EXTENSION_CATALOG_URL =
+157:   "https://sd608.github.io/sd-center/update/extensions-catalog.json";
+158: const EXTENSION_CATALOG_TTL_MS = 5 * 60 * 1000;
+159: const FALLBACK_EXTENSION_CATALOG = {
+160:   apps: {
+161:     "sdlink-desktop": {
+162:       name: "SD Link",
+163:       version: "1.2.4",
+164:       downloadUrl:
+165:         "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+166:       notes: "SD Link 안정화 및 센터 버전 증명",
+167:     },
+168:     "sd-logistics-center-desktop": {
+169:       name: "SD 물류센터",
+170:       version: "1.0.9",
+171:       downloadUrl:
+172:         "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=109",
+173:       notes: "회사 랭크·차량 해금 밸런스 및 진행도 1회 초기화",
+174:     },
+175:     "sd-slot": {
+176:       name: "SD슬롯",
+177:       version: "1.0.6",
+178:       downloadUrl:
+179:         "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_Stage7_Desktop.zip",
+180:       notes: "SD지갑 연동 슬롯 확장팩",
+181:     },
+182:     "sd-mukjippa": {
+183:       name: "SD묵찌빠",
+184:       version: "1.0.1",
+185:       downloadUrl:
+186:         "https://sd608.github.io/sd-center/downloads/extensions/SDMukjippa_Version1_1_Desktop.zip",
+187:       notes: "SD지갑 연동 묵찌빠 확장팩",
+188:     },
+189:     "sta-expansion": {
+190:       name: "STA",
+191:       version: "1.5.1",
+192:       downloadUrl:
+193:         "https://sd608.github.io/sd-center/downloads/extensions/STA_Version6_Desktop.zip?v=151",
+194:       notes: "현금 획득 종료 후 다음 단계 전환 버그 수정",
+195:     },
+196:     "bitcoin": {
+197:       name: "SD비트코인 채굴장",
+124: const INSTALLED_APPS_ROOT = path.join(
+125:   CENTER_DATA_ROOT,
+126:   "installed-apps",
+127: );
+128: const REMOVED_APPS_ROOT = path.join(
+129:   CENTER_DATA_ROOT,
+130:   "removed-apps",
+131: );
+132: const APP_PACKAGES_ROOT = path.join(
+133:   CENTER_DATA_ROOT,
+134:   "app-packages",
+135: );
+136: 
+137: const FALLBACK_REQUIRED_APPS = {
+138:   "sd-logistics-center-desktop": {
+139:     required: true,
+140:     minVersion: "1.0.9",
+141:     downloadUrl:
+142:       "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
+143:     message:
+144:       "물류회사 진행도 1회 초기화/랭크 밸런스 패치가 필수입니다. v1.0.9 이상으로 업데이트해야 실행할 수 있습니다.",
+145:   },
+146:   "sdlink-desktop": {
+147:     required: true,
+148:     minVersion: "1.2.4",
+149:     downloadUrl:
+150:       "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+151:     message:
+152:       "구 센터 우회 차단을 위해 SD Link v1.2.4 이상이 필수입니다.",
+153:   },
+154: };
+155: const REQUIRED_POLICY_TTL_MS = 5 * 60 * 1000;
+156: const EXTENSION_CATALOG_URL =
+157:   "https://sd608.github.io/sd-center/update/extensions-catalog.json";
+158: const EXTENSION_CATALOG_TTL_MS = 5 * 60 * 1000;
+159: const FALLBACK_EXTENSION_CATALOG = {
+160:   apps: {
+161:     "sdlink-desktop": {
+162:       name: "SD Link",
+163:       version: "1.2.4",
+164:       downloadUrl:
+165:         "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
+166:       notes: "SD Link 안정화 및 센터 버전 증명",
+167:     },
+168:     "sd-logistics-center-desktop": {
+169:       name: "SD 물류센터",
+170:       version: "1.0.9",
+171:       downloadUrl:
+172:         "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=109",
+173:       notes: "회사 랭크·차량 해금 밸런스 및 진행도 1회 초기화",
+174:     },
+175:     "sd-slot": {
+176:       name: "SD슬롯",
+177:       version: "1.0.6",
+178:       downloadUrl:
+179:         "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_Stage7_Desktop.zip",
+180:       notes: "SD지갑 연동 슬롯 확장팩",
+181:     },
+182:     "sd-mukjippa": {
+183:       name: "SD묵찌빠",
+184:       version: "1.0.1",
+185:       downloadUrl:
+186:         "https://sd608.github.io/sd-center/downloads/extensions/SDMukjippa_Version1_1_Desktop.zip",
+187:       notes: "SD지갑 연동 묵찌빠 확장팩",
+188:     },
+189:     "sta-expansion": {
+190:       name: "STA",
+191:       version: "1.5.1",
+192:       downloadUrl:
+193:         "https://sd608.github.io/sd-center/downloads/extensions/STA_Version6_Desktop.zip?v=151",
+194:       notes: "현금 획득 종료 후 다음 단계 전환 버그 수정",
+195:     },
+196:     "bitcoin": {
+197:       name: "SD비트코인 채굴장",
+198:       version: "1.2.2",
+199:       downloadUrl:
+200:         "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
+201:       notes: "v1.2.2 실행 오류 수정 · GPU 내구도/전기세/채굴 확률 밸런스",
+202:     },
+203:   },
+204: };
+
+--- center:list-apps ---
+1754:     mainWindow.once("ready-to-show", () => {
+1755:       showCenter();
+1756:       sendAppStates();
+1757:     });
+1758: 
+1759:     mainWindow.loadFile(
+1760:       path.join(__dirname, "public", "index.html"),
+1761:     );
+1762:   }
+1763: 
+1764:   function createTray() {
+1765:     tray = new Tray(
+1766:       path.join(
+1767:         __dirname,
+1768:         "public",
+1769:         "icons",
+1770:         "icon.ico",
+1771:       ),
+1772:     );
+1773:     tray.setToolTip("SD종합센터");
+1774:     updateTrayMenu();
+1775:     tray.on("double-click", showCenter);
+1776:   }
+1777: 
+1778:   function registerIpcHandlers() {
+1779:     ipcMain.handle("center:list-apps", () => getAllAppStates());
+1780:     ipcMain.handle("center:list-removed-apps", () =>
+1781:       getRemovedAppStates(),
+1782:     );
+1783:     ipcMain.handle("center:launch-app", (event, id) =>
+1784:       launchApp(id),
+1785:     );
+1786:     ipcMain.handle("center:terminate-app", (event, id) =>
+1787:       terminateApp(id),
+1788:     );
+1789:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+1790:     ipcMain.handle("center:check-app-updates", async () => {
+1791:       try {
+1792:         await refreshExtensionCatalog({ force: true });
+1793:         sendAppStates();
+1794:         const available = appCatalog
+1795:           .filter((entry) => updateAvailabilityFor(entry).updateAvailable)
+1796:           .map((entry) => ({
+1797:             id: entry.id,
+1798:             name: entry.name,
+1799:             currentVersion: rawEntryVersion(entry),
+1800:             latestVersion: updateAvailabilityFor(entry).latestVersion,
+1801:           }));
+1802:         return { ok: true, count: available.length, apps: available };
+1803:       } catch (error) {
+1804:         return { ok: false, error: error.message };
+1805:       }
+1806:     });
+1807:     ipcMain.handle("center:update-app", (event, id) =>
+1808:       updateAppFromCatalog(id),
+1809:     );
+1810:     ipcMain.handle("center:update-all-apps", () =>
+1811:       updateAllAvailableApps(),
+1812:     );
+1813:     ipcMain.handle("center:delete-app", (event, id) =>
+1814:       deleteApp(id),
+1815:     );
+1816:     ipcMain.handle("center:restore-app", (event, id) =>
+1817:       restoreRemovedApp(id),
+1818:     );
+1819:     ipcMain.handle(
+1820:       "center:permanently-delete-removed-app",
+1821:       (event, id) => permanentlyDeleteRemovedApp(id),
+1822:     );
+1823:     ipcMain.handle("center:launch-all", async () => {
+1824:       const results = [];
+1825: 
+1826:       for (const entry of appCatalog) {
+1827:         results.push({
+1828:           id: entry.id,
+1829:           ...(await launchApp(entry.id)),
+1830:         });
+1831:       }
+1832: 
+1833:       return {
+1834:         ok: results.every((result) => result.ok),
+
+--- center:check-app-updates ---
+1765:     tray = new Tray(
+1766:       path.join(
+1767:         __dirname,
+1768:         "public",
+1769:         "icons",
+1770:         "icon.ico",
+1771:       ),
+1772:     );
+1773:     tray.setToolTip("SD종합센터");
+1774:     updateTrayMenu();
+1775:     tray.on("double-click", showCenter);
+1776:   }
+1777: 
+1778:   function registerIpcHandlers() {
+1779:     ipcMain.handle("center:list-apps", () => getAllAppStates());
+1780:     ipcMain.handle("center:list-removed-apps", () =>
+1781:       getRemovedAppStates(),
+1782:     );
+1783:     ipcMain.handle("center:launch-app", (event, id) =>
+1784:       launchApp(id),
+1785:     );
+1786:     ipcMain.handle("center:terminate-app", (event, id) =>
+1787:       terminateApp(id),
+1788:     );
+1789:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+1790:     ipcMain.handle("center:check-app-updates", async () => {
+1791:       try {
+1792:         await refreshExtensionCatalog({ force: true });
+1793:         sendAppStates();
+1794:         const available = appCatalog
+1795:           .filter((entry) => updateAvailabilityFor(entry).updateAvailable)
+1796:           .map((entry) => ({
+1797:             id: entry.id,
+1798:             name: entry.name,
+1799:             currentVersion: rawEntryVersion(entry),
+1800:             latestVersion: updateAvailabilityFor(entry).latestVersion,
+1801:           }));
+1802:         return { ok: true, count: available.length, apps: available };
+1803:       } catch (error) {
+1804:         return { ok: false, error: error.message };
+1805:       }
+1806:     });
+1807:     ipcMain.handle("center:update-app", (event, id) =>
+1808:       updateAppFromCatalog(id),
+1809:     );
+1810:     ipcMain.handle("center:update-all-apps", () =>
+1811:       updateAllAvailableApps(),
+1812:     );
+1813:     ipcMain.handle("center:delete-app", (event, id) =>
+1814:       deleteApp(id),
+1815:     );
+1816:     ipcMain.handle("center:restore-app", (event, id) =>
+1817:       restoreRemovedApp(id),
+1818:     );
+1819:     ipcMain.handle(
+1820:       "center:permanently-delete-removed-app",
+1821:       (event, id) => permanentlyDeleteRemovedApp(id),
+1822:     );
+1823:     ipcMain.handle("center:launch-all", async () => {
+1824:       const results = [];
+1825: 
+1826:       for (const entry of appCatalog) {
+1827:         results.push({
+1828:           id: entry.id,
+1829:           ...(await launchApp(entry.id)),
+1830:         });
+1831:       }
+1832: 
+1833:       return {
+1834:         ok: results.every((result) => result.ok),
+1835:         count: appCatalog.length,
+1836:         results,
+1837:       };
+1838:     });
+1839:     ipcMain.handle("center:terminate-all", () => {
+1840:       terminateAllApps();
+1841:       return { ok: true };
+1842:     });
+1843:     ipcMain.handle("center:show", () => {
+1844:       showCenter();
+1845:       return { ok: true };
+
+--- center:update-all-apps ---
+1785:     );
+1786:     ipcMain.handle("center:terminate-app", (event, id) =>
+1787:       terminateApp(id),
+1788:     );
+1789:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+1790:     ipcMain.handle("center:check-app-updates", async () => {
+1791:       try {
+1792:         await refreshExtensionCatalog({ force: true });
+1793:         sendAppStates();
+1794:         const available = appCatalog
+1795:           .filter((entry) => updateAvailabilityFor(entry).updateAvailable)
+1796:           .map((entry) => ({
+1797:             id: entry.id,
+1798:             name: entry.name,
+1799:             currentVersion: rawEntryVersion(entry),
+1800:             latestVersion: updateAvailabilityFor(entry).latestVersion,
+1801:           }));
+1802:         return { ok: true, count: available.length, apps: available };
+1803:       } catch (error) {
+1804:         return { ok: false, error: error.message };
+1805:       }
+1806:     });
+1807:     ipcMain.handle("center:update-app", (event, id) =>
+1808:       updateAppFromCatalog(id),
+1809:     );
+1810:     ipcMain.handle("center:update-all-apps", () =>
+1811:       updateAllAvailableApps(),
+1812:     );
+1813:     ipcMain.handle("center:delete-app", (event, id) =>
+1814:       deleteApp(id),
+1815:     );
+1816:     ipcMain.handle("center:restore-app", (event, id) =>
+1817:       restoreRemovedApp(id),
+1818:     );
+1819:     ipcMain.handle(
+1820:       "center:permanently-delete-removed-app",
+1821:       (event, id) => permanentlyDeleteRemovedApp(id),
+1822:     );
+1823:     ipcMain.handle("center:launch-all", async () => {
+1824:       const results = [];
+1825: 
+1826:       for (const entry of appCatalog) {
+1827:         results.push({
+1828:           id: entry.id,
+1829:           ...(await launchApp(entry.id)),
+1830:         });
+1831:       }
+1832: 
+1833:       return {
+1834:         ok: results.every((result) => result.ok),
+1835:         count: appCatalog.length,
+1836:         results,
+1837:       };
+1838:     });
+1839:     ipcMain.handle("center:terminate-all", () => {
+1840:       terminateAllApps();
+1841:       return { ok: true };
+1842:     });
+1843:     ipcMain.handle("center:show", () => {
+1844:       showCenter();
+1845:       return { ok: true };
+1846:     });
+1847:     ipcMain.handle("center:hide", () => {
+1848:       mainWindow?.hide();
+1849:       return { ok: true };
+1850:     });
+1851:     ipcMain.handle("center:quit-completely", () =>
+1852:       quitCenterCompletely(),
+1853:     );
+1854:     ipcMain.handle("center:open-app-folder", async (event, id) => {
+1855:       const entry = appById.get(id);
+1856: 
+1857:       if (!entry) {
+1858:         return { ok: false, error: "등록되지 않은 앱입니다." };
+1859:       }
+1860: 
+1861:       const error = await shell.openPath(getChildDirectory(entry));
+1862:       return error ? { ok: false, error } : { ok: true };
+1863:     });
+1864:   }
+1865: 
+
+--- publicAppState ---
+704:       detail: `현재 버전: v${rawEntryVersion(entry)}\n최신 버전: v${availability.latestVersion}\n\n${availability.updateNotes || "최신 확장팩 파일로 교체합니다."}\n\n앱 파일만 교체하며 저장 데이터는 유지합니다.`,
+705:       buttons: ["취소", "업데이트"],
+706:       defaultId: 1,
+707:       cancelId: 0,
+708:       noLink: true,
+709:     });
+710: 
+711:     if (confirmation.response !== 1) {
+712:       return { ok: false, canceled: true };
+713:     }
+714: 
+715:     try {
+716:       const updatedEntry = await installCatalogUpdate(entry, rule);
+717:       await dialog.showMessageBox(mainWindow, {
+718:         type: "info",
+719:         title: "업데이트 완료",
+720:         message: `${entry.name} 업데이트가 완료되었습니다.`,
+721:         detail: `v${rawEntryVersion(updatedEntry)} 버전으로 교체했습니다. 기존 저장 데이터는 유지됩니다.`,
+722:         buttons: ["확인"],
+723:         defaultId: 0,
+724:         noLink: true,
+725:       });
+726:       return {
+727:         ok: true,
+728:         updated: true,
+729:         app: publicAppState(updatedEntry),
+730:       };
+731:     } catch (error) {
+732:       await dialog.showMessageBox(mainWindow, {
+733:         type: "error",
+734:         title: "업데이트 실패",
+735:         message: `${entry.name}을 업데이트하지 못했습니다.`,
+736:         detail: error.message,
+737:         buttons: ["확인"],
+738:         defaultId: 0,
+739:         noLink: true,
+740:       });
+741:       return { ok: false, error: error.message };
+742:     }
+743:   }
+744: 
+745:   async function updateAllAvailableApps() {
+746:     await refreshExtensionCatalog({ force: true });
+747:     const targets = appCatalog.filter(
+748:       (entry) => updateAvailabilityFor(entry).updateAvailable,
+749:     );
+750: 
+751:     if (targets.length === 0) {
+752:       sendAppStates();
+753:       return { ok: true, count: 0, updatedCount: 0, results: [] };
+754:     }
+755: 
+756:     const confirmation = await dialog.showMessageBox(mainWindow, {
+757:       type: "question",
+758:       title: "확장팩 모두 업데이트",
+759:       message: `업데이트 가능한 확장팩 ${targets.length}개를 모두 업데이트할까요?`,
+760:       detail: targets
+761:         .map((entry) => {
+762:           const availability = updateAvailabilityFor(entry);
+763:           return `• ${entry.name}: v${rawEntryVersion(entry)} → v${availability.latestVersion}`;
+764:         })
+765:         .join("\n"),
+766:       buttons: ["취소", "모두 업데이트"],
+767:       defaultId: 1,
+768:       cancelId: 0,
+769:       noLink: true,
+770:     });
+771: 
+772:     if (confirmation.response !== 1) {
+773:       return { ok: false, canceled: true };
+774:     }
+775: 
+776:     const results = [];
+777:     for (const originalEntry of targets) {
+778:       const entry = appById.get(originalEntry.id) || originalEntry;
+779:       const rule = catalogRuleFor(entry);
+780:       try {
+781:         const updatedEntry = await installCatalogUpdate(entry, rule);
+782:         results.push({
+783:           id: entry.id,
+784:           name: entry.name,
+883:       return {
+884:         ok: false,
+885:         blockedByRequiredUpdate: true,
+886:         error: error.message,
+887:       };
+888:     }
+889:   }
+890: 
+891:   function appIconUrl(entry) {
+892:     const fallbackPath = path.join(
+893:       __dirname,
+894:       "public",
+895:       "icons",
+896:       "icon-512.png",
+897:     );
+898:     const candidatePath = entry.icon
+899:       ? path.join(entry.directory, entry.icon)
+900:       : fallbackPath;
+901:     const iconPath = fs.existsSync(candidatePath)
+902:       ? candidatePath
+903:       : fallbackPath;
+904: 
+905:     return pathToFileURL(iconPath).href;
+906:   }
+907: 
+908:   function publicAppState(entry) {
+909:     const child = runningApps.get(entry.id);
+910: 
+911:     return {
+912:       id: entry.id,
+913:       name: entry.name,
+914:       version: displayEntryVersion(entry),
+915:       description: entry.description,
+916:       improvement: entry.improvement,
+917:       accent: entry.accent,
+918:       builtin: Boolean(entry.builtin),
+919:       sourceZipName: entry.sourceZipName || "",
+920:       running: Boolean(child && child.exitCode === null),
+921:       directory: getChildDirectory(entry),
+922:       iconUrl: appIconUrl(entry),
+923:       rawVersion: rawEntryVersion(entry),
+924:       ...updateRequirementFor(entry),
+925:       ...updateAvailabilityFor(entry),
+926:     };
+927:   }
+928: 
+929:   function getAllAppStates() {
+930:     return appCatalog.map(publicAppState);
+931:   }
+932: 
+933:   function publicRemovedAppState(entry) {
+934:     const mainPath = entry.directory
+935:       ? path.join(entry.directory, entry.entry || "main.js")
+936:       : "";
+937:     const packageAvailable = Boolean(
+938:       entry.packagePath && fs.existsSync(entry.packagePath),
+939:     );
+940:     const filesAvailable = Boolean(
+941:       entry.builtin || (mainPath && fs.existsSync(mainPath)),
+942:     );
+943: 
+944:     return {
+945:       id: entry.id,
+946:       name: entry.name,
+947:       version: entry.version,
+948:       description: entry.description,
+949:       improvement: entry.improvement,
+950:       accent: entry.accent,
+951:       builtin: Boolean(entry.builtin),
+952:       sourceZipName: entry.sourceZipName || "",
+953:       removedAt: entry.removedAt || "",
+954:       restorable: filesAvailable || packageAvailable,
+955:       iconUrl: appIconUrl(entry),
+956:     };
+957:   }
+958: 
+959:   function getRemovedAppStates() {
+960:     return removedCatalog.map(publicRemovedAppState);
+961:   }
+962: 
+963:   function sendAppStates() {
+905:     return pathToFileURL(iconPath).href;
+906:   }
+907: 
+908:   function publicAppState(entry) {
+909:     const child = runningApps.get(entry.id);
+910: 
+911:     return {
+912:       id: entry.id,
+913:       name: entry.name,
+914:       version: displayEntryVersion(entry),
+915:       description: entry.description,
+916:       improvement: entry.improvement,
+917:       accent: entry.accent,
+918:       builtin: Boolean(entry.builtin),
+919:       sourceZipName: entry.sourceZipName || "",
+920:       running: Boolean(child && child.exitCode === null),
+921:       directory: getChildDirectory(entry),
+922:       iconUrl: appIconUrl(entry),
+923:       rawVersion: rawEntryVersion(entry),
+924:       ...updateRequirementFor(entry),
+925:       ...updateAvailabilityFor(entry),
+926:     };
+927:   }
+928: 
+929:   function getAllAppStates() {
+930:     return appCatalog.map(publicAppState);
+931:   }
+932: 
+933:   function publicRemovedAppState(entry) {
+934:     const mainPath = entry.directory
+935:       ? path.join(entry.directory, entry.entry || "main.js")
+936:       : "";
+937:     const packageAvailable = Boolean(
+938:       entry.packagePath && fs.existsSync(entry.packagePath),
+939:     );
+940:     const filesAvailable = Boolean(
+941:       entry.builtin || (mainPath && fs.existsSync(mainPath)),
+942:     );
+943: 
+944:     return {
+945:       id: entry.id,
+946:       name: entry.name,
+947:       version: entry.version,
+948:       description: entry.description,
+949:       improvement: entry.improvement,
+950:       accent: entry.accent,
+951:       builtin: Boolean(entry.builtin),
+952:       sourceZipName: entry.sourceZipName || "",
+953:       removedAt: entry.removedAt || "",
+954:       restorable: filesAvailable || packageAvailable,
+955:       iconUrl: appIconUrl(entry),
+956:     };
+957:   }
+958: 
+959:   function getRemovedAppStates() {
+960:     return removedCatalog.map(publicRemovedAppState);
+961:   }
+962: 
+963:   function sendAppStates() {
+964:     if (!mainWindow || mainWindow.isDestroyed()) {
+965:       return;
+966:     }
+967: 
+968:     mainWindow.webContents.send(
+969:       "center:app-states",
+970:       getAllAppStates(),
+971:     );
+972:     mainWindow.webContents.send(
+973:       "center:removed-app-states",
+974:       getRemovedAppStates(),
+975:     );
+976:   }
+977: 
+978:   function showCenter() {
+979:     if (!mainWindow || mainWindow.isDestroyed()) {
+980:       return;
+981:     }
+982: 
+983:     if (mainWindow.isMinimized()) {
+984:       mainWindow.restore();
+985:     }
+1327:             oldRecycleDirectory,
+1328:             REMOVED_APPS_ROOT,
+1329:           );
+1330:         }
+1331: 
+1332:         if (
+1333:           oldPackagePath &&
+1334:           oldPackagePath !== packagePath &&
+1335:           fs.existsSync(oldPackagePath)
+1336:         ) {
+1337:           removeFileIfManaged(
+1338:             oldPackagePath,
+1339:             APP_PACKAGES_ROOT,
+1340:           );
+1341:         }
+1342:       }
+1343: 
+1344:       registry = upsertCustomApp(registry, appEntry);
+1345:       saveRegistry(REGISTRY_PATH, registry);
+1346:       refreshCatalogAndUi();
+1347: 
+1348:       return {
+1349:         ok: true,
+1350:         updated: Boolean(existing || removedExisting),
+1351:         restoredFromBin: Boolean(removedExisting),
+1352:         app: publicAppState(appById.get(appEntry.id)),
+1353:       };
+1354:     } catch (error) {
+1355:       return {
+1356:         ok: false,
+1357:         error: error.message,
+1358:       };
+1359:     }
+1360:   }
+1361: 
+1362:   function safeDataDirectory(entry) {
+1363:     const candidate = path.resolve(
+1364:       APP_DATA_ROOT,
+1365:       entry.userDataFolder,
+1366:     );
+1367:     const rootPrefix = `${path.resolve(APP_DATA_ROOT)}${path.sep}`;
+1368:     const protectedCenterDirectory = path.resolve(CENTER_DATA_ROOT);
+1369: 
+1370:     if (
+1371:       !candidate.startsWith(rootPrefix) ||
+1372:       candidate === protectedCenterDirectory
+1373:     ) {
+1374:       throw new Error("저장 데이터 경로가 안전하지 않습니다.");
+1375:     }
+1376: 
+1377:     return candidate;
+1378:   }
+1379: 
+1380:   async function deleteApp(id) {
+1381:     const entry = appById.get(id);
+1382: 
+1383:     if (!entry) {
+1384:       return { ok: false, error: "등록되지 않은 앱입니다." };
+1385:     }
+1386: 
+1387:     const detail = entry.builtin
+1388:       ? "센터에서 제거하면 삭제된 앱 보관함으로 이동합니다. 기본 앱 원본은 센터에 포함되어 있어 언제든 원클릭 재설치할 수 있습니다."
+1389:       : "센터에서 제거하면 앱 파일을 삭제된 앱 보관함으로 옮기고 저장 데이터와 ZIP 백업은 유지합니다.";
+1390:     const destructiveLabel = entry.builtin
+1391:       ? "데이터까지 삭제 후 보관함 이동"
+1392:       : "앱과 저장 데이터 완전 삭제";
+1393:     const confirmation = await dialog.showMessageBox(mainWindow, {
+1394:       type: "warning",
+1395:       title: "앱 제거",
+1396:       message: `${entry.name}을 센터에서 제거할까요?`,
+1397:       detail: `${detail}\n\n진행 데이터를 삭제하면 복구하기 어렵습니다.`,
+1398:       buttons: ["취소", "삭제된 앱 보관함으로 이동", destructiveLabel],
+1399:       defaultId: 1,
+1400:       cancelId: 0,
+1401:       noLink: true,
+1402:     });
+1403: 
+1404:     if (confirmation.response === 0) {
+1405:       return { ok: false, canceled: true };
+1406:     }
+1407: 
+
+--- registerIpcHandlers ---
+1753: 
+1754:     mainWindow.once("ready-to-show", () => {
+1755:       showCenter();
+1756:       sendAppStates();
+1757:     });
+1758: 
+1759:     mainWindow.loadFile(
+1760:       path.join(__dirname, "public", "index.html"),
+1761:     );
+1762:   }
+1763: 
+1764:   function createTray() {
+1765:     tray = new Tray(
+1766:       path.join(
+1767:         __dirname,
+1768:         "public",
+1769:         "icons",
+1770:         "icon.ico",
+1771:       ),
+1772:     );
+1773:     tray.setToolTip("SD종합센터");
+1774:     updateTrayMenu();
+1775:     tray.on("double-click", showCenter);
+1776:   }
+1777: 
+1778:   function registerIpcHandlers() {
+1779:     ipcMain.handle("center:list-apps", () => getAllAppStates());
+1780:     ipcMain.handle("center:list-removed-apps", () =>
+1781:       getRemovedAppStates(),
+1782:     );
+1783:     ipcMain.handle("center:launch-app", (event, id) =>
+1784:       launchApp(id),
+1785:     );
+1786:     ipcMain.handle("center:terminate-app", (event, id) =>
+1787:       terminateApp(id),
+1788:     );
+1789:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+1790:     ipcMain.handle("center:check-app-updates", async () => {
+1791:       try {
+1792:         await refreshExtensionCatalog({ force: true });
+1793:         sendAppStates();
+1794:         const available = appCatalog
+1795:           .filter((entry) => updateAvailabilityFor(entry).updateAvailable)
+1796:           .map((entry) => ({
+1797:             id: entry.id,
+1798:             name: entry.name,
+1799:             currentVersion: rawEntryVersion(entry),
+1800:             latestVersion: updateAvailabilityFor(entry).latestVersion,
+1801:           }));
+1802:         return { ok: true, count: available.length, apps: available };
+1803:       } catch (error) {
+1804:         return { ok: false, error: error.message };
+1805:       }
+1806:     });
+1807:     ipcMain.handle("center:update-app", (event, id) =>
+1808:       updateAppFromCatalog(id),
+1809:     );
+1810:     ipcMain.handle("center:update-all-apps", () =>
+1811:       updateAllAvailableApps(),
+1812:     );
+1813:     ipcMain.handle("center:delete-app", (event, id) =>
+1814:       deleteApp(id),
+1815:     );
+1816:     ipcMain.handle("center:restore-app", (event, id) =>
+1817:       restoreRemovedApp(id),
+1818:     );
+1819:     ipcMain.handle(
+1820:       "center:permanently-delete-removed-app",
+1821:       (event, id) => permanentlyDeleteRemovedApp(id),
+1822:     );
+1823:     ipcMain.handle("center:launch-all", async () => {
+1824:       const results = [];
+1825: 
+1826:       for (const entry of appCatalog) {
+1827:         results.push({
+1828:           id: entry.id,
+1829:           ...(await launchApp(entry.id)),
+1830:         });
+1831:       }
+1832: 
+1833:       return {
+1845:       return { ok: true };
+1846:     });
+1847:     ipcMain.handle("center:hide", () => {
+1848:       mainWindow?.hide();
+1849:       return { ok: true };
+1850:     });
+1851:     ipcMain.handle("center:quit-completely", () =>
+1852:       quitCenterCompletely(),
+1853:     );
+1854:     ipcMain.handle("center:open-app-folder", async (event, id) => {
+1855:       const entry = appById.get(id);
+1856: 
+1857:       if (!entry) {
+1858:         return { ok: false, error: "등록되지 않은 앱입니다." };
+1859:       }
+1860: 
+1861:       const error = await shell.openPath(getChildDirectory(entry));
+1862:       return error ? { ok: false, error } : { ok: true };
+1863:     });
+1864:   }
+1865: 
+1866:   app.whenReady().then(() => {
+1867:     app.setAppUserModelId("com.sdcenter.desktop");
+1868:     createMainWindow();
+1869:     createTray();
+1870:     registerIpcHandlers();
+1871:     void Promise.all([
+1872:       refreshRequiredPolicy({ force: true }),
+1873:       refreshExtensionCatalog({ force: true }),
+1874:     ]).then(() => {
+1875:       sendAppStates();
+1876:     });
+1877: 
+1878:     globalShortcut.register("CommandOrControl+Shift+S", showCenter);
+1879:   });
+1880: 
+1881:   app.on("second-instance", showCenter);
+1882:   app.on("activate", showCenter);
+1883:   app.on("window-all-closed", () => {
+1884:     // 종합센터는 시스템 트레이와 단축키를 위해 계속 실행합니다.
+1885:   });
+1886:   app.on("before-quit", () => {
+1887:     isQuitting = true;
+1888:     globalShortcut.unregisterAll();
+1889:   });
+1890: }
+
+--- createMainWindow ---
+1670:       type: "question",
+1671:       title: "종합센터 완전 종료",
+1672:       message: "SD종합센터를 완전히 종료할까요?",
+1673:       detail:
+1674:         runningCount > 0
+1675:           ? `현재 실행 중인 연결 앱 ${runningCount}개도 함께 종료됩니다.`
+1676:           : "시스템 트레이와 단축키를 포함해 종합센터가 완전히 종료됩니다.",
+1677:       buttons: ["취소", "완전히 종료"],
+1678:       defaultId: 0,
+1679:       cancelId: 0,
+1680:       noLink: true,
+1681:     });
+1682: 
+1683:     if (confirmation.response !== 1) {
+1684:       return { ok: false, canceled: true };
+1685:     }
+1686: 
+1687:     isQuitting = true;
+1688:     await Promise.all(
+1689:       appCatalog.map((entry) => terminateAppAndWait(entry.id)),
+1690:     );
+1691:     app.quit();
+1692:     return { ok: true };
+1693:   }
+1694: 
+1695:   function createMainWindow() {
+1696:     mainWindow = new BrowserWindow({
+1697:       width: 1380,
+1698:       height: 900,
+1699:       minWidth: 980,
+1700:       minHeight: 700,
+1701:       title: "SD종합센터",
+1702:       backgroundColor: "#07101d",
+1703:       autoHideMenuBar: true,
+1704:       show: false,
+1705:       icon: path.join(
+1706:         __dirname,
+1707:         "public",
+1708:         "icons",
+1709:         "icon-512.png",
+1710:       ),
+1711:       webPreferences: {
+1712:         preload: path.join(__dirname, "preload.js"),
+1713:         nodeIntegration: false,
+1714:         contextIsolation: true,
+1715:         sandbox: true,
+1716:         webSecurity: true,
+1717:         allowRunningInsecureContent: false,
+1718:       },
+1719:     });
+1720: 
+1721:     mainWindow.webContents.setWindowOpenHandler(() => ({
+1722:       action: "deny",
+1723:     }));
+1724: 
+1725:     mainWindow.webContents.on(
+1726:       "will-attach-webview",
+1727:       (event) => event.preventDefault(),
+1728:     );
+1729: 
+1730:     mainWindow.webContents.on(
+1731:       "will-navigate",
+1732:       (event, navigationUrl) => {
+1733:         try {
+1734:           const target = new URL(navigationUrl);
+1735: 
+1736:           if (target.protocol !== "file:") {
+1737:             event.preventDefault();
+1738:           }
+1739:         } catch {
+1740:           event.preventDefault();
+1741:         }
+1742:       },
+1743:     );
+1744: 
+1745:     mainWindow.on("close", (event) => {
+1746:       if (isQuitting) {
+1747:         return;
+1748:       }
+1749: 
+1750:       event.preventDefault();
+1843:     ipcMain.handle("center:show", () => {
+1844:       showCenter();
+1845:       return { ok: true };
+1846:     });
+1847:     ipcMain.handle("center:hide", () => {
+1848:       mainWindow?.hide();
+1849:       return { ok: true };
+1850:     });
+1851:     ipcMain.handle("center:quit-completely", () =>
+1852:       quitCenterCompletely(),
+1853:     );
+1854:     ipcMain.handle("center:open-app-folder", async (event, id) => {
+1855:       const entry = appById.get(id);
+1856: 
+1857:       if (!entry) {
+1858:         return { ok: false, error: "등록되지 않은 앱입니다." };
+1859:       }
+1860: 
+1861:       const error = await shell.openPath(getChildDirectory(entry));
+1862:       return error ? { ok: false, error } : { ok: true };
+1863:     });
+1864:   }
+1865: 
+1866:   app.whenReady().then(() => {
+1867:     app.setAppUserModelId("com.sdcenter.desktop");
+1868:     createMainWindow();
+1869:     createTray();
+1870:     registerIpcHandlers();
+1871:     void Promise.all([
+1872:       refreshRequiredPolicy({ force: true }),
+1873:       refreshExtensionCatalog({ force: true }),
+1874:     ]).then(() => {
+1875:       sendAppStates();
+1876:     });
+1877: 
+1878:     globalShortcut.register("CommandOrControl+Shift+S", showCenter);
+1879:   });
+1880: 
+1881:   app.on("second-instance", showCenter);
+1882:   app.on("activate", showCenter);
+1883:   app.on("window-all-closed", () => {
+1884:     // 종합센터는 시스템 트레이와 단축키를 위해 계속 실행합니다.
+1885:   });
+1886:   app.on("before-quit", () => {
+1887:     isQuitting = true;
+1888:     globalShortcut.unregisterAll();
+1889:   });
+1890: }
+
+--- app.getVersion ---
+
+===== preload.js =====
+"use strict";
+
+const { contextBridge, ipcRenderer } = require("electron");
+
+function invoke(channel, ...args) {
+  return ipcRenderer.invoke(channel, ...args);
+}
+
+function subscribe(channel, callback) {
+  if (typeof callback !== "function") {
+    return () => {};
+  }
+
+  const listener = (_event, payload) => callback(payload);
+  ipcRenderer.on(channel, listener);
+  return () => ipcRenderer.removeListener(channel, listener);
+}
+
+contextBridge.exposeInMainWorld("sdCenter", {
+  listApps: () => invoke("center:list-apps"),
+  listRemovedApps: () => invoke("center:list-removed-apps"),
+  launchApp: (id) => invoke("center:launch-app", id),
+  terminateApp: (id) => invoke("center:terminate-app", id),
+  addAppZip: () => invoke("center:add-app-zip"),
+  deleteApp: (id) => invoke("center:delete-app", id),
+  restoreApp: (id) => invoke("center:restore-app", id),
+  permanentlyDeleteRemovedApp: (id) =>
+    invoke("center:permanently-delete-removed-app", id),
+  launchAll: () => invoke("center:launch-all"),
+  terminateAll: () => invoke("center:terminate-all"),
+  show: () => invoke("center:show"),
+  hide: () => invoke("center:hide"),
+  quitCompletely: () => invoke("center:quit-completely"),
+  openAppFolder: (id) => invoke("center:open-app-folder", id),
+
+  // v2.1.3: 홈페이지 확장팩 카탈로그 기반 자동 업데이트
+  checkAppUpdates: () => invoke("center:check-app-updates"),
+  updateApp: (id) => invoke("center:update-app", id),
+  updateAllApps: () => invoke("center:update-all-apps"),
+
+  onAppStates: (callback) => subscribe("center:app-states", callback),
+  onRemovedAppStates: (callback) =>
+    subscribe("center:removed-app-states", callback),
+});
+
+===== src/app-registry.js =====
+"use strict";
+
+const fs = require("node:fs");
+const path = require("node:path");
+const crypto = require("node:crypto");
+const AdmZip = require("adm-zip");
+
+const MAX_ZIP_ENTRIES = 20000;
+const MAX_UNCOMPRESSED_BYTES = 2 * 1024 * 1024 * 1024;
+const ALLOWED_ACCENTS = new Set([
+  "blue",
+  "gold",
+  "purple",
+  "green",
+  "orange",
+  "cyan",
+  "red",
+]);
+
+function emptyRegistry() {
+  return {
+    version: 2,
+    hiddenBuiltinIds: [],
+    customApps: [],
+    removedApps: [],
+  };
+}
+
+function ensureDirectory(directoryPath) {
+  fs.mkdirSync(directoryPath, { recursive: true });
+}
+
+function uniqueStrings(values) {
+  return [...new Set(
+    (Array.isArray(values) ? values : [])
+      .filter((value) => typeof value === "string" && value.trim())
+      .map((value) => value.trim()),
+  )];
+}
+
+function loadRegistry(registryPath) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+
+    return {
+      version: 2,
+      hiddenBuiltinIds: uniqueStrings(parsed.hiddenBuiltinIds),
+      customApps: Array.isArray(parsed.customApps)
+        ? parsed.customApps.filter(
+            (entry) => entry && typeof entry.id === "string",
+          )
+        : [],
+      removedApps: Array.isArray(parsed.removedApps)
+        ? parsed.removedApps.filter(
+            (entry) => entry && typeof entry.id === "string",
+          )
+        : [],
+    };
+  } catch {
+    return emptyRegistry();
+  }
+}
+
+function saveRegistry(registryPath, registry) {
+  ensureDirectory(path.dirname(registryPath));
+  const temporaryPath = `${registryPath}.${process.pid}.tmp`;
+  fs.writeFileSync(
+    temporaryPath,
+    `${JSON.stringify({
+      version: 2,
+      hiddenBuiltinIds: uniqueStrings(registry.hiddenBuiltinIds),
+      customApps: Array.isArray(registry.customApps)
+        ? registry.customApps
+        : [],
+      removedApps: Array.isArray(registry.removedApps)
+        ? registry.removedApps
+        : [],
+    }, null, 2)}\n`,
+    "utf8",
+  );
+  fs.renameSync(temporaryPath, registryPath);
+}
+
+function sanitizeAppId(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64);
+
+  return normalized || `sd-app-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function sanitizeFolderName(value, fallback = "SD앱") {
+  const sanitized = String(value || "")
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[. ]+$/g, "")
+    .slice(0, 80);
+
+  return sanitized || fallback;
+}
+
+function normalizeZipPath(value) {
+  const normalized = String(value || "").replaceAll("\\", "/");
+
+  if (
+    !normalized ||
+    normalized.includes("\u0000") ||
+    normalized.startsWith("/") ||
+    /^[a-zA-Z]:/.test(normalized)
+  ) {
+    throw new Error("ZIP 안에 허용되지 않는 경로가 있습니다.");
+  }
+
+  const parts = normalized.split("/").filter(Boolean);
+
+  if (parts.some((part) => part === "." || part === "..")) {
+    throw new Error("ZIP 안에 상위 폴더로 이동하는 위험한 경로가 있습니다.");
+  }
+
+  return parts.join("/");
+}
+
+function isSymlinkEntry(entry) {
+  const unixMode = (Number(entry.attr || 0) >>> 16) & 0o170000;
+  return unixMode === 0o120000;
+}
+
+function readJsonEntry(entry, label) {
+  try {
+    return JSON.parse(entry.getData().toString("utf8"));
+  } catch {
+    throw new Error(`${label} 파일을 읽을 수 없습니다.`);
+  }
+}
+
+function isIgnoredManifestPath(entryName) {
+  const lower = entryName.toLowerCase();
+  return (
+    lower.includes("/node_modules/") ||
+    lower.startsWith("node_modules/") ||
+    lower.includes("/__macosx/") ||
+    lower.startsWith("__macosx/")
+  );
+}
+
+function pathDepth(entryName) {
+  return entryName.split("/").filter(Boolean).length;
+}
+
+function joinZipPath(prefix, relativePath) {
+  const cleanRelative = normalizeZipPath(relativePath);
+  return prefix ? `${prefix}${cleanRelative}` : cleanRelative;
+}
+
+function inspectZip(zipPath) {
+  if (!zipPath || path.extname(zipPath).toLowerCase() !== ".zip") {
+    throw new Error("ZIP 파일만 추가할 수 있습니다.");
+  }
+
+  const zip = new AdmZip(zipPath);
+  const entries = zip.getEntries();
+
+  if (entries.length === 0) {
+    throw new Error("ZIP 파일이 비어 있습니다.");
+  }
+
+  if (entries.length > MAX_ZIP_ENTRIES) {
+    throw new Error("ZIP 안의 파일 수가 너무 많습니다.");
+  }
+
+  let totalBytes = 0;
+  const entryByName = new Map();
+
+  for (const entry of entries) {
+    const normalizedName = normalizeZipPath(entry.entryName);
+
+    if (isSymlinkEntry(entry)) {
+      throw new Error("심볼릭 링크가 포함된 ZIP은 추가할 수 없습니다.");
+    }
+
+    totalBytes += Number(entry.header?.size || 0);
+
+    if (totalBytes > MAX_UNCOMPRESSED_BYTES) {
+      throw new Error("압축을 푼 뒤 용량이 2GB를 넘는 앱은 추가할 수 없습니다.");
+    }
+
+    entryByName.set(normalizedName, entry);
+  }
+
+  const packageEntries = entries
+    .filter((entry) => {
+      const normalizedName = normalizeZipPath(entry.entryName);
+      return (
+        !entry.isDirectory &&
+        normalizedName.toLowerCase().endsWith("package.json") &&
+        !isIgnoredManifestPath(normalizedName) &&
+        pathDepth(normalizedName) <= 4
+      );
+    })
+    .sort((left, right) => {
+      const leftName = normalizeZipPath(left.entryName);
+      const rightName = normalizeZipPath(right.entryName);
+      return pathDepth(leftName) - pathDepth(rightName);
+    });
+
+  if (packageEntries.length === 0) {
+    throw new Error("앱의 package.json을 찾지 못했습니다.");
+  }
+
+  const packageEntry = packageEntries[0];
+  const packageEntryName = normalizeZipPath(packageEntry.entryName);
+  const rootDirectory = path.posix.dirname(packageEntryName);
+  const rootPrefix = rootDirectory === "." ? "" : `${rootDirectory}/`;
+  const packageJson = readJsonEntry(packageEntry, "package.json");
+  const sdManifestName = `${rootPrefix}sd-app.json`;
+  const sdManifestEntry = entryByName.get(sdManifestName);
+  const sdManifest = sdManifestEntry
+    ? readJsonEntry(sdManifestEntry, "sd-app.json")
+    : {};
+
+  const entryFile = normalizeZipPath(
+    sdManifest.entry || packageJson.main || "main.js",
+  );
+  const fullEntryName = joinZipPath(rootPrefix, entryFile);
+  const mainEntry = entryByName.get(fullEntryName);
+
+  if (!mainEntry || mainEntry.isDirectory) {
+    throw new Error(`앱 실행 파일(${entryFile})을 ZIP에서 찾지 못했습니다.`);
+  }
+
+  const productName = sanitizeFolderName(
+    sdManifest.name ||
+      packageJson.productName ||
+      packageJson.name ||
+      "SD 새 앱",
+    "SD 새 앱",
+  );
+  const id = sanitizeAppId(
+    sdManifest.id || packageJson.name || productName,
+  );
+  const version = String(
+    sdManifest.version || packageJson.version || "1.0.0",
+  ).slice(0, 40);
+  const displayVersion = String(
+    sdManifest.displayVersion || `ZIP 앱 · v${version}`,
+  ).slice(0, 80);
+  const description = String(
+    sdManifest.description ||
+      packageJson.description ||
+      "ZIP 파일로 추가된 SD 앱입니다.",
+  ).slice(0, 300);
+  const improvement = String(
+    sdManifest.improvement ||
+      "종합센터의 ZIP 앱 추가 기능으로 설치되었습니다.",
+  ).slice(0, 300);
+  const accent = ALLOWED_ACCENTS.has(sdManifest.accent)
+    ? sdManifest.accent
+    : "cyan";
+
+  let icon = String(
+    sdManifest.icon || "public/icons/icon-512.png",
+  );
+
+  try {
+    icon = normalizeZipPath(icon);
+  } catch {
+    icon = "";
+  }
+
+  if (icon && !entryByName.has(joinZipPath(rootPrefix, icon))) {
+    icon = "";
+  }
+
+  return {
+    zipPath,
+    rootPrefix,
+    metadata: {
+      id,
+      name: productName,
+      productName,
+      version: displayVersion,
+      rawVersion: version,
+      description,
+      improvement,
+      accent,
+      icon,
+      entry: entryFile,
+      userDataFolder: sanitizeFolderName(
+        sdManifest.userDataFolder || productName,
+        `SD앱-${id}`,
+      ),
+      builtin: false,
+      sourceZipName: path.basename(zipPath),
+    },
+  };
+}
+
+function isEntryInsideRoot(entryName, rootPrefix) {
+  if (!rootPrefix) {
+    return true;
+  }
+
+  return entryName === rootPrefix.slice(0, -1) || entryName.startsWith(rootPrefix);
+}
+
+function installInspectedZip(inspected, destinationDirectory) {
+  const zip = new AdmZip(inspected.zipPath);
+  const entries = zip.getEntries();
+  const parentDirectory = path.dirname(destinationDirectory);
+  const stagingDirectory = path.join(
+    parentDirectory,
+    `.install-${inspected.metadata.id}-${crypto.randomUUID()}`,
+  );
+
+  ensureDirectory(parentDirectory);
+  ensureDirectory(stagingDirectory);
+
+  try {
+    for (const entry of entries) {
+      const entryName = normalizeZipPath(entry.entryName);
+
+      if (!isEntryInsideRoot(entryName, inspected.rootPrefix)) {
+        continue;
+      }
+
+      const relativeName = inspected.rootPrefix
+        ? entryName.slice(inspected.rootPrefix.length)
+        : entryName;
+
+      if (!relativeName) {
+        continue;
+      }
+
+      const safeRelativeName = normalizeZipPath(relativeName);
+      const outputPath = path.resolve(stagingDirectory, safeRelativeName);
+      const stagingRoot = `${path.resolve(stagingDirectory)}${path.sep}`;
+
+      if (!outputPath.startsWith(stagingRoot)) {
+        throw new Error("ZIP 압축 해제 경로 검증에 실패했습니다.");
+      }
+
+      if (entry.isDirectory) {
+        ensureDirectory(outputPath);
+        continue;
+      }
+
+      ensureDirectory(path.dirname(outputPath));
+      fs.writeFileSync(outputPath, entry.getData());
+    }
+
+    const installedMainPath = path.join(
+      stagingDirectory,
+      inspected.metadata.entry,
+    );
+
+    if (!fs.existsSync(installedMainPath)) {
+      throw new Error("압축 해제 후 앱 실행 파일을 찾지 못했습니다.");
+    }
+
+    const backupDirectory = `${destinationDirectory}.backup-${crypto.randomUUID()}`;
+    const hadExistingInstall = fs.existsSync(destinationDirectory);
+
+    if (hadExistingInstall) {
+      fs.renameSync(destinationDirectory, backupDirectory);
+    }
+
+    try {
+      fs.renameSync(stagingDirectory, destinationDirectory);
+
+      if (hadExistingInstall) {
+        fs.rmSync(backupDirectory, {
+          recursive: true,
+          force: true,
+        });
+      }
+    } catch (error) {
+      if (hadExistingInstall && fs.existsSync(backupDirectory)) {
+        if (fs.existsSync(destinationDirectory)) {
+          fs.rmSync(destinationDirectory, {
+            recursive: true,
+            force: true,
+          });
+        }
+
+        fs.renameSync(backupDirectory, destinationDirectory);
+      }
+
+      throw error;
+    }
+  } catch (error) {
+    fs.rmSync(stagingDirectory, {
+      recursive: true,
+      force: true,
+    });
+    throw error;
+  }
+}
+
+function readBuiltinRawVersion(directory, fallbackVersion = "") {
+  const candidates = [
+    path.join(directory, "sd-app.json"),
+    path.join(directory, "package.json"),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(candidate, "utf8"));
+      const version = String(parsed?.version || "").trim();
+      if (/^\d+(?:\.\d+){1,3}$/.test(version)) {
+        return version;
+      }
+    } catch {
+      // Missing/invalid manifest: continue to the next source.
+    }
+  }
+
+  const match = String(fallbackVersion || "").match(/v?(\d+(?:\.\d+){1,3})/i);
+  return match ? match[1] : "0.0.0";
+}
+
+function resolveCatalog({
+  builtinCatalog,
+  registry,
+  builtinRoot,
+}) {
+  const hiddenIds = new Set(registry.hiddenBuiltinIds || []);
+  const builtins = builtinCatalog
+    .filter((entry) => !hiddenIds.has(entry.id))
+    .map((entry) => {
+      const directory = path.join(builtinRoot, entry.folder);
+
+      return {
+        ...entry,
+        builtin: true,
+        entry: entry.entry || "main.js",
+        directory,
+        rawVersion: readBuiltinRawVersion(
+          directory,
+          entry.rawVersion || entry.version,
+        ),
+      };
+    });
+
+  const builtinIds = new Set(builtinCatalog.map((entry) => entry.id));
+  const customApps = (registry.customApps || [])
+    .filter((entry) => {
+      return (
+        entry &&
+        typeof entry.id === "string" &&
+        !builtinIds.has(entry.id) &&
+        typeof entry.directory === "string" &&
+        fs.existsSync(path.join(entry.directory, entry.entry || "main.js"))
+      );
+    })
+    .map((entry) => ({
+      ...entry,
+      builtin: false,
+    }));
+
+  return [...builtins, ...customApps];
+}
+
+function resolveRemovedCatalog({
+  builtinCatalog,
+  registry,
+  builtinRoot,
+}) {
+  const removedById = new Map(
+    (registry.removedApps || []).map((entry) => [entry.id, entry]),
+  );
+  const hiddenIds = new Set(registry.hiddenBuiltinIds || []);
+
+  const removedBuiltins = builtinCatalog
+    .filter((entry) => hiddenIds.has(entry.id))
+    .map((entry) => ({
+      ...entry,
+      ...(removedById.get(entry.id) || {}),
+      builtin: true,
+      entry: entry.entry || "main.js",
+      directory: path.join(builtinRoot, entry.folder),
+      removedAt:
+        removedById.get(entry.id)?.removedAt || "",
+    }));
+
+  const removedCustomApps = (registry.removedApps || [])
+    .filter((entry) => entry && !entry.builtin)
+    .map((entry) => ({
+      ...entry,
+      builtin: false,
+      directory:
+        entry.recycleDirectory || entry.directory || "",
+    }));
+
+  return [...removedBuiltins, ...removedCustomApps];
+}
+
+function upsertCustomApp(registry, appEntry) {
+  const next = {
+    ...registry,
+    customApps: [...(registry.customApps || [])],
+    removedApps: [...(registry.removedApps || [])].filter(
+      (entry) => entry.id !== appEntry.id,
+    ),
+  };
+  const existingIndex = next.customApps.findIndex(
+    (entry) => entry.id === appEntry.id,
+  );
+
+  if (existingIndex >= 0) {
+    next.customApps[existingIndex] = appEntry;
+  } else {
+    next.customApps.push(appEntry);
+  }
+
+  return next;
+}
+
+function moveAppToRemoved(registry, appEntry) {
+  const next = {
+    ...registry,
+    hiddenBuiltinIds: [...(registry.hiddenBuiltinIds || [])],
+    customApps: [...(registry.customApps || [])],
+    removedApps: [...(registry.removedApps || [])].filter(
+      (entry) => entry.id !== appEntry.id,
+    ),
+  };
+
+  if (appEntry.builtin) {
+    if (!next.hiddenBuiltinIds.includes(appEntry.id)) {
+      next.hiddenBuiltinIds.push(appEntry.id);
+    }
+  } else {
+    next.customApps = next.customApps.filter(
+      (entry) => entry.id !== appEntry.id,
+    );
+  }
+
+  next.removedApps.push({
+    ...appEntry,
+    removedAt: new Date().toISOString(),
+  });
+
+  return next;
+}
+
+function restoreAppInRegistry(registry, appEntry) {
+  const next = {
+    ...registry,
+    hiddenBuiltinIds: (registry.hiddenBuiltinIds || []).filter(
+      (id) => id !== appEntry.id,
+    ),
+    customApps: [...(registry.customApps || [])],
+    removedApps: (registry.removedApps || []).filter(
+      (entry) => entry.id !== appEntry.id,
+    ),
+  };
+
+  if (!appEntry.builtin) {
+    const cleanedEntry = { ...appEntry };
+    delete cleanedEntry.removedAt;
+    delete cleanedEntry.recycleDirectory;
+    delete cleanedEntry.originalDirectory;
+    delete cleanedEntry.restorable;
+
+    const existingIndex = next.customApps.findIndex(
+      (entry) => entry.id === cleanedEntry.id,
+    );
+
+    if (existingIndex >= 0) {
+      next.customApps[existingIndex] = cleanedEntry;
+    } else {
+      next.customApps.push(cleanedEntry);
+    }
+  }
+
+  return next;
+}
+
+function permanentlyRemoveApp(registry, appId, builtin) {
+  return {
+    ...registry,
+    hiddenBuiltinIds: builtin
+      ? uniqueStrings([
+          ...(registry.hiddenBuiltinIds || []),
+          appId,
+        ])
+      : [...(registry.hiddenBuiltinIds || [])],
+    customApps: (registry.customApps || []).filter(
+      (entry) => entry.id !== appId,
+    ),
+    removedApps: (registry.removedApps || []).filter(
+      (entry) => entry.id !== appId,
+    ),
+  };
+}
+
+module.exports = {
+  emptyRegistry,
+  inspectZip,
+  installInspectedZip,
+  loadRegistry,
+  moveAppToRemoved,
+  permanentlyRemoveApp,
+  resolveCatalog,
+  resolveRemovedCatalog,
+  restoreAppInRegistry,
+  saveRegistry,
+  sanitizeAppId,
+  upsertCustomApp,
+};
