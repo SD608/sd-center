@@ -1,0 +1,260 @@
+
+===== cleanupBitcoinBuiltinDuplicate =====
+oin": {
+      name: "SD비트코인 채굴장",
+      version: "1.2.2",
+      downloadUrl:
+        "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
+      notes: "v1.2.2 실행 오류 수정 · GPU 내구도/전기세/채굴 확률 밸런스",
+    },
+  },
+};
+
+let registry = loadRegistry(REGISTRY_PATH);
+
+function cleanupBitcoinBuiltinDuplicate() {
+  const builtinId = "bitcoin";
+  const duplicateDirectory = path.join(INSTALLED_APPS_ROOT, builtinId);
+  const duplicatePackage = path.join(APP_PACKAGES_ROOT, `${builtinId} .zip`.replace(" ", ""));
+  registry = permanentlyRemoveApp(registry, builtinId, false);
+  fs.rmSync(duplicateDirectory, { recursive: true, force: true });
+  fs.rmSync(duplicatePackage, { force: true });
+  saveRegistry(REGISTRY_PATH, registry);
+}
+
+cleanupBitcoinBuiltinDuplicate();
+let appCatalog = [];
+let appById = new Map();
+let removedCatalog = [];
+let removedById = new Map();
+let requiredPolicy = { apps: { ...FALLBACK_REQUIRED_APPS } };
+let requiredPolicyFetchedAt = 0;
+let requiredPolicyPromise = null;
+let extensionCatalog = { ...FALLBACK_EXTENSION_CATALOG };
+let extensionCatalogFetchedAt = 0;
+let extensionCatalogPromise = null;
+
+function reloadCatalog() {
+  const builtinRoot = path.join(__dirname, "apps");
+
+  appCatalog = resolveCatalog({
+    builtinCatalog: BUILTIN_CATALOG,
+    registry,
+    builtinRoot,
+  });
+  removedCatalog = resolveRemovedCatalog({
+    builtinCatalog: BUILTIN_CATALOG,
+    registry,
+    builtinRoot,
+  });
+  appById = new Map(
+    appCatalog.map((entry) => [entry.id, entry]),
+  );
+  removedById = new Map(
+    removedCatalog.map((entry) => [entry.id, entry]),
+  );
+}
+
+reloadCatalog();
+
+function parseChildId() {
+  const prefix = "--sd-child-app=";
+  const argument = process.argv.find((value) =>
+    value.startsWith(prefix),
+  );
+
+  return argument ? argument.slice(prefix.length) : "";
+}
+
+function getChildDirectory(entry) {
+  return entry.directory;
+}
+
+function runChildMode(childId) {
+  const entry = appById.get(childId);
+
+  if (!entry) {
+    app.quit();
+    return;
+  }
+
+  const childDirectory = getChildDirectory(entry);
+  const childMainPath = path.join(
+    childDirectory,
+    entry.entry || "main.js",
+  );
+
+  if (!fs.existsSync(childMainPath)) {
+    app.quit();
+    return;
+  }
+
+  app.setName(entry.productName || entry.name);
+  app.setPath(
+    "userData",
+    path.join(APP_DATA_ROOT, entry.userDataFolder),
+  );
+  app.setAppUserModelId(`com.sdcenter.${entry.id}`);
+
+  process.env.SD_CENTER_MANAGED = "1";
+  process.env.SD_CENTER_EXECUTABLE = process.execPath;
+  process.env.SD_CENTER_ROOT = __dirname;
+  process.env.SD_CENTER_CHILD_ID = entry.id;
+
+  require(childMainPath);
+}
+
+const childId = parseChildId();
+
+if (childId) {
+  runChildMode(childId);
+} else {
+  runCenterMode();
+}
+
+function runCenterMode() {
+  const singleInstanceLock = app.requestSingleInstanceLock();
+
+  if (!singleInstanceLock) {
+    app.quit();
+    return;
+  
+
+
+===== buildAppCatalog =====
+NOT FOUND: function buildAppCatalog
+
+
+===== BUILTIN_APPS references =====
+43: const BUILTIN_CATALOG = [
+208: function cleanupBitcoinBuiltinDuplicate() {
+209:   const builtinId = "bitcoin";
+210:   const duplicateDirectory = path.join(INSTALLED_APPS_ROOT, builtinId);
+211:   const duplicatePackage = path.join(APP_PACKAGES_ROOT, `${builtinId} .zip`.replace(" ", ""));
+212:   registry = permanentlyRemoveApp(registry, builtinId, false);
+218: cleanupBitcoinBuiltinDuplicate();
+231:   const builtinRoot = path.join(__dirname, "apps");
+234:     builtinCatalog: BUILTIN_CATALOG,
+236:     builtinRoot,
+239:     builtinCatalog: BUILTIN_CATALOG,
+241:     builtinRoot,
+552:       const destinationDirectory = entry.builtin
+557:       if (entry.builtin) {
+886:       builtin: Boolean(entry.builtin),
+909:       entry.builtin || (mainPath && fs.existsSync(mainPath)),
+919:       builtin: Boolean(entry.builtin),
+1199:       const builtinCollision = BUILTIN_CATALOG.some(
+1203:       if (builtinCollision) {
+1213:         ...BUILTIN_CATALOG.map((entry) => entry.userDataFolder),
+1285:       if (removedExisting && !removedExisting.builtin) {
+1355:     const detail = entry.builtin
+1358:     const destructiveLabel = entry.builtin
+1388:       if (confirmation.response === 2 && !entry.builtin) {
+1414:           builtin: false,
+1421:       if (!entry.builtin) {
+1450:         builtin: entry.builtin,
+1469:       if (entry.builtin) {
+1509:           builtin: false,
+1536:     if (entry.builtin) {
+1560:           builtin: true,
+1623:         builtin: false,
+
+
+===== registry/custom references =====
+27:   loadRegistry,
+29:   permanentlyRemoveApp,
+34:   upsertCustomApp,
+35: } = require("./src/app-registry");
+206: let registry = loadRegistry(REGISTRY_PATH);
+212:   registry = permanentlyRemoveApp(registry, builtinId, false);
+215:   saveRegistry(REGISTRY_PATH, registry);
+235:     registry,
+240:     registry,
+562:         registry = permanentlyRemoveApp(registry, entry.id, false);
+563:         saveRegistry(REGISTRY_PATH, registry);
+584:       registry = upsertCustomApp(registry, appEntry);
+585:       saveRegistry(REGISTRY_PATH, registry);
+642:       registry = upsertCustomApp(registry, appEntry);
+643:       saveRegistry(REGISTRY_PATH, registry);
+1312:       registry = upsertCustomApp(registry, appEntry);
+1313:       saveRegistry(REGISTRY_PATH, registry);
+1401:         registry = permanentlyRemoveApp(
+1402:           registry,
+1406:         saveRegistry(REGISTRY_PATH, registry);
+1438:       registry = moveAppToRemoved(
+1439:         registry,
+1442:       saveRegistry(REGISTRY_PATH, registry);
+1470:         registry = restoreAppInRegistry(registry, entry);
+1507:         registry = restoreAppInRegistry(registry, {
+1514:       saveRegistry(REGISTRY_PATH, registry);
+1613:       registry = permanentlyRemoveApp(
+1614:         registry,
+1618:       saveRegistry(REGISTRY_PATH, registry);
+
+
+===== appById references =====
+220: let appById = new Map();
+243:   appById = new Map(
+267:   const entry = appById.get(childId);
+569:         return appById.get(entry.id);
+587:       return appById.get(appEntry.id);
+645:       return appById.get(appEntry.id);
+652:     const entry = appById.get(id);
+746:       const entry = appById.get(originalEntry.id) || originalEntry;
+1010:     let entry = appById.get(id);
+1023:     entry = requiredCheck.entry || appById.get(id) || entry;
+1241:       const existing = appById.get(inspected.metadata.id);
+1320:         app: publicAppState(appById.get(appEntry.id)),
+1349:     const entry = appById.get(id);
+1519:         app: publicAppState(appById.get(id)),
+1823:       const entry = appById.get(id);
+
+
+===== entry.directory references =====
+263:   return entry.directory;
+553:         ? entry.directory
+867:       ? path.join(entry.directory, entry.icon)
+902:     const mainPath = entry.directory
+903:       ? path.join(entry.directory, entry.entry || "main.js")
+1390:           entry.directory,
+1427:         if (fs.existsSync(entry.directory)) {
+1428:           moveDirectory(entry.directory, recycleDirectory);
+1433:           originalDirectory: entry.directory,
+1477:           entry.recycleDirectory || entry.directory || "";
+1588:         entry.recycleDirectory || entry.directory || "";
+
+
+===== launch/open IPC =====
+959:   function childLaunchArgs(id) {
+973:     const child = spawn(
+975:       childLaunchArgs(entry.id),
+1009:   async function launchApp(id) {
+1110:           click: () => { void launchApp(entry.id); },
+1747:     ipcMain.handle("center:list-apps", () => getAllAppStates());
+1748:     ipcMain.handle("center:list-removed-apps", () =>
+1751:     ipcMain.handle("center:launch-app", (event, id) =>
+1752:       launchApp(id),
+1754:     ipcMain.handle("center:terminate-app", (event, id) =>
+1757:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+1758:     ipcMain.handle("center:check-app-updates", async () => {
+1775:     ipcMain.handle("center:update-app", (event, id) =>
+1778:     ipcMain.handle("center:update-all-apps", () =>
+1781:     ipcMain.handle("center:delete-app", (event, id) =>
+1784:     ipcMain.handle("center:restore-app", (event, id) =>
+1787:     ipcMain.handle(
+1791:     ipcMain.handle("center:launch-all", async () => {
+1797:           ...(await launchApp(entry.id)),
+1807:     ipcMain.handle("center:terminate-all", () => {
+1811:     ipcMain.handle("center:show", () => {
+1815:     ipcMain.handle("center:hide", () => {
+1819:     ipcMain.handle("center:quit-completely", () =>
+1822:     ipcMain.handle("center:open-app-folder", async (event, id) => {
+1829:       const error = await shell.openPath(getChildDirectory(entry));
+
+
+===== first launchApp-like area =====
+NOT FOUND: app:launch
+
+
+===== first open-folder-like area =====
+NOT FOUND: app:open-folder
