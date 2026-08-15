@@ -1,0 +1,11 @@
+{
+  "id": "sd-flea-market",
+  "name": "SD 플리마켓",
+  "version": "0.1.0",
+  "displayVersion": "Prototype 1 · v0.1.0",
+  "description": "폐창고 임무에서 상자를 회수하고 직접 개봉하는 SD 플리마켓 PC 앱 프로토타입입니다.",
+  "improvement": "상자 보관함, 커터칼 3단 절단 개봉, 금고 락픽 미니게임을 구현했습니다.",
+  "accent": "cyan",
+  "entry": "main.js",
+  "userDataFolder": "SD플리마켓"
+}
