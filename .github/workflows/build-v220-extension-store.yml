@@ -1,0 +1,139 @@
+name: Build and publish SDCenter v2.2.0 Extension Store
+on:
+  push:
+    branches: [build-v220-extension-store-20260816]
+    paths: ['.github/workflows/build-v220-extension-store.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified v2.1.9 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.9.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.9/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140376576){ throw "Unexpected v2.1.9 size: $size" }
+          if($hash -ne '4c261558ea5606aab8bbd04d6d1e85b6783480407df415ad35ea93e50a1bb8d4'){ throw "v2.1.9 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.1.9 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.9'
+          if(-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))){ throw 'v2.1.9 install missing' }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$appDir\resources\app" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Apply v2.2.0 Extension Store patch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/patch-v220-extension-store.js "$env:APP_ROOT"
+
+      - name: Validate patched source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\preload.js"
+          node --check "$env:APP_ROOT\public\js\app.js"
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.0'){ throw "Center version mismatch: $($pkg.version)" }
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          $pre=Get-Content "$env:APP_ROOT\preload.js" -Raw
+          $ui=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
+          $html=Get-Content "$env:APP_ROOT\public\index.html" -Raw
+          foreach($m in @('center:get-extension-store','center:install-store-app','installFreshStoreApp','getExtensionStoreState')){ if(-not $main.Contains($m)){throw "main marker missing: $m"} }
+          foreach($m in @('getExtensionStore','installStoreApp')){ if(-not $pre.Contains($m)){throw "preload marker missing: $m"} }
+          foreach($m in @('storeTabButton','storePanel','storeGrid','storeRefreshButton','SD EXTENSION STORE')){ if(-not $html.Contains($m)){throw "html marker missing: $m"} }
+          foreach($m in @('storeCard','renderStore','installFromStore','getExtensionStore')){ if(-not $ui.Contains($m)){throw "ui marker missing: $m"} }
+          if($html.Contains('확장팩 ZIP 일괄 다운로드')){ throw 'bulk ZIP button was not removed' }
+          if($ui.Contains('ensureUpdateControls();')){ throw 'legacy update controls still enabled' }
+          $btc=Get-Content "$env:APP_ROOT\apps\SDBitcoinMiner\sd-app.json" -Raw | ConvertFrom-Json
+          if($btc.version -ne '1.2.2'){ throw 'Bitcoin v1.2.2 was not preserved' }
+
+      - name: Validate live homepage store catalog ZIPs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/validate-v220-store-catalog.js "$env:APP_ROOT"
+
+      - name: Install Squirrel builder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder=Join-Path $env:RUNNER_TEMP 'squirrel-builder-v220'
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Push-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          Pop-Location
+          "NODE_PATH=$builder\node_modules" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          $output=Join-Path $env:RUNNER_TEMP 'squirrel-v220'
+          "BUILD_OUTPUT=$output" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build SDCenter v2.2.0
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/build-v220-installer.js
+          $setup=Join-Path $env:BUILD_OUTPUT 'SDCenterSetup.exe'
+          if(-not (Test-Path $setup)){ throw 'v2.2.0 installer missing' }
+          $size=(Get-Item $setup).Length
+          if($size -lt 100MB){ throw "Installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install and smoke test v2.2.0
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $dir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.0'
+          $exe=Join-Path $dir 'SDCenter.exe'
+          if(-not (Test-Path $exe)){ throw 'v2.2.0 in-place install failed' }
+          $pkg=Get-Content (Join-Path $dir 'resources\app\package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.0'){ throw 'Installed Center version mismatch' }
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "Center exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:GITHUB_WORKSPACE 'release-v2.2.0'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP (Join-Path $dir 'SDCenterSetup.exe') -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $dir 'SHA256.txt') -Encoding ascii
+          $info=@('SD종합센터 v2.2.0','- 확장팩 ZIP 일괄 다운로드 버튼 제거','- 종합센터 두 번째 화면에 SD 확장팩 상점 추가','- 홈페이지 extensions-catalog.json 실시간 연동','- 미설치 확장팩 원클릭 다운로드 + 즉시 설치','- 설치된 확장팩 업데이트를 상점에서 진행','- 기본 앱 업데이트는 내장 앱 폴더에 직접 적용','- 즐겨찾기 및 기존 저장 데이터 유지','- 홈페이지 모든 확장팩 통합 ZIP 기능은 아직 미적용',"Installer bytes: $env:BUILT_SIZE","SHA256: $env:BUILT_HASH")
+          $info | Set-Content (Join-Path $dir 'BUILD_INFO.txt') -Encoding utf8
+
+      - name: Publish v2.2.0 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.2.0' 'release-v2.2.0/SDCenterSetup.exe' 'release-v2.2.0/SHA256.txt' 'release-v2.2.0/BUILD_INFO.txt' --repo 'SD608/sd-center' --target 'build-v220-extension-store-20260816' --title 'SD종합센터 v2.2.0' --notes '종합센터 안에 홈페이지 연동 확장팩 상점을 추가했습니다. 상점에서 확장팩을 바로 설치하고 업데이트할 수 있으며 기존 일괄 ZIP 다운로드 버튼은 제거했습니다. 홈페이지 통합 확장팩 ZIP 기능은 아직 추가하지 않았습니다.'
