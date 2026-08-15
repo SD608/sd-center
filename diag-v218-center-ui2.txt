@@ -1,0 +1,1781 @@
+===== preload.js =====
+"use strict";
+
+const { contextBridge, ipcRenderer } = require("electron");
+
+function invoke(channel, ...args) {
+  return ipcRenderer.invoke(channel, ...args);
+}
+
+function subscribe(channel, callback) {
+  if (typeof callback !== "function") {
+    return () => {};
+  }
+
+  const listener = (_event, payload) => callback(payload);
+  ipcRenderer.on(channel, listener);
+  return () => ipcRenderer.removeListener(channel, listener);
+}
+
+contextBridge.exposeInMainWorld("sdCenter", {
+  listApps: () => invoke("center:list-apps"),
+  listRemovedApps: () => invoke("center:list-removed-apps"),
+  launchApp: (id) => invoke("center:launch-app", id),
+  terminateApp: (id) => invoke("center:terminate-app", id),
+  addAppZip: () => invoke("center:add-app-zip"),
+  deleteApp: (id) => invoke("center:delete-app", id),
+  restoreApp: (id) => invoke("center:restore-app", id),
+  permanentlyDeleteRemovedApp: (id) =>
+    invoke("center:permanently-delete-removed-app", id),
+  launchAll: () => invoke("center:launch-all"),
+  terminateAll: () => invoke("center:terminate-all"),
+  show: () => invoke("center:show"),
+  hide: () => invoke("center:hide"),
+  quitCompletely: () => invoke("center:quit-completely"),
+  openAppFolder: (id) => invoke("center:open-app-folder", id),
+
+  // v2.1.3: 홈페이지 확장팩 카탈로그 기반 자동 업데이트
+  checkAppUpdates: () => invoke("center:check-app-updates"),
+  updateApp: (id) => invoke("center:update-app", id),
+  updateAllApps: () => invoke("center:update-all-apps"),
+
+  onAppStates: (callback) => subscribe("center:app-states", callback),
+  onRemovedAppStates: (callback) =>
+    subscribe("center:removed-app-states", callback),
+});
+
+
+===== public/index.html =====
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>SD종합센터</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">SD</div>
+      <div>
+        <strong>SD 종합센터</strong>
+        <span>SIMULATION APP CONTROL CENTER</span>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="shortcut-chip">
+        <span>센터 열기</span>
+        <kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>S</kbd>
+      </div>
+      <button id="hideCenterButton" class="icon-button" type="button" title="트레이로 숨기기">—</button>
+      <button id="quitCenterButton" class="quit-center-button" type="button" title="종합센터 완전 종료">완전 종료</button>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero-card">
+      <div class="hero-copy">
+        <p class="eyebrow">ALL SD APPS IN ONE PLACE</p>
+        <h1><span id="heroAppCount">5</span>개의 앱을<br><span>하나의 센터</span>에서</h1>
+        <p class="hero-description">
+          직접 입출금이 차단된 SD지갑을 중심으로 금고, 홀짝, 광부, 비트코인 채굴장을 바로 실행하고 상태를 확인합니다.
+          삭제한 앱은 보관함에서 원클릭 재설치할 수 있고, 센터 창을 닫아도 시스템 트레이에서 계속 이용할 수 있습니다.
+        </p>
+
+        <div class="hero-actions">
+          <button id="addAppButton" class="button button-add" type="button">ZIP 앱 추가</button>
+          <button id="launchAllButton" class="button button-primary" type="button">5개 앱 모두 실행</button>
+          <button id="terminateAllButton" class="button button-secondary" type="button">실행 중 앱 모두 종료</button>
+        </div>
+      </div>
+
+      <div class="system-overview">
+        <div class="overview-ring">
+          <div class="overview-core">
+            <strong id="runningCount">0</strong>
+            <span>실행 중</span>
+          </div>
+        </div>
+        <div class="overview-row">
+          <span>등록된 앱</span>
+          <strong id="registeredCount">5개</strong>
+        </div>
+        <div class="overview-row">
+          <span>공통 기반</span>
+          <strong>SD지갑 가상계좌</strong>
+        </div>
+        <div class="overview-row">
+          <span>센터 상태</span>
+          <strong class="online-text">ONLINE</strong>
+        </div>
+      </div>
+    </section>
+
+    <nav class="app-tabs" aria-label="앱 관리 메뉴">
+      <button id="installedTabButton" class="app-tab active" type="button" data-tab="installed">
+        설치된 앱 <span id="installedTabCount">0</span>
+      </button>
+      <button id="removedTabButton" class="app-tab" type="button" data-tab="removed">
+        삭제된 앱 보관함 <span id="removedTabCount">0</span>
+      </button>
+    </nav>
+
+    <section id="installedPanel" class="app-panel">
+      <section class="section-heading">
+        <div>
+          <p class="eyebrow">APPLICATIONS</p>
+          <h2>연결된 SD 앱</h2>
+        </div>
+        <p id="statusSummary" class="status-summary">앱 상태 확인 중...</p>
+      </section>
+
+      <section id="appGrid" class="app-grid" aria-live="polite"></section>
+    </section>
+
+    <section id="removedPanel" class="app-panel hidden" aria-live="polite">
+      <section class="section-heading">
+        <div>
+          <p class="eyebrow">REMOVED APPLICATIONS</p>
+          <h2>삭제된 앱 보관함</h2>
+        </div>
+        <p id="removedStatusSummary" class="status-summary">보관된 앱 확인 중...</p>
+      </section>
+
+      <section id="removedAppGrid" class="app-grid removed-app-grid"></section>
+      <section id="removedEmpty" class="removed-empty hidden">
+        <strong>삭제된 앱이 없습니다.</strong>
+        <p>앱을 센터에서 제거하면 이곳에서 원클릭으로 다시 설치할 수 있습니다.</p>
+      </section>
+    </section>
+
+    <section class="notice-stack">
+      <section class="notice-card warning-notice">
+        <div class="notice-icon">!</div>
+        <div>
+          <strong>ZIP 앱은 신뢰할 수 있는 파일만 추가하세요</strong>
+          <p>추가한 앱은 컴퓨터에서 프로그램 코드로 실행됩니다. 직접 만든 앱이나 출처를 확인한 ZIP만 선택하세요.</p>
+        </div>
+      </section>
+
+      <section class="notice-card">
+        <div class="notice-icon">i</div>
+        <div>
+          <strong>가상 시뮬레이션 전용</strong>
+          <p>이 센터와 연결된 앱의 계좌, 금, 광물, BTC 및 게임 금액은 실제 금융기관이나 실물 자산과 연결되지 않습니다.</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="./js/app.js" defer></script>
+</body>
+</html>
+
+
+===== public/js/app.js =====
+"use strict";
+
+const bridge = window.sdCenter;
+
+const elements = {
+  appGrid: document.getElementById("appGrid"),
+  removedAppGrid: document.getElementById("removedAppGrid"),
+  removedEmpty: document.getElementById("removedEmpty"),
+  installedPanel: document.getElementById("installedPanel"),
+  removedPanel: document.getElementById("removedPanel"),
+  installedTabButton: document.getElementById("installedTabButton"),
+  removedTabButton: document.getElementById("removedTabButton"),
+  installedTabCount: document.getElementById("installedTabCount"),
+  removedTabCount: document.getElementById("removedTabCount"),
+  runningCount: document.getElementById("runningCount"),
+  registeredCount: document.getElementById("registeredCount"),
+  heroAppCount: document.getElementById("heroAppCount"),
+  statusSummary: document.getElementById("statusSummary"),
+  removedStatusSummary: document.getElementById("removedStatusSummary"),
+  launchAllButton: document.getElementById("launchAllButton"),
+  terminateAllButton: document.getElementById("terminateAllButton"),
+  addAppButton: document.getElementById("addAppButton"),
+  hideCenterButton: document.getElementById("hideCenterButton"),
+  quitCenterButton: document.getElementById("quitCenterButton"),
+  toast: document.getElementById("toast"),
+};
+
+const state = {
+  apps: [],
+  removedApps: [],
+  activeTab: "installed",
+  busyIds: new Set(),
+  addingApp: false,
+  checkingUpdates: false,
+  updatingAll: false,
+  quitting: false,
+  toastTimer: null,
+};
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function showToast(message, duration = 3000) {
+  window.clearTimeout(state.toastTimer);
+  elements.toast.textContent = message;
+  elements.toast.classList.add("show");
+
+  state.toastTimer = window.setTimeout(() => {
+    elements.toast.classList.remove("show");
+  }, duration);
+}
+
+function iconPath(app) {
+  return app.iconUrl || "./icons/icon-512.png";
+}
+
+function ensureUpdateControls() {
+  if (elements.checkUpdatesButton || !elements.addAppButton?.parentElement) {
+    return;
+  }
+
+  const parent = elements.addAppButton.parentElement;
+  const checkButton = document.createElement("button");
+  checkButton.id = "checkUpdatesButton";
+  checkButton.type = "button";
+  checkButton.className = "button button-secondary";
+  checkButton.textContent = "업데이트 확인";
+
+  const updateAllButton = document.createElement("button");
+  updateAllButton.id = "updateAllButton";
+  updateAllButton.type = "button";
+  updateAllButton.className = "button button-secondary";
+  updateAllButton.textContent = "모두 업데이트";
+  updateAllButton.disabled = true;
+
+  parent.insertBefore(checkButton, elements.addAppButton);
+  parent.insertBefore(updateAllButton, elements.addAppButton);
+  elements.checkUpdatesButton = checkButton;
+  elements.updateAllButton = updateAllButton;
+}
+
+function formatRemovedAt(value) {
+  if (!value) {
+    return "이전 버전에서 제거됨";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "삭제 시각 확인 불가";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function renderOverview() {
+  const runningCount = state.apps.filter((app) => app.running).length;
+  const appCount = state.apps.length;
+  const removedCount = state.removedApps.length;
+  const updateCount = state.apps.filter((app) => app.updateAvailable).length;
+
+  elements.runningCount.textContent = String(runningCount);
+  elements.registeredCount.textContent = `${appCount}개`;
+  elements.heroAppCount.textContent = String(appCount);
+  elements.installedTabCount.textContent = String(appCount);
+  elements.removedTabCount.textContent = String(removedCount);
+  elements.launchAllButton.textContent = `${appCount}개 앱 모두 실행`;
+  elements.launchAllButton.disabled = appCount === 0;
+
+  if (elements.checkUpdatesButton) {
+    elements.checkUpdatesButton.disabled = state.checkingUpdates || state.updatingAll;
+    elements.checkUpdatesButton.textContent = state.checkingUpdates
+      ? "업데이트 확인 중..."
+      : "업데이트 확인";
+  }
+  if (elements.updateAllButton) {
+    elements.updateAllButton.disabled =
+      updateCount === 0 || state.updatingAll || state.checkingUpdates;
+    elements.updateAllButton.textContent = state.updatingAll
+      ? "업데이트 중..."
+      : updateCount > 0
+        ? `모두 업데이트 (${updateCount})`
+        : "모두 업데이트";
+  }
+
+  document.documentElement.style.setProperty(
+    "--running-progress",
+    `${(runningCount / Math.max(1, appCount)) * 100}%`,
+  );
+
+  elements.statusSummary.textContent =
+    runningCount > 0
+      ? `${runningCount}개 앱 실행 중 · 카드를 눌러 기존 창을 다시 열 수 있습니다.`
+      : appCount > 0
+        ? "현재 실행 중인 연결 앱이 없습니다."
+        : "등록된 앱이 없습니다. ZIP 앱을 추가하거나 보관함에서 재설치해 주세요.";
+
+  if (updateCount > 0) {
+    elements.statusSummary.textContent =
+      `${updateCount}개 확장팩 업데이트 가능 · 카드의 업데이트 버튼 또는 모두 업데이트를 사용할 수 있습니다.`;
+  }
+
+  elements.removedStatusSummary.textContent =
+    removedCount > 0
+      ? `${removedCount}개 앱 보관 중 · 다시 설치하면 기존 저장 데이터를 이어서 사용합니다.`
+      : "현재 보관 중인 삭제된 앱이 없습니다.";
+}
+
+function installedAppCard(app) {
+  const busy = state.busyIds.has(app.id);
+  const runningClass = app.running ? " is-running" : "";
+  const importedClass = app.builtin ? "" : " is-imported";
+  const launchLabel = app.updateRequired
+    ? "필수 업데이트"
+    : app.running
+      ? "앱 창 열기"
+      : "실행";
+  const statusLabel = app.updateRequired
+    ? `필수 v${app.requiredVersion}`
+    : app.updateAvailable
+      ? `v${app.latestVersion} 업데이트`
+      : app.running
+        ? "실행 중"
+        : "대기";
+  const sourceLabel = app.builtin ? "기본 앱" : "ZIP 추가 앱";
+
+  return `
+    <article class="app-card${runningClass}${importedClass}" data-id="${escapeHtml(app.id)}" data-accent="${escapeHtml(app.accent)}">
+      <div class="card-heading">
+        <div class="app-identity">
+          <div class="app-icon">
+            <img src="${escapeHtml(iconPath(app))}" alt="" draggable="false">
+          </div>
+          <div class="app-title">
+            <strong>${escapeHtml(app.name)}</strong>
+            <span>${escapeHtml(app.version)}</span>
+          </div>
+        </div>
+        <div class="status-group">
+          <span class="source-pill">${sourceLabel}</span>
+          <div class="status-pill">
+            <span class="status-dot"></span>
+            <span>${statusLabel}</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="app-description">${escapeHtml(app.description)}</p>
+
+      <div class="improvement-box">
+        <span>${app.updateAvailable ? "새 업데이트 내용" : "마지막 개선 사항"}</span>
+        <p>${escapeHtml(app.updateAvailable && app.updateNotes ? app.updateNotes : app.improvement)}</p>
+      </div>
+
+      <div class="card-actions">
+        <button class="button button-primary launch-button" type="button" ${busy ? "disabled" : ""}>
+          ${busy ? "처리 중..." : launchLabel}
+        </button>
+        ${
+          app.updateAvailable
+            ? `<button class="button button-secondary update-button" type="button" ${busy ? "disabled" : ""}>v${escapeHtml(app.latestVersion)} 업데이트</button>`
+            : ""
+        }
+        ${
+          app.running
+            ? `<button class="button button-danger terminate-button" type="button" ${busy ? "disabled" : ""}>종료</button>`
+            : ""
+        }
+        <button class="button button-secondary folder-button" type="button" title="앱 폴더 열기">폴더</button>
+        <button class="button button-delete delete-button" type="button" ${busy ? "disabled" : ""}>센터에서 제거</button>
+      </div>
+    </article>
+  `;
+}
+
+function removedAppCard(app) {
+  const busy = state.busyIds.has(app.id);
+  const importedClass = app.builtin ? "" : " is-imported";
+  const sourceLabel = app.builtin ? "기본 앱" : "ZIP 추가 앱";
+  const cleanupLabel = app.builtin
+    ? "저장 데이터 삭제"
+    : "완전히 삭제";
+
+  return `
+    <article class="app-card removed-app-card${importedClass}" data-id="${escapeHtml(app.id)}" data-accent="${escapeHtml(app.accent)}">
+      <div class="card-heading">
+        <div class="app-identity">
+          <div class="app-icon removed-icon">
+            <img src="${escapeHtml(iconPath(app))}" alt="" draggable="false">
+          </div>
+          <div class="app-title">
+            <strong>${escapeHtml(app.name)}</strong>
+            <span>${escapeHtml(app.version)}</span>
+          </div>
+        </div>
+        <div class="status-group">
+          <span class="source-pill">${sourceLabel}</span>
+          <div class="status-pill removed-status-pill">
+            <span class="status-dot"></span>
+            <span>보관 중</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="app-description">${escapeHtml(app.description)}</p>
+
+      <div class="removed-info-box">
+        <span>센터에서 제거한 시각</span>
+        <strong>${escapeHtml(formatRemovedAt(app.removedAt))}</strong>
+        <p>${app.restorable ? "앱 파일을 확인했습니다. 원클릭 재설치가 가능합니다." : "앱 파일이 없어 새 ZIP이 필요합니다."}</p>
+      </div>
+
+      <div class="card-actions">
+        <button class="button button-restore restore-button" type="button" ${busy || !app.restorable ? "disabled" : ""}>
+          ${busy ? "처리 중..." : "다시 설치"}
+        </button>
+        <button class="button button-delete permanent-delete-button" type="button" ${busy ? "disabled" : ""}>
+          ${cleanupLabel}
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderApps() {
+  renderOverview();
+  elements.appGrid.innerHTML = state.apps
+    .map(installedAppCard)
+    .join("");
+
+  elements.removedAppGrid.innerHTML = state.removedApps
+    .map(removedAppCard)
+    .join("");
+
+  elements.removedEmpty.classList.toggle(
+    "hidden",
+    state.removedApps.length > 0,
+  );
+}
+
+function setApps(apps) {
+  state.apps = Array.isArray(apps) ? apps : [];
+  renderApps();
+}
+
+function setRemovedApps(apps) {
+  state.removedApps = Array.isArray(apps) ? apps : [];
+  renderApps();
+}
+
+function selectTab(tab) {
+  state.activeTab = tab === "removed" ? "removed" : "installed";
+  const removedActive = state.activeTab === "removed";
+
+  elements.installedPanel.classList.toggle("hidden", removedActive);
+  elements.removedPanel.classList.toggle("hidden", !removedActive);
+  elements.installedTabButton.classList.toggle("active", !removedActive);
+  elements.removedTabButton.classList.toggle("active", removedActive);
+}
+
+async function withBusy(id, action) {
+  state.busyIds.add(id);
+  renderApps();
+
+  try {
+    return await action();
+  } finally {
+    state.busyIds.delete(id);
+    renderApps();
+  }
+}
+
+async function launchApp(id) {
+  const currentApp = state.apps.find((entry) => entry.id === id);
+  const result = await withBusy(id, () => bridge.launchApp(id));
+
+  if (!result.ok) {
+    showToast(result.error || "앱을 실행하지 못했습니다.");
+    return;
+  }
+
+  showToast(
+    result.mandatoryUpdated
+      ? `${currentApp?.name || "앱"} 필수 업데이트를 완료하고 실행했습니다.`
+      : result.alreadyRunning
+        ? `${currentApp?.name || "앱"} 창을 다시 열었습니다.`
+        : `${currentApp?.name || "앱"}을 실행했습니다.`,
+    result.mandatoryUpdated ? 4200 : 3000,
+  );
+}
+
+async function terminateApp(id) {
+  const currentApp = state.apps.find((entry) => entry.id === id);
+  const result = await withBusy(id, () => bridge.terminateApp(id));
+
+  if (!result.ok) {
+    showToast(result.error || "앱을 종료하지 못했습니다.");
+    return;
+  }
+
+  showToast(`${currentApp?.name || "앱"} 종료 요청을 보냈습니다.`);
+}
+
+async function addAppZip() {
+  if (state.addingApp) {
+    return;
+  }
+
+  state.addingApp = true;
+  elements.addAppButton.disabled = true;
+  elements.addAppButton.textContent = "ZIP 확인 중...";
+
+  try {
+    const result = await bridge.addAppZip();
+
+    if (result.canceled) {
+      return;
+    }
+
+    if (!result.ok) {
+      showToast(result.error || "앱을 추가하지 못했습니다.", 4200);
+      return;
+    }
+
+    selectTab("installed");
+    showToast(
+      result.restoredFromBin
+        ? `${result.app.name}을 새 ZIP으로 다시 설치했습니다.`
+        : result.updated
+          ? `${result.app.name}을 새 ZIP 버전으로 업데이트했습니다.`
+          : `${result.app.name}을 종합센터에 추가했습니다.`,
+      3800,
+    );
+  } finally {
+    state.addingApp = false;
+    elements.addAppButton.disabled = false;
+    elements.addAppButton.textContent = "ZIP 앱 추가";
+  }
+}
+
+async function checkAppUpdates() {
+  if (state.checkingUpdates || state.updatingAll) return;
+  state.checkingUpdates = true;
+  renderApps();
+
+  try {
+    const result = await bridge.checkAppUpdates();
+    if (!result.ok) {
+      showToast(result.error || "업데이트 정보를 확인하지 못했습니다.", 4500);
+      return;
+    }
+    showToast(
+      result.count > 0
+        ? `업데이트 가능한 확장팩이 ${result.count}개 있습니다.`
+        : "설치된 확장팩이 모두 최신 버전입니다.",
+      3800,
+    );
+  } finally {
+    state.checkingUpdates = false;
+    renderApps();
+  }
+}
+
+async function updateApp(id) {
+  const currentApp = state.apps.find((entry) => entry.id === id);
+  const result = await withBusy(id, () => bridge.updateApp(id));
+
+  if (result?.canceled) return;
+  if (!result?.ok) {
+    showToast(result?.error || "앱을 업데이트하지 못했습니다.", 4500);
+    return;
+  }
+  if (result.alreadyLatest) {
+    showToast(`${currentApp?.name || "앱"}은 이미 최신 버전입니다.`);
+    return;
+  }
+  showToast(`${currentApp?.name || result.app?.name || "앱"} 업데이트가 완료되었습니다.`, 4000);
+}
+
+async function updateAllApps() {
+  if (state.updatingAll || state.checkingUpdates) return;
+  state.updatingAll = true;
+  renderApps();
+
+  try {
+    const result = await bridge.updateAllApps();
+    if (result?.canceled) return;
+    if (!result?.ok && !result?.updatedCount) {
+      showToast(result?.error || "확장팩 모두 업데이트를 완료하지 못했습니다.", 4800);
+      return;
+    }
+    if ((result?.count || 0) === 0) {
+      showToast("설치된 확장팩이 모두 최신 버전입니다.");
+      return;
+    }
+    showToast(
+      result.failedCount
+        ? `${result.updatedCount}개 업데이트 완료 · ${result.failedCount}개 실패`
+        : `확장팩 ${result.updatedCount}개 업데이트 완료`,
+      4500,
+    );
+  } finally {
+    state.updatingAll = false;
+    renderApps();
+  }
+}
+
+async function deleteApp(id) {
+  const currentApp = state.apps.find((entry) => entry.id === id);
+  const result = await withBusy(id, () => bridge.deleteApp(id));
+
+  if (result.canceled) {
+    return;
+  }
+
+  if (!result.ok) {
+    showToast(result.error || "앱을 제거하지 못했습니다.", 4200);
+    return;
+  }
+
+  if (result.movedToBin) {
+    selectTab("removed");
+    const dataMessage = result.deletedData
+      ? " 저장 데이터는 삭제했습니다."
+      : " 저장 데이터는 유지했습니다.";
+    showToast(
+      `${currentApp?.name || result.name || "앱"}을 삭제된 앱 보관함으로 옮겼습니다.${dataMessage}`,
+      4300,
+    );
+    return;
+  }
+
+  showToast(
+    `${currentApp?.name || result.name || "앱"}과 저장 데이터를 완전히 삭제했습니다.`,
+    4000,
+  );
+}
+
+async function restoreApp(id) {
+  const currentApp = state.removedApps.find((entry) => entry.id === id);
+  const result = await withBusy(id, () => bridge.restoreApp(id));
+
+  if (!result.ok) {
+    showToast(result.error || "앱을 다시 설치하지 못했습니다.", 4500);
+    return;
+  }
+
+  selectTab("installed");
+  showToast(
+    `${currentApp?.name || result.app?.name || "앱"}을 다시 설치했습니다. 기존 저장 데이터가 유지됩니다.`,
+    4200,
+  );
+}
+
+async function permanentlyDeleteRemovedApp(id) {
+  const currentApp = state.removedApps.find((entry) => entry.id === id);
+  const result = await withBusy(id, () =>
+    bridge.permanentlyDeleteRemovedApp(id),
+  );
+
+  if (result.canceled) {
+    return;
+  }
+
+  if (!result.ok) {
+    showToast(result.error || "앱을 완전히 삭제하지 못했습니다.", 4500);
+    return;
+  }
+
+  if (result.remainsInBin) {
+    showToast(
+      `${currentApp?.name || result.name || "기본 앱"}의 저장 데이터를 삭제했습니다. 앱은 보관함에서 다시 설치할 수 있습니다.`,
+      4500,
+    );
+    return;
+  }
+
+  showToast(
+    result.deletedData
+      ? `${currentApp?.name || result.name || "앱"}의 앱 파일, ZIP 백업, 저장 데이터를 삭제했습니다.`
+      : `${currentApp?.name || result.name || "앱"}의 앱 파일과 ZIP 백업을 삭제했습니다.`,
+    4500,
+  );
+}
+
+function bindEvents() {
+  elements.appGrid.addEventListener("click", async (event) => {
+    const card = event.target.closest(".app-card");
+
+    if (!card) {
+      return;
+    }
+
+    const id = card.dataset.id;
+
+    if (event.target.closest(".update-button")) {
+      await updateApp(id);
+      return;
+    }
+
+    if (event.target.closest(".launch-button")) {
+      await launchApp(id);
+      return;
+    }
+
+    if (event.target.closest(".terminate-button")) {
+      await terminateApp(id);
+      return;
+    }
+
+    if (event.target.closest(".delete-button")) {
+      await deleteApp(id);
+      return;
+    }
+
+    if (event.target.closest(".folder-button")) {
+      const result = await bridge.openAppFolder(id);
+
+      if (!result.ok) {
+        showToast(result.error || "폴더를 열지 못했습니다.");
+      }
+    }
+  });
+
+  elements.removedAppGrid.addEventListener("click", async (event) => {
+    const card = event.target.closest(".app-card");
+
+    if (!card) {
+      return;
+    }
+
+    const id = card.dataset.id;
+
+    if (event.target.closest(".restore-button")) {
+      await restoreApp(id);
+      return;
+    }
+
+    if (event.target.closest(".permanent-delete-button")) {
+      await permanentlyDeleteRemovedApp(id);
+    }
+  });
+
+  elements.installedTabButton.addEventListener("click", () => {
+    selectTab("installed");
+  });
+
+  elements.removedTabButton.addEventListener("click", () => {
+    selectTab("removed");
+  });
+
+  elements.addAppButton.addEventListener("click", addAppZip);
+  elements.checkUpdatesButton?.addEventListener("click", checkAppUpdates);
+  elements.updateAllButton?.addEventListener("click", updateAllApps);
+
+  elements.launchAllButton.addEventListener("click", async () => {
+    elements.launchAllButton.disabled = true;
+
+    try {
+      const result = await bridge.launchAll();
+      showToast(
+        result.ok
+          ? `${result.count}개 앱에 실행 요청을 보냈습니다.`
+          : "일부 앱을 실행하지 못했습니다.",
+      );
+    } finally {
+      elements.launchAllButton.disabled = state.apps.length === 0;
+    }
+  });
+
+  elements.terminateAllButton.addEventListener("click", async () => {
+    elements.terminateAllButton.disabled = true;
+
+    try {
+      await bridge.terminateAll();
+      showToast("실행 중인 연결 앱에 종료 요청을 보냈습니다.");
+    } finally {
+      elements.terminateAllButton.disabled = false;
+    }
+  });
+
+  elements.hideCenterButton.addEventListener("click", () => {
+    bridge.hide();
+  });
+
+  elements.quitCenterButton.addEventListener("click", async () => {
+    if (state.quitting) {
+      return;
+    }
+
+    state.quitting = true;
+    elements.quitCenterButton.disabled = true;
+    elements.quitCenterButton.textContent = "종료 중...";
+
+    try {
+      const result = await bridge.quitCompletely();
+
+      if (result?.canceled) {
+        state.quitting = false;
+        elements.quitCenterButton.disabled = false;
+        elements.quitCenterButton.textContent = "완전 종료";
+      }
+    } catch {
+      // 완전 종료가 승인되면 Electron 프로세스가 먼저 종료될 수 있습니다.
+    }
+  });
+
+  bridge.onAppStates(setApps);
+  bridge.onRemovedAppStates(setRemovedApps);
+}
+
+async function initialize() {
+  ensureUpdateControls();
+  bindEvents();
+  const [apps, removedApps] = await Promise.all([
+    bridge.listApps(),
+    bridge.listRemovedApps(),
+  ]);
+  setApps(apps);
+  setRemovedApps(removedApps);
+  selectTab("installed");
+}
+
+initialize().catch((error) => {
+  console.error(error);
+  showToast(`초기화 오류: ${error.message}`);
+});
+
+
+===== public/css/style.css =====
+:root {
+  color-scheme: dark;
+  --bg: #06101c;
+  --panel: rgba(13, 27, 44, 0.86);
+  --panel-strong: #0e1d2e;
+  --line: rgba(167, 205, 242, 0.13);
+  --text: #f4f8fd;
+  --muted: #8ea2b8;
+  --cyan: #64d7ff;
+  --blue: #4e8dff;
+  --green: #4de2a0;
+  --gold: #ffd35f;
+  --orange: #ff9d4d;
+  --purple: #bd87ff;
+  font-family: Inter, Pretendard, "Noto Sans KR", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(34, 107, 187, 0.18), transparent 30%),
+    radial-gradient(circle at 90% 15%, rgba(47, 217, 205, 0.11), transparent 28%),
+    linear-gradient(150deg, #071321 0%, #050b13 55%, #07111d 100%);
+  color: var(--text);
+}
+
+button { font: inherit; }
+.ambient { width:420px;height:420px;position:fixed;z-index:-1;border-radius:50%;filter:blur(110px);opacity:.16;pointer-events:none; }
+.ambient-one { top:120px;left:-180px;background:#3e9dff; }
+.ambient-two { right:-160px;bottom:40px;background:#28e0c2; }
+.topbar { display:flex;min-height:78px;padding:0 34px;position:sticky;top:0;z-index:20;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(5,13,23,.82);backdrop-filter:blur(18px); }
+.brand,.topbar-actions,.shortcut-chip,.hero-actions,.section-heading,.card-heading,.card-actions,.status-pill,.notice-card { display:flex;align-items:center; }
+.brand { gap:12px; }
+.brand-mark { display:grid;width:44px;height:44px;place-items:center;border:1px solid rgba(103,213,255,.35);border-radius:14px;background:linear-gradient(145deg,rgba(67,178,255,.28),rgba(31,77,144,.34));color:#dff8ff;font-size:.92rem;font-weight:900;letter-spacing:.06em;box-shadow:inset 0 1px rgba(255,255,255,.18),0 10px 30px rgba(13,92,170,.22); }
+.brand strong,.brand span { display:block; }
+.brand strong { font-size:1rem;letter-spacing:-.02em; }
+.brand span { margin-top:3px;color:#748ba3;font-size:.62rem;font-weight:800;letter-spacing:.14em; }
+.topbar-actions { gap:12px; }
+.shortcut-chip { padding:8px 12px;gap:5px;border:1px solid var(--line);border-radius:12px;background:rgba(13,26,42,.75);color:#8196ad;font-size:.68rem;font-weight:700; }
+.shortcut-chip kbd { padding:3px 6px;border:1px solid rgba(177,213,244,.17);border-radius:5px;background:#13263b;color:#c8d9e9;box-shadow:inset 0 -2px rgba(0,0,0,.3);font-size:.62rem; }
+.icon-button { width:38px;height:38px;border:1px solid var(--line);border-radius:11px;background:rgba(14,29,47,.84);color:#b5c6d6;cursor:pointer; }
+.icon-button:hover { border-color:rgba(99,211,255,.42);background:#132a43; }
+.page-shell { width:min(1320px,calc(100% - 48px));margin:0 auto;padding:36px 0 48px; }
+.hero-card { display:grid;min-height:360px;padding:44px 46px;overflow:hidden;position:relative;grid-template-columns:minmax(0,1fr) 330px;gap:42px;border:1px solid rgba(122,199,239,.16);border-radius:28px;background:linear-gradient(135deg,rgba(22,52,81,.91),rgba(8,22,38,.94)),var(--panel);box-shadow:0 30px 80px rgba(0,0,0,.28); }
+.hero-card::after { width:440px;height:440px;content:"";position:absolute;top:-250px;right:180px;border-radius:50%;background:rgba(73,191,255,.12);filter:blur(20px); }
+.hero-copy,.system-overview { position:relative;z-index:1; }
+.eyebrow { margin:0 0 10px;color:#6ccfff;font-size:.68rem;font-weight:900;letter-spacing:.16em; }
+.hero-copy h1 { margin:0;font-size:clamp(2.3rem,4vw,4rem);line-height:1.08;letter-spacing:-.06em; }
+.hero-copy h1 span { color:#7bdbff; }
+.hero-description { max-width:700px;margin:22px 0 0;color:#a6b7c8;font-size:.94rem;line-height:1.8; }
+.hero-actions { margin-top:30px;gap:12px;flex-wrap:wrap; }
+.button { min-height:46px;padding:0 18px;border:1px solid transparent;border-radius:13px;font-weight:850;cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease; }
+.button:hover { transform:translateY(-1px); }
+.button:disabled { opacity:.52;cursor:wait;transform:none; }
+.button-primary { background:linear-gradient(135deg,#63d8ff,#4b8cff);color:#04111d;box-shadow:0 12px 30px rgba(63,150,255,.28); }
+.button-secondary { border-color:var(--line);background:rgba(11,24,40,.82);color:#bdd0e2; }
+.button-danger { border-color:rgba(255,106,116,.2);background:rgba(108,32,42,.22);color:#ffadb4; }
+.system-overview { padding:24px;border:1px solid rgba(152,213,245,.13);border-radius:22px;background:rgba(5,16,29,.52);box-shadow:inset 0 1px rgba(255,255,255,.04); }
+.overview-ring { display:grid;width:145px;height:145px;margin:0 auto 24px;place-items:center;border-radius:50%;background:conic-gradient(#64d7ff var(--running-progress,0%),rgba(117,164,195,.13) 0);box-shadow:0 0 36px rgba(89,202,255,.12); }
+.overview-ring::before { width:118px;height:118px;content:"";position:absolute;border-radius:50%;background:#0b1b2c; }
+.overview-core { position:relative;z-index:1;text-align:center; }
+.overview-core strong,.overview-core span { display:block; }
+.overview-core strong { color:#e8fbff;font-size:2.2rem; }
+.overview-core span { color:#7993ab;font-size:.72rem;font-weight:800; }
+.overview-row { display:flex;padding:12px 2px;align-items:center;justify-content:space-between;border-top:1px solid rgba(162,205,235,.09);color:#8297ab;font-size:.76rem; }
+.overview-row strong { color:#d5e4f1;font-size:.76rem; }
+.online-text { color:#63e3a5!important; }
+.section-heading { margin:38px 4px 18px;justify-content:space-between; }
+.section-heading h2 { margin:0;font-size:1.35rem;letter-spacing:-.04em; }
+.status-summary { margin:0;color:#8298ad;font-size:.78rem;font-weight:700; }
+.app-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px; }
+.app-card { min-height:285px;padding:22px;position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:linear-gradient(150deg,rgba(17,35,55,.92),rgba(8,19,32,.92));box-shadow:0 18px 55px rgba(0,0,0,.18);transition:transform .18s ease,border-color .18s ease; }
+.app-card:hover { transform:translateY(-2px);border-color:rgba(142,208,240,.25); }
+.app-card::after { width:180px;height:180px;content:"";position:absolute;top:-110px;right:-80px;border-radius:50%;background:var(--card-accent,#64d7ff);filter:blur(50px);opacity:.1; }
+.app-card[data-accent="blue"] { --card-accent:var(--blue); }
+.app-card[data-accent="gold"] { --card-accent:var(--gold); }
+.app-card[data-accent="purple"] { --card-accent:var(--purple); }
+.app-card[data-accent="green"] { --card-accent:var(--green); }
+.app-card[data-accent="orange"] { --card-accent:var(--orange); }
+.card-heading { position:relative;z-index:1;justify-content:space-between;gap:18px; }
+.app-identity { display:flex;min-width:0;align-items:center;gap:13px; }
+.app-icon { display:grid;width:54px;height:54px;flex:0 0 auto;place-items:center;overflow:hidden;border:1px solid rgba(196,226,249,.14);border-radius:16px;background:rgba(9,20,34,.84); }
+.app-icon img { width:100%;height:100%;object-fit:cover; }
+.app-title strong,.app-title span { display:block; }
+.app-title strong { overflow:hidden;font-size:1.04rem;text-overflow:ellipsis;white-space:nowrap; }
+.app-title span { margin-top:5px;color:#6f879f;font-size:.68rem;font-weight:800; }
+.status-pill { padding:7px 10px;flex:0 0 auto;gap:7px;border:1px solid rgba(146,183,211,.13);border-radius:999px;background:rgba(7,17,29,.62);color:#8497a9;font-size:.67rem;font-weight:850; }
+.status-dot { width:7px;height:7px;border-radius:50%;background:#5d7185; }
+.app-card.is-running .status-pill { border-color:rgba(75,224,153,.25);color:#85eab8; }
+.app-card.is-running .status-dot { background:#4ee19d;box-shadow:0 0 12px rgba(78,225,157,.74); }
+.app-description { min-height:50px;margin:22px 0 15px;position:relative;z-index:1;color:#a8bacb;font-size:.83rem;line-height:1.65; }
+.improvement-box { min-height:66px;padding:12px 13px;position:relative;z-index:1;border:1px solid rgba(147,194,225,.1);border-radius:13px;background:rgba(5,15,27,.54); }
+.improvement-box span { display:block;margin-bottom:5px;color:var(--card-accent);font-size:.61rem;font-weight:900;letter-spacing:.09em; }
+.improvement-box p { margin:0;color:#8ea5ba;font-size:.72rem;line-height:1.55; }
+.card-actions { margin-top:18px;position:relative;z-index:1;gap:9px;flex-wrap:wrap; }
+.card-actions .button { min-height:42px;flex:1;font-size:.76rem; }
+.folder-button { width:42px;min-width:42px!important;padding:0;flex:0 0 auto!important; }
+.notice-card { margin-top:20px;padding:18px 20px;gap:14px;border:1px solid rgba(118,166,201,.12);border-radius:17px;background:rgba(10,23,38,.72); }
+.notice-icon { display:grid;width:36px;height:36px;flex:0 0 auto;place-items:center;border:1px solid rgba(103,204,247,.24);border-radius:50%;color:#78d6ff;font-weight:900; }
+.notice-card strong { font-size:.79rem; }
+.notice-card p { margin:5px 0 0;color:#748ba1;font-size:.72rem;line-height:1.5; }
+.toast { padding:12px 16px;position:fixed;right:26px;bottom:24px;z-index:50;border:1px solid rgba(120,210,247,.2);border-radius:12px;background:rgba(10,24,39,.96);color:#d7ebf7;font-size:.76rem;font-weight:750;box-shadow:0 16px 40px rgba(0,0,0,.32);opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .18s ease,transform .18s ease; }
+.toast.show { opacity:1;transform:translateY(0); }
+.button-add { border-color:rgba(72,227,185,.34);background:linear-gradient(135deg,#43d8a1,#249ab4);color:#041813;box-shadow:0 12px 30px rgba(39,197,158,.18); }
+.button-delete { border-color:rgba(255,107,120,.2);background:rgba(98,31,43,.36);color:#ffb4bd; }
+.button-delete:hover { border-color:rgba(255,107,120,.55);background:rgba(124,37,51,.58); }
+.status-group { display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap; }
+.source-pill { padding:5px 8px;border:1px solid rgba(157,197,232,.14);border-radius:999px;background:rgba(11,24,39,.7);color:#7f99b2;font-size:.58rem;font-weight:850;letter-spacing:.04em; }
+.app-card.is-imported .source-pill { border-color:rgba(74,224,183,.26);color:#82eacb; }
+.notice-stack { display:grid;margin-top:22px;gap:12px; }
+.notice-stack .notice-card { margin-top:0; }
+.warning-notice { border-color:rgba(255,181,87,.2);background:rgba(72,43,16,.28); }
+.warning-notice .notice-icon { border-color:rgba(255,184,91,.32);color:#ffc67f; }
+.card-actions .folder-button,.card-actions .delete-button { flex:0 0 auto; }
+.card-actions .delete-button { min-width:66px; }
+.hidden { display:none!important; }
+.quit-center-button { min-height:38px;padding:0 13px;border:1px solid rgba(255,104,117,.3);border-radius:11px;background:rgba(108,31,44,.34);color:#ffbdc5;font-size:.7rem;font-weight:850;cursor:pointer;transition:background .16s ease,border-color .16s ease; }
+.quit-center-button:hover { border-color:rgba(255,104,117,.62);background:rgba(137,39,54,.58); }
+.quit-center-button:disabled { opacity:.55;cursor:wait; }
+.app-tabs { display:flex;margin-top:34px;padding:5px;width:fit-content;gap:5px;border:1px solid var(--line);border-radius:15px;background:rgba(7,18,31,.72); }
+.app-tab { min-height:42px;padding:0 16px;border:1px solid transparent;border-radius:11px;background:transparent;color:#8298ad;font-size:.76rem;font-weight:850;cursor:pointer; }
+.app-tab span { display:inline-grid;min-width:23px;height:23px;margin-left:6px;padding:0 6px;place-items:center;border-radius:999px;background:rgba(118,158,190,.13);font-size:.66rem; }
+.app-tab.active { border-color:rgba(99,211,255,.22);background:linear-gradient(135deg,rgba(73,169,226,.24),rgba(38,91,154,.24));color:#d9f2ff; }
+.app-tab.active span { background:rgba(94,208,255,.2);color:#bdeeff; }
+.app-panel .section-heading { margin-top:20px; }
+.app-card[data-accent="cyan"] { --card-accent:var(--cyan); }
+.app-card[data-accent="red"] { --card-accent:#ff7583; }
+.removed-app-card { border-color:rgba(144,168,190,.1);background:linear-gradient(150deg,rgba(18,29,43,.91),rgba(7,15,25,.94)); }
+.removed-app-card::after { opacity:.055; }
+.removed-icon img { filter:saturate(.45) brightness(.78); }
+.removed-status-pill { border-color:rgba(255,191,100,.2);color:#d9b67e; }
+.removed-status-pill .status-dot { background:#c89551;box-shadow:0 0 10px rgba(200,149,81,.35); }
+.removed-info-box { min-height:82px;padding:12px 13px;position:relative;z-index:1;border:1px solid rgba(147,194,225,.09);border-radius:13px;background:rgba(5,15,27,.54); }
+.removed-info-box span,.removed-info-box strong,.removed-info-box p { display:block; }
+.removed-info-box span { color:#7590a7;font-size:.61rem;font-weight:850;letter-spacing:.07em; }
+.removed-info-box strong { margin-top:5px;color:#d4e2ee;font-size:.75rem; }
+.removed-info-box p { margin:7px 0 0;color:#8197aa;font-size:.69rem;line-height:1.45; }
+.button-restore { border-color:rgba(80,226,166,.3);background:linear-gradient(135deg,#50dfa6,#2caeb3);color:#041713;box-shadow:0 10px 26px rgba(49,191,155,.17); }
+.removed-empty { padding:54px 24px;border:1px dashed rgba(134,181,216,.18);border-radius:20px;background:rgba(8,20,34,.48);text-align:center; }
+.removed-empty strong { display:block;color:#c7d7e4;font-size:.95rem; }
+.removed-empty p { margin:9px 0 0;color:#71889d;font-size:.76rem;line-height:1.6; }
+.app-card:has(.status-pill span:last-child:not(:empty)) .launch-button { transition:filter 140ms ease; }
+@media (max-width:1040px) { .hero-card{grid-template-columns:1fr}.system-overview{display:grid;grid-template-columns:160px 1fr;column-gap:24px}.overview-ring{grid-row:1/4;margin:0} }
+@media (max-width:820px) { .topbar{padding:0 18px}.shortcut-chip{display:none}.page-shell{width:min(100% - 28px,1320px);padding-top:20px}.hero-card{padding:30px 26px}.app-grid{grid-template-columns:1fr}.quit-center-button{padding:0 10px;font-size:.64rem}.app-tabs{width:100%}.app-tab{flex:1;padding:0 9px} }
+
+
+===== main.js :: async function download =====
+===== main.js :: function download =====
+===== main.js :: function publicAppState =====
+858:       const updatedEntry = await installRequiredUpdate(entry, rule);
+859:       await dialog.showMessageBox(mainWindow, {
+860:         type: "info",
+861:         title: "업데이트 완료",
+862:         message: `${entry.name} 업데이트가 완료되었습니다.`,
+863:         detail: `v${rawEntryVersion(updatedEntry)} 버전으로 교체했습니다. 기존 저장 데이터는 유지됩니다.`,
+864:         buttons: ["확인"],
+865:         defaultId: 0,
+866:         noLink: true,
+867:       });
+868:       return {
+869:         ok: true,
+870:         entry: updatedEntry,
+871:         mandatoryUpdated: true,
+872:       };
+873:     } catch (error) {
+874:       await dialog.showMessageBox(mainWindow, {
+875:         type: "error",
+876:         title: "필수 업데이트 실패",
+877:         message: `${entry.name}을 업데이트하지 못했습니다.`,
+878:         detail: `${error.message}\n\n업데이트가 완료되기 전에는 앱을 실행할 수 없습니다.`,
+879:         buttons: ["확인"],
+880:         defaultId: 0,
+881:         noLink: true,
+882:       });
+883:       return {
+884:         ok: false,
+885:         blockedByRequiredUpdate: true,
+886:         error: error.message,
+887:       };
+888:     }
+889:   }
+890: 
+891:   function appIconUrl(entry) {
+892:     const fallbackPath = path.join(
+893:       __dirname,
+894:       "public",
+895:       "icons",
+896:       "icon-512.png",
+897:     );
+898:     const candidatePath = entry.icon
+899:       ? path.join(entry.directory, entry.icon)
+900:       : fallbackPath;
+901:     const iconPath = fs.existsSync(candidatePath)
+902:       ? candidatePath
+903:       : fallbackPath;
+904: 
+905:     return pathToFileURL(iconPath).href;
+906:   }
+907: 
+908:   function publicAppState(entry) {
+909:     const child = runningApps.get(entry.id);
+910: 
+911:     return {
+912:       id: entry.id,
+913:       name: entry.name,
+914:       version: displayEntryVersion(entry),
+915:       description: entry.description,
+916:       improvement: entry.improvement,
+917:       accent: entry.accent,
+918:       builtin: Boolean(entry.builtin),
+919:       sourceZipName: entry.sourceZipName || "",
+920:       running: Boolean(child && child.exitCode === null),
+921:       directory: getChildDirectory(entry),
+922:       iconUrl: appIconUrl(entry),
+923:       rawVersion: rawEntryVersion(entry),
+924:       ...updateRequirementFor(entry),
+925:       ...updateAvailabilityFor(entry),
+926:     };
+927:   }
+928: 
+929:   function getAllAppStates() {
+930:     return appCatalog.map(publicAppState);
+931:   }
+932: 
+933:   function publicRemovedAppState(entry) {
+934:     const mainPath = entry.directory
+935:       ? path.join(entry.directory, entry.entry || "main.js")
+936:       : "";
+937:     const packageAvailable = Boolean(
+938:       entry.packagePath && fs.existsSync(entry.packagePath),
+939:     );
+940:     const filesAvailable = Boolean(
+941:       entry.builtin || (mainPath && fs.existsSync(mainPath)),
+942:     );
+943: 
+944:     return {
+945:       id: entry.id,
+946:       name: entry.name,
+947:       version: entry.version,
+948:       description: entry.description,
+949:       improvement: entry.improvement,
+950:       accent: entry.accent,
+951:       builtin: Boolean(entry.builtin),
+952:       sourceZipName: entry.sourceZipName || "",
+953:       removedAt: entry.removedAt || "",
+954:       restorable: filesAvailable || packageAvailable,
+955:       iconUrl: appIconUrl(entry),
+956:     };
+957:   }
+958: 
+959:   function getRemovedAppStates() {
+960:     return removedCatalog.map(publicRemovedAppState);
+961:   }
+962: 
+963:   function sendAppStates() {
+964:     if (!mainWindow || mainWindow.isDestroyed()) {
+965:       return;
+966:     }
+967: 
+968:     mainWindow.webContents.send(
+969:       "center:app-states",
+970:       getAllAppStates(),
+971:     );
+972:     mainWindow.webContents.send(
+973:       "center:removed-app-states",
+974:       getRemovedAppStates(),
+975:     );
+976:   }
+977: 
+978:   function showCenter() {
+979:     if (!mainWindow || mainWindow.isDestroyed()) {
+980:       return;
+981:     }
+982: 
+983:     if (mainWindow.isMinimized()) {
+984:       mainWindow.restore();
+985:     }
+986: 
+987:     mainWindow.show();
+988:     mainWindow.focus();
+989:   }
+990: 
+991:   function childLaunchArgs(id) {
+992:     const childArgument = `--sd-child-app=${id}`;
+993: 
+994:     if (app.isPackaged) {
+995:       return [childArgument];
+996:     }
+997: 
+998:     return [__dirname, childArgument];
+999:   }
+1000: 
+1001:   function spawnChild(entry, { track = true } = {}) {
+1002:     const environment = { ...process.env };
+1003:     delete environment.ELECTRON_RUN_AS_NODE;
+1004: 
+1005:     const child = spawn(
+1006:       process.execPath,
+1007:       childLaunchArgs(entry.id),
+1008:       {
+1009:         cwd: getChildDirectory(entry),
+1010:         env: environment,
+1011:         stdio: "ignore",
+1012:         windowsHide: false,
+1013:       },
+1014:     );
+1015: 
+1016:     if (!track) {
+1017:       child.unref();
+1018:       return child;
+1019:     }
+1020: 
+1021:     runningApps.set(entry.id, child);
+1022:     sendAppStates();
+1023: 
+1024:     child.once("exit", () => {
+1025:       if (runningApps.get(entry.id) === child) {
+1026:         runningApps.delete(entry.id);
+1027:         sendAppStates();
+1028:       }
+1029:     });
+1030: 
+1031:     child.once("error", () => {
+1032:       if (runningApps.get(entry.id) === child) {
+1033:         runningApps.delete(entry.id);
+1034:         sendAppStates();
+1035:       }
+1036:     });
+1037: 
+1038:     return child;
+1039:   }
+1040: 
+1041:   async function launchApp(id) {
+1042:     let entry = appById.get(id);
+1043: 
+1044:     if (!entry) {
+1045:       return {
+1046:         ok: false,
+1047:         error: "등록되지 않은 앱입니다.",
+1048:       };
+===== main.js :: ipcMain.handle("center:update-all-apps" =====
+1760:       path.join(__dirname, "public", "index.html"),
+1761:     );
+1762:   }
+1763: 
+1764:   function createTray() {
+1765:     tray = new Tray(
+1766:       path.join(
+1767:         __dirname,
+1768:         "public",
+1769:         "icons",
+1770:         "icon.ico",
+1771:       ),
+1772:     );
+1773:     tray.setToolTip("SD종합센터");
+1774:     updateTrayMenu();
+1775:     tray.on("double-click", showCenter);
+1776:   }
+1777: 
+1778:   function registerIpcHandlers() {
+1779:     ipcMain.handle("center:list-apps", () => getAllAppStates());
+1780:     ipcMain.handle("center:list-removed-apps", () =>
+1781:       getRemovedAppStates(),
+1782:     );
+1783:     ipcMain.handle("center:launch-app", (event, id) =>
+1784:       launchApp(id),
+1785:     );
+1786:     ipcMain.handle("center:terminate-app", (event, id) =>
+1787:       terminateApp(id),
+1788:     );
+1789:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+1790:     ipcMain.handle("center:check-app-updates", async () => {
+1791:       try {
+1792:         await refreshExtensionCatalog({ force: true });
+1793:         sendAppStates();
+1794:         const available = appCatalog
+1795:           .filter((entry) => updateAvailabilityFor(entry).updateAvailable)
+1796:           .map((entry) => ({
+1797:             id: entry.id,
+1798:             name: entry.name,
+1799:             currentVersion: rawEntryVersion(entry),
+1800:             latestVersion: updateAvailabilityFor(entry).latestVersion,
+1801:           }));
+1802:         return { ok: true, count: available.length, apps: available };
+1803:       } catch (error) {
+1804:         return { ok: false, error: error.message };
+1805:       }
+1806:     });
+1807:     ipcMain.handle("center:update-app", (event, id) =>
+1808:       updateAppFromCatalog(id),
+1809:     );
+1810:     ipcMain.handle("center:update-all-apps", () =>
+1811:       updateAllAvailableApps(),
+1812:     );
+1813:     ipcMain.handle("center:delete-app", (event, id) =>
+1814:       deleteApp(id),
+1815:     );
+1816:     ipcMain.handle("center:restore-app", (event, id) =>
+1817:       restoreRemovedApp(id),
+1818:     );
+1819:     ipcMain.handle(
+1820:       "center:permanently-delete-removed-app",
+1821:       (event, id) => permanentlyDeleteRemovedApp(id),
+1822:     );
+1823:     ipcMain.handle("center:launch-all", async () => {
+1824:       const results = [];
+1825: 
+1826:       for (const entry of appCatalog) {
+1827:         results.push({
+1828:           id: entry.id,
+1829:           ...(await launchApp(entry.id)),
+1830:         });
+1831:       }
+1832: 
+1833:       return {
+1834:         ok: results.every((result) => result.ok),
+1835:         count: appCatalog.length,
+1836:         results,
+1837:       };
+1838:     });
+1839:     ipcMain.handle("center:terminate-all", () => {
+1840:       terminateAllApps();
+1841:       return { ok: true };
+1842:     });
+1843:     ipcMain.handle("center:show", () => {
+1844:       showCenter();
+1845:       return { ok: true };
+1846:     });
+1847:     ipcMain.handle("center:hide", () => {
+1848:       mainWindow?.hide();
+1849:       return { ok: true };
+1850:     });
+1851:     ipcMain.handle("center:quit-completely", () =>
+1852:       quitCenterCompletely(),
+1853:     );
+1854:     ipcMain.handle("center:open-app-folder", async (event, id) => {
+1855:       const entry = appById.get(id);
+1856: 
+1857:       if (!entry) {
+1858:         return { ok: false, error: "등록되지 않은 앱입니다." };
+1859:       }
+1860: 
+1861:       const error = await shell.openPath(getChildDirectory(entry));
+1862:       return error ? { ok: false, error } : { ok: true };
+1863:     });
+1864:   }
+1865: 
+1866:   app.whenReady().then(() => {
+1867:     app.setAppUserModelId("com.sdcenter.desktop");
+1868:     createMainWindow();
+1869:     createTray();
+1870:     registerIpcHandlers();
+1871:     void Promise.all([
+1872:       refreshRequiredPolicy({ force: true }),
+1873:       refreshExtensionCatalog({ force: true }),
+1874:     ]).then(() => {
+1875:       sendAppStates();
+1876:     });
+1877: 
+1878:     globalShortcut.register("CommandOrControl+Shift+S", showCenter);
+1879:   });
+1880: 
+1881:   app.on("second-instance", showCenter);
+1882:   app.on("activate", showCenter);
+1883:   app.on("window-all-closed", () => {
+1884:     // 종합센터는 시스템 트레이와 단축키를 위해 계속 실행합니다.
+1885:   });
+1886:   app.on("before-quit", () => {
+1887:     isQuitting = true;
+1888:     globalShortcut.unregisterAll();
+1889:   });
+1890: }
+===== main.js :: ipcMain.handle("center:add-app-zip" =====
+1739:         } catch {
+1740:           event.preventDefault();
+1741:         }
+1742:       },
+1743:     );
+1744: 
+1745:     mainWindow.on("close", (event) => {
+1746:       if (isQuitting) {
+1747:         return;
+1748:       }
+1749: 
+1750:       event.preventDefault();
+1751:       mainWindow.hide();
+1752:     });
+1753: 
+1754:     mainWindow.once("ready-to-show", () => {
+1755:       showCenter();
+1756:       sendAppStates();
+1757:     });
+1758: 
+1759:     mainWindow.loadFile(
+1760:       path.join(__dirname, "public", "index.html"),
+1761:     );
+1762:   }
+1763: 
+1764:   function createTray() {
+1765:     tray = new Tray(
+1766:       path.join(
+1767:         __dirname,
+1768:         "public",
+1769:         "icons",
+1770:         "icon.ico",
+1771:       ),
+1772:     );
+1773:     tray.setToolTip("SD종합센터");
+1774:     updateTrayMenu();
+1775:     tray.on("double-click", showCenter);
+1776:   }
+1777: 
+1778:   function registerIpcHandlers() {
+1779:     ipcMain.handle("center:list-apps", () => getAllAppStates());
+1780:     ipcMain.handle("center:list-removed-apps", () =>
+1781:       getRemovedAppStates(),
+1782:     );
+1783:     ipcMain.handle("center:launch-app", (event, id) =>
+1784:       launchApp(id),
+1785:     );
+1786:     ipcMain.handle("center:terminate-app", (event, id) =>
+1787:       terminateApp(id),
+1788:     );
+1789:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+1790:     ipcMain.handle("center:check-app-updates", async () => {
+1791:       try {
+1792:         await refreshExtensionCatalog({ force: true });
+1793:         sendAppStates();
+1794:         const available = appCatalog
+1795:           .filter((entry) => updateAvailabilityFor(entry).updateAvailable)
+1796:           .map((entry) => ({
+1797:             id: entry.id,
+1798:             name: entry.name,
+1799:             currentVersion: rawEntryVersion(entry),
+1800:             latestVersion: updateAvailabilityFor(entry).latestVersion,
+1801:           }));
+1802:         return { ok: true, count: available.length, apps: available };
+1803:       } catch (error) {
+1804:         return { ok: false, error: error.message };
+1805:       }
+1806:     });
+1807:     ipcMain.handle("center:update-app", (event, id) =>
+1808:       updateAppFromCatalog(id),
+1809:     );
+1810:     ipcMain.handle("center:update-all-apps", () =>
+1811:       updateAllAvailableApps(),
+1812:     );
+1813:     ipcMain.handle("center:delete-app", (event, id) =>
+1814:       deleteApp(id),
+1815:     );
+1816:     ipcMain.handle("center:restore-app", (event, id) =>
+1817:       restoreRemovedApp(id),
+1818:     );
+1819:     ipcMain.handle(
+1820:       "center:permanently-delete-removed-app",
+1821:       (event, id) => permanentlyDeleteRemovedApp(id),
+1822:     );
+1823:     ipcMain.handle("center:launch-all", async () => {
+1824:       const results = [];
+1825: 
+1826:       for (const entry of appCatalog) {
+1827:         results.push({
+1828:           id: entry.id,
+1829:           ...(await launchApp(entry.id)),
+1830:         });
+1831:       }
+1832: 
+1833:       return {
+1834:         ok: results.every((result) => result.ok),
+1835:         count: appCatalog.length,
+1836:         results,
+1837:       };
+1838:     });
+1839:     ipcMain.handle("center:terminate-all", () => {
+1840:       terminateAllApps();
+1841:       return { ok: true };
+1842:     });
+1843:     ipcMain.handle("center:show", () => {
+1844:       showCenter();
+1845:       return { ok: true };
+1846:     });
+1847:     ipcMain.handle("center:hide", () => {
+1848:       mainWindow?.hide();
+1849:       return { ok: true };
+1850:     });
+1851:     ipcMain.handle("center:quit-completely", () =>
+1852:       quitCenterCompletely(),
+1853:     );
+1854:     ipcMain.handle("center:open-app-folder", async (event, id) => {
+1855:       const entry = appById.get(id);
+1856: 
+1857:       if (!entry) {
+1858:         return { ok: false, error: "등록되지 않은 앱입니다." };
+1859:       }
+1860: 
+1861:       const error = await shell.openPath(getChildDirectory(entry));
+1862:       return error ? { ok: false, error } : { ok: true };
+1863:     });
+1864:   }
+1865: 
+1866:   app.whenReady().then(() => {
+1867:     app.setAppUserModelId("com.sdcenter.desktop");
+1868:     createMainWindow();
+1869:     createTray();
+1870:     registerIpcHandlers();
+1871:     void Promise.all([
+1872:       refreshRequiredPolicy({ force: true }),
+1873:       refreshExtensionCatalog({ force: true }),
+1874:     ]).then(() => {
+1875:       sendAppStates();
+1876:     });
+1877: 
+1878:     globalShortcut.register("CommandOrControl+Shift+S", showCenter);
+1879:   });
+1880: 
+1881:   app.on("second-instance", showCenter);
+1882:   app.on("activate", showCenter);
+1883:   app.on("window-all-closed", () => {
+1884:     // 종합센터는 시스템 트레이와 단축키를 위해 계속 실행합니다.
+1885:   });
+1886:   app.on("before-quit", () => {
+1887:     isQuitting = true;
+1888:     globalShortcut.unregisterAll();
+1889:   });
+1890: }
+===== main.js :: ipcMain.handle("center:open-app-folder" =====
+1804:         return { ok: false, error: error.message };
+1805:       }
+1806:     });
+1807:     ipcMain.handle("center:update-app", (event, id) =>
+1808:       updateAppFromCatalog(id),
+1809:     );
+1810:     ipcMain.handle("center:update-all-apps", () =>
+1811:       updateAllAvailableApps(),
+1812:     );
+1813:     ipcMain.handle("center:delete-app", (event, id) =>
+1814:       deleteApp(id),
+1815:     );
+1816:     ipcMain.handle("center:restore-app", (event, id) =>
+1817:       restoreRemovedApp(id),
+1818:     );
+1819:     ipcMain.handle(
+1820:       "center:permanently-delete-removed-app",
+1821:       (event, id) => permanentlyDeleteRemovedApp(id),
+1822:     );
+1823:     ipcMain.handle("center:launch-all", async () => {
+1824:       const results = [];
+1825: 
+1826:       for (const entry of appCatalog) {
+1827:         results.push({
+1828:           id: entry.id,
+1829:           ...(await launchApp(entry.id)),
+1830:         });
+1831:       }
+1832: 
+1833:       return {
+1834:         ok: results.every((result) => result.ok),
+1835:         count: appCatalog.length,
+1836:         results,
+1837:       };
+1838:     });
+1839:     ipcMain.handle("center:terminate-all", () => {
+1840:       terminateAllApps();
+1841:       return { ok: true };
+1842:     });
+1843:     ipcMain.handle("center:show", () => {
+1844:       showCenter();
+1845:       return { ok: true };
+1846:     });
+1847:     ipcMain.handle("center:hide", () => {
+1848:       mainWindow?.hide();
+1849:       return { ok: true };
+1850:     });
+1851:     ipcMain.handle("center:quit-completely", () =>
+1852:       quitCenterCompletely(),
+1853:     );
+1854:     ipcMain.handle("center:open-app-folder", async (event, id) => {
+1855:       const entry = appById.get(id);
+1856: 
+1857:       if (!entry) {
+1858:         return { ok: false, error: "등록되지 않은 앱입니다." };
+1859:       }
+1860: 
+1861:       const error = await shell.openPath(getChildDirectory(entry));
+1862:       return error ? { ok: false, error } : { ok: true };
+1863:     });
+1864:   }
+1865: 
+1866:   app.whenReady().then(() => {
+1867:     app.setAppUserModelId("com.sdcenter.desktop");
+1868:     createMainWindow();
+1869:     createTray();
+1870:     registerIpcHandlers();
+1871:     void Promise.all([
+1872:       refreshRequiredPolicy({ force: true }),
+1873:       refreshExtensionCatalog({ force: true }),
+1874:     ]).then(() => {
+1875:       sendAppStates();
+1876:     });
+1877: 
+1878:     globalShortcut.register("CommandOrControl+Shift+S", showCenter);
+1879:   });
+1880: 
+1881:   app.on("second-instance", showCenter);
+1882:   app.on("activate", showCenter);
+1883:   app.on("window-all-closed", () => {
+1884:     // 종합센터는 시스템 트레이와 단축키를 위해 계속 실행합니다.
+1885:   });
+1886:   app.on("before-quit", () => {
+1887:     isQuitting = true;
+1888:     globalShortcut.unregisterAll();
+1889:   });
+1890: }
+===== main.js :: async function updateAllApps =====
+===== main.js :: async function refreshExtensionCatalog =====
+444:     };
+445:   }
+446: 
+447:   async function refreshRequiredPolicy({ force = false } = {}) {
+448:     if (
+449:       !force &&
+450:       requiredPolicyFetchedAt > 0 &&
+451:       Date.now() - requiredPolicyFetchedAt < REQUIRED_POLICY_TTL_MS
+452:     ) {
+453:       return requiredPolicy;
+454:     }
+455: 
+456:     if (requiredPolicyPromise) {
+457:       return requiredPolicyPromise;
+458:     }
+459: 
+460:     requiredPolicyPromise = (async () => {
+461:       try {
+462:         const remotePolicy = await fetchRequiredPolicy();
+463:         requiredPolicy = {
+464:           ...remotePolicy,
+465:           apps: {
+466:             ...FALLBACK_REQUIRED_APPS,
+467:             ...(remotePolicy?.apps || {}),
+468:           },
+469:         };
+470:         requiredPolicyFetchedAt = Date.now();
+471:         return requiredPolicy;
+472:       } catch (error) {
+473:         requiredPolicy = {
+474:           ...requiredPolicy,
+475:           apps: {
+476:             ...FALLBACK_REQUIRED_APPS,
+477:             ...(requiredPolicy?.apps || {}),
+478:           },
+479:         };
+480:         requiredPolicyFetchedAt = Date.now();
+481:         console.warn(
+482:           "필수 업데이트 정책을 불러오지 못해 내장 정책을 사용합니다.",
+483:           error?.message || error,
+484:         );
+485:         return requiredPolicy;
+486:       } finally {
+487:         requiredPolicyPromise = null;
+488:       }
+489:     })();
+490: 
+491:     return requiredPolicyPromise;
+492:   }
+493: 
+494:   async function refreshExtensionCatalog({ force = false } = {}) {
+495:     if (
+496:       !force &&
+497:       extensionCatalogFetchedAt > 0 &&
+498:       Date.now() - extensionCatalogFetchedAt < EXTENSION_CATALOG_TTL_MS
+499:     ) {
+500:       return extensionCatalog;
+501:     }
+502: 
+503:     if (extensionCatalogPromise) {
+504:       return extensionCatalogPromise;
+505:     }
+506: 
+507:     extensionCatalogPromise = (async () => {
+508:       try {
+509:         const response = await fetch(EXTENSION_CATALOG_URL, {
+510:           cache: "no-store",
+511:           headers: { Accept: "application/json" },
+512:         });
+513:         if (!response.ok) {
+514:           throw new Error(`확장팩 카탈로그 HTTP ${response.status}`);
+515:         }
+516:         const remote = await response.json();
+517:         if (!remote || typeof remote !== "object" || !remote.apps) {
+518:           throw new Error("확장팩 카탈로그 형식이 올바르지 않습니다.");
+519:         }
+520:         extensionCatalog = {
+521:           ...remote,
+522:           apps: {
+523:             ...(FALLBACK_EXTENSION_CATALOG.apps || {}),
+524:             ...(remote.apps || {}),
+525:           },
+526:         };
+527:       } catch (error) {
+528:         extensionCatalog = {
+529:           ...extensionCatalog,
+530:           apps: {
+531:             ...(FALLBACK_EXTENSION_CATALOG.apps || {}),
+532:             ...(extensionCatalog?.apps || {}),
+533:           },
+534:         };
+535:         console.warn(
+536:           "확장팩 업데이트 카탈로그를 불러오지 못해 내장 목록을 사용합니다.",
+537:           error?.message || error,
+538:         );
+539:       } finally {
+540:         extensionCatalogFetchedAt = Date.now();
+541:         extensionCatalogPromise = null;
+542:       }
+543:       return extensionCatalog;
+544:     })();
+545: 
+546:     return extensionCatalogPromise;
+547:   }
+548: 
+549:   async function installRequiredUpdate(entry, rule) {
+550:     const downloadUrl = String(rule.downloadUrl || "").trim();
+551:     if (!downloadUrl) {
+552:       throw new Error("필수 업데이트 다운로드 주소가 없습니다.");
+553:     }
+554: 
+555:     ensureManagedDirectory(APP_PACKAGES_ROOT);
+556:     const temporaryZipPath = path.join(
+557:       APP_PACKAGES_ROOT,
+558:       `.required-${entry.id}-${Date.now()}.zip`,
+559:     );
+560: 
+561:     try {
+562:       await downloadFile(downloadUrl, temporaryZipPath);
+563:       const inspected = inspectZip(temporaryZipPath);
+564:       const requiredVersion = String(rule.minVersion || "0.0.0");
+565: 
+566:       if (inspected.metadata.id !== entry.id) {
+567:         throw new Error(
+568:           `업데이트 앱 ID가 다릅니다. (${inspected.metadata.id})`,
+569:         );
+570:       }
+571: 
+572:       if (
+573:         compareVersions(
+574:           inspected.metadata.rawVersion,
+575:           requiredVersion,
+576:         ) < 0
+577:       ) {
+578:         throw new Error(
+579:           `다운로드된 버전(v${inspected.metadata.rawVersion})이 필수 버전(v${requiredVersion})보다 낮습니다.`,
+580:         );
+581:       }
+582: 
+583:       await terminateAppAndWait(entry.id);
+584:       const destinationDirectory = entry.builtin
+585:         ? entry.directory
+586:         : path.join(INSTALLED_APPS_ROOT, inspected.metadata.id);
+587:       installInspectedZip(inspected, destinationDirectory);
+588: 
+589:       if (entry.builtin) {
+590:         const staleCustomDirectory = path.join(
+591:           INSTALLED_APPS_ROOT,
+592:           inspected.metadata.id,
+593:         );
+594:         registry = permanentlyRemoveApp(registry, entry.id, false);
+595:         saveRegistry(REGISTRY_PATH, registry);
+596:         if (path.resolve(staleCustomDirectory) !== path.resolve(destinationDirectory)) {
+597:           fs.rmSync(staleCustomDirectory, { recursive: true, force: true });
+598:         }
+599:         fs.rmSync(path.join(APP_PACKAGES_ROOT, `${entry.id} .zip`.replace(" ", "")), { force: true });
+600:         refreshCatalogAndUi();
+601:         return appById.get(entry.id);
+602:       }
+603: 
+604:       const packagePath = archiveAppZip(
+605:         temporaryZipPath,
+606:         inspected.metadata.id,
+607:       );
+608:       const appEntry = {
+609:         ...inspected.metadata,
+610:         directory: destinationDirectory,
+611:         packagePath,
+612:         importedAt: entry.importedAt || new Date().toISOString(),
+613:         updatedAt: new Date().toISOString(),
+614:       };
+615: 
+616:       registry = upsertCustomApp(registry, appEntry);
+617:       saveRegistry(REGISTRY_PATH, registry);
+618:       refreshCatalogAndUi();
+619:       return appById.get(appEntry.id);
+620:     } finally {
+621:       fs.rmSync(temporaryZipPath, { force: true });
+622:     }
+623:   }
+624: 
+625:   async function installCatalogUpdate(entry, rule) {
+626:     const downloadUrl = String(rule.downloadUrl || "").trim();
+627:     const latestVersion = String(rule.version || "0.0.0");
+628:     if (!downloadUrl) {
+629:       throw new Error("업데이트 다운로드 주소가 없습니다.");
+630:     }
+631: 
+632:     ensureManagedDirectory(APP_PACKAGES_ROOT);
+633:     const temporaryZipPath = path.join(
+634:       APP_PACKAGES_ROOT,
