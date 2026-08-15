@@ -1,0 +1,52 @@
+name: Diagnose v2.1.6 registry resolver
+
+on:
+  push:
+    branches:
+      - build-v217-bitcoin-path-force-20260816
+    paths:
+      - '.github/workflows/diag-v216-registry-resolver.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install v2.1.6 and capture resolver
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.6.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.6/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne '900134a3abe35f8848129f8af0fe938b2ce6c4f0b89f7d4d658b6ee60e525c88') { throw "hash mismatch: $hash" }
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.6\resources\app'
+          $mainLines=Get-Content (Join-Path $root 'main.js')
+          $registry=Get-Content (Join-Path $root 'src\app-registry.js') -Raw
+          $out=@()
+          $out += '===== main.js lines 930-1060 ====='
+          for($i=929; $i -lt [Math]::Min(1060,$mainLines.Count); $i++){ $out += ('{0}: {1}' -f ($i+1),$mainLines[$i]) }
+          $out += ''
+          $out += '===== main.js lines 1815-1840 ====='
+          for($i=1814; $i -lt [Math]::Min(1840,$mainLines.Count); $i++){ $out += ('{0}: {1}' -f ($i+1),$mainLines[$i]) }
+          $out += ''
+          $out += '===== src/app-registry.js ====='
+          $out += $registry
+          $out | Set-Content 'diag-v216-resolver.txt' -Encoding utf8
+      - name: Commit resolver diagnostic
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diag-v216-resolver.txt
+          git commit -m 'diag: capture v2.1.6 registry resolver'
+          git push origin HEAD:build-v217-bitcoin-path-force-20260816
