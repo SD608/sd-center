@@ -1,0 +1,41 @@
+name: Capture exact v2.1.9 Center source
+on:
+  push:
+    branches: [build-v220-extension-store-20260816]
+    paths: ['.github/workflows/capture-v219-src.yml']
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and copy source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\v219.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.9/SDCenterSetup.exe' -OutFile $setup
+          if((Get-FileHash $setup -Algorithm SHA256).Hash.ToLower() -ne '4c261558ea5606aab8bbd04d6d1e85b6783480407df415ad35ea93e50a1bb8d4'){throw 'hash mismatch'}
+          Start-Process $setup -ArgumentList '--silent' -Wait
+          Start-Sleep 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.9\resources\app'
+          $dst=Join-Path $env:GITHUB_WORKSPACE 'diag-v219-src'
+          New-Item -ItemType Directory -Force -Path (Join-Path $dst 'public\js'),(Join-Path $dst 'public\css'),(Join-Path $dst 'src') | Out-Null
+          Copy-Item (Join-Path $root 'main.js') (Join-Path $dst 'main.js')
+          Copy-Item (Join-Path $root 'preload.js') (Join-Path $dst 'preload.js')
+          Copy-Item (Join-Path $root 'package.json') (Join-Path $dst 'package.json')
+          Copy-Item (Join-Path $root 'public\index.html') (Join-Path $dst 'public\index.html')
+          Copy-Item (Join-Path $root 'public\js\app.js') (Join-Path $dst 'public\js\app.js')
+          Copy-Item (Join-Path $root 'public\css\style.css') (Join-Path $dst 'public\css\style.css')
+          Copy-Item (Join-Path $root 'src\app-registry.js') (Join-Path $dst 'src\app-registry.js')
+      - name: Commit source snapshot
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diag-v219-src
+          git commit -m 'diag: snapshot exact v2.1.9 center source'
+          git push
