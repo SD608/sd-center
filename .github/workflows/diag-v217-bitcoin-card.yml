@@ -1,0 +1,68 @@
+name: Diagnose v2.1.7 Bitcoin card state
+
+on:
+  push:
+    branches:
+      - build-v217-bitcoin-path-force-20260816
+    paths:
+      - '.github/workflows/diag-v217-bitcoin-card.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install v2.1.7 and capture Bitcoin metadata logic
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.7.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.7/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '78c9dc31a811ff6e177eaf233b5686ba6a9e9b04de9145d5b4fab6fab31a089f'){ throw "hash mismatch $hash" }
+          Start-Process -FilePath $setup -ArgumentList '--silent' -Wait
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.7\resources\app'
+          $main=Get-Content (Join-Path $root 'main.js')
+          $out=@()
+          $out += '===== BUILTIN bitcoin ====='
+          for($i=0;$i -lt $main.Count;$i++){
+            if($main[$i] -match 'id:\s*"bitcoin"'){
+              $s=[Math]::Max(0,$i-5); $e=[Math]::Min($main.Count-1,$i+18)
+              for($j=$s;$j -le $e;$j++){ $out += ('{0}: {1}' -f ($j+1),$main[$j]) }
+              break
+            }
+          }
+          foreach($needle in @('function rawEntryVersion','function displayEntryVersion','function updateAvailabilityFor','function publicAppState')){
+            $out += "`n===== $needle ====="
+            for($i=0;$i -lt $main.Count;$i++){
+              if($main[$i].Contains($needle)){
+                $e=[Math]::Min($main.Count-1,$i+60)
+                for($j=$i;$j -le $e;$j++){ $out += ('{0}: {1}' -f ($j+1),$main[$j]) }
+                break
+              }
+            }
+          }
+          $pkg=Get-Content (Join-Path $root 'apps\SDBitcoinMiner\package.json') -Raw | ConvertFrom-Json
+          $manifest=Get-Content (Join-Path $root 'apps\SDBitcoinMiner\sd-app.json') -Raw | ConvertFrom-Json
+          $out += "`n===== embedded manifests ====="
+          $out += ('package.version=' + $pkg.version)
+          $out += ('sd-app.id=' + $manifest.id)
+          $out += ('sd-app.version=' + $manifest.version)
+          $out | Set-Content "$env:GITHUB_WORKSPACE\diag-v217-bitcoin-card.txt" -Encoding utf8
+      - name: Commit diagnostic
+        shell: pwsh
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add diag-v217-bitcoin-card.txt
+          git commit -m 'diag: capture v2.1.7 bitcoin card metadata' || exit 0
+          git push
