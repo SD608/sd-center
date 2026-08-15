@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!auth || !list || !podium) return;
 
   let rankedMembers = [];
+  let viewerIsAdmin = false;
 
   const balanceOf = (member) => {
     const value = Number(member?.balance || 0);
@@ -84,6 +85,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function renderSummary() {
     if (!summary) return;
+    if (viewerIsAdmin) {
+      summary.innerHTML = '<span>내 순위</span><strong>랭킹 제외</strong><small>관리자 계정은 잔액 랭킹에 포함되지 않습니다.</small>';
+      return;
+    }
     const me = rankedMembers.find((member) => member.is_me);
     if (!me) {
       summary.innerHTML = '<span>내 순위</span><strong>-</strong><small>내 계정 정보를 찾지 못했습니다.</small>';
@@ -128,12 +133,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         badge.textContent = "내 계정";
         identity.append(badge);
       }
-      if (member.role === "admin") {
-        const badge = document.createElement("span");
-        badge.className = "rank-admin-badge";
-        badge.textContent = "관리자";
-        identity.append(badge);
-      }
 
       const balance = document.createElement("div");
       balance.className = "rank-balance";
@@ -153,13 +152,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       const { data, error } = await auth.client.rpc("list_sd_member_wallets");
       if (error) throw error;
 
-      rankedMembers = applyRanks(data || []);
+      const allMembers = data || [];
+      viewerIsAdmin = allMembers.some((member) => member.is_me && member.role === "admin");
+      const rankingMembers = allMembers.filter((member) => member.role !== "admin");
+      rankedMembers = applyRanks(rankingMembers);
       renderPodium();
       renderSummary();
       renderList();
 
       if (showNotice) {
-        auth.setStatus(status, `잔액 랭킹 ${rankedMembers.length}명을 불러왔습니다.`, "success");
+        auth.setStatus(status, `관리자를 제외한 잔액 랭킹 ${rankedMembers.length}명을 불러왔습니다.`, "success");
         window.setTimeout(() => auth.clearStatus(status), 1600);
       }
     } catch (error) {
