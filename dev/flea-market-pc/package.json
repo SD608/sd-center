@@ -1,0 +1,13 @@
+{
+  "name": "sd-flea-market-pc",
+  "version": "0.1.0",
+  "description": "SD 플리마켓 PC 프로토타입 - 임무, 상자 보관함, 개봉 미니게임",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check public/app.js"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0"
+  }
+}
