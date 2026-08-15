@@ -1,0 +1,80 @@
+name: Diagnose v2.1.6 Bitcoin path compact
+
+on:
+  push:
+    branches:
+      - build-v217-bitcoin-path-force-20260816
+    paths:
+      - '.github/workflows/diag-v216-bitcoin-path-compact.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install verified v2.1.6
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.1.6.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.1.6/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne '900134a3abe35f8848129f8af0fe938b2ce6c4f0b89f7d4d658b6ee60e525c88') { throw "hash mismatch: $hash" }
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Extract compact updater/launch diagnostics
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.1.6\resources\app'
+          $script="$env:RUNNER_TEMP\diag.js"
+          @'
+          const fs=require('fs');
+          const path=require('path');
+          const root=process.argv[2];
+          const text=fs.readFileSync(path.join(root,'main.js'),'utf8').replace(/\r\n/g,'\n');
+          const out=[];
+          function section(title,body){ out.push(`\n===== ${title} =====\n${body}\n`); }
+          function around(needle,before=1300,after=3800){
+            const i=text.indexOf(needle);
+            if(i<0) return `NOT FOUND: ${needle}`;
+            return text.slice(Math.max(0,i-before),Math.min(text.length,i+after));
+          }
+          function allLines(pattern){
+            return text.split('\n').map((line,i)=>({line,n:i+1})).filter(x=>pattern.test(x.line)).map(x=>`${x.n}: ${x.line}`).join('\n');
+          }
+          section('cleanupBitcoinBuiltinDuplicate',around('function cleanupBitcoinBuiltinDuplicate',300,2600));
+          section('buildAppCatalog',around('function buildAppCatalog',500,7000));
+          section('BUILTIN_APPS references',allLines(/BUILTIN_APPS|builtinApps|builtin/i));
+          section('registry/custom references',allLines(/registry|customApps|loadRegistry|upsertCustomApp|permanentlyRemoveApp/));
+          section('appById references',allLines(/appById/));
+          section('entry.directory references',allLines(/entry\.directory|directory:\s*entry|app\.directory/));
+          section('launch/open IPC',allLines(/ipcMain\.handle|launch|open-folder|openFolder|shell\.openPath|spawn\(|fork\(|execFile\(/i));
+          section('first launchApp-like area',around('app:launch',1200,7000));
+          section('first open-folder-like area',around('app:open-folder',1200,5000));
+          fs.writeFileSync(path.join(process.cwd(),'diag-v216-main.txt'),out.join('\n'),'utf8');
+          '@ | Set-Content $script -Encoding utf8
+          node $script $root
+          if (-not (Test-Path 'diag-v216-main.txt')) { throw 'diagnostic file missing' }
+          Write-Host "Diagnostic bytes: $((Get-Item 'diag-v216-main.txt').Length)"
+
+      - name: Commit compact diagnostic
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diag-v216-main.txt
+          git commit -m 'diag: capture v2.1.6 bitcoin app path logic'
+          git push origin HEAD:build-v217-bitcoin-path-force-20260816
