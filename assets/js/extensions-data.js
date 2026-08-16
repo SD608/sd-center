@@ -81,7 +81,7 @@ window.SD_EXTENSION_PACKS = [
     stage: "PC Expansion",
     version: "v1.0.0",
     category: "파밍·습격 확장팩",
-    icon: "assets/icons/logistics-center.png",
+    icon: "assets/icons/flea-market.png",
     fileName: "SDFleaMarket_v1.0.0_Desktop.zip",
     downloadUrl: "#",
     unlockDownloadUrl: "downloads/extensions/SDFleaMarket_v1.0.0_Desktop.zip?v=100",
@@ -95,69 +95,74 @@ window.SD_EXTENSION_PACKS = [
   }
 ];
 
-(function setupFleaMarketEntitlement() {
-  const PACK_ID = "sd-flea-market";
-  const REQUIRED_REP = 7000;
+(function initializeFleaMarketEntitlementGate() {
+  const pack = window.SD_EXTENSION_PACKS.find((item) => item.id === "sd-flea-market");
+  if (!pack) return;
 
-  const rankFromRep = (rep) => {
-    const n = Number(rep) || 0;
-    if (n >= 7000) return "S";
-    if (n >= 4500) return "A";
-    if (n >= 2800) return "B";
-    if (n >= 1600) return "C";
-    if (n >= 800) return "D";
-    if (n >= 300) return "E";
+  const rankForRep = (value) => {
+    const rep = Number(value || 0);
+    if (rep >= 7000) return "S";
+    if (rep >= 4500) return "A";
+    if (rep >= 2800) return "B";
+    if (rep >= 1600) return "C";
+    if (rep >= 800) return "D";
+    if (rep >= 300) return "E";
     return "F";
   };
 
-  const findPack = () => (window.SD_EXTENSION_PACKS || []).find((pack) => pack.id === PACK_ID);
-  const findCard = () => [...document.querySelectorAll(".extension-card")].find((card) => card.querySelector("h3")?.textContent?.trim() === "SD 플리마켓");
+  const findCard = () => [...document.querySelectorAll(".extension-card")]
+    .find((card) => card.querySelector("h3")?.textContent?.trim() === pack.name);
 
-  const setLocked = (card, message, href) => {
-    if (!card) return;
-    const link = card.querySelector(".extension-download");
+  const setLink = (link, { href, title, detail, locked }) => {
     if (!link) return;
-    link.href = href || "#";
+    link.href = href;
     link.removeAttribute("download");
-    link.dataset.locked = "true";
-    link.style.opacity = ".62";
-    link.style.cursor = href ? "pointer" : "not-allowed";
-    const title = link.querySelector("span");
-    const small = link.querySelector("small");
-    if (title) title.textContent = "S등급에서 해금";
-    if (small) small.textContent = message;
-    if (!href) link.addEventListener("click", (event) => event.preventDefault(), { once: true });
+    link.replaceChildren();
+    const main = document.createElement("span");
+    main.textContent = title;
+    const small = document.createElement("small");
+    small.textContent = detail;
+    link.append(main, small);
+    link.dataset.sdLocked = locked ? "true" : "false";
+    link.style.opacity = locked ? "0.72" : "";
+    link.style.filter = locked ? "saturate(.55)" : "";
+    link.style.cursor = locked ? "not-allowed" : "";
+    if (!locked) link.setAttribute("download", pack.fileName);
   };
 
-  const setUnlocked = (card, pack, rep) => {
-    if (!card || !pack) return;
-    const link = card.querySelector(".extension-download");
-    if (!link) return;
-    link.href = pack.unlockDownloadUrl;
-    link.download = pack.fileName;
-    link.dataset.locked = "false";
-    link.style.opacity = "";
-    link.style.cursor = "";
-    const title = link.querySelector("span");
-    const small = link.querySelector("small");
-    if (title) title.textContent = "ZIP 다운로드";
-    if (small) small.textContent = `S등급 인증 완료 · 평판 ${Number(rep).toLocaleString("ko-KR")}`;
-  };
-
-  async function applyGate() {
-    const pack = findPack();
+  const applyGate = async () => {
     const card = findCard();
-    if (!pack || !card) return;
+    const link = card?.querySelector(".extension-download");
+    if (!card || !link) return;
 
-    if (!window.SD_AUTH) {
-      setLocked(card, "로그인 후 물류 등급을 확인합니다.", "login.html?next=%2F%23extensions");
+    setLink(link, {
+      href: "#",
+      title: "🔒 S등급 확인 중",
+      detail: "SD 물류회사 평판 7,000 필요",
+      locked: true
+    });
+
+    if (!window.SD_AUTH?.getSession || !window.SD_AUTH?.client) {
+      setLink(link, {
+        href: "#",
+        title: "🔒 S등급 확인 불가",
+        detail: "페이지를 새로고침해 주세요",
+        locked: true
+      });
+      link.onclick = (event) => event.preventDefault();
       return;
     }
 
     try {
       const session = await window.SD_AUTH.getSession();
-      if (!session) {
-        setLocked(card, "로그인 후 물류 등급을 확인합니다.", "login.html?next=%2F%23extensions");
+      if (!session?.user?.id) {
+        setLink(link, {
+          href: "login.html?next=index.html%23extensions",
+          title: "로그인 후 S등급 확인",
+          detail: "SD 물류회사 S등급 필요",
+          locked: false
+        });
+        link.removeAttribute("download");
         return;
       }
 
@@ -168,18 +173,42 @@ window.SD_EXTENSION_PACKS = [
         .maybeSingle();
       if (error) throw error;
 
-      const rep = Number(data?.state?.logisticsRep) || 0;
-      const rank = rankFromRep(rep);
-      if (rep >= REQUIRED_REP) {
-        setUnlocked(card, pack, rep);
-      } else {
-        setLocked(card, `현재 ${rank}등급 · 평판 ${rep.toLocaleString("ko-KR")} / ${REQUIRED_REP.toLocaleString("ko-KR")}`);
+      const rep = Number(data?.state?.logisticsRep || 0);
+      const rank = rankForRep(rep);
+      if (rep >= Number(pack.requiredLogisticsRep || 7000)) {
+        setLink(link, {
+          href: pack.unlockDownloadUrl,
+          title: "ZIP 다운로드",
+          detail: `${pack.fileName} · S등급 인증 완료`,
+          locked: false
+        });
+        link.onclick = null;
+        return;
       }
-    } catch (error) {
-      console.warn("SD 플리마켓 해금 확인 실패", error?.message || error);
-      setLocked(card, "물류 등급을 확인하지 못했습니다. 잠시 후 새로고침하세요.");
-    }
-  }
 
-  window.addEventListener("DOMContentLoaded", () => window.setTimeout(() => void applyGate(), 0));
+      setLink(link, {
+        href: "#",
+        title: `🔒 S등급 필요 · 현재 ${rank}등급`,
+        detail: `현재 평판 ${rep.toLocaleString("ko-KR")} / 7,000`,
+        locked: true
+      });
+      link.onclick = (event) => {
+        event.preventDefault();
+        window.alert(`SD 플리마켓은 물류회사 S등급에서 해금됩니다.\n현재 ${rank}등급 · 평판 ${rep.toLocaleString("ko-KR")} / 7,000`);
+      };
+    } catch (error) {
+      console.warn("SD 플리마켓 S등급 확인 실패", error?.message || error);
+      setLink(link, {
+        href: "#",
+        title: "🔒 S등급 확인 실패",
+        detail: "물류회사 진행도를 불러오지 못했습니다",
+        locked: true
+      });
+      link.onclick = (event) => event.preventDefault();
+    }
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    window.setTimeout(() => void applyGate(), 0);
+  });
 })();

@@ -1,0 +1,26 @@
+SD 플리마켓 PC 확장팩 v1.0.0 · GitHub 업로드 세트
+
+대상 저장소: SD608/sd-center
+
+이 폴더 안의 파일/폴더를 저장소 루트에 같은 경로로 업로드/덮어쓰기하세요.
+
+추가 파일
+- downloads/extensions/SDFleaMarket_v1.0.0_Desktop.zip
+- assets/icons/flea-market.png
+
+덮어쓰기 파일
+- assets/js/extensions-data.js
+- extensions-data.js
+- update/extensions-catalog.json
+
+공식 해금 조건
+- SD 물류회사 S등급
+- 물류 평판 7,000 이상
+- SD종합센터 v2.2.0 이상
+
+홈페이지 확장팩 카드에서는 로그인 계정의 sd_logistics_progress를 확인해
+S등급(평판 7,000) 미만이면 다운로드 버튼을 잠급니다.
+
+주의
+- 정적 ZIP 주소를 직접 아는 사용자의 직접 접근까지 차단하는 DRM 방식은 아닙니다.
+- 앱 자체 SD지갑 온라인 동기화는 별도 연동 작업이 필요하며 이 v1.0.0 배포에는 포함되지 않습니다.

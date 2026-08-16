@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 4,
-  "updatedAt": "2026-08-14T21:27:00+09:00",
+  "catalogVersion": 5,
+  "updatedAt": "2026-08-16T17:13:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -37,6 +37,15 @@
       "version": "1.2.2",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
       "notes": "v1.2.2 강제 핫픽스. 공용 모듈을 ZIP 내부에 포함해 실행 오류를 수정하고 v1.2.0 밸런스/GPU 내구도 규칙을 유지합니다."
+    },
+    "sd-flea-market": {
+      "name": "SD 플리마켓",
+      "version": "1.0.0",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.0_Desktop.zip?v=100",
+      "notes": "물류회사 S등급 해금 · 길거리/상가/물류센터 파밍 · 은행 습격 · 오토바이 추격",
+      "requiredLogisticsRank": "S",
+      "requiredLogisticsRep": 7000,
+      "requiredCenterVersion": "2.2.0"
     }
   }
 }
