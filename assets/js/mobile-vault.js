@@ -75,10 +75,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const snapshotBars = Math.max(0, Math.trunc(Number(data?.gold_bars || 0)));
     const snapshotGrams = Math.max(0, Number(data?.gold_grams || 0));
     if (Number.isFinite(snapshotBars) && Number.isFinite(snapshotGrams)) {
-      void mobile.auth.client.rpc("upsert_sd_flea_gold_snapshot", {
-        p_gold_bars: snapshotBars,
-        p_gold_grams: snapshotGrams
-      }).catch(() => {});
+      void (async () => {
+      try {
+        const { error } = await mobile.auth.client.rpc("upsert_sd_flea_gold_snapshot", {
+          p_gold_bars: snapshotBars,
+          p_gold_grams: snapshotGrams
+        });
+        if (error) throw error;
+      } catch (_) {
+        // 프로필용 금 보유량 동기화 실패가 금고 화면 자체를 막지 않게 합니다.
+      }
+    })();
     }
     walletBalance = Number(data.balance || 0);
     mobile.updateBalanceText(walletBalance);
