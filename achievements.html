@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#0b1224"/>
+<meta name="description" content="SD종합센터 업적"/>
+<title>SD종합센터 · 업적</title>
+<link rel="icon" href="favicon.ico"/>
+<link rel="stylesheet" href="assets/css/style.css?v=online2"/>
+<style>
+.achievements-page{min-height:100vh;padding-top:120px;padding-bottom:90px}.achievements-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px}.achievements-head h1{margin:8px 0 0;font-size:clamp(2.3rem,5vw,4.4rem);letter-spacing:-.055em}.achievements-head p{max-width:580px;margin:14px 0 0;color:var(--muted);line-height:1.75}.achievement-count{padding:12px 16px;border:1px solid rgba(255,204,88,.2);border-radius:16px;background:rgba(255,204,88,.07);color:#f0cf76;font-size:.82rem;font-weight:900}.achievement-category-title{display:flex;align-items:center;gap:10px;margin:34px 0 14px}.achievement-category-title span{color:#d9b85e;font-size:.7rem;font-weight:950;letter-spacing:.13em}.achievement-category-title h2{margin:0;font-size:1.35rem}.achievement-card{max-width:720px;padding:25px;border:1px solid rgba(255,204,88,.17);border-radius:24px;background:linear-gradient(145deg,rgba(255,204,88,.085),rgba(17,28,49,.94));box-shadow:0 18px 46px rgba(0,0,0,.16)}.achievement-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.achievement-icon{display:grid;width:54px;height:54px;place-items:center;border-radius:17px;background:rgba(255,204,88,.11);font-size:28px}.achievement-badge{padding:7px 10px;border:1px solid rgba(255,204,88,.18);border-radius:99px;background:rgba(255,204,88,.06);color:#d8bb6b;font-size:.68rem;font-weight:900}.achievement-name{margin:18px 0 0;font-size:1.65rem}.achievement-condition{margin-top:16px;padding:14px 15px;border:1px solid rgba(255,255,255,.06);border-radius:15px;background:rgba(0,0,0,.14)}.achievement-condition small{display:block;color:#74839d;font-size:.66rem;font-weight:900;letter-spacing:.08em}.achievement-condition strong{display:block;margin-top:5px;color:#e6edf9;font-size:.91rem}.achievement-note{margin:13px 0 0;color:#8491a6;font-size:.76rem;line-height:1.65}.achievement-placeholder{max-width:720px;margin-top:18px;padding:18px 20px;border:1px dashed rgba(131,157,205,.17);border-radius:18px;color:#78869e;font-size:.78rem;line-height:1.7}@media(max-width:760px){.achievements-page{padding-top:95px}.achievements-head{align-items:flex-start;flex-direction:column}.achievement-card{padding:21px}}
+</style>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="assets/js/supabase-config.js?v=2"></script>
+<script defer src="assets/js/auth-common.js?v=2"></script>
+<script defer src="assets/js/auth-nav.js?v=20260817-achievements"></script>
+</head>
+<body>
+<div aria-hidden="true" class="page-glow glow-one"></div><div aria-hidden="true" class="page-glow glow-two"></div>
+<header class="site-header"><a aria-label="SD종합센터 홈" class="brand" href="index.html"><img alt="" src="assets/icons/center.png"/><span>SD종합센터</span></a><nav aria-label="주요 메뉴" class="nav-links"><a href="index.html#online-account">온라인 계정</a><a data-auth-user hidden href="ranking.html">잔액 랭킹</a><a href="index.html#apps">기본 앱</a><a href="index.html#extensions">확장팩</a><a href="index.html#install">설치 방법</a><a href="index.html#faq">도움말</a></nav><div class="header-actions-group"><div class="header-account"><a class="header-login" data-auth-guest href="login.html">로그인</a><a class="header-signup" data-auth-guest href="signup.html">회원가입</a><a class="header-signup" data-auth-name data-auth-user hidden href="account.html">내 지갑</a></div></div></header>
+<main class="achievements-page section-shell">
+<section class="achievements-head"><div><span class="section-kicker">SD ACHIEVEMENTS</span><h1>업적</h1><p>SD종합센터에서 달성한 기록과 특별 칭호를 확인하는 메뉴입니다. 현재는 화면 구성 확인을 위해 예시 업적 하나만 등록되어 있습니다.</p></div><div class="achievement-count">예시 업적 · 1개</div></section>
+<section><div class="achievement-category-title"><span>BANK BALANCE RANKING</span><h2>통장 잔고 랭킹</h2></div><article class="achievement-card"><div class="achievement-top"><div class="achievement-icon" aria-hidden="true">🏆</div><span class="achievement-badge">시즌 0 · 예시</span></div><h3 class="achievement-name">전설</h3><div class="achievement-condition"><small>달성 조건</small><strong>시즌 0 통장 잔고 랭킹 1위</strong></div><p class="achievement-note">서버 1등에게만 지급되는 시즌 한정 업적입니다. 현재는 실제 달성 판정 없이 메뉴 디자인 확인용으로 표시합니다.</p></article><div class="achievement-placeholder">추후 확정된 전체 업적을 이 화면에 카테고리별로 추가할 수 있습니다.</div></section>
+</main>
+</body>
+</html>
