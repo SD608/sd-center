@@ -9,10 +9,10 @@ window.SD_EXTENSION_PACKS = [
     icon: "assets/icons/center.png",
     fileName: "SDLink_v1.2.7_Desktop.zip",
     downloadUrl: "downloads/extensions/SDLink_v1.2.7_Desktop.zip?v=127",
-    description: "SD Online 계정과 PC 앱을 연결하는 핵심 확장팩입니다. v1.2.7에서 로컬 앱 브리지를 안정화해 SD 플리마켓의 온라인 재고·회사 등급 동기화를 지원합니다. 기존 거래 동기화와 백그라운드 안정화 기능도 유지됩니다.",
+    description: "SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. 여러 SD 앱의 데이터를 온라인 계정과 동기화하고, PC와 모바일이 같은 계정 데이터를 사용할 수 있도록 연결 허브 역할을 합니다.",
     requirements: "SD종합센터 v2.1.1 이상 · SD지갑 · Windows 10/11",
     updatedAt: "2026-08-16",
-    tags: ["로컬 앱 브리지", "플리마켓 온라인 동기화", "백그라운드 안정화"],
+    tags: ["온라인 연동", "백그라운드 동기화", "PC·모바일 연결"],
     featured: true
   },
   {
@@ -24,10 +24,10 @@ window.SD_EXTENSION_PACKS = [
     icon: "assets/icons/logistics-center.png",
     fileName: "SDLogisticsCenter_Season0_Desktop.zip",
     downloadUrl: "downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=1092",
-    description: "SD지갑과 연동되는 물류회사 경영 확장팩입니다. v1.0.9에서 현재 회사 등급과 물류 평판을 로컬 공유 상태로 갱신해 SD 플리마켓에서 실제 진행도를 바로 읽을 수 있도록 연동했습니다. 기존 v1.0.9 랭크·차량 해금 및 경영 진행 규칙은 유지됩니다.",
+    description: "운송 계약을 수행하고 차량·기사·본부를 확장해 나가는 물류회사 경영 시뮬레이션입니다. 계약을 완료해 회사 평판과 등급을 올리고, 더 좋은 차량과 고수익 계약을 해금하며 자동화 수익 구조까지 구축할 수 있습니다.",
     requirements: "SD종합센터 v2.1.2 이상 · SD지갑 · Windows 10/11",
     updatedAt: "2026-08-16",
-    tags: ["회사 등급 공유", "플리마켓 연동", "랭크/차량 해금"],
+    tags: ["회사 경영", "계약 운송", "자동 수익"],
     featured: true
   },
   {
@@ -39,10 +39,10 @@ window.SD_EXTENSION_PACKS = [
     icon: "assets/icons/bitcoin.png",
     fileName: "SDBitcoinMiner_v1.2.2_Desktop.zip",
     downloadUrl: "downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
-    description: "v1.2.1에서 종합센터 확장팩 설치 경로의 공용 모듈 누락으로 실행되지 않던 문제를 수정했습니다. 채굴 확률 0.02%, GPU 155만원, GPU당 하루 전기세 10만원, 성공 시 해당 GPU 내구도 1% 감소 및 0% 파손 규칙을 유지합니다.",
+    description: "방을 구입하고 채굴 프레임과 그래픽카드를 설치해 운영하는 자동 수익형 채굴 시뮬레이션입니다. 시설과 장비를 확장해 채굴 규모를 키우는 동시에 전기세와 GPU 내구도를 관리해야 합니다.",
     requirements: "SD종합센터 v2.1.3 이상 · SD지갑 · Windows 10/11",
     updatedAt: "2026-08-14",
-    tags: ["실행 오류 수정", "GPU 내구도", "자동 업데이트"],
+    tags: ["자동 채굴", "장비 관리", "시설 확장"],
     featured: true
   },
   {
@@ -54,10 +54,10 @@ window.SD_EXTENSION_PACKS = [
     icon: "assets/icons/slot.png",
     fileName: "SDSlot_Stage7_Desktop.zip",
     downloadUrl: "downloads/extensions/SDSlot_Stage7_Desktop.zip",
-    description: "SD지갑 가상계좌와 연동되는 3릴 슬롯머신 시뮬레이션입니다. 선결제 후 3개 릴이 일치하면 가상 당첨금을 지급합니다.",
+    description: "SD지갑과 연동되는 3릴 슬롯머신 시뮬레이션입니다. 원하는 가상 금액을 베팅하고 릴 결과에 따라 다양한 배수의 보상을 받으며, 낮은 확률의 고배율 결과와 잭팟을 노릴 수 있습니다.",
     requirements: "SD종합센터 v2.1.1 이상",
     updatedAt: "2026-07-31",
-    tags: ["SD지갑 연동", "ZIP 앱 추가", "가상 시뮬레이션"],
+    tags: ["3릴 슬롯", "배당 시스템", "잭팟"],
     featured: true
   },
   {
@@ -69,10 +69,10 @@ window.SD_EXTENSION_PACKS = [
     icon: "assets/icons/mukjippa.png",
     fileName: "SDMukjippa_Version1_1_Desktop.zip",
     downloadUrl: "downloads/extensions/SDMukjippa_Version1_1_Desktop.zip",
-    description: "SD지갑 가상계좌와 연동되는 연승 도전형 묵찌빠 시뮬레이션입니다. 승리 후 보상을 정산하거나 다음 연승에 도전할 수 있습니다.",
+    description: "컴퓨터와 묵찌빠를 진행하며 연승에 도전하는 선택형 미니게임입니다. 승리 후 현재 보상을 정산할지 더 높은 보상을 위해 계속 도전할지 선택할 수 있으며, 연승이 길어질수록 보상과 위험이 함께 커집니다.",
     requirements: "SD종합센터 v2.1.1 이상",
     updatedAt: "2026-07-31",
-    tags: ["SD지갑 연동", "연승 도전", "ZIP 앱 추가"],
+    tags: ["연승 도전", "선택형 보상", "고위험·고보상"],
     featured: true
   },
   {
@@ -84,10 +84,10 @@ window.SD_EXTENSION_PACKS = [
     icon: "assets/icons/sta.png",
     fileName: "STA_Version6_Desktop.zip",
     downloadUrl: "downloads/extensions/STA_Version6_Desktop.zip?v=151",
-    description: "해킹, 습격, 운반을 순서대로 수행하는 SD지갑 연동 작전 확장팩입니다. v1.5.1에서 현금 획득 종료 후 운반 화면으로 넘어가지 않던 버그를 수정했습니다.",
+    description: "해킹·습격·현금 확보·운반 등 여러 단계를 직접 수행하는 작전형 확장팩입니다. 다양한 미니게임을 순서대로 클리어해야 보상을 획득할 수 있으며, 준비와 실력에 따라 큰 수익을 노릴 수 있습니다.",
     requirements: "SD종합센터 v2.1.1 이상",
     updatedAt: "2026-08-14",
-    tags: ["SD지갑 연동", "미니게임 3종", "ZIP 앱 추가"],
+    tags: ["습격 콘텐츠", "미니게임", "고위험·고수익"],
     featured: true
   },
   {
@@ -99,10 +99,10 @@ window.SD_EXTENSION_PACKS = [
     icon: "assets/icons/flea-market.png?v=3",
     fileName: "SDFleaMarket_v1.0.9_Desktop.zip",
     downloadUrl: "downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip?v=109-open",
-    description: "PC에서 획득한 물품을 SD Online 계정과 동기화해 PC·모바일에서 함께 관리하는 플리마켓 확장팩입니다. 누구나 다운로드·설치할 수 있으며, 회사 등급은 앱 내부 진행도와 표시용으로만 사용됩니다. v1.0.9에서 회사 등급 직접 반영과 물품 새로고침 기능을 추가했습니다.",
+    description: "파밍과 상자 개봉으로 얻은 다양한 물품을 수집하고 거래하는 온라인 마켓 확장팩입니다. 아이템마다 등급·상태·가치가 존재하며, 획득한 물품을 보관하거나 다른 유저와 거래하고 PC와 모바일에서 같은 보관함을 사용할 수 있습니다.",
     requirements: "SD종합센터 v2.2.0 이상 · SD Link v1.2.7 이상 · Windows 10/11",
     updatedAt: "2026-08-16",
-    tags: ["누구나 설치", "온라인 물품 새로고침", "PC·모바일 재고 동기화"],
+    tags: ["아이템 파밍", "유저 거래", "PC·모바일 연동"],
     featured: true
   }
 ];
