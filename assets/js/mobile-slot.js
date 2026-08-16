@@ -72,6 +72,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? `가상 당첨금 +${Number(data.payout).toLocaleString("ko-KR")}원`
         : `가상 베팅금 -${Number(data.wager).toLocaleString("ko-KR")}원`;
       renderBalance(data.balance_after);
+      if (data.won) {
+        const slotLabel = data.jackpot ? "황금색 777 JACKPOT" : `${data.result_name || "당첨"} x${Number(data.multiplier || 0)}`;
+        const slotIcon = data.jackpot ? "✨7" : "🎰";
+        const slotScore = data.jackpot ? 1000000 : Number(data.multiplier || 0);
+        void mobile.auth.client.rpc("record_sd_flea_slot_result", {
+          p_score: slotScore,
+          p_label: slotLabel,
+          p_icon: slotIcon,
+          p_jackpot: Boolean(data.jackpot)
+        }).catch(() => {});
+      }
     } catch (error) {
       clearInterval(timer);
       mobile.setMobileStatus(status, mobile.auth.messageForError(error), "error");
