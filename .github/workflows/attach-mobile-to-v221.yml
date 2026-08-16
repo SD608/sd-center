@@ -1,0 +1,23 @@
+name: Attach mobile APK to v2.2.1
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/attach-mobile-to-v221.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep latest mobile download working
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL 'https://github.com/SD608/sd-center/releases/download/mobile-v108-1.0.8/SDCenter-Mobile.apk' -o /tmp/SDCenter-Mobile.apk
+          gh release upload 'v.2.2.1' /tmp/SDCenter-Mobile.apk --repo 'SD608/sd-center' --clobber
