@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1224">
+  <meta name="description" content="SD종합센터 업적">
+  <title>SD종합센터 · 업적</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/center.png">
+  <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
+  <style>
+    .achievement-hero{padding:22px;border:1px solid rgba(255,204,88,.22);border-radius:26px;background:linear-gradient(145deg,rgba(255,204,88,.14),rgba(21,25,42,.96));box-shadow:0 18px 50px rgba(0,0,0,.18)}
+    .achievement-hero-top{display:flex;align-items:center;gap:14px}.achievement-trophy{display:grid;width:58px;height:58px;place-items:center;border-radius:18px;background:rgba(255,204,88,.12);font-size:31px}
+    .achievement-hero small{display:block;color:#e7c66b;font-size:10px;font-weight:900;letter-spacing:.13em}.achievement-hero h1{margin:4px 0 0;font-size:26px}.achievement-hero p{margin:10px 0 0;color:var(--m-muted);font-size:12px;line-height:1.65}
+    .achievement-summary{display:flex;justify-content:space-between;gap:10px;margin-top:16px;padding-top:15px;border-top:1px solid rgba(255,255,255,.09)}.achievement-summary span{color:var(--m-muted);font-size:11px}.achievement-summary strong{color:#ffdc7c;font-size:13px}
+    .achievement-list{display:grid;gap:12px}.achievement-card{padding:18px;border:1px solid rgba(255,204,88,.18);border-radius:20px;background:linear-gradient(145deg,rgba(255,204,88,.08),rgba(255,255,255,.025))}.achievement-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.achievement-category{display:block;color:#e7c66b;font-size:10px;font-weight:900;letter-spacing:.1em}.achievement-card h2{margin:5px 0 0;font-size:21px}.achievement-state{flex:0 0 auto;padding:7px 10px;border:1px solid rgba(255,204,88,.2);border-radius:99px;background:rgba(255,204,88,.08);color:#f0cd73;font-size:10px;font-weight:900}.achievement-condition{margin-top:14px;padding:13px 14px;border-radius:14px;background:rgba(0,0,0,.16)}.achievement-condition span{display:block;color:#8290ad;font-size:10px}.achievement-condition strong{display:block;margin-top:4px;color:#e9eef9;font-size:13px}.achievement-note{margin:12px 0 0;color:#8e9bb5;font-size:11px;line-height:1.6}.achievement-back{display:grid;min-height:50px;margin-top:16px;place-items:center;border:1px solid var(--m-line);border-radius:15px;background:rgba(255,255,255,.05);color:#dbe4f7;text-decoration:none;font-size:13px;font-weight:900}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/supabase-config.js?v=2" defer></script>
+  <script src="assets/js/auth-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-common.js?v=2" defer></script>
+</head>
+<body class="mobile-body">
+  <header class="mobile-topbar">
+    <a class="mobile-brand" href="mobile.html"><img src="assets/icons/center.png" alt=""><span><small>SD608 ONLINE</small><strong>SD종합센터 Mobile</strong></span></a>
+    <button class="icon-button" data-mobile-logout type="button">나가기</button>
+  </header>
+
+  <main class="mobile-main">
+    <section class="achievement-hero">
+      <div class="achievement-hero-top">
+        <div class="achievement-trophy" aria-hidden="true">🏆</div>
+        <div><small>ACHIEVEMENTS</small><h1>업적</h1></div>
+      </div>
+      <p>SD종합센터의 플레이 기록과 특별한 달성 조건을 모아보는 메뉴입니다. 현재는 화면 구성 확인용 예시 업적 1개만 표시합니다.</p>
+      <div class="achievement-summary"><span>등록된 예시</span><strong>1개</strong></div>
+    </section>
+
+    <section class="mobile-section">
+      <div class="mobile-section-title"><div><span class="eyebrow-mobile">BANK BALANCE RANKING</span><h2>통장 잔고 랭킹</h2></div></div>
+      <div class="achievement-list">
+        <article class="achievement-card">
+          <div class="achievement-card-head">
+            <div><span class="achievement-category">시즌 0 · 랭킹 업적</span><h2>전설</h2></div>
+            <span class="achievement-state">예시</span>
+          </div>
+          <div class="achievement-condition"><span>달성 조건</span><strong>시즌 0 통장 잔고 랭킹 1위</strong></div>
+          <p class="achievement-note">서버 1등에게만 지급되는 시즌 한정 업적입니다. 현재 화면에서는 실제 달성 판정이나 보상 지급은 연결하지 않았습니다.</p>
+        </article>
+      </div>
+      <a class="achievement-back" href="mobile.html">← 홈으로 돌아가기</a>
+    </section>
+  </main>
+  <nav class="mobile-bottom-nav"></nav>
+  <script>
+    window.addEventListener("DOMContentLoaded", async () => {
+      try { await window.SD_MOBILE?.loadMobileShell?.(); } catch (error) { console.error(error); }
+    });
+  </script>
+</body>
+</html>
