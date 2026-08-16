@@ -23,18 +23,18 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          import re
 
           p = Path('assets/js/mobile-vault.js')
           text = p.read_text(encoding='utf-8')
-          old = '''    if (Number.isFinite(snapshotBars) && Number.isFinite(snapshotGrams)) {
-              void mobile.auth.client.rpc("upsert_sd_flea_gold_snapshot", {
-                p_gold_bars: snapshotBars,
-                p_gold_grams: snapshotGrams
-              }).catch(() => {});
-            }
-          '''
-          new = '''    if (Number.isFinite(snapshotBars) && Number.isFinite(snapshotGrams)) {
-              void (async () => {
+          pattern = re.compile(
+              r'void\s+mobile\.auth\.client\.rpc\("upsert_sd_flea_gold_snapshot",\s*\{\s*'
+              r'p_gold_bars:\s*snapshotBars,\s*'
+              r'p_gold_grams:\s*snapshotGrams\s*'
+              r'\}\)\.catch\(\(\)\s*=>\s*\{\}\);',
+              re.S,
+          )
+          replacement = '''void (async () => {
                 try {
                   const { error } = await mobile.auth.client.rpc("upsert_sd_flea_gold_snapshot", {
                     p_gold_bars: snapshotBars,
@@ -44,12 +44,10 @@ jobs:
                 } catch (_) {
                   // 프로필용 금 보유량 동기화 실패가 금고 화면 자체를 막지 않게 합니다.
                 }
-              })();
-            }
-          '''
-          if old not in text:
-              raise SystemExit('snapshot rpc catch block not found')
-          text = text.replace(old, new, 1)
+              })();'''
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'snapshot rpc catch pattern matches: {count}')
           p.write_text(text, encoding='utf-8')
 
           p = Path('vault-mobile.html')
@@ -64,6 +62,8 @@ jobs:
           if 'sd608-mobile-v12-profile-gold-fix' not in text:
               raise SystemExit('service worker cache marker not found')
           text = text.replace('sd608-mobile-v12-profile-gold-fix', 'sd608-mobile-v13-vault-rpc-fix', 1)
+          if './assets/js/mobile-vault.js?v=8' not in text:
+              raise SystemExit('service worker vault marker v8 not found')
           text = text.replace('./assets/js/mobile-vault.js?v=8', './assets/js/mobile-vault.js?v=9', 1)
           p.write_text(text, encoding='utf-8')
           PY
