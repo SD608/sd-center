@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="SD608 Online 공개 프로필" />
+<meta name="theme-color" content="#0b1224" />
+<title>프로필 · SD608 Online</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="favicon.ico" />
+<link rel="stylesheet" href="assets/css/style.css?v=online2" />
+<link rel="stylesheet" href="assets/css/profile-page.css?v=1" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="assets/js/supabase-config.js?v=2" defer></script>
+<script src="assets/js/auth-common.js?v=2" defer></script>
+<script src="assets/js/profile-page.js?v=1" defer></script>
+</head>
+<body class="auth-body profile-body">
+<div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
+<header class="site-header auth-site-header">
+  <a class="brand" href="index.html"><img src="assets/icons/center.png" alt="" /><span>SD종합센터</span></a>
+  <nav class="nav-links"><a href="index.html">홈</a><a href="account.html">내 지갑</a><a href="ranking.html">잔액 랭킹</a><a href="mobile.html">모바일 센터</a><a href="profile-shop.html">프로필 상점</a></nav>
+  <div class="header-account"><button id="logoutButton" class="header-login" type="button">로그아웃</button></div>
+</header>
+
+<main class="profile-main section-shell">
+  <section class="profile-hero">
+    <div><span class="section-kicker">SD PUBLIC PROFILE</span><h1 id="profileHeading">회원 프로필</h1><p>SD608 계정의 게임 자산과 플리마켓 수집품을 공개 카드로 보여줍니다.</p></div>
+    <div class="profile-hero-actions"><a class="secondary-button" href="ranking.html">랭킹으로 돌아가기</a><button id="refreshProfile" class="secondary-button" type="button">새로고침</button></div>
+  </section>
+  <div id="profileStatus" class="form-status account-status" hidden aria-live="polite"></div>
+
+  <section id="profileMissing" class="profile-missing" hidden>
+    <span>PROFILE NOT CREATED</span>
+    <h2 id="missingName">아직 프로필이 없습니다.</h2>
+    <p>프로필을 만들면 랭킹에서 닉네임을 눌러 이 카드와 자랑 아이템을 볼 수 있습니다.</p>
+    <button id="createProfileButton" class="primary-button" type="button" hidden>내 프로필 만들기</button>
+  </section>
+
+  <section id="profileContent" hidden>
+    <article class="sd-id-card" aria-label="SD608 공개 프로필 카드">
+      <div class="id-watermark">SD608</div>
+      <header class="id-card-header"><div><small>SD608 ONLINE</small><strong>게임 프로필 등록증</strong></div><span>PUBLIC PROFILE</span></header>
+      <div class="id-card-body">
+        <div class="id-photo" id="profilePhoto"><span>👤</span></div>
+        <div class="id-fields">
+          <div class="id-name-row"><span id="profileTitleBadge" class="id-title" hidden></span><h2 id="profileNickname">회원</h2></div>
+          <dl>
+            <div><dt>보유 자산</dt><dd id="profileAssetTotal">-</dd></div>
+            <div><dt>계좌 잔액</dt><dd id="profileWalletBalance">-</dd></div>
+            <div><dt>보유 금</dt><dd id="profileGold">-</dd></div>
+            <div><dt>슬롯 최대 당첨</dt><dd id="profileSlotBest">-</dd></div>
+          </dl>
+        </div>
+      </div>
+      <footer class="id-card-footer"><span>코인 자산 제외</span><span>SD GAME DATA ONLY</span></footer>
+    </article>
+
+    <section class="profile-section-card">
+      <div class="profile-section-heading"><div><span class="section-kicker">SHOWCASE</span><h2>플리마켓 자랑 아이템</h2></div><small>판매하면 프로필에서 자동으로 사라집니다.</small></div>
+      <div id="profileShowcase" class="profile-showcase-grid"></div>
+    </section>
+
+    <section class="profile-section-card">
+      <div class="profile-section-heading"><div><span class="section-kicker">ACHIEVEMENTS</span><h2>업적</h2></div><small id="achievementCount">0개</small></div>
+      <div id="profileAchievements" class="achievement-grid"></div>
+    </section>
+
+    <section id="profileOwnerTools" class="profile-owner-tools" hidden>
+      <div class="profile-section-heading"><div><span class="section-kicker">EDIT PROFILE</span><h2>내 프로필 꾸미기</h2></div><a class="secondary-button" href="profile-shop.html">치장품 상점</a></div>
+      <div class="owner-tools-grid">
+        <article class="owner-tool-card"><h3>자랑 아이템 선택</h3><p>현재 온라인 보관함에 있는 물건 중 최대 6개를 선택할 수 있습니다.</p><div id="showcasePicker" class="showcase-picker"></div><button id="saveShowcaseButton" class="primary-button" type="button">자랑 아이템 저장</button></article>
+        <article class="owner-tool-card"><h3>프로필 사진</h3><p>프로필 사진은 치장품 상점에서 구매한 사진만 사용할 수 있습니다.</p><div id="avatarPicker" class="profile-select-list"></div></article>
+        <article class="owner-tool-card"><h3>칭호</h3><p>칭호 보상이 있는 업적을 달성하면 여기서 장착할 수 있습니다.</p><div id="titlePicker" class="profile-select-list"></div></article>
+      </div>
+    </section>
+  </section>
+</main>
+</body>
+</html>
