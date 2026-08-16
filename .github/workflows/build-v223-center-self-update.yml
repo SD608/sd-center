@@ -47,11 +47,11 @@ jobs:
           "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "APP_ROOT=$appDir\resources\app" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Patch SDCenter v2.2.3 self update
+      - name: Patch SDCenter v2.2.3 Electron autoUpdater
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          node tools/patch-v223-center-self-update.js "$env:APP_ROOT"
+          node tools/patch-v223-electron-autoupdater.js "$env:APP_ROOT"
 
       - name: Validate patched source
         shell: pwsh
@@ -63,11 +63,11 @@ jobs:
           $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
           if($pkg.version -ne '2.2.3'){ throw "Center version mismatch: $($pkg.version)" }
           $main=Get-Content "$env:APP_ROOT\main.js" -Raw
-          foreach($m in @('CENTER_UPDATE_MANIFEST_URL','center:check-center-update','center:install-center-update','sha256File')) {
-            if(-not $main.Contains($m)){ throw "v2.2.3 main marker missing: $m" }
+          foreach($m in @('autoUpdater','CENTER_UPDATE_FEED_URL','center:check-self-update','center:install-self-update','quitAndInstall')) {
+            if(-not $main.Contains($m)){ throw "v2.2.3 updater marker missing: $m" }
           }
           $renderer=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
-          foreach($m in @('centerUpdateButton','checkCenterUpdate','installCenterUpdate','onCenterUpdateStatus')) {
+          foreach($m in @('centerUpdateButton','checkSelfUpdate','handleSelfUpdateButton','onSelfUpdateState')) {
             if(-not $renderer.Contains($m)){ throw "v2.2.3 renderer marker missing: $m" }
           }
 
@@ -91,11 +91,18 @@ jobs:
           $ErrorActionPreference='Stop'
           node tools/build-v223-installer.js
           $setup=Join-Path $env:BUILD_OUTPUT 'SDCenterSetup.exe'
+          $releases=Join-Path $env:BUILD_OUTPUT 'RELEASES'
+          $nupkg=Get-ChildItem $env:BUILD_OUTPUT -Filter '*-full.nupkg' | Select-Object -First 1
           if(-not (Test-Path $setup)){ throw 'v2.2.3 installer missing' }
+          if(-not (Test-Path $releases)){ throw 'Squirrel RELEASES missing' }
+          if(-not $nupkg){ throw 'Squirrel full nupkg missing' }
           $size=(Get-Item $setup).Length
           if($size -lt 100MB){ throw "Installer too small: $size" }
           $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
           "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_RELEASES=$releases" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_NUPKG=$($nupkg.FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_NUPKG_NAME=$($nupkg.Name)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
@@ -126,20 +133,23 @@ jobs:
           $dir=Join-Path $env:GITHUB_WORKSPACE 'release-v2.2.3'
           New-Item -ItemType Directory -Force -Path $dir | Out-Null
           Copy-Item $env:BUILT_SETUP (Join-Path $dir 'SDCenterSetup.exe') -Force
+          Copy-Item $env:BUILT_RELEASES (Join-Path $dir 'RELEASES') -Force
+          Copy-Item $env:BUILT_NUPKG (Join-Path $dir $env:BUILT_NUPKG_NAME) -Force
           gh release download 'v.2.2.2' --repo 'SD608/sd-center' --pattern 'SDCenter-Mobile.apk' --dir $dir
           "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $dir 'SHA256.txt') -Encoding ascii
           $info=@(
             'SD종합센터 v2.2.3',
-            '- 종합센터 앱 내부에서 자체 업데이트 확인 가능',
-            '- 새 버전 발견 시 상단 센터 업데이트 버튼에 새 버전 표시',
-            '- 시작 후 자동으로 최신 버전 확인',
-            '- 업데이트 클릭 시 설치 파일 다운로드 + SHA256 검증',
-            '- 실행 중 SD 앱 종료 후 자동 설치 및 새 센터 재실행',
-            '- 확장팩 업데이트 기능과 종합센터 자체 업데이트 기능 분리',
+            '- 종합센터 앱 내부 자체 업데이트 추가',
+            '- Electron/Squirrel 정식 autoUpdater 사용',
+            '- 시작 후 자동 업데이트 확인',
+            '- 새 버전 자동 다운로드 후 앱 안에서 설치/재시작',
+            '- RELEASES + full.nupkg를 GitHub 최신 릴리스에 제공',
+            '- 확장팩 업데이트와 센터 자체 업데이트를 별도 관리',
             "Installer bytes: $env:BUILT_SIZE",
             "SHA256: $env:BUILT_HASH"
           )
           $info | Set-Content (Join-Path $dir 'BUILD_INFO.txt') -Encoding utf8
+          "RELEASE_DIR=$dir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Publish v2.2.3 release
         shell: pwsh
@@ -148,16 +158,18 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           gh release create 'v.2.2.3' `
-            'release-v2.2.3/SDCenterSetup.exe' `
-            'release-v2.2.3/SDCenter-Mobile.apk' `
-            'release-v2.2.3/SHA256.txt' `
-            'release-v2.2.3/BUILD_INFO.txt' `
+            "$env:RELEASE_DIR/SDCenterSetup.exe" `
+            "$env:RELEASE_DIR/SDCenter-Mobile.apk" `
+            "$env:RELEASE_DIR/RELEASES" `
+            "$env:RELEASE_DIR/$env:BUILT_NUPKG_NAME" `
+            "$env:RELEASE_DIR/SHA256.txt" `
+            "$env:RELEASE_DIR/BUILD_INFO.txt" `
             --repo 'SD608/sd-center' `
             --target 'main' `
             --title 'SD종합센터 v2.2.3' `
-            --notes '종합센터 자체 업데이트 기능을 추가했습니다. v2.2.3부터 앱 안에서 새 버전을 확인하고 다운로드·검증·설치 후 자동 재실행할 수 있습니다.'
+            --notes '종합센터 자체 업데이트 기능을 추가했습니다. v2.2.3부터 앱 안에서 새 버전을 자동 확인·다운로드하고 업데이트 후 자동 재시작할 수 있습니다.'
 
-      - name: Update website and self-update manifest
+      - name: Update website and update metadata
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
@@ -168,22 +180,16 @@ jobs:
           from pathlib import Path
 
           root = Path('.')
-          version = '2.2.3'
-          sha256 = os.environ['BUILT_HASH']
           now = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec='seconds')
-          release_url = 'https://github.com/SD608/sd-center/releases/download/v.2.2.3/SDCenterSetup.exe'
-
           manifest = {
-              'version': version,
-              'downloadUrl': release_url,
-              'sha256': sha256,
-              'notes': '종합센터 앱 내부에서 업데이트 확인·다운로드·무결성 검사·자동 설치·재실행을 지원합니다.',
+              'version': '2.2.3',
+              'downloadUrl': 'https://github.com/SD608/sd-center/releases/download/v.2.2.3/SDCenterSetup.exe',
+              'sha256': os.environ['BUILT_HASH'],
+              'notes': '종합센터 앱 내부에서 Electron/Squirrel 자동 업데이트를 지원합니다.',
               'publishedAt': now,
+              'squirrelFeedUrl': 'https://github.com/SD608/sd-center/releases/latest/download'
           }
-          (root / 'update/center-update.json').write_text(
-              json.dumps(manifest, ensure_ascii=False, indent=2) + '\n',
-              encoding='utf-8',
-          )
+          (root / 'update/center-update.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
           site = root / 'site-config.js'
           text = site.read_text(encoding='utf-8')
@@ -200,12 +206,12 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           $manifest=Get-Content 'update/center-update.json' -Raw | ConvertFrom-Json
-          if($manifest.version -ne '2.2.3'){ throw 'self-update manifest version mismatch' }
-          if($manifest.sha256 -ne $env:BUILT_HASH){ throw 'self-update manifest hash mismatch' }
+          if($manifest.version -ne '2.2.3'){ throw 'center update metadata version mismatch' }
+          if($manifest.sha256 -ne $env:BUILT_HASH){ throw 'center update metadata hash mismatch' }
           $site=Get-Content 'site-config.js' -Raw
           if(-not $site.Contains('version: "2.2.3"')){ throw 'site config v2.2.3 missing' }
 
-      - name: Commit website and self-update manifest
+      - name: Commit website and update metadata
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
@@ -213,5 +219,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add update/center-update.json site-config.js
           if(git diff --cached --quiet){ exit 0 }
-          git commit -m '센터 v2.2.3 앱내 자체 업데이트 배포 반영'
+          git commit -m '센터 v2.2.3 앱내 자동업데이트 배포 반영'
           git push origin HEAD:main
