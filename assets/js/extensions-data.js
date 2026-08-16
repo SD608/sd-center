@@ -74,5 +74,112 @@ window.SD_EXTENSION_PACKS = [
     updatedAt: "2026-08-14",
     tags: ["SD지갑 연동", "미니게임 3종", "ZIP 앱 추가"],
     featured: true
+  },
+  {
+    id: "sd-flea-market",
+    name: "SD 플리마켓",
+    stage: "PC Expansion",
+    version: "v1.0.0",
+    category: "파밍·습격 확장팩",
+    icon: "assets/icons/logistics-center.png",
+    fileName: "SDFleaMarket_v1.0.0_Desktop.zip",
+    downloadUrl: "#",
+    unlockDownloadUrl: "downloads/extensions/SDFleaMarket_v1.0.0_Desktop.zip?v=100",
+    description: "길거리·상가·물류센터 파밍과 상자 개봉, 은행 준비작업·피날레·오토바이 추격전을 담은 PC 확장팩입니다. 공식 확장팩 센터에서는 SD 물류회사 S등급에서 해금됩니다.",
+    requirements: "SD종합센터 v2.2.0 이상 · SD 물류회사 S등급 · Windows 10/11",
+    updatedAt: "2026-08-16",
+    tags: ["S등급 해금", "은행 습격", "오토바이 추격"],
+    featured: true,
+    requiredLogisticsRank: "S",
+    requiredLogisticsRep: 7000
   }
 ];
+
+(function setupFleaMarketEntitlement() {
+  const PACK_ID = "sd-flea-market";
+  const REQUIRED_REP = 7000;
+
+  const rankFromRep = (rep) => {
+    const n = Number(rep) || 0;
+    if (n >= 7000) return "S";
+    if (n >= 4500) return "A";
+    if (n >= 2800) return "B";
+    if (n >= 1600) return "C";
+    if (n >= 800) return "D";
+    if (n >= 300) return "E";
+    return "F";
+  };
+
+  const findPack = () => (window.SD_EXTENSION_PACKS || []).find((pack) => pack.id === PACK_ID);
+  const findCard = () => [...document.querySelectorAll(".extension-card")].find((card) => card.querySelector("h3")?.textContent?.trim() === "SD 플리마켓");
+
+  const setLocked = (card, message, href) => {
+    if (!card) return;
+    const link = card.querySelector(".extension-download");
+    if (!link) return;
+    link.href = href || "#";
+    link.removeAttribute("download");
+    link.dataset.locked = "true";
+    link.style.opacity = ".62";
+    link.style.cursor = href ? "pointer" : "not-allowed";
+    const title = link.querySelector("span");
+    const small = link.querySelector("small");
+    if (title) title.textContent = "S등급에서 해금";
+    if (small) small.textContent = message;
+    if (!href) link.addEventListener("click", (event) => event.preventDefault(), { once: true });
+  };
+
+  const setUnlocked = (card, pack, rep) => {
+    if (!card || !pack) return;
+    const link = card.querySelector(".extension-download");
+    if (!link) return;
+    link.href = pack.unlockDownloadUrl;
+    link.download = pack.fileName;
+    link.dataset.locked = "false";
+    link.style.opacity = "";
+    link.style.cursor = "";
+    const title = link.querySelector("span");
+    const small = link.querySelector("small");
+    if (title) title.textContent = "ZIP 다운로드";
+    if (small) small.textContent = `S등급 인증 완료 · 평판 ${Number(rep).toLocaleString("ko-KR")}`;
+  };
+
+  async function applyGate() {
+    const pack = findPack();
+    const card = findCard();
+    if (!pack || !card) return;
+
+    if (!window.SD_AUTH) {
+      setLocked(card, "로그인 후 물류 등급을 확인합니다.", "login.html?next=%2F%23extensions");
+      return;
+    }
+
+    try {
+      const session = await window.SD_AUTH.getSession();
+      if (!session) {
+        setLocked(card, "로그인 후 물류 등급을 확인합니다.", "login.html?next=%2F%23extensions");
+        return;
+      }
+
+      const { data, error } = await window.SD_AUTH.client
+        .from("sd_logistics_progress")
+        .select("state")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      if (error) throw error;
+
+      const rep = Number(data?.state?.logisticsRep) || 0;
+      const rank = rankFromRep(rep);
+      if (rep >= REQUIRED_REP) {
+        setUnlocked(card, pack, rep);
+      } else {
+        setLocked(card, `현재 ${rank}등급 · 평판 ${rep.toLocaleString("ko-KR")} / ${REQUIRED_REP.toLocaleString("ko-KR")}`);
+      }
+    } catch (error) {
+      console.warn("SD 플리마켓 해금 확인 실패", error?.message || error);
+      setLocked(card, "물류 등급을 확인하지 못했습니다. 잠시 후 새로고침하세요.");
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => window.setTimeout(() => void applyGate(), 0));
+})();
