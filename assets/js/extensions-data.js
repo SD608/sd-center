@@ -136,18 +136,18 @@ window.SD_EXTENSION_PACKS = [
     "featured": true
   },
   {
-    "id": "sd-flea-market",
-    "name": "SD 플리마켓",
-    "stage": "PC Expansion",
-    "version": "v1.1.0",
-    "category": "파밍·습격 확장팩",
-    "icon": "assets/icons/flea-market.png?v=3",
-    "fileName": "SDFleaMarket_v1.1.0_Desktop.zip",
-    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.0_Desktop.zip?v=110",
-    "description": "v1.0.9의 손상된 배포 ZIP을 마지막 정상 본체 기준으로 복구한 정식 업그레이드판입니다. 기존 금고 A/D 조작을 유지하면서 마우스로 다이얼을 직접 잡아 회전할 수 있고, 파밍·상자 개봉·은행 습격·SD Link 온라인 동기화 기능을 함께 제공합니다.",
-    "requirements": "SD종합센터 v2.2.0 이상 · SD Link v1.2.7 이상 · Windows 10/11",
-    "updatedAt": "2026-08-17",
-    "tags": ["금고 A/D·마우스", "손상 배포 복구", "PC·모바일 연동"],
-    "featured": true
-  }
+  "id": "sd-flea-market",
+  "name": "SD 플리마켓",
+  "stage": "PC Expansion",
+  "version": "v1.1.1",
+  "category": "파밍·습격 확장팩",
+  "icon": "assets/icons/flea-market.png?v=3",
+  "fileName": "SDFleaMarket_v1.1.1_Desktop.zip",
+  "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.1_Desktop.zip?v=111",
+  "description": "v1.1.1에서 손상된 v1.0.9 배포본의 후속 연동 기능을 정상 코드에 재구축했습니다. 실제 물류회사 등급을 최신 기준으로 반영하고 회사 등급·온라인 물품 새로고침을 추가했으며, 기존 SD Link 5초 자동 재연결과 PC·모바일 재고 동기화를 유지합니다. 금고는 A/D 키와 마우스 직접 회전을 모두 지원합니다.",
+  "requirements": "SD종합센터 v2.2.0 이상 · SD Link 로그인 · Windows 10/11",
+  "updatedAt": "2026-08-17",
+  "tags": ["회사 등급 직접연동", "온라인 물품 새로고침", "금고 A/D·마우스"],
+  "featured": true
+}
 ];
