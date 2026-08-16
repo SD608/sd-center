@@ -9,7 +9,7 @@ window.SD_EXTENSION_PACKS = [
     "icon": "assets/icons/center.png",
     "fileName": "SDLink_v1.2.7_Desktop.zip",
     "downloadUrl": "downloads/extensions/SDLink_v1.2.7_Desktop.zip?v=127",
-    "description": "SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. 여러 SD 앱의 데이터를 온라인 계정과 동기화하고, PC와 모바일이 같은 계정 데이터를 사용할 수 있도록 연결 허브 역할을 합니다.",
+    "description": "SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. SD종합센터 v2.2.2부터 Windows 로그인 시 자동으로 백그라운드 실행되며, 트레이에서 PC와 모바일의 같은 계정 데이터를 계속 동기화합니다.",
     "requirements": "SD종합센터 v2.1.1 이상 · SD지갑 · Windows 10/11",
     "updatedAt": "2026-08-16",
     "tags": [
