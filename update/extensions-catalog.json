@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 8,
-  "updatedAt": "2026-08-16T19:23:00+09:00",
+  "catalogVersion": 9,
+  "updatedAt": "2026-08-16T20:45:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -40,11 +40,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.0.2",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.2_Desktop.zip?v=102",
+      "version": "1.0.3",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.3_Desktop.zip?v=103",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "아이템 획득 효과음 추가 · 상자/파밍/은행 장비 및 금고 보상 획득 시 효과음 재생 · 고가 아이템은 별도 고음 효과",
+      "notes": "PC에서 획득한 플리마켓 아이템을 홈페이지 계정의 온라인 보관함과 동기화해 모바일 플리마켓 판매·프로필 자랑 시스템과 연결",
       "requiredLogisticsRank": "S",
       "requiredLogisticsRep": 7000,
       "requiredCenterVersion": "2.2.0"
