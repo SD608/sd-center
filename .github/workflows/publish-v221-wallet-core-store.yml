@@ -1,0 +1,72 @@
+name: Publish v2.2.1 Wallet Core Store
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-v221-wallet-core-store.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Wait for v2.2.1 release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if gh release view 'v.2.2.1' --repo 'SD608/sd-center' >/tmp/release.txt 2>/dev/null; then
+              for asset in SDCenterSetup.exe SDVault_v1.2.0_Desktop.zip SDOddEven_v1.1.0_Desktop.zip SDMiner_v1.1.0_Desktop.zip SDBitcoinMiner_v1.2.2_Desktop.zip; do
+                gh release view 'v.2.2.1' --repo 'SD608/sd-center' --json assets --jq '.assets[].name' | grep -Fx "$asset" >/dev/null || { echo "Missing asset: $asset"; exit 1; }
+              done
+              exit 0
+            fi
+            echo "Waiting for v2.2.1 release... ($i/30)"
+            sleep 10
+          done
+          echo 'v2.2.1 release did not appear in time'
+          exit 1
+
+      - name: Apply website and extension store migration
+        run: node tools/apply-v221-wallet-core-store.js
+
+      - name: Validate website migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '기본 제공 앱 1개' index.html
+          ! grep -q '기본 제공 앱 5개' index.html
+          grep -q '1 CORE APP + PACKS' index.html
+          grep -q '"id": "vault"' assets/js/extensions-data.js
+          grep -q '"id": "odd-even"' assets/js/extensions-data.js
+          grep -q '"id": "miner"' assets/js/extensions-data.js
+          grep -q '"vault"' update/extensions-catalog.json
+          grep -q '"odd-even"' update/extensions-catalog.json
+          grep -q '"miner"' update/extensions-catalog.json
+          grep -q 'version: "2.2.1"' site-config.js
+
+      - name: Commit website/store migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html site-config.js extensions-data.js assets/js/extensions-data.js update/extensions-catalog.json
+          if git diff --cached --quiet; then
+            echo 'No migration changes to commit.'
+            exit 0
+          fi
+          git commit -m 'SD지갑만 기본 제공 · 금고 홀짝 광부 비트코인 확장팩 전환'
+          git push origin HEAD:main
