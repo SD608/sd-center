@@ -1,0 +1,53 @@
+name: Inspect Flea Market v1.0.9
+
+on:
+  push:
+    branches:
+      - chatgpt/flea-upgrade-v1010
+    paths:
+      - '.github/workflows/inspect-flea-v1010.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect ZIP packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '=== v1.0.9 ZIP ==='
+          ls -lh downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip
+          unzip -t downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip
+          unzip -l downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip
+          rm -rf /tmp/flea109 && mkdir -p /tmp/flea109
+          unzip -q downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip -d /tmp/flea109
+          echo '=== v1.0.9 files ==='
+          find /tmp/flea109 -maxdepth 4 -type f -printf '%P %s bytes\n' | sort
+          echo '=== v1.0.9 package metadata ==='
+          find /tmp/flea109 -type f \( -name 'package.json' -o -name 'manifest.json' -o -name 'extension.json' -o -name 'app.json' \) -print -exec sh -c 'echo --- $1; cat "$1"' sh {} \;
+          echo '=== v1.0.9 app.js markers ==='
+          APP109=$(find /tmp/flea109 -type f -path '*/public/app.js' | head -n1 || true)
+          if [ -n "$APP109" ]; then
+            wc -c "$APP109"
+            grep -nE 'function renderSafe|safeDial|logistics|refresh|online|SD Link' "$APP109" | head -n 80 || true
+            node --check "$APP109"
+          else
+            echo 'NO public/app.js IN v1.0.9'
+          fi
+          echo '=== v1.0.4 ZIP ==='
+          ls -lh downloads/extensions/SDFleaMarket_v1.0.4_Desktop.zip
+          unzip -t downloads/extensions/SDFleaMarket_v1.0.4_Desktop.zip
+          rm -rf /tmp/flea104 && mkdir -p /tmp/flea104
+          unzip -q downloads/extensions/SDFleaMarket_v1.0.4_Desktop.zip -d /tmp/flea104
+          echo '=== v1.0.4 files ==='
+          find /tmp/flea104 -maxdepth 4 -type f -printf '%P %s bytes\n' | sort | head -n 120
+          APP104=$(find /tmp/flea104 -type f -path '*/public/app.js' | head -n1 || true)
+          if [ -n "$APP104" ]; then
+            echo '=== v1.0.4 app.js size ==='
+            wc -c "$APP104"
+            node --check "$APP104"
+          fi
