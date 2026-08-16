@@ -49,6 +49,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const renderState = (data) => {
+    const snapshotBars = Math.max(0, Math.trunc(Number(data?.gold_bars || 0)));
+    const snapshotGrams = Math.max(0, Number(data?.gold_grams || 0));
+    if (Number.isFinite(snapshotBars) && Number.isFinite(snapshotGrams)) {
+      void mobile.auth.client.rpc("upsert_sd_flea_gold_snapshot", {
+        p_gold_bars: snapshotBars,
+        p_gold_grams: snapshotGrams
+      }).catch(() => {});
+    }
     walletBalance = Number(data.balance || 0);
     mobile.updateBalanceText(walletBalance);
     setupPanel.hidden = data.has_pin;
