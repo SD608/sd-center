@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 6,
-  "updatedAt": "2026-08-16T18:41:00+09:00",
+  "catalogVersion": 7,
+  "updatedAt": "2026-08-16T19:10:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -40,11 +40,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.0.0",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.0_Desktop.zip?v=100",
-      "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=2",
-      "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=2",
-      "notes": "물류회사 S등급 해금 · 길거리/상가/물류센터 파밍 · 은행 습격 · 오토바이 추격",
+      "version": "1.0.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.1_Desktop.zip?v=101",
+      "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
+      "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
+      "notes": "개발용 지갑 제거 및 실제 SD지갑 연동 · 물류센터 S등급 입장 강제 · 은행 경비 약화 준비작업에 피날레와 같은 경비원 3명 배치",
       "requiredLogisticsRank": "S",
       "requiredLogisticsRep": 7000,
       "requiredCenterVersion": "2.2.0"
