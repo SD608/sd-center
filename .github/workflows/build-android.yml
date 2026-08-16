@@ -86,7 +86,7 @@ jobs:
             "versionName": "${VERSION_NAME}",
             "required": false,
             "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v${VERSION_CODE}-${VERSION_NAME}/SDCenter-Mobile.apk",
-            "message": "NPC 금고 따기와 진동 다이얼 기능이 추가되었습니다."
+            "message": "SD 플리마켓 모바일, 시스템 마켓 거래, 공개 프로필 연동 기능을 추가했습니다."
           }
           JSON
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs output/SDCenter-Mobile.apk
@@ -107,7 +107,8 @@ jobs:
           name: SD종합센터 Mobile v${{ steps.version.outputs.name }}
           body: |
             SD608 Online용 Android 정식 서명 APK입니다.
-            NPC 금고 따기와 진동 다이얼이 추가된 정식 업데이트입니다.
+            SD 플리마켓 모바일, 시스템 마켓 거래, 공개 프로필 연동 기능을 추가했습니다.
+            PC 플리마켓에서 획득한 아이템을 온라인 보관함으로 동기화해 모바일에서 판매·구매할 수 있습니다.
             앱 안의 업데이트 확인 버튼으로 이후 버전을 받을 수 있습니다.
             표시 금액은 실제 현금이 아닌 SD 게임 시뮬레이션용 가상 데이터입니다.
           files: |
