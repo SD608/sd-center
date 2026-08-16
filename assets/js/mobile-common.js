@@ -53,6 +53,7 @@
   if (!auth) return;
 
   let deferredInstallPrompt = null;
+  let goldSnapshotSyncPromise = null;
   const platform = /SD608Android/i.test(navigator.userAgent) ? "android" : "web";
   const uuid = () => {
     if (crypto?.randomUUID) return crypto.randomUUID();
@@ -88,6 +89,31 @@
       element.textContent = auth.formatWon(balance);
     });
   };
+
+  const syncGoldSnapshot = async () => {
+    if (goldSnapshotSyncPromise) return goldSnapshotSyncPromise;
+    goldSnapshotSyncPromise = (async () => {
+      try {
+        const { data: vaultState, error: vaultError } = await auth.client.rpc("get_sd_vault_state");
+        if (vaultError || !vaultState) return false;
+        const bars = Math.max(0, Math.trunc(Number(vaultState.gold_bars || 0)));
+        const grams = Math.max(0, Number(vaultState.gold_grams || 0));
+        const { error: snapshotError } = await auth.client.rpc("upsert_sd_flea_gold_snapshot", {
+          p_gold_bars: bars,
+          p_gold_grams: grams
+        });
+        if (snapshotError) throw snapshotError;
+        return true;
+      } catch (error) {
+        console.warn("SD 프로필 금 보유량 자동 동기화 실패", error?.message || error);
+        return false;
+      } finally {
+        window.setTimeout(() => { goldSnapshotSyncPromise = null; }, 1500);
+      }
+    })();
+    return goldSnapshotSyncPromise;
+  };
+
   const loadMobileShell = async () => {
     const session = await auth.requireSession();
     if (!session) return null;
@@ -105,6 +131,7 @@
       element.textContent = walletResult.data.account_number;
     });
     updateBalanceText(walletResult.data.balance);
+    await syncGoldSnapshot();
     return { session, profile: profileResult.data, wallet: walletResult.data };
   };
   document.addEventListener("click", async (event) => {
@@ -143,6 +170,7 @@
     clearMobileStatus,
     fetchWallet,
     updateBalanceText,
+    syncGoldSnapshot,
     loadMobileShell
   };
 })();
