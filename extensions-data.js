@@ -12,11 +12,7 @@ window.SD_EXTENSION_PACKS = [
     "description": "SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. SD종합센터 v2.2.2부터 Windows 로그인 시 자동으로 백그라운드 실행되며, 트레이에서 PC와 모바일의 같은 계정 데이터를 계속 동기화합니다.",
     "requirements": "SD종합센터 v2.1.1 이상 · SD지갑 · Windows 10/11",
     "updatedAt": "2026-08-16",
-    "tags": [
-      "온라인 연동",
-      "백그라운드 동기화",
-      "PC·모바일 연결"
-    ],
+    "tags": ["온라인 연동", "백그라운드 동기화", "PC·모바일 연결"],
     "featured": true
   },
   {
@@ -31,11 +27,7 @@ window.SD_EXTENSION_PACKS = [
     "description": "운송 계약을 수행하고 차량·기사·본부를 확장해 나가는 물류회사 경영 시뮬레이션입니다. 계약을 완료해 회사 평판과 등급을 올리고, 더 좋은 차량과 고수익 계약을 해금하며 자동화 수익 구조까지 구축할 수 있습니다.",
     "requirements": "SD종합센터 v2.1.2 이상 · SD지갑 · Windows 10/11",
     "updatedAt": "2026-08-16",
-    "tags": [
-      "회사 경영",
-      "계약 운송",
-      "자동 수익"
-    ],
+    "tags": ["회사 경영", "계약 운송", "자동 수익"],
     "featured": true
   },
   {
@@ -50,11 +42,7 @@ window.SD_EXTENSION_PACKS = [
     "description": "SD지갑의 가상 잔액을 금 중량과 금괴 보관 모습으로 환산해 보여주는 금고 확장팩입니다. 자산 규모에 따라 금고에 쌓이는 금괴와 총 중량을 시각적으로 확인할 수 있습니다.",
     "requirements": "SD종합센터 v2.2.1 이상 · SD지갑 · Windows 10/11",
     "updatedAt": "2026-08-16",
-    "tags": [
-      "금고 시각화",
-      "금 중량 환산",
-      "자산 보관"
-    ],
+    "tags": ["금고 시각화", "금 중량 환산", "자산 보관"],
     "featured": true
   },
   {
@@ -69,11 +57,7 @@ window.SD_EXTENSION_PACKS = [
     "description": "보안 난수 주사위 결과의 홀·짝을 맞히는 SD지갑 연동 미니게임입니다. 원하는 가상 금액을 베팅하고 빠르게 결과를 확인할 수 있습니다.",
     "requirements": "SD종합센터 v2.2.1 이상 · SD지갑 · Windows 10/11",
     "updatedAt": "2026-08-16",
-    "tags": [
-      "홀짝 게임",
-      "주사위 난수",
-      "SD지갑 연동"
-    ],
+    "tags": ["홀짝 게임", "주사위 난수", "SD지갑 연동"],
     "featured": true
   },
   {
@@ -88,11 +72,7 @@ window.SD_EXTENSION_PACKS = [
     "description": "돌·구리·철·에메랄드·다이아몬드를 채굴하고 보관한 뒤 SD지갑 가상 잔액으로 판매하는 성장형 채굴 확장팩입니다.",
     "requirements": "SD종합센터 v2.2.1 이상 · SD지갑 · Windows 10/11",
     "updatedAt": "2026-08-16",
-    "tags": [
-      "광물 채굴",
-      "보관·판매",
-      "성장형 채굴"
-    ],
+    "tags": ["광물 채굴", "보관·판매", "성장형 채굴"],
     "featured": true
   },
   {
@@ -107,11 +87,7 @@ window.SD_EXTENSION_PACKS = [
     "description": "방을 구입하고 채굴 프레임과 그래픽카드를 설치해 운영하는 자동 수익형 채굴 시뮬레이션입니다. 시설과 장비를 확장해 채굴 규모를 키우는 동시에 전기세와 GPU 내구도를 관리해야 합니다.",
     "requirements": "SD종합센터 v2.2.1 이상 · SD지갑 · Windows 10/11",
     "updatedAt": "2026-08-14",
-    "tags": [
-      "자동 채굴",
-      "장비 관리",
-      "시설 확장"
-    ],
+    "tags": ["자동 채굴", "장비 관리", "시설 확장"],
     "featured": true
   },
   {
@@ -126,11 +102,7 @@ window.SD_EXTENSION_PACKS = [
     "description": "SD지갑과 연동되는 3릴 슬롯머신 시뮬레이션입니다. 원하는 가상 금액을 베팅하고 릴 결과에 따라 다양한 배수의 보상을 받으며, 낮은 확률의 고배율 결과와 잭팟을 노릴 수 있습니다.",
     "requirements": "SD종합센터 v2.1.1 이상",
     "updatedAt": "2026-07-31",
-    "tags": [
-      "3릴 슬롯",
-      "배당 시스템",
-      "잭팟"
-    ],
+    "tags": ["3릴 슬롯", "배당 시스템", "잭팟"],
     "featured": true
   },
   {
@@ -145,11 +117,7 @@ window.SD_EXTENSION_PACKS = [
     "description": "컴퓨터와 묵찌빠를 진행하며 연승에 도전하는 선택형 미니게임입니다. 승리 후 현재 보상을 정산할지 더 높은 보상을 위해 계속 도전할지 선택할 수 있으며, 연승이 길어질수록 보상과 위험이 함께 커집니다.",
     "requirements": "SD종합센터 v2.1.1 이상",
     "updatedAt": "2026-07-31",
-    "tags": [
-      "연승 도전",
-      "선택형 보상",
-      "고위험·고보상"
-    ],
+    "tags": ["연승 도전", "선택형 보상", "고위험·고보상"],
     "featured": true
   },
   {
@@ -164,30 +132,22 @@ window.SD_EXTENSION_PACKS = [
     "description": "해킹·습격·현금 확보·운반 등 여러 단계를 직접 수행하는 작전형 확장팩입니다. 다양한 미니게임을 순서대로 클리어해야 보상을 획득할 수 있으며, 준비와 실력에 따라 큰 수익을 노릴 수 있습니다.",
     "requirements": "SD종합센터 v2.1.1 이상",
     "updatedAt": "2026-08-14",
-    "tags": [
-      "습격 콘텐츠",
-      "미니게임",
-      "고위험·고수익"
-    ],
+    "tags": ["습격 콘텐츠", "미니게임", "고위험·고수익"],
     "featured": true
   },
   {
     "id": "sd-flea-market",
     "name": "SD 플리마켓",
     "stage": "PC Expansion",
-    "version": "v1.0.9",
+    "version": "v1.1.0",
     "category": "파밍·습격 확장팩",
     "icon": "assets/icons/flea-market.png?v=3",
-    "fileName": "SDFleaMarket_v1.0.9_Desktop.zip",
-    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip?v=109-open",
-    "description": "파밍과 상자 개봉으로 얻은 다양한 물품을 수집하고 거래하는 온라인 마켓 확장팩입니다. 아이템마다 등급·상태·가치가 존재하며, 획득한 물품을 보관하거나 다른 유저와 거래하고 PC와 모바일에서 같은 보관함을 사용할 수 있습니다.",
+    "fileName": "SDFleaMarket_v1.1.0_Desktop.zip",
+    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.0_Desktop.zip?v=110",
+    "description": "v1.0.9의 손상된 배포 ZIP을 마지막 정상 본체 기준으로 복구한 정식 업그레이드판입니다. 기존 금고 A/D 조작을 유지하면서 마우스로 다이얼을 직접 잡아 회전할 수 있고, 파밍·상자 개봉·은행 습격·SD Link 온라인 동기화 기능을 함께 제공합니다.",
     "requirements": "SD종합센터 v2.2.0 이상 · SD Link v1.2.7 이상 · Windows 10/11",
-    "updatedAt": "2026-08-16",
-    "tags": [
-      "아이템 파밍",
-      "유저 거래",
-      "PC·모바일 연동"
-    ],
+    "updatedAt": "2026-08-17",
+    "tags": ["금고 A/D·마우스", "손상 배포 복구", "PC·모바일 연동"],
     "featured": true
   }
 ];
