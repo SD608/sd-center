@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 9,
-  "updatedAt": "2026-08-16T20:45:00+09:00",
+  "catalogVersion": 10,
+  "updatedAt": "2026-08-16T21:03:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -40,11 +40,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.0.3",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.3_Desktop.zip?v=103",
+      "version": "1.0.4",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.4_Desktop.zip?v=104",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "PC에서 획득한 플리마켓 아이템을 홈페이지 계정의 온라인 보관함과 동기화해 모바일 플리마켓 판매·프로필 자랑 시스템과 연결",
+      "notes": "SD Link를 나중에 실행해도 5초마다 자동 재연결해 PC 아이템 온라인 동기화를 재시도 · 연결 실패 중 로컬 아이템 보존",
       "requiredLogisticsRank": "S",
       "requiredLogisticsRep": 7000,
       "requiredCenterVersion": "2.2.0"
