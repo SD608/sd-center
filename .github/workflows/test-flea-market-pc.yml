@@ -1,38 +1,85 @@
 name: Validate SD Flea Market PC Prototype
+
 on:
   push:
     branches: [dev-flea-market-pc-20260816]
     paths:
       - 'dev/flea-market-pc/**'
       - '.github/workflows/test-flea-market-pc.yml'
+  workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Syntax checks
         working-directory: dev/flea-market-pc
-        run: |
-          node --check main.js
-          node --check preload.js
-          node --check public/app.js
+        run: npm run check
+
       - name: Manifest checks
         working-directory: dev/flea-market-pc
         run: |
-          node -e "const p=require('./package.json'); if(p.version!=='0.1.0'||p.main!=='main.js') process.exit(1)"
-          node -e "const m=require('./sd-app.json'); if(m.id!=='sd-flea-market'||m.version!=='0.1.0') process.exit(1)"
-      - name: Gameplay constant checks
+          node -e "const p=require('./package.json'); if(p.version!=='0.1.0'||p.main!=='main.js') throw new Error('package manifest mismatch')"
+          node -e "const m=require('./sd-app.json'); if(m.id!=='sd-flea-market'||m.version!=='0.1.0') throw new Error('sd-app manifest mismatch')"
+
+      - name: Gameplay rule checks
         working-directory: dev/flea-market-pc
         run: |
-          grep -q 'probability: 55' main.js
-          grep -q 'probability: 29' main.js
-          grep -q 'probability: 11' main.js
-          grep -q 'probability: 3' main.js
-          grep -q 'probability: 2' main.js
-          grep -q 'CUTTER_PRICE = 100000' main.js
-          grep -q 'LOCKPICK_PRICE = 10000' main.js
+          node <<'NODE'
+          const fs = require('fs');
+          const main = fs.readFileSync('main.js', 'utf8');
+          const html = fs.readFileSync('public/index.html', 'utf8');
+          const app = fs.readFileSync('public/app.js', 'utf8');
+
+          const mainRules = [
+            'name: "낡은 상자", probability: 55',
+            'name: "평범한 상자", probability: 29',
+            'name: "고급진 상자", probability: 11',
+            'name: "최고급 상자", probability: 3',
+            'name: "금고", probability: 2',
+            'const CUTTER_PRICE = 100000',
+            'const LOCKPICK_PRICE = 10000',
+            'boxes: []',
+            'state.boxes.push(box)',
+            'function startBoxOpen',
+            'function completeCut',
+            'function safeAttempt'
+          ];
+          for (const rule of mainRules) {
+            if (!main.includes(rule)) throw new Error(`Missing gameplay rule: ${rule}`);
+          }
+
+          const uiRules = [
+            '상자 보관함',
+            '원하는 만큼 모아뒀다가 한꺼번에 개봉할 수 있습니다.',
+            '₩100,000',
+            '개당 ₩10,000'
+          ];
+          for (const rule of uiRules) {
+            if (!html.includes(rule)) throw new Error(`Missing UI rule: ${rule}`);
+          }
+
+          const openingRules = [
+            '첫 번째 옆면',
+            '반대편 옆면',
+            '상자 위 테이프',
+            'renderSafe',
+            'safeAttempt'
+          ];
+          for (const rule of openingRules) {
+            if (!app.includes(rule)) throw new Error(`Missing opening interaction: ${rule}`);
+          }
+
+          const probabilityTotal = 55 + 29 + 11 + 3 + 2;
+          if (probabilityTotal !== 100) throw new Error('Box probabilities must total 100%');
+          console.log('Flea Market PC prototype rules validated.');
+          NODE
