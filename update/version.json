@@ -1,7 +1,7 @@
 {
-  "versionCode": 107,
-  "versionName": "1.0.7",
+  "versionCode": 108,
+  "versionName": "1.0.8",
   "required": false,
-  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v107-1.0.7/SDCenter-Mobile.apk",
-  "message": "BTC 보유량 조회, PC 방식 홀짝, 금괴 직접 구매·보관, 홀짝·슬롯 누적 베팅을 추가했습니다."
+  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/mobile-v108-1.0.8/SDCenter-Mobile.apk",
+  "message": "SD 플리마켓 모바일, 시스템 마켓 거래, 공개 프로필 연동 기능을 추가했습니다."
 }
