@@ -3,7 +3,10 @@ name: Build and publish SDCenter v2.2.3 In-App Self Update
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/build-v223-center-self-update.yml']
+    paths:
+      - '.github/workflows/build-v223-center-self-update.yml'
+      - 'tools/patch-v223-electron-autoupdater*.js'
+      - 'tools/build-v223-installer.js'
 
 permissions:
   contents: write
