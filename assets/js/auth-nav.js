@@ -1,6 +1,15 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  if ((location.pathname || "").toLowerCase().endsWith("/achievements.html") || (location.pathname || "").toLowerCase().endsWith("achievements.html")) {
+    if (!document.querySelector('script[data-achievements-all]')) {
+      const achievementScript = document.createElement("script");
+      achievementScript.src = "assets/js/achievements-all.js?v=20260817-all";
+      achievementScript.dataset.achievementsAll = "";
+      document.head.appendChild(achievementScript);
+    }
+  }
+
   const nav = document.querySelector(".nav-links");
   if (nav && !nav.querySelector('[data-achievements-link]')) {
     const achievementLink = document.createElement("a");
