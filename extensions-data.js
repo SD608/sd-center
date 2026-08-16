@@ -4,15 +4,15 @@ window.SD_EXTENSION_PACKS = [
     id: "sd-link",
     name: "SD Link",
     stage: "Stage 1",
-    version: "v1.2.4",
+    version: "v1.2.7",
     category: "온라인 연동 확장팩",
     icon: "assets/icons/center.png",
-    fileName: "SDLink_v1.2.4_Desktop.zip",
-    downloadUrl: "downloads/extensions/SDLink_v1.2.4_Desktop.zip",
-    description: "센터 버전 증명과 필수 업데이트 서버 정책을 추가했습니다. 일반 회원의 구 센터 PC 거래는 서버에서 차단되며 관리자 계정은 예외입니다. v1.2.3 안정화와 동시수익 보호, BTC 정확 연동도 유지됩니다.",
+    fileName: "SDLink_v1.2.7_Desktop.zip",
+    downloadUrl: "downloads/extensions/SDLink_v1.2.7_Desktop.zip?v=127",
+    description: "SD Online 계정과 PC 앱을 연결하는 핵심 확장팩입니다. v1.2.7에서 로컬 앱 브리지를 안정화해 SD 플리마켓의 온라인 재고·회사 등급 동기화를 지원합니다. 기존 거래 동기화와 백그라운드 안정화 기능도 유지됩니다.",
     requirements: "SD종합센터 v2.1.1 이상 · SD지갑 · Windows 10/11",
-    updatedAt: "2026-08-14",
-    tags: ["응답없음 안정화", "동시 수익 보호", "BTC 정확 연동"],
+    updatedAt: "2026-08-16",
+    tags: ["로컬 앱 브리지", "플리마켓 온라인 동기화", "백그라운드 안정화"],
     featured: true
   },
   {
@@ -23,11 +23,11 @@ window.SD_EXTENSION_PACKS = [
     category: "경영 확장팩",
     icon: "assets/icons/logistics-center.png",
     fileName: "SDLogisticsCenter_Season0_Desktop.zip",
-    downloadUrl: "downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=109",
-    description: "SD지갑과 연동되는 물류회사 경영 확장팩입니다. v1.0.9 업데이트 후 물류 등급·실적·차량·기사·본부·계약 진행도를 계정/PC 기준으로 1회 초기화하며 SD지갑 잔액과 거래내역은 유지합니다. v1.0.8의 랭크 및 차량 해금 밸런스도 유지됩니다.",
+    downloadUrl: "downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=1092",
+    description: "SD지갑과 연동되는 물류회사 경영 확장팩입니다. v1.0.9에서 현재 회사 등급과 물류 평판을 로컬 공유 상태로 갱신해 SD 플리마켓에서 실제 진행도를 바로 읽을 수 있도록 연동했습니다. 기존 v1.0.9 랭크·차량 해금 및 경영 진행 규칙은 유지됩니다.",
     requirements: "SD종합센터 v2.1.2 이상 · SD지갑 · Windows 10/11",
-    updatedAt: "2026-08-14",
-    tags: ["SD지갑 유지", "1회 진행도 초기화", "랭크/차량 해금"],
+    updatedAt: "2026-08-16",
+    tags: ["회사 등급 공유", "플리마켓 연동", "랭크/차량 해금"],
     featured: true
   },
   {
@@ -94,19 +94,19 @@ window.SD_EXTENSION_PACKS = [
     id: "sd-flea-market",
     name: "SD 플리마켓",
     stage: "PC Expansion",
-    version: "v1.0.4",
+    version: "v1.0.9",
     category: "파밍·습격 확장팩",
     icon: "assets/icons/flea-market.png?v=3",
-    fileName: "SDFleaMarket_v1.0.4_Desktop.zip",
+    fileName: "SDFleaMarket_v1.0.9_Desktop.zip",
     downloadUrl: "#",
-    unlockDownloadUrl: "downloads/extensions/SDFleaMarket_v1.0.4_Desktop.zip?v=104",
-    description: "v1.0.4에서 플리마켓 실행 후 SD Link를 나중에 켜도 5초마다 연결을 다시 확인해 PC 아이템 온라인 동기화를 자동 재시도하도록 수정했습니다. 연결 실패 중에는 로컬 아이템을 보존하며, v1.0.3의 모바일 판매·시스템 마켓·공개 프로필 연동도 유지됩니다.",
-    requirements: "SD종합센터 v2.2.0 이상 · SD 물류회사 S등급 · Windows 10/11",
+    unlockDownloadUrl: "downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip?v=109",
+    description: "PC에서 획득한 물품을 SD Online 계정과 동기화해 PC·모바일에서 함께 관리하는 플리마켓 확장팩입니다. v1.0.9에서 실제 물류센터 회사 등급을 직접 반영하고, 홈 회사 등급과 물품 보관함에 새로고침 기능을 추가했습니다. SD Link v1.2.7 브리지와 온라인 재고 동기화도 포함됩니다.",
+    requirements: "SD종합센터 v2.2.0 이상 · SD Link v1.2.7 이상 · SD 물류회사 S등급 · Windows 10/11",
     updatedAt: "2026-08-16",
-    tags: ["SD Link 자동 재연결", "아이템 동기화 수정", "로컬 아이템 보호"],
+    tags: ["회사 등급 직접연동", "온라인 물품 새로고침", "PC·모바일 재고 동기화"],
     featured: true,
     requiredLogisticsRank: "S",
-    requiredLogisticsRep: 7000
+    requiredLogisticsRep: 2200
   }
 ];
 
@@ -116,12 +116,12 @@ window.SD_EXTENSION_PACKS = [
 
   const rankForRep = (value) => {
     const rep = Number(value || 0);
-    if (rep >= 7000) return "S";
-    if (rep >= 4500) return "A";
-    if (rep >= 2800) return "B";
-    if (rep >= 1600) return "C";
-    if (rep >= 800) return "D";
-    if (rep >= 300) return "E";
+    if (rep >= 2200) return "S";
+    if (rep >= 1450) return "A";
+    if (rep >= 900) return "B";
+    if (rep >= 520) return "C";
+    if (rep >= 260) return "D";
+    if (rep >= 100) return "E";
     return "F";
   };
 
@@ -150,10 +150,12 @@ window.SD_EXTENSION_PACKS = [
     const link = card?.querySelector(".extension-download");
     if (!card || !link) return;
 
+    const requiredRep = Number(pack.requiredLogisticsRep || 2200);
+
     setLink(link, {
       href: "#",
       title: "🔒 S등급 확인 중",
-      detail: "SD 물류회사 평판 7,000 필요",
+      detail: `SD 물류회사 평판 ${requiredRep.toLocaleString("ko-KR")} 필요`,
       locked: true
     });
 
@@ -190,7 +192,7 @@ window.SD_EXTENSION_PACKS = [
 
       const rep = Number(data?.state?.logisticsRep || 0);
       const rank = rankForRep(rep);
-      if (rep >= Number(pack.requiredLogisticsRep || 7000)) {
+      if (rep >= requiredRep) {
         setLink(link, {
           href: pack.unlockDownloadUrl,
           title: "ZIP 다운로드",
@@ -204,12 +206,12 @@ window.SD_EXTENSION_PACKS = [
       setLink(link, {
         href: "#",
         title: `🔒 S등급 필요 · 현재 ${rank}등급`,
-        detail: `현재 평판 ${rep.toLocaleString("ko-KR")} / 7,000`,
+        detail: `현재 평판 ${rep.toLocaleString("ko-KR")} / ${requiredRep.toLocaleString("ko-KR")}`,
         locked: true
       });
       link.onclick = (event) => {
         event.preventDefault();
-        window.alert(`SD 플리마켓은 물류회사 S등급에서 해금됩니다.\n현재 ${rank}등급 · 평판 ${rep.toLocaleString("ko-KR")} / 7,000`);
+        window.alert(`SD 플리마켓은 물류회사 S등급에서 해금됩니다.\n현재 ${rank}등급 · 평판 ${rep.toLocaleString("ko-KR")} / ${requiredRep.toLocaleString("ko-KR")}`);
       };
     } catch (error) {
       console.warn("SD 플리마켓 S등급 확인 실패", error?.message || error);
