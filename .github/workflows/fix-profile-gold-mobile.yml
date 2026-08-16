@@ -1,0 +1,255 @@
+name: Fix profile and mobile gold
+
+on:
+  push:
+    branches:
+      - chatgpt/profile-gold-mobile-fix-final
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/profile-gold-mobile-fix-final
+          fetch-depth: 0
+
+      - name: Apply profile and gold fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          # 1) Remove slot best from public profile card and bump its script cache key.
+          p = Path('profile.html')
+          text = p.read_text(encoding='utf-8')
+          old = '            <div><dt>슬롯 최대 당첨</dt><dd id="profileSlotBest">-</dd></div>\n'
+          if old not in text:
+              raise SystemExit('profile slot row not found')
+          text = text.replace(old, '', 1)
+          text = text.replace('assets/js/profile-page.js?v=1', 'assets/js/profile-page.js?v=2', 1)
+          p.write_text(text, encoding='utf-8')
+
+          p = Path('assets/js/profile-page.js')
+          text = p.read_text(encoding='utf-8')
+          old = '''    const slot = profile.slot_best || {};
+              document.getElementById("profileSlotBest").textContent = `${slot.icon || "🎰"} ${slot.label || "기록 없음"}`;
+          '''
+          if old not in text:
+              raise SystemExit('profile slot renderer not found')
+          text = text.replace(old, '', 1)
+          p.write_text(text, encoding='utf-8')
+
+          # 2) Mobile vault: bump JS cache key.
+          p = Path('vault-mobile.html')
+          text = p.read_text(encoding='utf-8')
+          if 'assets/js/mobile-vault.js?v=7' not in text:
+              raise SystemExit('vault script version marker not found')
+          text = text.replace('assets/js/mobile-vault.js?v=7', 'assets/js/mobile-vault.js?v=8', 1)
+          p.write_text(text, encoding='utf-8')
+
+          # 3) Harden gold purchase state handling.
+          p = Path('assets/js/mobile-vault.js')
+          text = p.read_text(encoding='utf-8')
+
+          old = '''  const buyCost = document.getElementById("goldBuyCost");
+            const buyButton = document.getElementById("buyGoldButton");
+
+            const PRICE_PER_BAR = 826000;
+            let currentGoldGrams = 0;
+            let weightUnit = "g";
+            let walletBalance = 0;
+          '''
+          new = '''  const buyCost = document.getElementById("goldBuyCost");
+            const buyButton = document.getElementById("buyGoldButton");
+            const minusButton = document.getElementById("goldMinus");
+            const plusButton = document.getElementById("goldPlus");
+
+            const PRICE_PER_BAR = 826000;
+            const MAX_BARS_PER_PURCHASE = 10000;
+            let currentGoldGrams = 0;
+            let weightUnit = "g";
+            let walletBalance = 0;
+            let stateReady = false;
+            let purchasePending = false;
+          '''
+          if old not in text:
+              raise SystemExit('gold declaration block not found')
+          text = text.replace(old, new, 1)
+
+          old = '''  const normalizedBuyBars = () => {
+            const bars = Math.trunc(Number(buyBarsInput.value) || 1);
+            return Math.min(10000, Math.max(1, bars));
+            };
+
+            const renderBuySummary = () => {
+            const bars = normalizedBuyBars();
+            buyBarsInput.value = String(bars);
+            buyCount.textContent = `${bars.toLocaleString("ko-KR")}개`;
+            buyCost.textContent = mobile.auth.formatWon(bars * PRICE_PER_BAR);
+            buyButton.disabled = bars * PRICE_PER_BAR > walletBalance;
+            };
+
+            const renderState = (data) => {
+          '''
+          new = '''  const normalizeStatePayload = (payload) => {
+              const data = Array.isArray(payload) ? payload[0] : payload;
+              return data && typeof data === "object" ? data : {};
+            };
+
+            const normalizedBuyBars = () => {
+              const raw = Number(buyBarsInput.value);
+              const bars = Number.isFinite(raw) ? Math.trunc(raw) : 1;
+              return Math.min(MAX_BARS_PER_PURCHASE, Math.max(1, bars));
+            };
+
+            const maxAffordableBars = () => Math.max(
+              0,
+              Math.min(MAX_BARS_PER_PURCHASE, Math.floor(Math.max(0, walletBalance) / PRICE_PER_BAR))
+            );
+
+            const renderBuySummary = () => {
+              const bars = normalizedBuyBars();
+              const cost = bars * PRICE_PER_BAR;
+              const affordable = maxAffordableBars();
+              buyBarsInput.value = String(bars);
+              buyCount.textContent = `${bars.toLocaleString("ko-KR")}개`;
+              buyCost.textContent = mobile.auth.formatWon(cost);
+              buyButton.disabled = purchasePending || !stateReady || cost > walletBalance;
+              minusButton.disabled = purchasePending || bars <= 1;
+              plusButton.disabled = purchasePending || bars >= MAX_BARS_PER_PURCHASE || (stateReady && bars >= affordable);
+              buyBarsInput.disabled = purchasePending;
+            };
+
+            const renderState = (payload) => {
+              const data = normalizeStatePayload(payload);
+              stateReady = true;
+          '''
+          if old not in text:
+              raise SystemExit('gold summary block not found')
+          text = text.replace(old, new, 1)
+
+          old = '''  buyBarsInput.addEventListener("input", renderBuySummary);
+            document.getElementById("goldMinus").addEventListener("click", () => {
+            buyBarsInput.value = String(Math.max(1, normalizedBuyBars() - 1));
+            renderBuySummary();
+            });
+            document.getElementById("goldPlus").addEventListener("click", () => {
+            buyBarsInput.value = String(Math.min(10000, normalizedBuyBars() + 1));
+            renderBuySummary();
+            });
+
+            buyButton.addEventListener("click", async () => {
+            const bars = normalizedBuyBars();
+            const cost = bars * PRICE_PER_BAR;
+            if (cost > walletBalance) return mobile.setMobileStatus(status, "금 구매에 필요한 가상잔액이 부족합니다.", "error");
+            buyButton.disabled = true;
+            mobile.clearMobileStatus(status);
+            try {
+              const { data, error } = await mobile.auth.client.rpc("buy_sd_vault_gold", {
+                p_bars: bars,
+                p_request_id: mobile.uuid(),
+                p_platform: mobile.platform
+              });
+              if (error) throw error;
+              renderState(data);
+              mobile.setMobileStatus(status, `금괴 ${bars.toLocaleString("ko-KR")}개를 구매했습니다.`, "success");
+            } catch (error) {
+              mobile.setMobileStatus(status, mobile.auth.messageForError(error), "error");
+            } finally {
+              renderBuySummary();
+            }
+            });
+          '''
+          new = '''  buyBarsInput.addEventListener("input", renderBuySummary);
+            buyBarsInput.addEventListener("change", renderBuySummary);
+            buyBarsInput.addEventListener("blur", renderBuySummary);
+            minusButton.addEventListener("click", () => {
+              buyBarsInput.value = String(Math.max(1, normalizedBuyBars() - 1));
+              renderBuySummary();
+            });
+            plusButton.addEventListener("click", () => {
+              const affordable = stateReady ? Math.max(1, maxAffordableBars()) : MAX_BARS_PER_PURCHASE;
+              buyBarsInput.value = String(Math.min(MAX_BARS_PER_PURCHASE, affordable, normalizedBuyBars() + 1));
+              renderBuySummary();
+            });
+
+            buyButton.addEventListener("click", async () => {
+              if (purchasePending) return;
+              const bars = normalizedBuyBars();
+              const cost = bars * PRICE_PER_BAR;
+              if (!stateReady) return mobile.setMobileStatus(status, "금고 정보를 불러온 뒤 다시 시도하세요.", "error");
+              if (cost > walletBalance) return mobile.setMobileStatus(status, "금 구매에 필요한 가상잔액이 부족합니다.", "error");
+
+              purchasePending = true;
+              renderBuySummary();
+              mobile.clearMobileStatus(status);
+              try {
+                const { error } = await mobile.auth.client.rpc("buy_sd_vault_gold", {
+                  p_bars: bars,
+                  p_request_id: mobile.uuid(),
+                  p_platform: mobile.platform
+                });
+                if (error) throw error;
+
+                // Do not assume the purchase RPC returns a complete vault-state object.
+                // Always reload authoritative balance/gold data after the transaction.
+                const { data: refreshedState, error: refreshError } = await mobile.auth.client.rpc("get_sd_vault_state");
+                if (refreshError) throw refreshError;
+                renderState(refreshedState);
+                mobile.setMobileStatus(status, `금괴 ${bars.toLocaleString("ko-KR")}개를 구매했습니다.`, "success");
+              } catch (error) {
+                // A failed/partial response must not leave stale balance or button state behind.
+                try {
+                  const { data: refreshedState, error: refreshError } = await mobile.auth.client.rpc("get_sd_vault_state");
+                  if (!refreshError && refreshedState) renderState(refreshedState);
+                } catch (_) {}
+                mobile.setMobileStatus(status, mobile.auth.messageForError(error), "error");
+              } finally {
+                purchasePending = false;
+                renderBuySummary();
+              }
+            });
+          '''
+          if old not in text:
+              raise SystemExit('gold event block not found')
+          text = text.replace(old, new, 1)
+
+          # Disable buy controls until the first authoritative state arrives.
+          if '  load();\n});' not in text:
+              raise SystemExit('load footer not found')
+          text = text.replace('  load();\n});', '  renderBuySummary();\n  load();\n});', 1)
+          p.write_text(text, encoding='utf-8')
+
+          # 4) Force mobile/PWA clients to fetch the new scripts.
+          p = Path('service-worker.js')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('const CACHE_NAME = "sd608-mobile-v11-flea-profile-010";', 'const CACHE_NAME = "sd608-mobile-v12-profile-gold-fix";', 1)
+          text = text.replace('./assets/js/mobile-vault.js?v=7', './assets/js/mobile-vault.js?v=8', 1)
+          text = text.replace('./assets/js/profile-page.js?v=1', './assets/js/profile-page.js?v=2', 1)
+          p.write_text(text, encoding='utf-8')
+          PY
+
+          node --check assets/js/profile-page.js
+          node --check assets/js/mobile-vault.js
+          git diff --check
+
+          ! grep -q '슬롯 최대 당첨' profile.html
+          ! grep -q 'profileSlotBest' assets/js/profile-page.js
+          grep -q 'profile-page.js?v=2' profile.html
+          grep -q 'mobile-vault.js?v=8' vault-mobile.html
+          grep -q 'purchasePending' assets/js/mobile-vault.js
+          grep -q 'normalizeStatePayload' assets/js/mobile-vault.js
+          grep -q 'get_sd_vault_state' assets/js/mobile-vault.js
+          grep -q 'sd608-mobile-v12-profile-gold-fix' service-worker.js
+
+          rm -f .github/workflows/fix-profile-gold-mobile.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- profile.html assets/js/profile-page.js vault-mobile.html assets/js/mobile-vault.js service-worker.js .github/workflows/fix-profile-gold-mobile.yml
+          git commit -m '프로필 슬롯 최대 당첨 제거 · 모바일 금 구매 상태 수정'
+          git push origin HEAD:chatgpt/profile-gold-mobile-fix-final
