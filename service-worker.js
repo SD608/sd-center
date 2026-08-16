@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v10-security-107";
+const CACHE_NAME = "sd608-mobile-v11-flea-profile-010";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -9,6 +9,9 @@ const APP_SHELL = [
   "./odd-even-mobile.html",
   "./slot-mobile.html",
   "./sdcoin-mobile.html",
+  "./flea-market-mobile.html",
+  "./profile.html",
+  "./profile-shop.html",
   "./login.html",
   "./signup.html",
   "./offline.html",
@@ -20,14 +23,20 @@ const APP_SHELL = [
   "./assets/css/npc-vault-mobile.css?v=1",
   "./assets/css/sdcoin-mobile.css?v=3",
   "./assets/css/sdcoin-home-card.css?v=3",
+  "./assets/css/flea-market-mobile.css?v=1",
+  "./assets/css/profile-page.css?v=1",
   "./assets/js/supabase-config.js?v=2",
   "./assets/js/auth-common.js?v=2",
   "./assets/js/mobile-common.js?v=2",
   "./assets/js/mobile-native-update.js?v=1",
-  "./assets/js/mobile-vault.js?v=5",
+  "./assets/js/mobile-vault.js?v=7",
+  "./assets/js/mobile-slot.js?v=7",
   "./assets/js/npc-vault-mobile.js?v=1",
   "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
+  "./assets/js/flea-market-mobile.js?v=1",
+  "./assets/js/profile-page.js?v=1",
+  "./assets/js/profile-shop.js?v=1",
   "./assets/icons/center.png",
   "./assets/icons/wallet.png",
   "./assets/icons/vault.png",
@@ -35,6 +44,7 @@ const APP_SHELL = [
   "./assets/icons/odd-even.png",
   "./assets/icons/slot.png",
   "./assets/icons/sdcoin.svg",
+  "./assets/icons/flea-market.png?v=3",
   "./assets/icons/coins/ddj.svg",
   "./assets/icons/coins/hsh.svg",
   "./assets/icons/coins/set.svg",
@@ -80,8 +90,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // JS/CSS/JSON은 네트워크 우선으로 바꿉니다.
-  // 기존 cache-first 때문에 Ctrl+F5 전까지 오래된 로그인/UI 코드가 남는 문제를 방지합니다.
+  // JS/CSS/JSON은 네트워크 우선으로 유지해 오래된 코드가 남지 않게 합니다.
   const networkFirst = request.destination === "script"
     || request.destination === "style"
     || url.pathname.endsWith(".json");
@@ -93,7 +102,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 이미지 등 정적 자산은 기존처럼 캐시 우선.
+  // 이미지 등 정적 자산은 캐시 우선.
   event.respondWith(
     caches.match(request).then((cached) => cached || fetchAndRefreshCache(request))
   );
