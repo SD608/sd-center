@@ -1,0 +1,59 @@
+name: Build Flea Market v1.1.0
+
+on:
+  push:
+    branches:
+      - chatgpt/flea-upgrade-v1010
+    paths:
+      - '.github/workflows/build-flea-v110.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/flea-upgrade-v1010
+          fetch-depth: 0
+      - name: Build and validate v1.1.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC='downloads/extensions/SDFleaMarket_v1.0.4_Desktop.zip'
+          OUT='downloads/extensions/SDFleaMarket_v1.1.0_Desktop.zip'
+          python tools/build-flea-v110.py "$SRC" "$OUT"
+          unzip -t "$OUT"
+          rm -rf /tmp/flea110 && mkdir -p /tmp/flea110
+          unzip -q "$OUT" -d /tmp/flea110
+          node --check /tmp/flea110/public/app.js
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          package = json.loads(Path('/tmp/flea110/package.json').read_text(encoding='utf-8'))
+          app = json.loads(Path('/tmp/flea110/sd-app.json').read_text(encoding='utf-8'))
+          js = Path('/tmp/flea110/public/app.js').read_text(encoding='utf-8')
+          assert package['version'] == '1.1.0'
+          assert app['version'] == '1.1.0'
+          assert app['displayVersion'] == 'PC Expansion · v1.1.0'
+          assert 'requiredLogisticsRank' not in app
+          assert 'requiredLogisticsRep' not in app
+          assert '// SD_SAFE_MOUSE_DIAL_V1' in js
+          assert 'bindSafeDialPointerControls();' in js
+          assert 'pointerdown' in js and 'pointermove' in js
+          assert 'safeDialKeyDown' in js
+          print('v1.1.0 metadata and safe controls OK')
+          PY
+          ls -lh "$OUT"
+          sha256sum "$OUT"
+      - name: Commit generated extension ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add downloads/extensions/SDFleaMarket_v1.1.0_Desktop.zip
+          git commit -m 'SD 플리마켓 v1.1.0 정상 본체 복구 · 금고 마우스 조작 추가'
+          git push origin HEAD:chatgpt/flea-upgrade-v1010
