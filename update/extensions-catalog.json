@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 11,
-  "updatedAt": "2026-08-16T22:16:00+09:00",
+  "catalogVersion": 12,
+  "updatedAt": "2026-08-16T22:30:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -41,12 +41,10 @@
     "sd-flea-market": {
       "name": "SD 플리마켓",
       "version": "1.0.9",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip?v=109",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip?v=109-open",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "실제 물류센터 회사 등급 직접 반영 · 홈/물품 보관함 새로고침 · SD Link v1.2.7 브리지 · PC·모바일 온라인 재고 동기화",
-      "requiredLogisticsRank": "S",
-      "requiredLogisticsRep": 2200,
+      "notes": "누구나 다운로드·설치 가능 · 실제 회사 등급 반영 · 홈/물품 보관함 새로고침 · SD Link v1.2.7 브리지 · PC·모바일 온라인 재고 동기화",
       "requiredCenterVersion": "2.2.0"
     }
   }
