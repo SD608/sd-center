@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v11-flea-profile-010";
+const CACHE_NAME = "sd608-mobile-v12-profile-gold-fix";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -29,13 +29,13 @@ const APP_SHELL = [
   "./assets/js/auth-common.js?v=2",
   "./assets/js/mobile-common.js?v=2",
   "./assets/js/mobile-native-update.js?v=1",
-  "./assets/js/mobile-vault.js?v=7",
+  "./assets/js/mobile-vault.js?v=8",
   "./assets/js/mobile-slot.js?v=7",
   "./assets/js/npc-vault-mobile.js?v=1",
   "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
   "./assets/js/flea-market-mobile.js?v=1",
-  "./assets/js/profile-page.js?v=1",
+  "./assets/js/profile-page.js?v=2",
   "./assets/js/profile-shop.js?v=1",
   "./assets/icons/center.png",
   "./assets/icons/wallet.png",

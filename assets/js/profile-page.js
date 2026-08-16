@@ -125,8 +125,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("profileAssetTotal").textContent = won(profile.assets?.total);
     document.getElementById("profileWalletBalance").textContent = won(profile.assets?.wallet_balance);
     document.getElementById("profileGold").textContent = `${Number(profile.assets?.gold_bars || 0).toLocaleString("ko-KR")}개 · ${Number(profile.assets?.gold_grams || 0).toLocaleString("ko-KR", { maximumFractionDigits: 2 })}g · 평가 ${won(profile.assets?.gold_value)}`;
-    const slot = profile.slot_best || {};
-    document.getElementById("profileSlotBest").textContent = `${slot.icon || "🎰"} ${slot.label || "기록 없음"}`;
     ownerTools.hidden = !profile.is_me;
     renderPhoto();
     renderShowcase();

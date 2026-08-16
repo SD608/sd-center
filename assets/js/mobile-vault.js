@@ -12,11 +12,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const buyCount = document.getElementById("goldBuyCount");
   const buyCost = document.getElementById("goldBuyCost");
   const buyButton = document.getElementById("buyGoldButton");
+  const minusButton = document.getElementById("goldMinus");
+  const plusButton = document.getElementById("goldPlus");
 
   const PRICE_PER_BAR = 826000;
+  const MAX_BARS_PER_PURCHASE = 10000;
   let currentGoldGrams = 0;
   let weightUnit = "g";
   let walletBalance = 0;
+  let stateReady = false;
+  let purchasePending = false;
   if (!mobile) return;
 
   const formatNumber = (value, maximumFractionDigits = 2) => Number(value || 0).toLocaleString("ko-KR", { maximumFractionDigits });
@@ -35,20 +40,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     goldWeight.setAttribute("aria-pressed", "false");
   };
 
-  const normalizedBuyBars = () => {
-    const bars = Math.trunc(Number(buyBarsInput.value) || 1);
-    return Math.min(10000, Math.max(1, bars));
+  const normalizeStatePayload = (payload) => {
+  const data = Array.isArray(payload) ? payload[0] : payload;
+  return data && typeof data === "object" ? data : {};
   };
+
+  const normalizedBuyBars = () => {
+  const raw = Number(buyBarsInput.value);
+  const bars = Number.isFinite(raw) ? Math.trunc(raw) : 1;
+  return Math.min(MAX_BARS_PER_PURCHASE, Math.max(1, bars));
+  };
+
+  const maxAffordableBars = () => Math.max(
+  0,
+  Math.min(MAX_BARS_PER_PURCHASE, Math.floor(Math.max(0, walletBalance) / PRICE_PER_BAR))
+  );
 
   const renderBuySummary = () => {
-    const bars = normalizedBuyBars();
-    buyBarsInput.value = String(bars);
-    buyCount.textContent = `${bars.toLocaleString("ko-KR")}개`;
-    buyCost.textContent = mobile.auth.formatWon(bars * PRICE_PER_BAR);
-    buyButton.disabled = bars * PRICE_PER_BAR > walletBalance;
+  const bars = normalizedBuyBars();
+  const cost = bars * PRICE_PER_BAR;
+  const affordable = maxAffordableBars();
+  buyBarsInput.value = String(bars);
+  buyCount.textContent = `${bars.toLocaleString("ko-KR")}개`;
+  buyCost.textContent = mobile.auth.formatWon(cost);
+  buyButton.disabled = purchasePending || !stateReady || cost > walletBalance;
+  minusButton.disabled = purchasePending || bars <= 1;
+  plusButton.disabled = purchasePending || bars >= MAX_BARS_PER_PURCHASE || (stateReady && bars >= affordable);
+  buyBarsInput.disabled = purchasePending;
   };
 
-  const renderState = (data) => {
+  const renderState = (payload) => {
+    const data = normalizeStatePayload(payload);
+    stateReady = true;
     const snapshotBars = Math.max(0, Math.trunc(Number(data?.gold_bars || 0)));
     const snapshotGrams = Math.max(0, Number(data?.gold_grams || 0));
     if (Number.isFinite(snapshotBars) && Number.isFinite(snapshotGrams)) {
@@ -117,35 +140,50 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   buyBarsInput.addEventListener("input", renderBuySummary);
-  document.getElementById("goldMinus").addEventListener("click", () => {
-    buyBarsInput.value = String(Math.max(1, normalizedBuyBars() - 1));
-    renderBuySummary();
+  buyBarsInput.addEventListener("change", renderBuySummary);
+  buyBarsInput.addEventListener("blur", renderBuySummary);
+  minusButton.addEventListener("click", () => {
+  buyBarsInput.value = String(Math.max(1, normalizedBuyBars() - 1));
+  renderBuySummary();
   });
-  document.getElementById("goldPlus").addEventListener("click", () => {
-    buyBarsInput.value = String(Math.min(10000, normalizedBuyBars() + 1));
-    renderBuySummary();
+  plusButton.addEventListener("click", () => {
+  const affordable = stateReady ? Math.max(1, maxAffordableBars()) : MAX_BARS_PER_PURCHASE;
+  buyBarsInput.value = String(Math.min(MAX_BARS_PER_PURCHASE, affordable, normalizedBuyBars() + 1));
+  renderBuySummary();
   });
 
   buyButton.addEventListener("click", async () => {
-    const bars = normalizedBuyBars();
-    const cost = bars * PRICE_PER_BAR;
-    if (cost > walletBalance) return mobile.setMobileStatus(status, "금 구매에 필요한 가상잔액이 부족합니다.", "error");
-    buyButton.disabled = true;
-    mobile.clearMobileStatus(status);
+  if (purchasePending) return;
+  const bars = normalizedBuyBars();
+  const cost = bars * PRICE_PER_BAR;
+  if (!stateReady) return mobile.setMobileStatus(status, "금고 정보를 불러온 뒤 다시 시도하세요.", "error");
+  if (cost > walletBalance) return mobile.setMobileStatus(status, "금 구매에 필요한 가상잔액이 부족합니다.", "error");
+
+  purchasePending = true;
+  renderBuySummary();
+  mobile.clearMobileStatus(status);
+  try {
+    const { error } = await mobile.auth.client.rpc("buy_sd_vault_gold", {
+      p_bars: bars,
+      p_request_id: mobile.uuid(),
+      p_platform: mobile.platform
+    });
+    if (error) throw error;
+
+    const { data: refreshedState, error: refreshError } = await mobile.auth.client.rpc("get_sd_vault_state");
+    if (refreshError) throw refreshError;
+    renderState(refreshedState);
+    mobile.setMobileStatus(status, `금괴 ${bars.toLocaleString("ko-KR")}개를 구매했습니다.`, "success");
+  } catch (error) {
     try {
-      const { data, error } = await mobile.auth.client.rpc("buy_sd_vault_gold", {
-        p_bars: bars,
-        p_request_id: mobile.uuid(),
-        p_platform: mobile.platform
-      });
-      if (error) throw error;
-      renderState(data);
-      mobile.setMobileStatus(status, `금괴 ${bars.toLocaleString("ko-KR")}개를 구매했습니다.`, "success");
-    } catch (error) {
-      mobile.setMobileStatus(status, mobile.auth.messageForError(error), "error");
-    } finally {
-      renderBuySummary();
-    }
+      const { data: refreshedState, error: refreshError } = await mobile.auth.client.rpc("get_sd_vault_state");
+      if (!refreshError && refreshedState) renderState(refreshedState);
+    } catch (_) {}
+    mobile.setMobileStatus(status, mobile.auth.messageForError(error), "error");
+  } finally {
+    purchasePending = false;
+    renderBuySummary();
+  }
   });
 
   document.getElementById("setPinButton").addEventListener("click", async () => {
@@ -184,5 +222,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  renderBuySummary();
   load();
 });
