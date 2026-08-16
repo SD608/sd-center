@@ -77,7 +77,7 @@
 }
 </style>
 <script defer="" src="site-config.js?v=221"></script>
-<script defer="" src="assets/js/extensions-data.js?v=221"></script>
+<script defer="" src="assets/js/extensions-data.js?v=221-walletcore"></script>
 <script defer="" src="assets/js/app.js?v=20260813d"></script>
 <script defer="True" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script defer="True" src="assets/js/supabase-config.js?v=2"></script><script defer="True" src="assets/js/auth-common.js?v=2"></script><script defer="True" src="assets/js/auth-nav.js?v=20260813d"></script></head>
 <body>
@@ -151,20 +151,16 @@
 <div><small>ALL APPS</small><strong>SD종합센터</strong></div>
 </div>
 <div class="mini-grid">
-<article><img alt="" src="assets/icons/wallet.png"/><span>SD지갑</span></article>
-<article><img alt="" src="assets/icons/vault.png"/><span>SD금고</span></article>
-<article><img alt="" src="assets/icons/odd-even.png"/><span>SD홀짝</span></article>
-<article><img alt="" src="assets/icons/miner.png"/><span>SD광부</span></article>
-<article class="wide"><img alt="" src="assets/icons/bitcoin.png"/><span>SD비트코인 채굴장</span></article>
+<article class="wide"><img alt="" src="assets/icons/wallet.png"/><span>SD지갑 · CORE</span></article>
 </div>
 </div>
 </div>
 <div class="floating-chip chip-version">v<span data-version="">2.1.1</span></div>
-<div class="floating-chip chip-apps">5 APPS + PACKS</div>
+<div class="floating-chip chip-apps">1 CORE APP + PACKS</div>
 </div>
 </section>
 <section aria-label="제품 특징" class="trust-strip section-shell">
-<div><strong>한 번에 설치</strong><span>설치 파일 하나로 앱 5개 구성</span></div>
+<div><strong>지갑 코어</strong><span>SD지갑 1개만 기본 제공</span></div>
 <div><strong>통합 실행</strong><span>센터와 트레이에서 빠른 접근</span></div>
 <div><strong>로컬 저장</strong><span>시뮬레이션 데이터는 PC에 저장</span></div>
 <div><strong>확장팩 지원</strong><span>ZIP 다운로드 후 센터에 바로 추가</span></div>
@@ -177,29 +173,13 @@
 <section class="apps-section section-shell" id="apps">
 <div class="section-heading">
 <span class="section-kicker">INCLUDED APPLICATIONS</span>
-<h2>기본 제공 앱 5개</h2>
-<p>기본 앱은 SD지갑의 가상 계좌를 중심으로 연결되며, 종합센터에서 실행·종료·보관·재설치할 수 있습니다.</p>
+<h2>기본 제공 앱 1개</h2>
+<p>SD지갑만 센터에 기본 포함됩니다. 금고·홀짝·광부·비트코인 채굴장 등 나머지 앱은 확장팩 상점에서 원하는 것만 설치할 수 있습니다.</p>
 </div>
 <div class="app-grid">
 <article class="app-card blue">
 <img alt="SD지갑 아이콘" src="assets/icons/wallet.png"/>
 <div><span>Stage 11</span><h3>SD지갑</h3><p>직접 입출금과 초기 시뮬레이션 금액을 차단하고, 새 계좌에는 25만원 가상 민생지원금만 지급합니다. 이 PC에서 24시간 최대 3개까지 생성됩니다.</p></div>
-</article>
-<article class="app-card gold">
-<img alt="SD금고 아이콘" src="assets/icons/vault.png"/>
-<div><span>V16</span><h3>SD금고</h3><p>잔액을 금 중량과 일반·대형·초대형 금고 모습으로 환산합니다.</p></div>
-</article>
-<article class="app-card purple">
-<img alt="SD홀짝 아이콘" src="assets/icons/odd-even.png"/>
-<div><span>Stage 4</span><h3>SD홀짝</h3><p>보안 난수 주사위를 사용하는 가상 잔액 홀짝 시뮬레이션입니다.</p></div>
-</article>
-<article class="app-card green">
-<img alt="SD광부 아이콘" src="assets/icons/miner.png"/>
-<div><span>Stage 3</span><h3>SD광부</h3><p>광물 채굴·판매와 총채굴량·판매기록·누적수익을 확인합니다.</p></div>
-</article>
-<article class="app-card cyan">
-<img alt="SD비트코인 채굴장 아이콘" src="assets/icons/bitcoin.png"/>
-<div><span>Stage 5</span><h3>SD비트코인 채굴장</h3><p>0.25% 확률 채굴, UTC 일일 전기세와 미납 재가동을 관리합니다.</p></div>
 </article>
 </div>
 </section>
@@ -207,7 +187,7 @@
 <div class="section-heading">
 <span class="section-kicker">OPTIONAL EXPANSION PACKS</span>
 <h2>필요한 앱만 추가로 설치하세요</h2>
-<p>확장팩 ZIP을 내려받은 뒤 압축을 풀지 않고 SD종합센터의 <strong>ZIP 앱 추가</strong>에서 선택하면 됩니다.</p>
+<p>SD종합센터의 <strong>확장팩 상점</strong>에서 원하는 앱을 골라 바로 설치할 수 있습니다. 홈페이지 ZIP 다운로드를 이용한 수동 설치도 지원합니다.</p>
 </div>
 <div class="extension-toolbar">
 <div class="extension-count"><strong id="extensionCount">0</strong><span>개의 확장팩 공개 중</span></div>
@@ -217,12 +197,12 @@
 <div class="extension-install-guide">
 <div class="guide-heading">
 <span>3단계 설치</span>
-<strong>다운로드한 확장팩을 종합센터에 추가하는 방법</strong>
+<strong>종합센터 확장팩 상점에서 앱을 추가하는 방법</strong>
 </div>
 <ol>
-<li><b>1</b><span>홈페이지에서 확장팩 ZIP 다운로드</span></li>
-<li><b>2</b><span>SD종합센터에서 <strong>ZIP 앱 추가</strong> 선택</span></li>
-<li><b>3</b><span>압축을 풀지 않은 ZIP을 선택해 설치 또는 업데이트</span></li>
+<li><b>1</b><span>SD종합센터에서 <strong>확장팩 상점</strong> 열기</span></li>
+<li><b>2</b><span>원하는 확장팩을 찾아 설치 선택</span></li>
+<li><b>3</b><span>설치가 끝나면 설치된 앱에서 바로 실행</span></li>
 </ol>
 </div>
 </section>

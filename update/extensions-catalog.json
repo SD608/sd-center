@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 13,
-  "updatedAt": "2026-08-16T22:36:00+09:00",
+  "catalogVersion": 14,
+  "updatedAt": "2026-08-16T22:50:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -35,8 +35,8 @@
     "bitcoin": {
       "name": "SD비트코인 채굴장",
       "version": "1.2.2",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
-      "notes": "방과 채굴 장비를 확장해 자동 채굴 시설을 운영하는 시뮬레이션입니다. 전기세와 GPU 내구도를 관리하며 채굴 규모를 키울 수 있습니다."
+      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDBitcoinMiner_v1.2.2_Desktop.zip",
+      "notes": "방과 채굴 장비를 확장하고 전기세·GPU 내구도를 관리하며 자동 채굴 시설을 운영하는 확장팩입니다."
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
@@ -46,6 +46,24 @@
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "notes": "파밍과 상자 개봉으로 얻은 물품을 수집하고 다른 유저와 거래하는 온라인 마켓 확장팩입니다. PC와 모바일에서 같은 보관함과 거래 데이터를 사용할 수 있습니다.",
       "requiredCenterVersion": "2.2.0"
+    },
+    "vault": {
+      "name": "SD금고",
+      "version": "1.2.0",
+      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDVault_v1.2.0_Desktop.zip",
+      "notes": "SD지갑 잔액을 금 중량과 금괴 보관 모습으로 환산해 자산 규모를 시각적으로 확인하는 금고 확장팩입니다."
+    },
+    "odd-even": {
+      "name": "SD홀짝",
+      "version": "1.1.0",
+      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDOddEven_v1.1.0_Desktop.zip",
+      "notes": "보안 난수 주사위의 홀·짝을 맞히며 SD지갑 가상 잔액으로 즐기는 빠른 미니게임 확장팩입니다."
+    },
+    "miner": {
+      "name": "SD광부",
+      "version": "1.1.0",
+      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDMiner_v1.1.0_Desktop.zip",
+      "notes": "여러 광물을 채굴하고 보관·판매하며 누적 성과를 키우는 SD지갑 연동 채굴 확장팩입니다."
     }
   }
 }
