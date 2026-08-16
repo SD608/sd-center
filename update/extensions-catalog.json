@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 7,
-  "updatedAt": "2026-08-16T19:10:00+09:00",
+  "catalogVersion": 8,
+  "updatedAt": "2026-08-16T19:23:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -40,11 +40,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.0.1",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.1_Desktop.zip?v=101",
+      "version": "1.0.2",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.2_Desktop.zip?v=102",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "개발용 지갑 제거 및 실제 SD지갑 연동 · 물류센터 S등급 입장 강제 · 은행 경비 약화 준비작업에 피날레와 같은 경비원 3명 배치",
+      "notes": "아이템 획득 효과음 추가 · 상자/파밍/은행 장비 및 금고 보상 획득 시 효과음 재생 · 고가 아이템은 별도 고음 효과",
       "requiredLogisticsRank": "S",
       "requiredLogisticsRep": 7000,
       "requiredCenterVersion": "2.2.0"
