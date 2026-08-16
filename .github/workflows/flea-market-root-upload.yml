@@ -1,0 +1,41 @@
+name: Move SD Flea Market upload
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'SDFleaMarket_v*_Desktop.zip'
+
+permissions:
+  contents: write
+
+jobs:
+  move-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Move Flea Market ZIP into downloads/extensions
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(SDFleaMarket_v*_Desktop.zip)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo 'No root Flea Market ZIP found.'
+            exit 0
+          fi
+
+          mkdir -p downloads/extensions
+          for file in "${files[@]}"; do
+            echo "Moving $file -> downloads/extensions/$file"
+            git mv "$file" "downloads/extensions/$file"
+          done
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'release: move SD Flea Market ZIP into extension downloads'
+          git push
