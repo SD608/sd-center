@@ -1,18 +1,18 @@
 {
-  "catalogVersion": 10,
-  "updatedAt": "2026-08-16T21:03:00+09:00",
+  "catalogVersion": 11,
+  "updatedAt": "2026-08-16T22:16:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
-      "version": "1.2.4",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.4_Desktop.zip",
-      "notes": "센터 버전 증명, 필수 업데이트 서버 정책, 동시 수익 보호 및 BTC 연동 안정화"
+      "version": "1.2.7",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.7_Desktop.zip?v=127",
+      "notes": "로컬 앱 브리지를 안정화해 SD 플리마켓의 온라인 재고·회사 등급 동기화를 지원합니다. 기존 거래 동기화와 백그라운드 안정화 기능도 유지됩니다."
     },
     "sd-logistics-center-desktop": {
       "name": "SD 물류센터",
       "version": "1.0.9",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=109",
-      "notes": "회사 랭크·차량 해금 밸런스 및 업데이트 후 물류 진행도 1회 초기화"
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=1092",
+      "notes": "현재 회사 등급과 물류 평판을 로컬 공유 상태로 갱신해 SD 플리마켓에서 실제 진행도를 반영할 수 있도록 연동했습니다."
     },
     "sd-slot": {
       "name": "SD슬롯",
@@ -40,13 +40,13 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.0.4",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.4_Desktop.zip?v=104",
+      "version": "1.0.9",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip?v=109",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "SD Link를 나중에 실행해도 5초마다 자동 재연결해 PC 아이템 온라인 동기화를 재시도 · 연결 실패 중 로컬 아이템 보존",
+      "notes": "실제 물류센터 회사 등급 직접 반영 · 홈/물품 보관함 새로고침 · SD Link v1.2.7 브리지 · PC·모바일 온라인 재고 동기화",
       "requiredLogisticsRank": "S",
-      "requiredLogisticsRep": 7000,
+      "requiredLogisticsRep": 2200,
       "requiredCenterVersion": "2.2.0"
     }
   }
