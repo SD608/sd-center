@@ -9,7 +9,11 @@
 <link rel="icon" href="favicon.ico"/>
 <link rel="stylesheet" href="assets/css/style.css?v=online2"/>
 <style>
-.achievements-page{min-height:100vh;padding-top:120px;padding-bottom:90px}.achievements-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px}.achievements-head h1{margin:8px 0 0;font-size:clamp(2.3rem,5vw,4.4rem);letter-spacing:-.055em}.achievements-head p{max-width:580px;margin:14px 0 0;color:var(--muted);line-height:1.75}.achievement-count{padding:12px 16px;border:1px solid rgba(255,204,88,.2);border-radius:16px;background:rgba(255,204,88,.07);color:#f0cf76;font-size:.82rem;font-weight:900}.achievement-category-title{display:flex;align-items:center;gap:10px;margin:34px 0 14px}.achievement-category-title span{color:#d9b85e;font-size:.7rem;font-weight:950;letter-spacing:.13em}.achievement-category-title h2{margin:0;font-size:1.35rem}.achievement-card{max-width:720px;padding:25px;border:1px solid rgba(255,204,88,.17);border-radius:24px;background:linear-gradient(145deg,rgba(255,204,88,.085),rgba(17,28,49,.94));box-shadow:0 18px 46px rgba(0,0,0,.16)}.achievement-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.achievement-icon{display:grid;width:54px;height:54px;place-items:center;border-radius:17px;background:rgba(255,204,88,.11);font-size:28px}.achievement-badge{padding:7px 10px;border:1px solid rgba(255,204,88,.18);border-radius:99px;background:rgba(255,204,88,.06);color:#d8bb6b;font-size:.68rem;font-weight:900}.achievement-name{margin:18px 0 0;font-size:1.65rem}.achievement-condition{margin-top:16px;padding:14px 15px;border:1px solid rgba(255,255,255,.06);border-radius:15px;background:rgba(0,0,0,.14)}.achievement-condition small{display:block;color:#74839d;font-size:.66rem;font-weight:900;letter-spacing:.08em}.achievement-condition strong{display:block;margin-top:5px;color:#e6edf9;font-size:.91rem}.achievement-note{margin:13px 0 0;color:#8491a6;font-size:.76rem;line-height:1.65}.achievement-placeholder{max-width:720px;margin-top:18px;padding:18px 20px;border:1px dashed rgba(131,157,205,.17);border-radius:18px;color:#78869e;font-size:.78rem;line-height:1.7}@media(max-width:760px){.achievements-page{padding-top:95px}.achievements-head{align-items:flex-start;flex-direction:column}.achievement-card{padding:21px}}
+.achievements-page{min-height:100vh;padding-top:120px;padding-bottom:90px}.achievements-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:26px}.achievements-head h1{margin:8px 0 0;font-size:clamp(2.3rem,5vw,4.4rem);letter-spacing:-.055em}.achievements-head p{max-width:650px;margin:14px 0 0;color:var(--muted);line-height:1.75}.achievement-count{padding:12px 16px;border:1px solid rgba(255,204,88,.2);border-radius:16px;background:rgba(255,204,88,.07);color:#f0cf76;font-size:.82rem;font-weight:900;white-space:nowrap}
+.achievement-tabs-wrap{position:sticky;top:82px;z-index:15;margin:0 0 28px;padding:12px;border:1px solid rgba(127,155,210,.12);border-radius:22px;background:rgba(9,16,30,.82);backdrop-filter:blur(16px);box-shadow:0 18px 42px rgba(0,0,0,.14)}.achievement-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}.achievement-tab{flex:0 0 auto;min-height:42px;padding:0 14px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:rgba(255,255,255,.035);color:#97a6bf;font-size:.78rem;font-weight:900;cursor:pointer;transition:.2s}.achievement-tab:hover{color:#e9f0ff;border-color:rgba(121,155,225,.22)}.achievement-tab.active{border-color:rgba(255,204,88,.34);background:linear-gradient(145deg,rgba(255,204,88,.18),rgba(255,204,88,.07));color:#f4d77f;box-shadow:inset 0 0 0 1px rgba(255,204,88,.05)}
+.achievement-panel{display:none}.achievement-panel.active{display:block}.achievement-category-title{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:10px 0 14px}.achievement-category-title>div{display:flex;align-items:center;gap:10px}.achievement-category-title span{color:#d9b85e;font-size:.7rem;font-weight:950;letter-spacing:.13em}.achievement-category-title h2{margin:0;font-size:1.4rem}.achievement-category-meta{color:#6f7e98!important;font-size:.72rem!important;letter-spacing:0!important}.achievement-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.achievement-card{min-width:0;padding:23px;border:1px solid rgba(255,255,255,.08);border-radius:24px;background:linear-gradient(145deg,rgba(28,42,67,.92),rgba(12,21,38,.96));box-shadow:0 18px 46px rgba(0,0,0,.14)}.achievement-card.complete{border-color:rgba(255,204,88,.19);background:linear-gradient(145deg,rgba(255,204,88,.09),rgba(15,25,43,.96))}.achievement-card.hidden-achievement{border-style:dashed;background:linear-gradient(145deg,rgba(71,77,94,.17),rgba(13,20,34,.96))}.achievement-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.achievement-icon{display:grid;width:52px;height:52px;place-items:center;border-radius:17px;background:rgba(255,204,88,.1);font-size:26px}.hidden-achievement .achievement-icon{background:rgba(255,255,255,.05);filter:grayscale(1)}.achievement-badge{padding:7px 10px;border:1px solid rgba(255,204,88,.16);border-radius:99px;background:rgba(255,204,88,.06);color:#d8bb6b;font-size:.66rem;font-weight:900}.achievement-badge.hidden-badge{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#7f8a9e}.achievement-name{margin:16px 0 0;font-size:1.55rem}.hidden-achievement .achievement-name{color:#8b96a9;letter-spacing:.08em}.achievement-condition{margin-top:14px;padding:13px 14px;border:1px solid rgba(255,255,255,.06);border-radius:15px;background:rgba(0,0,0,.14)}.achievement-condition small{display:block;color:#74839d;font-size:.65rem;font-weight:900;letter-spacing:.08em}.achievement-condition strong{display:block;margin-top:5px;color:#e6edf9;font-size:.88rem}.hidden-achievement .achievement-condition strong{color:#68758b;letter-spacing:.06em}.achievement-note{margin:12px 0 0;color:#8491a6;font-size:.75rem;line-height:1.65}
+.achievement-progress{margin-top:15px}.achievement-progress-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.achievement-progress-head span{color:#8e9bb0;font-size:.72rem}.achievement-progress-head strong{color:#f3d276;font-size:.84rem}.achievement-progress-track{height:10px;overflow:hidden;border-radius:99px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,255,255,.035)}.achievement-progress-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,#5d8cff,#ffcc58);box-shadow:0 0 18px rgba(93,140,255,.28)}.achievement-progress-detail{display:flex;justify-content:space-between;gap:10px;margin-top:7px;color:#6f7c91;font-size:.68rem}.achievement-empty{padding:32px 24px;border:1px dashed rgba(131,157,205,.16);border-radius:20px;color:#77859d;text-align:center;font-size:.8rem;line-height:1.7;background:rgba(255,255,255,.018)}
+@media(max-width:880px){.achievement-grid{grid-template-columns:1fr}}@media(max-width:760px){.achievements-page{padding-top:95px}.achievements-head{align-items:flex-start;flex-direction:column}.achievement-tabs-wrap{top:70px;margin-left:-4px;margin-right:-4px}.achievement-card{padding:20px}.achievement-category-title{align-items:flex-start;flex-direction:column;gap:6px}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script defer src="assets/js/supabase-config.js?v=2"></script>
@@ -18,10 +22,95 @@
 </head>
 <body>
 <div aria-hidden="true" class="page-glow glow-one"></div><div aria-hidden="true" class="page-glow glow-two"></div>
-<header class="site-header"><a aria-label="SD종합센터 홈" class="brand" href="index.html"><img alt="" src="assets/icons/center.png"/><span>SD종합센터</span></a><nav aria-label="주요 메뉴" class="nav-links"><a href="index.html#online-account">온라인 계정</a><a data-auth-user hidden href="ranking.html">잔액 랭킹</a><a href="index.html#apps">기본 앱</a><a href="index.html#extensions">확장팩</a><a href="index.html#install">설치 방법</a><a href="index.html#faq">도움말</a></nav><div class="header-actions-group"><div class="header-account"><a class="header-login" data-auth-guest href="login.html">로그인</a><a class="header-signup" data-auth-guest href="signup.html">회원가입</a><a class="header-signup" data-auth-name data-auth-user hidden href="account.html">내 지갑</a></div></div></header>
+<header class="site-header"><a aria-label="SD종합센터 홈" class="brand" href="index.html"><img alt="" src="assets/icons/center.png"/><span>SD종합센터</span></a><nav aria-label="주요 메뉴" class="nav-links"><a href="index.html#online-account">온라인 계정</a><a data-auth-user hidden href="ranking.html">잔액 랭킹</a><a href="achievements.html">업적</a><a href="index.html#apps">기본 앱</a><a href="index.html#extensions">확장팩</a><a href="index.html#install">설치 방법</a><a href="index.html#faq">도움말</a></nav><div class="header-actions-group"><div class="header-account"><a class="header-login" data-auth-guest href="login.html">로그인</a><a class="header-signup" data-auth-guest href="signup.html">회원가입</a><a class="header-signup" data-auth-name data-auth-user hidden href="account.html">내 지갑</a></div></div></header>
 <main class="achievements-page section-shell">
-<section class="achievements-head"><div><span class="section-kicker">SD ACHIEVEMENTS</span><h1>업적</h1><p>SD종합센터에서 달성한 기록과 특별 칭호를 확인하는 메뉴입니다. 현재는 화면 구성 확인을 위해 예시 업적 하나만 등록되어 있습니다.</p></div><div class="achievement-count">예시 업적 · 1개</div></section>
-<section><div class="achievement-category-title"><span>BANK BALANCE RANKING</span><h2>통장 잔고 랭킹</h2></div><article class="achievement-card"><div class="achievement-top"><div class="achievement-icon" aria-hidden="true">🏆</div><span class="achievement-badge">시즌 0 · 예시</span></div><h3 class="achievement-name">전설</h3><div class="achievement-condition"><small>달성 조건</small><strong>시즌 0 통장 잔고 랭킹 1위</strong></div><p class="achievement-note">서버 1등에게만 지급되는 시즌 한정 업적입니다. 현재는 실제 달성 판정 없이 메뉴 디자인 확인용으로 표시합니다.</p></article><div class="achievement-placeholder">추후 확정된 전체 업적을 이 화면에 카테고리별로 추가할 수 있습니다.</div></section>
+<section class="achievements-head"><div><span class="section-kicker">SD ACHIEVEMENTS</span><h1>업적</h1><p>콘텐츠별 업적을 나눠서 확인할 수 있습니다. 히든 업적은 달성 전까지 이름과 조건이 가려지고, 누적형·보유형 업적은 진행률을 %로 표시합니다.</p></div><div class="achievement-count">업적 UI · 미리보기</div></section>
+
+<div class="achievement-tabs-wrap" aria-label="업적 카테고리">
+  <div class="achievement-tabs" role="tablist">
+    <button class="achievement-tab" type="button" data-achievement-tab="logistics">물류센터</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="flea">플리마켓</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="miner">광부</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="mukjjippa">묵찌빠</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="slot">슬롯</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="oddeven">홀짝</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="bitcoin">비트코인</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="sta">STA</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="gold">금 구매</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="npcvault">NPC 금고</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="sdcoin">SD코인</button>
+    <button class="achievement-tab active" type="button" data-achievement-tab="wallet">지갑</button>
+    <button class="achievement-tab" type="button" data-achievement-tab="ranking">통장 잔고 랭킹</button>
+  </div>
+</div>
+
+<section class="achievement-panel" data-achievement-panel="logistics"><div class="achievement-category-title"><div><span>LOGISTICS</span><h2>물류센터</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 물류센터 업적이 이곳에 표시됩니다.</div></section>
+<section class="achievement-panel" data-achievement-panel="flea"><div class="achievement-category-title"><div><span>FLEA MARKET</span><h2>플리마켓</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 플리마켓 업적이 이곳에 표시됩니다.</div></section>
+<section class="achievement-panel" data-achievement-panel="miner"><div class="achievement-category-title"><div><span>MINER</span><h2>광부</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 광부 업적이 이곳에 표시됩니다.</div></section>
+<section class="achievement-panel" data-achievement-panel="mukjjippa"><div class="achievement-category-title"><div><span>MUK-JJI-PPA</span><h2>묵찌빠</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 묵찌빠 업적이 이곳에 표시됩니다.</div></section>
+<section class="achievement-panel" data-achievement-panel="slot"><div class="achievement-category-title"><div><span>SLOT</span><h2>슬롯</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 슬롯 업적이 이곳에 표시됩니다.</div></section>
+<section class="achievement-panel" data-achievement-panel="oddeven"><div class="achievement-category-title"><div><span>ODD / EVEN</span><h2>홀짝</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 홀짝 업적이 이곳에 표시됩니다.</div></section>
+
+<section class="achievement-panel" data-achievement-panel="bitcoin">
+  <div class="achievement-category-title"><div><span>BITCOIN</span><h2>비트코인 채굴</h2></div><span class="achievement-category-meta">히든 업적 예시</span></div>
+  <div class="achievement-grid">
+    <article class="achievement-card hidden-achievement">
+      <div class="achievement-top"><div class="achievement-icon" aria-hidden="true">❔</div><span class="achievement-badge hidden-badge">HIDDEN</span></div>
+      <h3 class="achievement-name">???</h3>
+      <div class="achievement-condition"><small>달성 조건</small><strong>???</strong></div>
+      <p class="achievement-note">달성 전에는 업적 이름과 조건을 공개하지 않습니다. 달성하면 실제 이름인 “BTC NOT FOUND”가 표시됩니다.</p>
+    </article>
+  </div>
+</section>
+
+<section class="achievement-panel" data-achievement-panel="sta"><div class="achievement-category-title"><div><span>STA</span><h2>STA</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 STA 업적이 이곳에 표시됩니다.</div></section>
+<section class="achievement-panel" data-achievement-panel="gold"><div class="achievement-category-title"><div><span>GOLD</span><h2>금 구매</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 금 구매 업적이 이곳에 표시됩니다.</div></section>
+<section class="achievement-panel" data-achievement-panel="npcvault"><div class="achievement-category-title"><div><span>NPC VAULT</span><h2>NPC 금고 따기</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 NPC 금고 업적이 이곳에 표시됩니다.</div></section>
+<section class="achievement-panel" data-achievement-panel="sdcoin"><div class="achievement-category-title"><div><span>SD COIN</span><h2>SD코인</h2></div><span class="achievement-category-meta">카테고리 화면</span></div><div class="achievement-empty">전체 업적 데이터 연결 후 SD코인 업적이 이곳에 표시됩니다.</div></section>
+
+<section class="achievement-panel active" data-achievement-panel="wallet">
+  <div class="achievement-category-title"><div><span>WALLET</span><h2>지갑</h2></div><span class="achievement-category-meta">진행형 업적 예시</span></div>
+  <div class="achievement-grid">
+    <article class="achievement-card">
+      <div class="achievement-top"><div class="achievement-icon" aria-hidden="true">💰</div><span class="achievement-badge">진행 중</span></div>
+      <h3 class="achievement-name">억소리</h3>
+      <div class="achievement-condition"><small>달성 조건</small><strong>지갑 잔액 1억원 달성</strong></div>
+      <div class="achievement-progress" aria-label="업적 진행률 43퍼센트">
+        <div class="achievement-progress-head"><span>진행률</span><strong>43%</strong></div>
+        <div class="achievement-progress-track"><div class="achievement-progress-fill" style="width:43%"></div></div>
+        <div class="achievement-progress-detail"><span>43,000,000원</span><span>100,000,000원</span></div>
+      </div>
+      <p class="achievement-note">실제 시스템 연결 시 로그인한 사용자의 현재 기록으로 숫자와 %가 자동 계산됩니다.</p>
+    </article>
+  </div>
+</section>
+
+<section class="achievement-panel" data-achievement-panel="ranking">
+  <div class="achievement-category-title"><div><span>BANK BALANCE RANKING</span><h2>통장 잔고 랭킹</h2></div><span class="achievement-category-meta">일반 업적 예시</span></div>
+  <div class="achievement-grid">
+    <article class="achievement-card complete">
+      <div class="achievement-top"><div class="achievement-icon" aria-hidden="true">🏆</div><span class="achievement-badge">시즌 0</span></div>
+      <h3 class="achievement-name">전설</h3>
+      <div class="achievement-condition"><small>달성 조건</small><strong>시즌 0 통장 잔고 랭킹 1위</strong></div>
+      <p class="achievement-note">서버 1등에게만 지급되는 시즌 한정 업적입니다.</p>
+    </article>
+  </div>
+</section>
 </main>
+<script>
+(function(){
+  const tabs=[...document.querySelectorAll('[data-achievement-tab]')];
+  const panels=[...document.querySelectorAll('[data-achievement-panel]')];
+  const activate=(id)=>{
+    tabs.forEach((tab)=>{
+      const active=tab.dataset.achievementTab===id;
+      tab.classList.toggle('active',active);
+      tab.setAttribute('aria-selected',active?'true':'false');
+    });
+    panels.forEach((panel)=>panel.classList.toggle('active',panel.dataset.achievementPanel===id));
+  };
+  tabs.forEach((tab)=>tab.addEventListener('click',()=>activate(tab.dataset.achievementTab)));
+})();
+</script>
 </body>
 </html>
