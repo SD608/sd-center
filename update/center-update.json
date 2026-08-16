@@ -1,7 +1,8 @@
 {
-  "version": "2.2.2",
-  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.2/SDCenterSetup.exe",
-  "sha256": "be33a0295d67b92aa1292342546e81ea3c90271eb450bad5e22b2c3071ef798e",
-  "notes": "SD Link가 설치된 PC에서 Windows 로그인 시 SD Link를 자동으로 백그라운드 실행합니다.",
-  "publishedAt": "2026-08-16T23:04:38+09:00"
+  "version": "2.2.3",
+  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.3/SDCenterSetup.exe",
+  "sha256": "d781bca47d8c68ac1fc6a78f709236a61f47a81459b5d5d44e8fae9dabc6d924",
+  "notes": "종합센터 앱 내부에서 Electron/Squirrel 자동 업데이트를 지원합니다.",
+  "publishedAt": "2026-08-16T23:20:02+09:00",
+  "squirrelFeedUrl": "https://github.com/SD608/sd-center/releases/latest/download"
 }
