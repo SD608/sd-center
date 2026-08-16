@@ -1,0 +1,40 @@
+name: Inspect Flea v1.0.4 source sections
+
+on:
+  push:
+    branches:
+      - chatgpt/flea-v110-rebuild
+    paths:
+      - '.github/workflows/inspect-flea104-sections.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print patch anchors
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/f104 && mkdir -p /tmp/f104
+          unzip -q downloads/extensions/SDFleaMarket_v1.0.4_Desktop.zip -d /tmp/f104
+          echo '=== sd-integration lines 1-340 ==='
+          nl -ba /tmp/f104/src/sd-integration.js | sed -n '1,340p'
+          echo '=== main integration/sync sections ==='
+          grep -nE 'syncInventoryNow|startInventoryBackgroundSync|resolveCompanyGrade|flea:get-state|flea:start-mission|ipcMain.handle|publicState' /tmp/f104/main.js
+          nl -ba /tmp/f104/main.js | sed -n '620,900p'
+          nl -ba /tmp/f104/main.js | sed -n '1120,1420p'
+          echo '=== preload full ==='
+          nl -ba /tmp/f104/preload.js
+          echo '=== index top/storage ==='
+          nl -ba /tmp/f104/public/index.html | sed -n '1,170p'
+          echo '=== app refresh/storage handlers ==='
+          nl -ba /tmp/f104/public/app.js | sed -n '1600,1760p'
+          grep -nE 'storage|inventory|phoneCompany|refreshButton|addEventListener\("click"' /tmp/f104/public/app.js | head -n 240
+          echo '=== safe section ==='
+          nl -ba /tmp/f104/public/app.js | sed -n '3310,3485p'
+          echo '=== style relevant selectors ==='
+          grep -nE 'phone-company|storage|toolbar|safe-control|safe-dial-shell' /tmp/f104/public/style.css | head -n 240
