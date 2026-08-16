@@ -1,0 +1,217 @@
+name: Build and publish SDCenter v2.2.3 In-App Self Update
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/build-v223-center-self-update.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download verified v2.2.2 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.2.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.2/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140103680){ throw "Unexpected v2.2.2 size: $size" }
+          if($hash -ne 'be33a0295d67b92aa1292342546e81ea3c90271eb450bad5e22b2c3071ef798e'){ throw "v2.2.2 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.2.2 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.2'
+          if(-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))){ throw 'v2.2.2 install missing' }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$appDir\resources\app" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch SDCenter v2.2.3 self update
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/patch-v223-center-self-update.js "$env:APP_ROOT"
+
+      - name: Validate patched source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\preload.js"
+          node --check "$env:APP_ROOT\public\js\app.js"
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.3'){ throw "Center version mismatch: $($pkg.version)" }
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          foreach($m in @('CENTER_UPDATE_MANIFEST_URL','center:check-center-update','center:install-center-update','sha256File')) {
+            if(-not $main.Contains($m)){ throw "v2.2.3 main marker missing: $m" }
+          }
+          $renderer=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
+          foreach($m in @('centerUpdateButton','checkCenterUpdate','installCenterUpdate','onCenterUpdateStatus')) {
+            if(-not $renderer.Contains($m)){ throw "v2.2.3 renderer marker missing: $m" }
+          }
+
+      - name: Install Squirrel builder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder=Join-Path $env:RUNNER_TEMP 'squirrel-builder-v223'
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Push-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          Pop-Location
+          "NODE_PATH=$builder\node_modules" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          $output=Join-Path $env:RUNNER_TEMP 'squirrel-v223'
+          "BUILD_OUTPUT=$output" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build SDCenter v2.2.3
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/build-v223-installer.js
+          $setup=Join-Path $env:BUILD_OUTPUT 'SDCenterSetup.exe'
+          if(-not (Test-Path $setup)){ throw 'v2.2.3 installer missing' }
+          $size=(Get-Item $setup).Length
+          if($size -lt 100MB){ throw "Installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install and smoke test v2.2.3
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $dir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.3'
+          $exe=Join-Path $dir 'SDCenter.exe'
+          if(-not (Test-Path $exe)){ throw 'v2.2.3 in-place install failed' }
+          $pkg=Get-Content (Join-Path $dir 'resources\app\package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.3'){ throw 'Installed Center version mismatch' }
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "Center exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Prepare release files
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:GITHUB_WORKSPACE 'release-v2.2.3'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP (Join-Path $dir 'SDCenterSetup.exe') -Force
+          gh release download 'v.2.2.2' --repo 'SD608/sd-center' --pattern 'SDCenter-Mobile.apk' --dir $dir
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $dir 'SHA256.txt') -Encoding ascii
+          $info=@(
+            'SD종합센터 v2.2.3',
+            '- 종합센터 앱 내부에서 자체 업데이트 확인 가능',
+            '- 새 버전 발견 시 상단 센터 업데이트 버튼에 새 버전 표시',
+            '- 시작 후 자동으로 최신 버전 확인',
+            '- 업데이트 클릭 시 설치 파일 다운로드 + SHA256 검증',
+            '- 실행 중 SD 앱 종료 후 자동 설치 및 새 센터 재실행',
+            '- 확장팩 업데이트 기능과 종합센터 자체 업데이트 기능 분리',
+            "Installer bytes: $env:BUILT_SIZE",
+            "SHA256: $env:BUILT_HASH"
+          )
+          $info | Set-Content (Join-Path $dir 'BUILD_INFO.txt') -Encoding utf8
+
+      - name: Publish v2.2.3 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.2.3' `
+            'release-v2.2.3/SDCenterSetup.exe' `
+            'release-v2.2.3/SDCenter-Mobile.apk' `
+            'release-v2.2.3/SHA256.txt' `
+            'release-v2.2.3/BUILD_INFO.txt' `
+            --repo 'SD608/sd-center' `
+            --target 'main' `
+            --title 'SD종합센터 v2.2.3' `
+            --notes '종합센터 자체 업데이트 기능을 추가했습니다. v2.2.3부터 앱 안에서 새 버전을 확인하고 다운로드·검증·설치 후 자동 재실행할 수 있습니다.'
+
+      - name: Update website and self-update manifest
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          @'
+          import json
+          import os
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          root = Path('.')
+          version = '2.2.3'
+          sha256 = os.environ['BUILT_HASH']
+          now = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec='seconds')
+          release_url = 'https://github.com/SD608/sd-center/releases/download/v.2.2.3/SDCenterSetup.exe'
+
+          manifest = {
+              'version': version,
+              'downloadUrl': release_url,
+              'sha256': sha256,
+              'notes': '종합센터 앱 내부에서 업데이트 확인·다운로드·무결성 검사·자동 설치·재실행을 지원합니다.',
+              'publishedAt': now,
+          }
+          (root / 'update/center-update.json').write_text(
+              json.dumps(manifest, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+          )
+
+          site = root / 'site-config.js'
+          text = site.read_text(encoding='utf-8')
+          text = text.replace('v2.2.2 SD Link Auto Start', 'v2.2.3 In-App Self Update')
+          text = text.replace('version: "2.2.2"', 'version: "2.2.3"')
+          text = text.replace('releases/download/v.2.2.2/SDCenterSetup.exe', 'releases/download/v.2.2.3/SDCenterSetup.exe')
+          text = text.replace('releases/tag/v.2.2.2', 'releases/tag/v.2.2.3')
+          site.write_text(text, encoding='utf-8')
+          '@ | Set-Content "$env:RUNNER_TEMP\update-v223-site.py" -Encoding utf8
+          python "$env:RUNNER_TEMP\update-v223-site.py"
+
+      - name: Validate published metadata
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $manifest=Get-Content 'update/center-update.json' -Raw | ConvertFrom-Json
+          if($manifest.version -ne '2.2.3'){ throw 'self-update manifest version mismatch' }
+          if($manifest.sha256 -ne $env:BUILT_HASH){ throw 'self-update manifest hash mismatch' }
+          $site=Get-Content 'site-config.js' -Raw
+          if(-not $site.Contains('version: "2.2.3"')){ throw 'site config v2.2.3 missing' }
+
+      - name: Commit website and self-update manifest
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add update/center-update.json site-config.js
+          if(git diff --cached --quiet){ exit 0 }
+          git commit -m '센터 v2.2.3 앱내 자체 업데이트 배포 반영'
+          git push origin HEAD:main
