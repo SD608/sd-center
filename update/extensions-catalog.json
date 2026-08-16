@@ -1,42 +1,42 @@
 {
-  "catalogVersion": 12,
-  "updatedAt": "2026-08-16T22:30:00+09:00",
+  "catalogVersion": 13,
+  "updatedAt": "2026-08-16T22:36:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
       "version": "1.2.7",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.7_Desktop.zip?v=127",
-      "notes": "로컬 앱 브리지를 안정화해 SD 플리마켓의 온라인 재고·회사 등급 동기화를 지원합니다. 기존 거래 동기화와 백그라운드 안정화 기능도 유지됩니다."
+      "notes": "SD Online 계정과 PC 앱을 연결하고 여러 SD 앱의 데이터를 동기화하는 연결 허브입니다. PC와 모바일이 같은 계정 데이터를 사용할 수 있도록 지원합니다."
     },
     "sd-logistics-center-desktop": {
       "name": "SD 물류센터",
       "version": "1.0.9",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=1092",
-      "notes": "현재 회사 등급과 물류 평판을 로컬 공유 상태로 갱신해 SD 플리마켓에서 실제 진행도를 반영할 수 있도록 연동했습니다."
+      "notes": "운송 계약을 수행하고 차량·기사·본부를 확장하는 물류회사 경영 시뮬레이션입니다. 평판과 등급을 올리며 고수익 계약과 자동화 수익 구조를 해금할 수 있습니다."
     },
     "sd-slot": {
       "name": "SD슬롯",
       "version": "1.0.6",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_Stage7_Desktop.zip",
-      "notes": "SD지갑 연동 3릴 슬롯 확장팩"
+      "notes": "SD지갑과 연동되는 3릴 슬롯머신 시뮬레이션입니다. 다양한 배수의 보상과 낮은 확률의 고배율 결과, 잭팟을 노릴 수 있습니다."
     },
     "sd-mukjippa": {
       "name": "SD묵찌빠",
       "version": "1.0.1",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDMukjippa_Version1_1_Desktop.zip",
-      "notes": "SD지갑 연동 연승 도전형 묵찌빠 확장팩"
+      "notes": "컴퓨터와 묵찌빠를 진행하며 연승에 도전하는 선택형 미니게임입니다. 보상을 정산하거나 더 높은 보상을 위해 계속 도전할 수 있습니다."
     },
     "sta-expansion": {
       "name": "STA",
       "version": "1.5.1",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/STA_Version6_Desktop.zip?v=151",
-      "notes": "현금 획득 종료 후 다음 단계로 넘어가지 않던 타이머 경합 버그 수정"
+      "notes": "해킹·습격·현금 확보·운반 등 여러 단계를 직접 수행하는 작전형 확장팩입니다. 다양한 미니게임을 클리어하며 큰 수익을 노릴 수 있습니다."
     },
     "bitcoin": {
       "name": "SD비트코인 채굴장",
       "version": "1.2.2",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip?v=122",
-      "notes": "v1.2.2 강제 핫픽스. 공용 모듈을 ZIP 내부에 포함해 실행 오류를 수정하고 v1.2.0 밸런스/GPU 내구도 규칙을 유지합니다."
+      "notes": "방과 채굴 장비를 확장해 자동 채굴 시설을 운영하는 시뮬레이션입니다. 전기세와 GPU 내구도를 관리하며 채굴 규모를 키울 수 있습니다."
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
@@ -44,7 +44,7 @@
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.9_Desktop.zip?v=109-open",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "누구나 다운로드·설치 가능 · 실제 회사 등급 반영 · 홈/물품 보관함 새로고침 · SD Link v1.2.7 브리지 · PC·모바일 온라인 재고 동기화",
+      "notes": "파밍과 상자 개봉으로 얻은 물품을 수집하고 다른 유저와 거래하는 온라인 마켓 확장팩입니다. PC와 모바일에서 같은 보관함과 거래 데이터를 사용할 수 있습니다.",
       "requiredCenterVersion": "2.2.0"
     }
   }
