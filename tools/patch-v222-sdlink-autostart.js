@@ -59,7 +59,7 @@ main = replaceOnce(
 main = replaceOnce(
   main,
   `  function terminateAllApps() {\n    for (const entry of appCatalog) {\n      terminateApp(entry.id);\n    }\n  }\n\n  function updateTrayMenu() {`,
-  `  function terminateAllApps() {\n    for (const entry of appCatalog) {\n      terminateApp(entry.id);\n    }\n  }\n\n  function sdLinkStartupRegistration() {\n    if (process.platform !== \"win32\" || !app.isPackaged) return null;\n\n    const startupArgument = \"--sd-center-auto-link\";\n    const squirrelUpdateExe = path.resolve(\n      path.dirname(process.execPath),\n      \"..\",\n      \"Update.exe\",\n    );\n\n    if (fs.existsSync(squirrelUpdateExe)) {\n      return {\n        path: squirrelUpdateExe,\n        args: [\n          \"--processStart\",\n          path.basename(process.execPath),\n          \"--process-start-args\",\n          startupArgument,\n        ],\n      };\n    }\n\n    return {\n      path: process.execPath,\n      args: [startupArgument],\n    };\n  }\n\n  function configureSdLinkWindowsAutoStart() {\n    const registration = sdLinkStartupRegistration();\n    if (!registration) return;\n\n    const enabled = appById.has(\"sdlink-desktop\");\n    try {\n      app.setLoginItemSettings({\n        openAtLogin: enabled,\n        path: registration.path,\n        args: registration.args,\n      });\n      console.log(\n        \`SD Link Windows 자동 시작: \${enabled ? \"ON\" : \"OFF\"}\`,\n      );\n    } catch (error) {\n      console.warn(\n        \"SD Link Windows 자동 시작 등록 실패\",\n        error?.message || error,\n      );\n    }\n  }\n\n  function launchSdLinkForWindowsLogin() {\n    if (!autoStartLinkMode) return;\n\n    const entry = appById.get(\"sdlink-desktop\");\n    if (!entry) {\n      isQuitting = true;\n      app.quit();\n      return;\n    }\n\n    const running = runningApps.get(entry.id);\n    if (running && running.exitCode === null) return;\n\n    try {\n      spawnChild(entry, {\n        track: true,\n        extraArgs: [\"--sd-link-auto-start\"],\n      });\n    } catch (error) {\n      console.warn(\n        \"Windows 로그인 시 SD Link 자동 실행 실패\",\n        error?.message || error,\n      );\n    }\n  }\n\n  function updateTrayMenu() {`,
+  `  function terminateAllApps() {\n    for (const entry of appCatalog) {\n      terminateApp(entry.id);\n    }\n  }\n\n  function sdLinkStartupRegistration() {\n    if (process.platform !== \"win32\" || !app.isPackaged) return null;\n\n    const startupArgument = \"--sd-center-auto-link\";\n    const squirrelUpdateExe = path.resolve(\n      path.dirname(process.execPath),\n      \"..\",\n      \"Update.exe\",\n    );\n\n    if (fs.existsSync(squirrelUpdateExe)) {\n      return {\n        path: squirrelUpdateExe,\n        args: [\n          \"--processStart\",\n          path.basename(process.execPath),\n          \"--process-start-args\",\n          startupArgument,\n        ],\n      };\n    }\n\n    return {\n      path: process.execPath,\n      args: [startupArgument],\n    };\n  }\n\n  function configureSdLinkWindowsAutoStart() {\n    const registration = sdLinkStartupRegistration();\n    if (!registration) return;\n\n    const enabled = appById.has(\"sdlink-desktop\");\n    try {\n      app.setLoginItemSettings({\n        openAtLogin: enabled,\n        path: registration.path,\n        args: registration.args,\n      });\n      console.log(\n        \`SD Link Windows 자동 시작: \${enabled ? \"ON\" : \"OFF\"}\`,\n      );\n    } catch (error) {\n      console.warn(\n        \"SD Link Windows 자동 시작 등록 실패\",\n        error?.message || error,\n      );\n    }\n  }\n\n  function hideAutoStartedChildWindow(child) {\n    if (process.platform !== \"win32\" || !child?.pid) return;\n\n    const targetPid = Number(child.pid);\n    const powershellScript = [\n      \"$ErrorActionPreference='SilentlyContinue'\",\n      \`$targetPid=\${targetPid}\`,\n      \"Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class SDWin32 { [DllImport(\\\"user32.dll\\\")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow); }'\",\n      \"for($i=0;$i -lt 12;$i++){ $p=Get-Process -Id $targetPid -ErrorAction SilentlyContinue; if(-not $p){ break }; if($p.MainWindowHandle -ne 0){ [SDWin32]::ShowWindowAsync($p.MainWindowHandle,0) | Out-Null }; Start-Sleep -Milliseconds 400 }\",\n    ].join(\"; \" );\n\n    try {\n      const helper = spawn(\n        \"powershell.exe\",\n        [\n          \"-NoProfile\",\n          \"-NonInteractive\",\n          \"-WindowStyle\",\n          \"Hidden\",\n          \"-Command\",\n          powershellScript,\n        ],\n        { windowsHide: true, stdio: \"ignore\" },\n      );\n      helper.unref();\n    } catch (error) {\n      console.warn(\n        \"SD Link 자동 시작 창 숨김 실패\",\n        error?.message || error,\n      );\n    }\n  }\n\n  function launchSdLinkForWindowsLogin() {\n    if (!autoStartLinkMode) return;\n\n    const entry = appById.get(\"sdlink-desktop\");\n    if (!entry) {\n      isQuitting = true;\n      app.quit();\n      return;\n    }\n\n    const running = runningApps.get(entry.id);\n    if (running && running.exitCode === null) return;\n\n    try {\n      const child = spawnChild(entry, {\n        track: true,\n        extraArgs: [\"--sd-link-auto-start\"],\n      });\n      hideAutoStartedChildWindow(child);\n    } catch (error) {\n      console.warn(\n        \"Windows 로그인 시 SD Link 자동 실행 실패\",\n        error?.message || error,\n      );\n    }\n  }\n\n  function updateTrayMenu() {`,
   "windows auto-start helpers",
 );
 
@@ -91,21 +91,16 @@ main = replaceOnce(
   "second instance auto-start guard",
 );
 
-// v2.2.2 내장 fallback에도 최신 SD Link를 넣어 네트워크 카탈로그 장애 시 업데이트 경로를 유지합니다.
-main = main.replace(
-  /("sdlink-desktop"\s*:\s*\{[\s\S]*?version:\s*")1\.2\.4("[\s\S]*?downloadUrl:\s*\n\s*")https:\/\/sd608\.github\.io\/sd-center\/downloads\/extensions\/SDLink_v1\.2\.4_Desktop\.zip("[\s\S]*?notes:\s*")([^\"]*)(")/,
-  `$11.2.8$2https://github.com/SD608/sd-center/releases/download/v.2.2.2/SDLink_v1.2.8_Desktop.zip$3Windows 로그인 시 자동으로 백그라운드 실행되도록 개선$5`,
-);
-
 write("main.js", main);
 
 const validation = read("main.js");
 for (const marker of [
   "--sd-center-auto-link",
-  "--sd-link-auto-start",
   "configureSdLinkWindowsAutoStart",
   "launchSdLinkForWindowsLogin",
+  "hideAutoStartedChildWindow",
   "app.setLoginItemSettings",
+  "Update.exe",
 ]) {
   if (!validation.includes(marker)) throw new Error(`v2.2.2 marker missing: ${marker}`);
 }
