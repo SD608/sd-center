@@ -53,15 +53,6 @@ jobs:
           $ErrorActionPreference='Stop'
           node tools/patch-v222-sdlink-autostart.js "$env:APP_ROOT"
 
-      - name: Build SD Link v1.2.8 background auto start ZIP
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          $out="$env:RUNNER_TEMP\SDLink_v1.2.8_Desktop.zip"
-          python tools/patch-sdlink-v128-autostart.py 'downloads/extensions/SDLink_v1.2.7_Desktop.zip' $out
-          if(-not (Test-Path $out)){ throw 'SD Link v1.2.8 ZIP missing' }
-          "SDLINK_ZIP=$out" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-
       - name: Validate patched source
         shell: pwsh
         run: |
@@ -72,7 +63,7 @@ jobs:
           $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
           if($pkg.version -ne '2.2.2'){ throw "Center version mismatch: $($pkg.version)" }
           $main=Get-Content "$env:APP_ROOT\main.js" -Raw
-          foreach($m in @('--sd-center-auto-link','--sd-link-auto-start','configureSdLinkWindowsAutoStart','launchSdLinkForWindowsLogin','setLoginItemSettings')) {
+          foreach($m in @('--sd-center-auto-link','configureSdLinkWindowsAutoStart','launchSdLinkForWindowsLogin','hideAutoStartedChildWindow','setLoginItemSettings','Update.exe')) {
             if(-not $main.Contains($m)){ throw "v2.2.2 marker missing: $m" }
           }
 
@@ -131,14 +122,13 @@ jobs:
           $dir=Join-Path $env:GITHUB_WORKSPACE 'release-v2.2.2'
           New-Item -ItemType Directory -Force -Path $dir | Out-Null
           Copy-Item $env:BUILT_SETUP (Join-Path $dir 'SDCenterSetup.exe') -Force
-          Copy-Item $env:SDLINK_ZIP (Join-Path $dir 'SDLink_v1.2.8_Desktop.zip') -Force
           gh release download 'v.2.2.1' --repo 'SD608/sd-center' --pattern 'SDCenter-Mobile.apk' --dir $dir
           "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $dir 'SHA256.txt') -Encoding ascii
           $info=@(
             'SD종합센터 v2.2.2',
-            '- SD Link 설치 시 Windows 로그인 자동 시작 등록',
-            '- Windows 로그인에서는 종합센터 창을 띄우지 않고 SD Link만 관리 실행',
-            '- SD Link v1.2.8 자동 시작은 창을 숨기고 트레이/백그라운드 동기화 유지',
+            '- SD Link가 설치되어 있으면 Windows 로그인 자동 시작 등록',
+            '- Windows 로그인에서는 종합센터 창을 띄우지 않고 SD Link를 센터가 관리 실행',
+            '- 자동 시작된 SD Link 창은 Windows에서 숨기고 트레이/백그라운드 동기화 유지',
             '- SD Link 삭제 시 Windows 자동 시작 등록도 자동 해제',
             '- Squirrel Update.exe 경유 등록으로 센터 업데이트 후에도 시작 경로 유지',
             "Installer bytes: $env:BUILT_SIZE",
@@ -155,37 +145,31 @@ jobs:
           gh release create 'v.2.2.2' `
             'release-v2.2.2/SDCenterSetup.exe' `
             'release-v2.2.2/SDCenter-Mobile.apk' `
-            'release-v2.2.2/SDLink_v1.2.8_Desktop.zip' `
             'release-v2.2.2/SHA256.txt' `
             'release-v2.2.2/BUILD_INFO.txt' `
             --repo 'SD608/sd-center' `
             --target 'main' `
             --title 'SD종합센터 v2.2.2' `
-            --notes 'SD Link를 설치한 PC에서는 Windows 로그인 시 SD종합센터가 백그라운드로 시작해 SD Link를 자동 실행합니다. SD Link v1.2.8은 자동 시작 시 창을 숨기고 트레이에서 동기화를 계속합니다.'
+            --notes 'SD Link가 설치된 PC에서는 Windows 로그인 시 SD종합센터가 백그라운드로 시작해 SD Link를 자동 실행합니다. 종합센터와 SD Link 창은 띄우지 않고 트레이/백그라운드 동기화를 유지합니다.'
 
-      - name: Update website and extension catalog
+      - name: Update website metadata
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
           @'
           import json
-          from datetime import datetime
+          from datetime import datetime, timedelta, timezone
           from pathlib import Path
-          from zoneinfo import ZoneInfo
 
           root = Path('.')
-          release_url = 'https://github.com/SD608/sd-center/releases/download/v.2.2.2/SDLink_v1.2.8_Desktop.zip'
-          now = datetime.now(ZoneInfo('Asia/Seoul')).isoformat(timespec='seconds')
+          now = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec='seconds')
 
           catalog_path = root / 'update/extensions-catalog.json'
           catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
           catalog['catalogVersion'] = max(int(catalog.get('catalogVersion') or 0) + 1, 15)
           catalog['updatedAt'] = now
           rule = catalog['apps']['sdlink-desktop']
-          rule['version'] = '1.2.8'
-          rule['downloadUrl'] = release_url
-          rule['notes'] = 'Windows 로그인 시 자동으로 백그라운드 실행되며, 트레이에서 PC↔온라인↔모바일 동기화를 계속하는 연결 허브입니다.'
-          rule['requiredCenterVersion'] = '2.2.2'
+          rule['notes'] = 'SD종합센터 v2.2.2부터 Windows 로그인 시 자동으로 백그라운드 실행되며, 트레이에서 PC↔온라인↔모바일 동기화를 계속하는 연결 허브입니다.'
           catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
           for rel in ['assets/js/extensions-data.js', 'extensions-data.js']:
@@ -193,12 +177,8 @@ jobs:
               if not p.exists():
                   continue
               text = p.read_text(encoding='utf-8')
-              text = text.replace('"version": "v1.2.7"', '"version": "v1.2.8"', 1)
-              text = text.replace('"fileName": "SDLink_v1.2.7_Desktop.zip"', '"fileName": "SDLink_v1.2.8_Desktop.zip"', 1)
-              text = text.replace('"downloadUrl": "downloads/extensions/SDLink_v1.2.7_Desktop.zip?v=127"', f'"downloadUrl": "{release_url}"', 1)
-              text = text.replace('"requirements": "SD종합센터 v2.1.1 이상 · SD지갑 · Windows 10/11"', '"requirements": "SD종합센터 v2.2.2 이상 · SD지갑 · Windows 10/11"', 1)
               old = 'SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. 여러 SD 앱의 데이터를 온라인 계정과 동기화하고, PC와 모바일이 같은 계정 데이터를 사용할 수 있도록 연결 허브 역할을 합니다.'
-              new = 'SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. Windows 로그인 시 자동으로 백그라운드 실행되며, 트레이에서 PC와 모바일의 같은 계정 데이터를 계속 동기화합니다.'
+              new = 'SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. SD종합센터 v2.2.2부터 Windows 로그인 시 자동으로 백그라운드 실행되며, 트레이에서 PC와 모바일의 같은 계정 데이터를 계속 동기화합니다.'
               text = text.replace(old, new, 1)
               p.write_text(text, encoding='utf-8')
 
@@ -217,12 +197,11 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           $catalog=Get-Content 'update/extensions-catalog.json' -Raw | ConvertFrom-Json
-          if($catalog.apps.'sdlink-desktop'.version -ne '1.2.8'){ throw 'SD Link catalog version mismatch' }
-          if($catalog.apps.'sdlink-desktop'.requiredCenterVersion -ne '2.2.2'){ throw 'SD Link required center mismatch' }
+          if($catalog.apps.'sdlink-desktop'.version -ne '1.2.7'){ throw 'SD Link version should remain v1.2.7' }
           $site=Get-Content 'site-config.js' -Raw
           if(-not $site.Contains('version: "2.2.2"')){ throw 'site config v2.2.2 missing' }
 
-      - name: Commit website and catalog update
+      - name: Commit website metadata update
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
@@ -230,5 +209,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add update/extensions-catalog.json assets/js/extensions-data.js extensions-data.js site-config.js
           if(git diff --cached --quiet){ exit 0 }
-          git commit -m 'SD Link v1.2.8 자동 시작 및 센터 v2.2.2 배포 반영'
+          git commit -m '센터 v2.2.2 SD Link Windows 자동 시작 배포 반영'
           git push origin HEAD:main
