@@ -183,14 +183,28 @@ window.SD_EXTENSION_PACKS = [
         return;
       }
 
-      const { data, error } = await window.SD_AUTH.client
-        .from("sd_logistics_progress")
-        .select("state")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      if (error) throw error;
+      let rep = 0;
+      let snapshotResolved = false;
 
-      const rep = Number(data?.state?.logisticsRep || 0);
+      try {
+        const { data: snapshot, error: snapshotError } = await window.SD_AUTH.client
+          .rpc("get_sd_flea_company_snapshot");
+        if (!snapshotError && snapshot) {
+          rep = Number(snapshot.logistics_rep || 0);
+          snapshotResolved = true;
+        }
+      } catch (_) {}
+
+      if (!snapshotResolved || rep <= 0) {
+        const { data, error } = await window.SD_AUTH.client
+          .from("sd_logistics_progress")
+          .select("state")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (error && !snapshotResolved) throw error;
+        rep = Math.max(rep, Number(data?.state?.logisticsRep || 0));
+      }
+
       const rank = rankForRep(rep);
       if (rep >= requiredRep) {
         setLink(link, {
