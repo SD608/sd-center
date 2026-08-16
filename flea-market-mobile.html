@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#10151e">
+  <meta name="description" content="SD 플리마켓 Mobile">
+  <title>SD 플리마켓 Mobile</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/flea-market.png?v=3">
+  <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
+  <link rel="stylesheet" href="assets/css/flea-market-mobile.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="assets/js/supabase-config.js?v=2" defer></script>
+  <script src="assets/js/auth-common.js?v=2" defer></script>
+  <script src="assets/js/mobile-common.js?v=2" defer></script>
+  <script src="assets/js/flea-market-mobile.js?v=1" defer></script>
+</head>
+<body class="mobile-body flea-mobile-body">
+  <header class="mobile-topbar flea-topbar">
+    <a class="mobile-brand" href="mobile.html"><img src="assets/icons/flea-market.png?v=3" alt=""><span><small>SD608 ONLINE</small><strong>SD 플리마켓</strong></span></a>
+    <button class="icon-button" data-mobile-logout type="button">나가기</button>
+  </header>
+
+  <main class="mobile-main flea-mobile-main">
+    <section class="flea-hero">
+      <div><small>ONLINE FLEA MARKET</small><h1><span data-mobile-name>회원</span>님의 거래함</h1><p>PC에서 획득한 물건을 시스템에게 판매하고, 다른 회원이 넘긴 물건을 구매할 수 있습니다.</p></div>
+      <button id="fleaRefresh" class="flea-refresh" type="button">새로고침</button>
+    </section>
+
+    <div id="fleaStatus" class="status-mobile" hidden></div>
+
+    <section class="flea-balance-card">
+      <span>SD 가상잔액</span>
+      <strong data-mobile-balance>불러오는 중…</strong>
+      <small>시스템 판매대금과 구매금액은 같은 온라인 계좌에 즉시 반영됩니다.</small>
+    </section>
+
+    <nav class="flea-tabs" aria-label="플리마켓 메뉴">
+      <button class="active" type="button" data-flea-tab="inventory">내 물건 <b id="inventoryCount">0</b></button>
+      <button type="button" data-flea-tab="market">시스템 마켓 <b id="marketCount">0</b></button>
+      <button type="button" data-flea-tab="profile">프로필</button>
+    </nav>
+
+    <section id="inventoryPanel" class="flea-panel active" data-flea-panel="inventory">
+      <div class="flea-panel-heading"><div><small>MY INVENTORY</small><h2>온라인 보관함</h2></div><span>PC 획득품 자동 동기화</span></div>
+      <div class="flea-rule-card"><strong>판매 규칙</strong><p>PC에서 직접 획득한 물건은 기존 규칙대로 현재 가치의 95%를 받습니다. 시스템에서 구매한 물건은 구매가의 정확히 50%에만 재판매할 수 있습니다.</p></div>
+      <div id="fleaInventory" class="flea-card-list"><div class="flea-empty">아이템을 불러오는 중입니다.</div></div>
+    </section>
+
+    <section id="marketPanel" class="flea-panel" data-flea-panel="market">
+      <div class="flea-panel-heading"><div><small>SYSTEM STOCK</small><h2>시스템 마켓</h2></div><span>회원 판매품</span></div>
+      <div class="flea-rule-card market-rule"><strong>출처 표시</strong><p>모든 물건에는 최초로 PC 플리마켓에서 획득한 회원의 홈페이지 닉네임이 표시됩니다. 구매 후 다시 판매해도 최초 출처는 유지됩니다.</p></div>
+      <div id="fleaMarket" class="flea-card-list"><div class="flea-empty">시스템 재고를 불러오는 중입니다.</div></div>
+    </section>
+
+    <section id="profilePanel" class="flea-panel" data-flea-panel="profile">
+      <div class="flea-panel-heading"><div><small>PUBLIC PROFILE</small><h2>내 홈페이지 프로필</h2></div><span>주민등록증 스타일</span></div>
+      <div id="fleaProfileSummary" class="flea-profile-summary"><div class="flea-empty">프로필 상태를 확인하는 중입니다.</div></div>
+      <div class="flea-profile-actions">
+        <a class="flea-primary-link" href="profile.html">내 프로필 열기</a>
+        <a class="flea-secondary-link" href="profile-shop.html">치장품 상점</a>
+      </div>
+    </section>
+
+    <div class="mobile-notice"><strong>시뮬레이션 전용</strong><br>표시되는 물건과 금액은 SD608 게임용 가상 데이터이며 실제 중고거래나 현금거래가 아닙니다.</div>
+  </main>
+  <nav class="mobile-bottom-nav"></nav>
+</body>
+</html>
