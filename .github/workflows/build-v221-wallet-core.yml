@@ -1,0 +1,230 @@
+name: Build and publish SDCenter v2.2.1 Wallet Core
+
+on:
+  push:
+    branches: [build-v221-wallet-core-extensions-20260816]
+    paths: ['.github/workflows/build-v221-wallet-core.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified v2.2.0 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.0.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.0/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140380160){ throw "Unexpected v2.2.0 size: $size" }
+          if($hash -ne 'b72b1d3527057678bb50ebe89d123a8b3cefb62c32e3f5d915ce9b19dfa4cc9d'){ throw "v2.2.0 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.2.0 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.0'
+          if(-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))){ throw 'v2.2.0 install missing' }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$appDir\resources\app" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Convert former built-in apps to extension ZIPs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $out=Join-Path $env:RUNNER_TEMP 'converted-extensions'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          function New-SDExtensionZip($folder, $fileName, $manifest) {
+            $source=Join-Path $env:APP_ROOT "apps\$folder"
+            if(-not (Test-Path $source)){ throw "Built-in source missing: $folder" }
+            $stageParent=Join-Path $env:RUNNER_TEMP "stage-$folder"
+            Remove-Item $stageParent -Recurse -Force -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Force -Path $stageParent | Out-Null
+            $stage=Join-Path $stageParent $folder
+            Copy-Item $source $stage -Recurse -Force
+            $manifest | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $stage 'sd-app.json') -Encoding utf8
+            $zip=Join-Path $out $fileName
+            Compress-Archive -Path $stage -DestinationPath $zip -CompressionLevel Optimal -Force
+            if(-not (Test-Path $zip)){ throw "Extension ZIP missing: $fileName" }
+            return $zip
+          }
+
+          $vault=New-SDExtensionZip 'SDVault' 'SDVault_v1.2.0_Desktop.zip' @{
+            id='vault'; name='SD금고'; productName='SD금고'; version='1.2.0'; displayVersion='V16 · v1.2.0';
+            description='가상 계좌 잔액을 금 중량과 금괴 보관 모습으로 환산하는 금고 시뮬레이션입니다.';
+            improvement='SD지갑 잔액을 시각적인 금 보관 규모로 확인할 수 있습니다.';
+            accent='gold'; icon='public/icons/icon-512.png'; entry='main.js'; userDataFolder='SD금고'
+          }
+          $odd=New-SDExtensionZip 'SDOddEven' 'SDOddEven_v1.1.0_Desktop.zip' @{
+            id='odd-even'; name='SD홀짝'; productName='SD홀짝'; version='1.1.0'; displayVersion='Stage 4 · v1.1.0';
+            description='보안 난수 주사위로 진행하는 가상 잔액 홀짝 게임입니다.';
+            improvement='간단한 홀·짝 선택으로 빠르게 즐기는 SD지갑 연동 미니게임입니다.';
+            accent='purple'; icon='public/icons/icon-512.png'; entry='main.js'; userDataFolder='SD홀짝'
+          }
+          $miner=New-SDExtensionZip 'SDMiner' 'SDMiner_v1.1.0_Desktop.zip' @{
+            id='miner'; name='SD광부'; productName='SD광부'; version='1.1.0'; displayVersion='Stage 3 · v1.1.0';
+            description='광물을 채굴하고 보관한 뒤 SD지갑 가상 잔액으로 판매하는 채굴 시뮬레이션입니다.';
+            improvement='채굴·보관·판매를 반복하며 누적 성과를 키우는 콘텐츠입니다.';
+            accent='green'; icon='public/icons/icon-512.png'; entry='main.js'; userDataFolder='SD광부'
+          }
+          $bitcoin=New-SDExtensionZip 'SDBitcoinMiner' 'SDBitcoinMiner_v1.2.2_Desktop.zip' @{
+            id='bitcoin'; name='SD비트코인 채굴장'; productName='SD비트코인 채굴장'; version='1.2.2'; displayVersion='Version 1.2 · v1.2.2';
+            description='방과 채굴 장비를 확장해 자동 채굴 시설을 운영하는 시뮬레이션입니다.';
+            improvement='전기세와 GPU 내구도를 관리하며 채굴 규모를 키울 수 있습니다.';
+            accent='orange'; icon='public/icons/icon-512.png'; entry='main.js'; userDataFolder='SD비트코인 채굴장'
+          }
+
+          "VAULT_ZIP=$vault" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "ODD_ZIP=$odd" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "MINER_ZIP=$miner" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BITCOIN_ZIP=$bitcoin" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Apply v2.2.1 wallet-core patch
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/patch-v221-wallet-core.js "$env:APP_ROOT"
+
+      - name: Validate converted source and ZIP manifests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\preload.js"
+          node --check "$env:APP_ROOT\public\js\app.js"
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.1'){ throw "Center version mismatch: $($pkg.version)" }
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          $start=$main.IndexOf('const BUILTIN_CATALOG = [')
+          $end=$main.IndexOf('];',$start)
+          if($start -lt 0 -or $end -lt 0){ throw 'BUILTIN_CATALOG missing' }
+          $catalog=$main.Substring($start,$end-$start+2)
+          if(-not $catalog.Contains('id: "wallet"')){ throw 'wallet core missing' }
+          foreach($id in @('vault','odd-even','miner','bitcoin')){ if($catalog.Contains("id: `"$id`"")){ throw "$id still builtin" } }
+          foreach($folder in @('SDVault','SDOddEven','SDMiner','SDBitcoinMiner')){ if(Test-Path (Join-Path $env:APP_ROOT "apps\$folder")){ throw "$folder still bundled" } }
+
+          $checks=@(
+            @($env:VAULT_ZIP,'vault'),
+            @($env:ODD_ZIP,'odd-even'),
+            @($env:MINER_ZIP,'miner'),
+            @($env:BITCOIN_ZIP,'bitcoin')
+          )
+          foreach($check in $checks){
+            $zip=$check[0]; $expected=$check[1]
+            $tmp=Join-Path $env:RUNNER_TEMP ("verify-"+$expected)
+            Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+            Expand-Archive $zip $tmp -Force
+            $manifest=Get-ChildItem $tmp -Filter sd-app.json -Recurse | Select-Object -First 1
+            if(-not $manifest){ throw "sd-app.json missing: $expected" }
+            $data=Get-Content $manifest.FullName -Raw | ConvertFrom-Json
+            if($data.id -ne $expected){ throw "Extension ID mismatch: $($data.id) != $expected" }
+            if(-not (Test-Path (Join-Path $manifest.Directory.FullName 'main.js'))){ throw "main.js missing: $expected" }
+          }
+
+      - name: Install Squirrel builder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder=Join-Path $env:RUNNER_TEMP 'squirrel-builder-v221'
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Push-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          Pop-Location
+          "NODE_PATH=$builder\node_modules" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          $output=Join-Path $env:RUNNER_TEMP 'squirrel-v221'
+          "BUILD_OUTPUT=$output" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build SDCenter v2.2.1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/build-v221-installer.js
+          $setup=Join-Path $env:BUILD_OUTPUT 'SDCenterSetup.exe'
+          if(-not (Test-Path $setup)){ throw 'v2.2.1 installer missing' }
+          $size=(Get-Item $setup).Length
+          if($size -lt 100MB){ throw "Installer too small: $size" }
+          if($size -ge 140380160){ Write-Host "Installer did not shrink much; validating content removal instead." }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install and smoke test v2.2.1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $dir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.1'
+          $exe=Join-Path $dir 'SDCenter.exe'
+          if(-not (Test-Path $exe)){ throw 'v2.2.1 in-place install failed' }
+          $appRoot=Join-Path $dir 'resources\app'
+          $pkg=Get-Content (Join-Path $appRoot 'package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.1'){ throw 'Installed Center version mismatch' }
+          foreach($folder in @('SDVault','SDOddEven','SDMiner','SDBitcoinMiner')){ if(Test-Path (Join-Path $appRoot "apps\$folder")){ throw "Installed build still bundles $folder" } }
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "Center exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Prepare release files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:GITHUB_WORKSPACE 'release-v2.2.1'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP (Join-Path $dir 'SDCenterSetup.exe') -Force
+          Copy-Item $env:VAULT_ZIP $dir -Force
+          Copy-Item $env:ODD_ZIP $dir -Force
+          Copy-Item $env:MINER_ZIP $dir -Force
+          Copy-Item $env:BITCOIN_ZIP $dir -Force
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $dir 'SHA256.txt') -Encoding ascii
+          $info=@(
+            'SD종합센터 v2.2.1',
+            '- 기본 제공 앱: SD지갑 1개',
+            '- SD금고 / SD홀짝 / SD광부 / SD비트코인 채굴장을 선택형 확장팩으로 전환',
+            '- 기존 각 앱의 userDataFolder를 그대로 사용해 저장 데이터 경로 유지',
+            '- 확장팩 상점에서 설치·업데이트·삭제 가능',
+            "Installer bytes: $env:BUILT_SIZE",
+            "SHA256: $env:BUILT_HASH"
+          )
+          $info | Set-Content (Join-Path $dir 'BUILD_INFO.txt') -Encoding utf8
+
+      - name: Publish v2.2.1 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.2.1' `
+            'release-v2.2.1/SDCenterSetup.exe' `
+            'release-v2.2.1/SDVault_v1.2.0_Desktop.zip' `
+            'release-v2.2.1/SDOddEven_v1.1.0_Desktop.zip' `
+            'release-v2.2.1/SDMiner_v1.1.0_Desktop.zip' `
+            'release-v2.2.1/SDBitcoinMiner_v1.2.2_Desktop.zip' `
+            'release-v2.2.1/SHA256.txt' `
+            'release-v2.2.1/BUILD_INFO.txt' `
+            --repo 'SD608/sd-center' `
+            --target 'build-v221-wallet-core-extensions-20260816' `
+            --title 'SD종합센터 v2.2.1' `
+            --notes 'SD지갑만 기본 제공하고 SD금고, SD홀짝, SD광부, SD비트코인 채굴장을 선택형 확장팩으로 전환했습니다. 기존 앱 저장 데이터 경로는 유지됩니다.'
