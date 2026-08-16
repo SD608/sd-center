@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 5,
-  "updatedAt": "2026-08-16T17:13:00+09:00",
+  "catalogVersion": 6,
+  "updatedAt": "2026-08-16T18:41:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -42,6 +42,8 @@
       "name": "SD 플리마켓",
       "version": "1.0.0",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.0.0_Desktop.zip?v=100",
+      "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=2",
+      "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=2",
       "notes": "물류회사 S등급 해금 · 길거리/상가/물류센터 파밍 · 은행 습격 · 오토바이 추격",
       "requiredLogisticsRank": "S",
       "requiredLogisticsRep": 7000,
