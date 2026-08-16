@@ -1,6 +1,18 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const nav = document.querySelector(".nav-links");
+  if (nav && !nav.querySelector('[data-achievements-link]')) {
+    const achievementLink = document.createElement("a");
+    achievementLink.href = "achievements.html";
+    achievementLink.textContent = "업적";
+    achievementLink.dataset.achievementsLink = "";
+
+    const rankingLink = nav.querySelector('a[href="ranking.html"]');
+    if (rankingLink) rankingLink.insertAdjacentElement("afterend", achievementLink);
+    else nav.prepend(achievementLink);
+  }
+
   if (!window.SD_AUTH) return;
 
   // 홈페이지 안의 로그인/회원가입 링크를 모두 게스트 전용으로 취급합니다.
