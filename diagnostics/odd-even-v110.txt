@@ -1,24 +1,3 @@
-FILES
-SDOddEven/.gitignore
-SDOddEven/README.md
-SDOddEven/forge.config.js
-SDOddEven/main.js
-SDOddEven/package.json
-SDOddEven/preload.js
-SDOddEven/public/css/style.css
-SDOddEven/public/icons/icon-192.png
-SDOddEven/public/icons/icon-512.png
-SDOddEven/public/icons/icon.ico
-SDOddEven/public/index.html
-SDOddEven/public/js/app.js
-SDOddEven/sd-app.json
-SDOddEven/src/game-engine.js
-SDOddEven/src/settings.js
-SDOddEven/src/wallet-database.js
-
-MAIN FILES
-SDOddEven/main.js
-
 === SDOddEven/main.js ===
 -- around line 4 --
 0001: "use strict";
@@ -42,29 +21,95 @@ SDOddEven/main.js
 0019:   listAccounts,
 0020:   validateWalletDatabase,
 0021: } = require("./src/wallet-database");
-
-=== SDOddEven/package.json ===
-{
-  "name": "sd-odd-even-desktop",
-  "productName": "SD홀짝",
-  "version": "1.1.0",
-  "private": true,
-  "description": "SD지갑 가상계좌와 연동되는 주사위 홀짝 시뮬레이션 게임",
-  "author": "SDWallet",
-  "main": "main.js",
-  "engines": {
-    "node": ">=24"
-  },
-  "scripts": {
-    "start": "electron-forge start",
-    "make": "electron-forge make",
-    "package": "electron-forge package",
-    "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-database.js && node --check src/game-engine.js && node --check public/js/app.js"
-  },
-  "devDependencies": {
-    "@electron-forge/cli": "latest",
-    "@electron-forge/maker-squirrel": "latest",
-    "electron": "latest"
-  }
-}
-
+0022: const { GameEngine } = require("./src/game-engine");
+0023: 
+0024: const singleInstanceLock =
+0025:   app.requestSingleInstanceLock();
+0026: 
+0027: if (!singleInstanceLock) {
+0028:   app.quit();
+0029: }
+0030: 
+0031: let mainWindow = null;
+-- around line 74 --
+0062:   mainWindow.webContents.setWindowOpenHandler(
+0063:     () => ({ action: "deny" }),
+0064:   );
+0065: 
+0066:   mainWindow.webContents.on(
+0067:     "will-attach-webview",
+0068:     (event) => event.preventDefault(),
+0069:   );
+0070: 
+0071:   mainWindow.webContents.on(
+0072:     "will-navigate",
+0073:     (event, navigationUrl) => {
+0074:     if (isSdCenterUrl(navigationUrl)) {
+0075:       event.preventDefault();
+0076:       openSdCenter(app);
+0077:       return;
+0078:     }
+0079: 
+0080:       try {
+0081:         const target = new URL(navigationUrl);
+0082: 
+0083:         if (target.protocol !== "file:") {
+0084:           event.preventDefault();
+0085:         }
+0086:       } catch {
+0087:         event.preventDefault();
+0088:       }
+0089:     },
+0090:   );
+0091: 
+0092:   mainWindow.once("ready-to-show", () => {
+0093:     mainWindow.show();
+0094:   });
+0095: 
+0096:   mainWindow.loadFile(
+0097:     path.join(__dirname, "public", "index.html"),
+0098:   );
+0099: }
+0100: 
+0101: function currentWalletPath() {
+-- around line 76 --
+0064:   );
+0065: 
+0066:   mainWindow.webContents.on(
+0067:     "will-attach-webview",
+0068:     (event) => event.preventDefault(),
+0069:   );
+0070: 
+0071:   mainWindow.webContents.on(
+0072:     "will-navigate",
+0073:     (event, navigationUrl) => {
+0074:     if (isSdCenterUrl(navigationUrl)) {
+0075:       event.preventDefault();
+0076:       openSdCenter(app);
+0077:       return;
+0078:     }
+0079: 
+0080:       try {
+0081:         const target = new URL(navigationUrl);
+0082: 
+0083:         if (target.protocol !== "file:") {
+0084:           event.preventDefault();
+0085:         }
+0086:       } catch {
+0087:         event.preventDefault();
+0088:       }
+0089:     },
+0090:   );
+0091: 
+0092:   mainWindow.once("ready-to-show", () => {
+0093:     mainWindow.show();
+0094:   });
+0095: 
+0096:   mainWindow.loadFile(
+0097:     path.join(__dirname, "public", "index.html"),
+0098:   );
+0099: }
+0100: 
+0101: function currentWalletPath() {
+0102:   return settingsStore.get().walletDatabasePath;
+0103: }
