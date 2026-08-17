@@ -21,7 +21,22 @@ jobs:
           fetch-depth: 0
 
       - name: Build Red Diamond update
-        run: python tools/patch-flea-red-diamond-v112.py
+        shell: bash
+        run: |
+          set +e
+          mkdir -p diagnostics
+          python tools/patch-flea-red-diamond-v112.py > diagnostics/flea-v112-build.log 2>&1
+          code=$?
+          cat diagnostics/flea-v112-build.log
+          if [ "$code" -ne 0 ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add diagnostics/flea-v112-build.log
+            git commit -m '진단: 플리마켓 v1.1.2 빌드 오류 기록' || true
+            git push origin HEAD:feature/flea-red-diamond
+            exit "$code"
+          fi
+          rm -f diagnostics/flea-v112-build.log
 
       - name: Validate JavaScript
         run: |
