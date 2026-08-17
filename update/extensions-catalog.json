@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 17,
-  "updatedAt": "2026-08-17T03:23:00+09:00",
+  "catalogVersion": 18,
+  "updatedAt": "2026-08-17T16:00:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -40,11 +40,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.1.1",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.1_Desktop.zip?v=111",
+      "version": "1.1.2",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.2_Desktop.zip?v=112",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "v1.1.0의 구버전 베이스 문제를 바로잡은 복구판입니다. 최신 물류회사 등급 스냅샷 연동과 회사·온라인 물품 새로고침을 재구축하고, 기존 5초 SD Link 자동 재연결·PC↔모바일 재고 동기화·금고 A/D 조작을 유지하면서 마우스 다이얼 회전을 추가했습니다.",
+      "notes": "은행 금고는 기존처럼 현장에서 직접 개방합니다. 금고 개봉 1회당 0.001%(1/100,000) 확률로 판매 불가 한정판 '레드 다이아몬드'가 등장하며, 일반 금고 보상 확률과 기존 SD Link·회사 등급·온라인 재고 연동은 유지됩니다.",
       "requiredCenterVersion": "2.2.0"
     },
     "vault": {
