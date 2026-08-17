@@ -8,8 +8,8 @@ ROOT = Path.cwd()
 OUT = ROOT / "diagnostics" / "achievement-logistics-flea-audit.txt"
 DETAIL_DIR = ROOT / "diagnostics" / "integration-sources"
 PACKAGES = [
-    ROOT / "downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip",
-    ROOT / "downloads/extensions/SDLink_v1.2.8_Desktop.zip",
+    ROOT / "downloads/extensions/SDFleaMarket_v1.1.4_Desktop.zip",
+    ROOT / "downloads/extensions/SDLink_v1.2.9_Desktop.zip",
     ROOT / "downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip",
     ROOT / "downloads/extensions/SDBitcoinMiner_v1.2.2_Desktop.zip",
     ROOT / "downloads/extensions/SDMiner_v1.1.1_Desktop.zip",
@@ -25,25 +25,30 @@ PATTERNS = [
     r"sd[_-]?link", r"supabase", r"device", r"wallet", r"localStorage",
     r"bank", r"은행", r"WebGL", r"THREE", r"canvas", r"renderer", r"camera",
     r"AmbientLight", r"DirectionalLight", r"disableHardwareAcceleration", r"gpu",
-    r"mission3D", r"bank-finale", r"achievement", r"업적",
+    r"mission3D", r"bank-finale", r"achievement", r"업적", r"isLimitedItem",
 ]
 RX = re.compile("|".join(f"(?:{p})" for p in PATTERNS), re.I)
 TEXT_EXT = {".js", ".mjs", ".cjs", ".html", ".json", ".css", ".txt", ".md"}
 
 DETAIL_TARGETS = {
-    "SDFleaMarket_v1.1.3_Desktop.zip": [
+    "SDFleaMarket_v1.1.4_Desktop.zip": [
         "src/sd-integration.js",
         "public/mission3d.js",
+        "public/app.js",
         "main.js",
         "preload.js",
         "package.json",
+        "sd-app.json",
     ],
-    "SDLink_v1.2.8_Desktop.zip": [
+    "SDLink_v1.2.9_Desktop.zip": [
         "main.js", "preload.js", "renderer.js", "package.json", "sd-app.json",
         "src/wallet-db.js", "src/sync-engine.js", "src/auth-service.js", "src/config-store.js",
-        "src/bitcoin-reader.js", "src/sync-state.js", "public/app.js"
+        "src/bitcoin-reader.js", "src/achievement-reader.js", "src/sync-state.js", "public/app.js"
     ],
-    "SDLogisticsCenter_Season0_Desktop.zip": ["main.js", "preload.js", "package.json", "sd-app.json"],
+    "SDLogisticsCenter_Season0_Desktop.zip": [
+        "main.js", "preload.js", "package.json", "sd-app.json", "public/app.js", "public/index.html",
+        "src/config-store.js", "src/wallet-db.js"
+    ],
 }
 
 
@@ -103,7 +108,7 @@ def audit_zip(path: Path) -> list[str]:
             for i, line in enumerate(text.splitlines(), 1):
                 if RX.search(line):
                     matches.append(f"{i}: {compact(line)}")
-                    if len(matches) >= 80:
+                    if len(matches) >= 120:
                         matches.append("... match limit reached ...")
                         break
             if matches:
@@ -115,7 +120,7 @@ def audit_zip(path: Path) -> list[str]:
 def main() -> None:
     lines = [
         "SD integration audit",
-        "Purpose: achievements + logistics→flea unlock + flea bank 3D black-screen diagnostics",
+        "Purpose: current achievements + logistics→flea unlock + flea runtime diagnostics",
     ]
     DETAIL_DIR.mkdir(parents=True, exist_ok=True)
     for package in PACKAGES:

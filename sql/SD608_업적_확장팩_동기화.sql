@@ -30,7 +30,6 @@ alter table public.sd_achievement_progress enable row level security;
 revoke all on table public.sd_achievement_progress from anon;
 grant select, insert, update, delete on table public.sd_achievement_progress to authenticated;
 
--- 재실행 가능한 정책 생성
 DO $$
 begin
   if not exists (
@@ -79,8 +78,6 @@ begin
   end if;
 end $$;
 
--- 여러 업적을 한 번에 병합하는 공용 RPC.
--- current_value는 같은 업적에 대해 절대 감소하지 않고, unlocked는 한 번 true가 되면 유지됩니다.
 create or replace function public.sync_sd_achievement_progress(
   p_items jsonb,
   p_source_app text default 'unknown'
@@ -118,20 +115,40 @@ begin
     if v_id = '' or v_id !~ '^[a-z0-9][a-z0-9-]{1,79}$' then
       continue;
     end if;
+
     begin
-      v_value := greatest(0, coalesce((v_item->>'current_value')::numeric, (v_item->>'value')::numeric, 0));
+      v_value := greatest(
+        0,
+        coalesce(
+          nullif(v_item->>'current_value', '')::numeric,
+          nullif(v_item->>'value', '')::numeric,
+          0
+        )
+      );
     exception when others then
       v_value := 0;
     end;
-    v_unlocked := coalesce((v_item->>'unlocked')::boolean, false);
+
+    begin
+      v_unlocked := coalesce(nullif(v_item->>'unlocked', '')::boolean, false);
+    exception when others then
+      v_unlocked := false;
+    end;
 
     insert into public.sd_achievement_progress as p
       (user_id, achievement_id, current_value, unlocked, unlocked_at, source_app, metadata, updated_at)
     values
-      (v_user_id, v_id, v_value, v_unlocked,
-       case when v_unlocked then now() else null end,
-       left(v_source, 80), coalesce(v_item->'metadata', '{}'::jsonb), now())
-    on conflict (user_id, achievement_id) do update
+      (
+        v_user_id,
+        v_id,
+        v_value,
+        v_unlocked,
+        case when v_unlocked then now() else null end,
+        left(v_source, 80),
+        coalesce(v_item->'metadata', '{}'::jsonb),
+        now()
+      )
+    on conflict on constraint sd_achievement_progress_pkey do update
       set current_value = greatest(p.current_value, excluded.current_value),
           unlocked = p.unlocked or excluded.unlocked,
           unlocked_at = case

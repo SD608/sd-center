@@ -1,8 +1,8 @@
 SD integration audit
-Purpose: achievements + logistics→flea unlock + flea bank 3D black-screen diagnostics
+Purpose: current achievements + logistics→flea unlock + flea runtime diagnostics
 
-===== SDFleaMarket_v1.1.3_Desktop.zip =====
-files=16 bytes=960636
+===== SDFleaMarket_v1.1.4_Desktop.zip =====
+files=16 bytes=961870
 
 -- README.md --
 3: SD종합센터에서 설치하는 PC 확장팩 정식 배포판입니다. 공식 확장팩 센터 기준 **SD 물류회사 S등급(물류 평판 7000 이상)** 에서 해금됩니다.
@@ -70,9 +70,14 @@ files=16 bytes=960636
 252: function gradeRank(grade) {
 263: function locationUnlocked(location) {
 265: return gradeRank(resolveCompanyGrade()) >= gradeRank(location.requiredCompanyGrade);
+328: function isLimitedItem(item) {
+337: if (isLimitedItem(item)) return "판매 불가 · 한정판 상품";
+382: if (isLimitedItem(item)) return "ruby";
 394: const wallet = integration?.walletState?.() || { connected: false, balance: 0 };
 395: if (wallet.connected && Number(wallet.balance || 0) >= bill) {
 396: integration.adjustWallet(-bill, `SD 플리마켓 · 품질 자동 관리기 전기세 ${elapsedDays}일`);
+401: if (isLimitedItem(item)) continue;
+411: if (isLimitedItem(item)) continue;
 426: const wallet = integration?.walletState?.() || { connected: false, balance: 0, account: null };
 430: walletConnected: Boolean(wallet.connected),
 431: walletAccountNumber: wallet.account?.accountNumber || "",
@@ -132,6 +137,41 @@ files=16 bytes=960636
 700: state.history.unshift({ type: "bank", at: Date.now(), text: `은행 피날래 진입 비용 ${BANK_FINALE_COST.toLocaleString("ko-KR")}원 지출` });
 701: state.activeMission = buildBankFinaleMission();
 711: function unlockBankDoor(code) {
+713: if (!mission || mission.missionType !== "bank-finale") return { ok: false, error: "은행 피날래가 진행 중이 아닙니다.", state: publicState() };
+715: if (mission.bankDoorUnlocked) return { ok: true, alreadyUnlocked: true, state: publicState() };
+716: if (String(code || "").padStart(4, "0") !== String(mission.bankCode || "")) return { ok: false, wrongCode: true, error: "비밀번호가 맞지 않습니다.", state: publicState() };
+717: mission.bankDoorUnlocked = true;
+720: state.history.unshift({ type: "bank-door", at: Date.now(), text: "UV 라이트로 은행 출입문 비밀번호 확인 및 잠금 해제" });
+722: return { ok: true, unlocked: true, rewardCard: rewardCard("은행 문 개방", "#b68cff", "door"), state: publicState() };
+725: function triggerBankGuardAlert() {
+727: if (!isGuardCombatMission(mission)) return { ok: false, error: "경비원이 배치된 은행 임무가 진행 중이 아닙니다.", state: publicState() };
+730: if (mission.missionType === "bank-finale") {
+733: bankGuardNode(4, 11.1, 8.8, -Math.PI / 2, weak, true),
+734: bankGuardNode(5, 15.0, 7.8, -Math.PI / 2, weak, true),
+735: bankGuardNode(6, 18.9, 8.8, -Math.PI / 2, weak, true),
+737: state.history.unshift({ type: "bank-alarm", at: Date.now(), text: "경비원 시야에 발각 · 증원 경비원 3명 출동" });
+741: state.history.unshift({ type: "bank-prep-alarm", at: Date.now(), text: "경비 약화 준비작업 중 경비원에게 발각" });
+746: function shootBankGuard(nodeId, hitZone = "body") {
+748: if (!isGuardCombatMission(mission)) return { ok: false, error: "사격 가능한 은행 임무가 진행 중이 아닙니다.", state: publicState() };
+749: if (mission.missionType === "bank-finale" && !mission.bankDoorUnlocked) return { ok: false, error: "먼저 은행 문을 열어야 합니다.", state: publicState() };
+753: const damage = zone === "head" ? BANK_GUARD_HEAD_DAMAGE : BANK_GUARD_BODY_DAMAGE;
+754: guard.hp = Math.max(0, Number(guard.hp ?? guard.maxHp ?? BANK_GUARD_BASE_HP) - damage);
+762: return { ok: true, hitZone: zone, damage, killed, guardHp: guard.hp, guardMaxHp: guard.maxHp, guardsNeutralized: mission.guardsNeutralized, guardTotal: bankGuardTotal(mission), state: publicState() };
+765: function bankGuardHitPlayer() {
+768: mission.playerHealth = Math.max(0, Number(mission.playerHealth ?? 100) - BANK_GUARD_ATTACK_DAMAGE);
+770: if (mission.missionType === "bank-finale") {
+771: const lostValue = failBankFinale("경비원 총격으로 제압됨");
+772: return { ok: true, failed: true, damage: BANK_GUARD_ATTACK_DAMAGE, playerHealth: 0, lostValue, state: publicState() };
+774: state.history.unshift({ type: "bank-prep-failed", at: Date.now(), text: "경비 약화 준비작업 중 경비원 총격으로 제압됨" });
+777: return { ok: true, failed: true, prepFailed: true, damage: BANK_GUARD_ATTACK_DAMAGE, playerHealth: 0, lostValue: 0, state: publicState() };
+780: return { ok: true, damage: BANK_GUARD_ATTACK_DAMAGE, playerHealth: mission.playerHealth, state: publicState() };
+813: if (mission.missionType === "bank-prep") {
+831: if (mission.missionType === "bank-finale") {
+833: if (mission.bankDoorUnlocked) return { ok: false, error: "이미 은행 문 잠금을 해제했습니다." };
+835: return { ok: true, found: false, bankAction: "uv-required", searchedObject: node.objectLabel, mission: state.activeMission, exhausted: false, state: publicState() };
+841: if (!mission.bankDoorUnlocked) return { ok: false, error: "먼저 은행 문을 열어야 합니다." };
+842: const totalGuards = bankGuardTotal(mission);
+851: state.history.unshift({ type: "bank-safe-carry", at: Date.now(), text: `${node.objectLabel} 통째로 회수 · 현재 ${mission.safeCarried}개 운반 중` });
 ... match limit reached ...
 
 -- package.json --
@@ -187,7 +227,11 @@ files=16 bytes=960636
 167: function gradeRank(grade) {
 180: function locationUnlocked(location) {
 182: return gradeRank(resolveCompanyGrade()) >= gradeRank(location.requiredCompanyGrade);
+245: function isLimitedItem(item) {
+254: if (isLimitedItem(item)) return "판매 불가 · 한정판 상품";
+299: if (isLimitedItem(item)) return "ruby";
 311: localState.walletBalance -= bill;
+316: if (isLimitedItem(item)) continue;
 332: balance: localState.walletBalance,
 339: bankPrep: { ...localState.bankPrep },
 347: prices: { cutter: CUTTER_PRICE, stethoscope: STETHOSCOPE_PRICE, qualityManager: QUALITY_MANAGER_PRICE, backpack: BACKPACK_PRICE, bankFinale: BANK_FINALE_COST },
@@ -245,6 +289,42 @@ files=16 bytes=960636
 662: async unlockBankDoor(code) {
 664: if (!mission || mission.missionType !== "bank-finale") return { ok: false, error: "은행 피날래가 진행 중이 아닙니다.", state: publicState() };
 666: if (mission.bankDoorUnlocked) return { ok: true, alreadyUnlocked: true, state: publicState() };
+667: if (String(code || "").padStart(4, "0") !== String(mission.bankCode || "")) return { ok: false, wrongCode: true, error: "비밀번호가 맞지 않습니다.", state: publicState() };
+668: mission.bankDoorUnlocked = true;
+671: localState.history.unshift({ type: "bank-door", at: Date.now(), text: "UV 라이트로 은행 출입문 비밀번호 확인 및 잠금 해제" });
+673: return { ok: true, unlocked: true, rewardCard: rewardCard("은행 문 개방", "#b68cff", "door"), state: publicState() };
+676: async triggerBankGuardAlert() {
+678: if (!isGuardCombatMission(mission)) return { ok: false, error: "경비원이 배치된 은행 임무가 진행 중이 아닙니다.", state: publicState() };
+681: if (mission.missionType === "bank-finale") {
+684: bankGuardNode(4, 11.1, 8.8, -Math.PI / 2, weak, true),
+685: bankGuardNode(5, 15.0, 7.8, -Math.PI / 2, weak, true),
+686: bankGuardNode(6, 18.9, 8.8, -Math.PI / 2, weak, true),
+688: localState.history.unshift({ type: "bank-alarm", at: Date.now(), text: "경비원 시야에 발각 · 증원 경비원 3명 출동" });
+692: localState.history.unshift({ type: "bank-prep-alarm", at: Date.now(), text: "경비 약화 준비작업 중 경비원에게 발각" });
+697: async shootBankGuard(nodeId, hitZone = "body") {
+699: if (!isGuardCombatMission(mission)) return { ok: false, error: "사격 가능한 은행 임무가 진행 중이 아닙니다.", state: publicState() };
+700: if (mission.missionType === "bank-finale" && !mission.bankDoorUnlocked) return { ok: false, error: "먼저 은행 문을 열어야 합니다.", state: publicState() };
+704: const damage = zone === "head" ? BANK_GUARD_HEAD_DAMAGE : BANK_GUARD_BODY_DAMAGE;
+705: guard.hp = Math.max(0, Number(guard.hp ?? guard.maxHp ?? BANK_GUARD_BASE_HP) - damage);
+713: return { ok: true, hitZone: zone, damage, killed, guardHp: guard.hp, guardMaxHp: guard.maxHp, guardsNeutralized: mission.guardsNeutralized, guardTotal: bankGuardTotal(mission), state: publicState() };
+716: async bankGuardHitPlayer() {
+719: mission.playerHealth = Math.max(0, Number(mission.playerHealth ?? 100) - BANK_GUARD_ATTACK_DAMAGE);
+721: if (mission.missionType === "bank-finale") {
+722: const lostValue = failBankFinale("경비원 총격으로 제압됨");
+723: return { ok: true, failed: true, damage: BANK_GUARD_ATTACK_DAMAGE, playerHealth: 0, lostValue, state: publicState() };
+725: localState.history.unshift({ type: "bank-prep-failed", at: Date.now(), text: "경비 약화 준비작업 중 경비원 총격으로 제압됨" });
+728: return { ok: true, failed: true, prepFailed: true, damage: BANK_GUARD_ATTACK_DAMAGE, playerHealth: 0, lostValue: 0, state: publicState() };
+731: return { ok: true, damage: BANK_GUARD_ATTACK_DAMAGE, playerHealth: mission.playerHealth, state: publicState() };
+768: if (mission.missionType === "bank-prep") {
+799: if (mission.missionType === "bank-finale") {
+801: if (mission.bankDoorUnlocked) return { ok: false, error: "이미 은행 문 잠금을 해제했습니다." };
+803: return { ok: true, found: false, bankAction: "uv-required", searchedObject: node.objectLabel, mission: localState.activeMission, exhausted: false, state: publicState() };
+809: if (!mission.bankDoorUnlocked) return { ok: false, error: "먼저 은행 문을 열어야 합니다." };
+810: const totalGuards = bankGuardTotal(mission);
+819: localState.history.unshift({ type: "bank-safe-carry", at: Date.now(), text: `${node.objectLabel} 통째로 회수 · 현재 ${mission.safeCarried}개 운반 중` });
+821: return { ok: true, found: true, bankAction: "safe-carried", safeId: node.id, safeCount: Number(mission.safeCarried || 0), searchedObject: node.objectLabel, mission: localState.activeMission, exhausted: Boolean(mission.exhausted), state: publicState() };
+857: if (mission?.missionType === "bank-finale" && Number(mission.safeCarried || 0) < 1) {
+858: return { ok: false, error: "은행 금고를 최소 1개는 들고 나와야 탈출할 수 있습니다.", state: publicState() };
 ... match limit reached ...
 
 -- public/bankchase.js --
@@ -334,39 +414,46 @@ files=16 bytes=960636
 174: const MAPS = { alley: buildAlley(), abandoned_store: buildStore(), logistics: buildLogistics(), bank_prep: buildBankPrep(), bank: buildBank() };
 178: const canvas = options.canvas;
 179: if (!container || !canvas) throw new Error("Mission3D requires container and canvas");
-180: const ctx = canvas.getContext("2d", { alpha: false });
-221: const dpr = Math.min(1.5, window.devicePixelRatio || 1);
-222: canvas.width = Math.floor(width * dpr);
-223: canvas.height = Math.floor(height * dpr);
-224: canvas.style.width = `${box.width}px`;
-225: canvas.style.height = `${box.height}px`;
-283: function setBankDoorOpen(open) {
-284: if (mapId !== "bank" || !Array.isArray(map.bankDoorCells)) return;
-285: for (const [x,y] of map.bankDoorCells) {
-299: if (mapId === "bank") {
-300: setBankDoorOpen(Boolean(missionState?.bankDoorUnlocked));
-310: if (mapId === "bank") setBankDoorOpen(false);
-315: container.classList.add("three-d-active");
-324: container.classList.remove("three-d-active");
-325: if (document.pointerLockElement === canvas) document.exitPointerLock?.();
-356: if (mapId === "bank") return Boolean(missionState.bankDoorUnlocked);
-357: return mapId === "bank_prep" && missionState.missionType === "bank-prep" && missionState.prepId === "guardWeakening";
-361: // 은행/준비작업 입구는 맵 남쪽(+Y)이므로 기본 방향은 입구 반대쪽(-Y)입니다.
-512: const cameraX=x/width-.5,rayAngle=player.angle+cameraX*FOV,hit=castRay(rayAngle);
-880: ctx.fillText(near?"E  은행 금고":"BANK SAFE",p.screenX,baseY-scale*.94);ctx.restore();
-987: function drawBankDoorLabel(now){
-988: if(mapId!=="bank"||missionState?.bankDoorUnlocked||!map.bankDoorPoint)return;
-989: const p=screenProject(map.bankDoorPoint.x,map.bankDoorPoint.y);if(!p||p.distance>12)return;
-995: ctx.shadowBlur=8;ctx.fillStyle="#e8dcff";ctx.font=`900 ${Math.max(13,h*.31)}px Segoe UI, sans-serif`;ctx.fillText("BANK ACCESS",p.screenX,y-h*.09);
-1029: if(!active)return;ctx.clearRect(0,0,width,height);drawBackground();drawWalls();drawProps();drawGuardVisionCones();drawNodes(now);drawSafe(now);drawStoreDoorLabel(now);drawBankDoorLabel(now);drawExitDoorLabel(now);drawExitWaypoint(now);drawGunModel(now);drawBrickThrowFx(now);drawHud();
-1055: const p=canvas.requestPointerLock?.();
-1059: function onMouseMove(event){if(!active||document.pointerLockElement!==canvas)return;rotate(event.movementX*mouseSensitivity);player.pitch=clamp((player.pitch||0)+event.movementY*mouseSensitivity*.38,-.18,.18);}
-1060: function onPointerLockChange(){pointerLocked=document.pointerLockElement===canvas;container.classList.toggle("pointer-locked",pointerLocked);if(pointerLocked)autoLockPending=false;options.onPointerLockChange?.(pointerLocked);}
-1062: function onCanvasClick(){
-1064: if(document.pointerLockElement!==canvas){requestPointer();return;}
-1067: canvas.addEventListener("click",onCanvasClick);document.addEventListener("mousemove",onMouseMove);document.addEventListener("pointerlockchange",onPointerLockChange);window.addEventListener("resize",resize);
-1074: destroy(){unmount();canvas.removeEventListener("click",onCanvasClick);document.removeEventListener("mousemove",onMouseMove);document.removeEventListener("pointerlockchange",onPointerLockChange);window.removeEventListener("resize",resize);resizeObserver?.disconnect();}
-1078: window.Mission3D={create};
+180: // FLEA_MISSION3D_BLACKSCREEN_V114
+181: // 일부 Windows/Electron 환경에서 옵션이 붙은 Canvas2D 컨텍스트 생성이 실패할 수 있어
+183: const ctx = canvas.getContext("2d", { alpha: false, desynchronized: false }) || canvas.getContext("2d");
+186: throw new Error("Mission3D Canvas2D context unavailable");
+231: const dpr = Math.min(1.5, Math.max(1, window.devicePixelRatio || 1));
+234: if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+235: if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
+236: canvas.style.width = `${cssWidth}px`;
+237: canvas.style.height = `${cssHeight}px`;
+295: function setBankDoorOpen(open) {
+296: if (mapId !== "bank" || !Array.isArray(map.bankDoorCells)) return;
+297: for (const [x,y] of map.bankDoorCells) {
+311: if (mapId === "bank") {
+312: setBankDoorOpen(Boolean(missionState?.bankDoorUnlocked));
+322: if (mapId === "bank") setBankDoorOpen(false);
+327: container.classList.add("three-d-active");
+336: container.classList.remove("three-d-active");
+337: if (document.pointerLockElement === canvas) document.exitPointerLock?.();
+368: if (mapId === "bank") return Boolean(missionState.bankDoorUnlocked);
+369: return mapId === "bank_prep" && missionState.missionType === "bank-prep" && missionState.prepId === "guardWeakening";
+373: // 은행/준비작업 입구는 맵 남쪽(+Y)이므로 기본 방향은 입구 반대쪽(-Y)입니다.
+524: const cameraX=x/width-.5,rayAngle=player.angle+cameraX*FOV,hit=castRay(rayAngle);
+892: ctx.fillText(near?"E  은행 금고":"BANK SAFE",p.screenX,baseY-scale*.94);ctx.restore();
+999: function drawBankDoorLabel(now){
+1000: if(mapId!=="bank"||missionState?.bankDoorUnlocked||!map.bankDoorPoint)return;
+1001: const p=screenProject(map.bankDoorPoint.x,map.bankDoorPoint.y);if(!p||p.distance>12)return;
+1007: ctx.shadowBlur=8;ctx.fillStyle="#e8dcff";ctx.font=`900 ${Math.max(13,h*.31)}px Segoe UI, sans-serif`;ctx.fillText("BANK ACCESS",p.screenX,y-h*.09);
+1040: let lastRenderErrorAt = 0;
+1045: if (now - lastRenderErrorAt > 1000) {
+1046: lastRenderErrorAt = now;
+1047: console.error(`[Mission3D] ${name} render failed`, error);
+1066: safeLayer("bank-door",()=>drawBankDoorLabel(now));
+1097: const p=canvas.requestPointerLock?.();
+1101: function onMouseMove(event){if(!active||document.pointerLockElement!==canvas)return;rotate(event.movementX*mouseSensitivity);player.pitch=clamp((player.pitch||0)+event.movementY*mouseSensitivity*.38,-.18,.18);}
+1102: function onPointerLockChange(){pointerLocked=document.pointerLockElement===canvas;container.classList.toggle("pointer-locked",pointerLocked);if(pointerLocked)autoLockPending=false;options.onPointerLockChange?.(pointerLocked);}
+1104: function onCanvasClick(){
+1106: if(document.pointerLockElement!==canvas){requestPointer();return;}
+1109: canvas.addEventListener("click",onCanvasClick);document.addEventListener("mousemove",onMouseMove);document.addEventListener("pointerlockchange",onPointerLockChange);window.addEventListener("resize",resize);
+1116: destroy(){unmount();canvas.removeEventListener("click",onCanvasClick);document.removeEventListener("mousemove",onMouseMove);document.removeEventListener("pointerlockchange",onPointerLockChange);window.removeEventListener("resize",resize);resizeObserver?.disconnect();}
+1120: window.Mission3D={create};
 
 -- public/style.css --
 1: :root{color-scheme:dark;--bg:#090c11;--panel:#111722;--panel2:#161e2b;--line:#273244;--text:#eef5ff;--muted:#8f9eb2;--cyan:#41d9ff;--green:#7fffb2;--warn:#ffd166;--danger:#ff6b7a}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 15% -10%,#173044 0,transparent 35%),var(--bg)…
@@ -445,12 +532,13 @@ files=16 bytes=960636
 
 -- sd-app.json --
 6: "description": "SD지갑과 SD Link 계정을 연동하는 SD 플리마켓 PC 확장팩입니다. 파밍, 상자 개봉, 은행 습격, 온라인 물품 동기화와 오토바이 추격전을 포함합니다.",
+7: "improvement": "물류 S등급/본부 Lv.1 해금 연동을 통합하고 은행 습격 3D Canvas2D 검은 화면 방어 렌더링을 추가했습니다.",
 
 -- src/sd-integration.js --
 5: const { inspectDatabase, getAccount, applyTransaction } = require("./wallet-db");
 7: const SUPABASE_URL = "https://qmatphbjzafdtlyviqoa.supabase.co";
 8: const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_H2qTl_30-7hPUYFhJ_N_QA_X71xZswO";
-9: const S_RANK_REP = 2200;
+9: const S_RANK_REP = 7000;
 12: function rankFromRep(value) {
 37: function sdLinkRoots(currentUserData) {
 42: process.env.SD_LINK_USER_DATA,
@@ -480,31 +568,48 @@ files=16 bytes=960636
 232: return fetchJson(`${SUPABASE_URL}/rest/v1/rpc/${encodeURIComponent(functionName)}`, {
 236: apikey: SUPABASE_PUBLISHABLE_KEY,
 244: async function logisticsProgress(currentUserData, safeStorage) {
-269: const snapshotRep = Number(snapshot?.logistics_rep ?? snapshot?.logisticsRep ?? 0);
-275: // 아래의 기존 sd_logistics_progress 조회로 계속 진행합니다.
-280: const rows = await fetchJson(`${SUPABASE_URL}/rest/v1/sd_logistics_progress?select=state&user_id=eq.${encodeURIComponent(userId)}&limit=1`, {
-283: apikey: SUPABASE_PUBLISHABLE_KEY,
-287: const fallbackRep = Math.max(0, Number(Array.isArray(rows) ? rows[0]?.state?.logisticsRep : 0) || 0);
-299: grade: rankFromRep(rep),
-313: walletState() {
-314: const wallet = resolveWallet(this.userDataPath);
-315: if (!wallet.connected) return { connected: false, balance: 0, account: null, source: wallet.source };
-317: const account = getAccount(wallet.path, wallet.selectedAccountId);
-318: return { connected: true, balance: Number(account.balance || 0), account, path: wallet.path, source: wallet.source };
-324: adjustWallet(amount, memo) {
-325: const wallet = resolveWallet(this.userDataPath);
-326: if (!wallet.connected) throw new Error("SD지갑 가상계좌를 찾지 못했습니다. SD Link에서 지갑을 먼저 연결하세요.");
-327: const tx = applyTransaction(wallet.path, wallet.selectedAccountId, Number(amount), String(memo || "SD 플리마켓 가상거래"));
-328: return { transaction: tx, wallet: this.walletState() };
-333: this.company = await logisticsProgress(this.userDataPath, this.safeStorage);
-360: return { ...this.company, requiredRep: S_RANK_REP };
-364: module.exports = { SdIntegration, rankFromRep, S_RANK_REP };
+245: // FLEA_LOGISTICS_HQ_UNLOCK_V114
+247: // 그대로 사용하고, S등급 도달 뒤 본부가 개설된 계정은 본부 Lv.1 이상만으로도
+248: // 플리마켓의 S등급 전용 지역을 계속 이용할 수 있게 합니다.
+253: return { onlineLinked: false, rep: 0, grade: "F", logisticsGrade: "F", headquartersLevel: 0, eligibleForSContent: false, userId: "" };
+256: return { onlineLinked: false, rep: 0, grade: "F", logisticsGrade: "F", headquartersLevel: 0, eligibleForSContent: false, userId: auth.userId || "" };
+261: let headquartersLevel = 0;
+274: const snapshotRep = Number(snapshot?.logistics_rep ?? snapshot?.logisticsRep ?? 0);
+275: const snapshotHq = Number(snapshot?.headquarters_level ?? snapshot?.headquartersLevel ?? 0);
+277: if (Number.isFinite(snapshotHq)) headquartersLevel = Math.max(headquartersLevel, Math.max(0, Math.trunc(snapshotHq)));
+280: // 아래 sd_logistics_progress 직접 조회가 최종 기준입니다.
+283: // 본부 레벨까지 반드시 읽기 위해 스냅샷 성공 여부와 관계없이 계정 진행도를 확인합니다.
+285: const rows = await fetchJson(`${SUPABASE_URL}/rest/v1/sd_logistics_progress?select=state&user_id=eq.${encodeURIComponent(userId)}&limit=1`, {
+288: apikey: SUPABASE_PUBLISHABLE_KEY,
+294: const progressRep = Number(state.logisticsRep ?? state.logistics_rep ?? 0);
+295: const progressHq = Number(state.headquartersLevel ?? state.headquarters_level ?? 0);
+297: if (Number.isFinite(progressHq)) headquartersLevel = Math.max(headquartersLevel, Math.max(0, Math.trunc(progressHq)));
+304: const logisticsGrade = rankFromRep(rep);
+305: const eligibleForSContent = rep >= S_RANK_REP || headquartersLevel >= 1;
+310: // 본부가 개설된 계정은 유효 등급을 S로 반환합니다.
+311: grade: eligibleForSContent ? "S" : logisticsGrade,
+312: logisticsGrade,
+313: headquartersLevel,
+326: this.company = { onlineLinked: false, rep: 0, grade: "F", logisticsGrade: "F", headquartersLevel: 0, eligibleForSContent: false, userId: "" };
+330: walletState() {
+331: const wallet = resolveWallet(this.userDataPath);
+332: if (!wallet.connected) return { connected: false, balance: 0, account: null, source: wallet.source };
+334: const account = getAccount(wallet.path, wallet.selectedAccountId);
+335: return { connected: true, balance: Number(account.balance || 0), account, path: wallet.path, source: wallet.source };
+341: adjustWallet(amount, memo) {
+342: const wallet = resolveWallet(this.userDataPath);
+343: if (!wallet.connected) throw new Error("SD지갑 가상계좌를 찾지 못했습니다. SD Link에서 지갑을 먼저 연결하세요.");
+344: const tx = applyTransaction(wallet.path, wallet.selectedAccountId, Number(amount), String(memo || "SD 플리마켓 가상거래"));
+345: return { transaction: tx, wallet: this.walletState() };
+350: this.company = await logisticsProgress(this.userDataPath, this.safeStorage);
+377: return { ...this.company, requiredRep: S_RANK_REP };
+381: module.exports = { SdIntegration, rankFromRep, S_RANK_REP };
 
 -- src/wallet-db.js --
 33: bankName:String(row.bank_name||""),accountNumber:String(row.account_number||""),
 
-===== SDLink_v1.2.8_Desktop.zip =====
-files=23 bytes=72593
+===== SDLink_v1.2.9_Desktop.zip =====
+files=24 bytes=76444
 
 -- forge.config.js --
 8: executableName: "SDLink",
@@ -605,6 +710,21 @@ files=23 bytes=72593
 
 -- sd-app.json --
 2: "id": "sdlink-desktop",
+5: "improvement": "모든 PC 확장팩의 공용 지갑 DB 기록을 읽어 홈페이지 계정 업적으로 누적 동기화하는 중앙 브리지를 추가했습니다."
+
+-- src/achievement-reader.js --
+3: // SDLINK_ACHIEVEMENT_BRIDGE_V129
+4: // PC 확장팩들이 공용 sdwallet.sqlite에 남긴 실제 상태/거래 기록을 읽어서
+5: // 홈페이지 계정의 공용 업적 저장소로 올립니다. 값이 확인되지 않는 특수 조건은
+24: function item(id,value=0,unlocked=false,metadata={}) { return { achievement_id:id,current_value:Math.max(0,n(value)),unlocked:Boolean(unlocked),metadata }; }
+43: function readAchievementProgress({ databasePath, accountId, bitcoinQuantity=null }) {
+51: out.push(item("wallet-01",balance===0?1:0,balance===0,{balance}));
+52: [["wallet-02",1e7],["wallet-03",1e8],["wallet-04",1e9],["wallet-05",1e10],["wallet-06",1e11],["wallet-07",1e12]].forEach(([id,t])=>out.push(threshold(id,balance,t,{balance})));
+80: if(n(minedRows?.c)>0 && !out.some((x)=>x.achievement_id==="miner-01")) out.push(item("miner-01",n(minedRows.c),false,{mineEvents:n(minedRows.c)}));
+138: const prev=merged.get(x.achievement_id);
+139: if(!prev){merged.set(x.achievement_id,x);continue;}
+141: prev.unlocked=Boolean(prev.unlocked||x.unlocked);
+148: module.exports={ readAchievementProgress };
 
 -- src/auth-service.js --
 6: const SUPABASE_URL = "https://qmatphbjzafdtlyviqoa.supabase.co";
@@ -638,38 +758,50 @@ files=23 bytes=72593
 66: deviceKey: ensureDeviceKey(config.deviceKey),
 
 -- src/sync-engine.js --
-16: } = require("./wallet-db");
-54: if (text.includes("물류") || text.includes("SD 기사")) return "sd_logistics";
-56: return "sd_wallet";
-62: // sdlink-local-* 은 거래기록을 남기지 않고 잔액만 바꾸는 구형 앱을
-64: if (id.startsWith("sdlink-local-")) return false;
-65: if (id.startsWith("sdlink-remote-")) return true;
-66: if (id.startsWith("sdlink-")) return true;
-76: this.backupDirectory = path.join(userDataDirectory, "sdlink", "backups");
-94: async registerDevice() {
-98: const response = unwrapJson(await this.auth.rpc("register_sd_link_device", {
-99: p_device_key: config.deviceKey,
-100: p_device_name: config.deviceName,
-101: p_wallet_fingerprint: fingerprint,
-108: walletFingerprint: fingerprint,
-120: const response = unwrapJson(await this.auth.rpc("request_sd_wallet_migration", {
-121: p_local_wallet_fingerprint: fingerprint,
-129: bank_name: account.bankName,
-135: walletFingerprint: fingerprint,
-145: const response = unwrapJson(await this.auth.rpc("get_sd_link_snapshot", {
-146: p_device_key: config.deviceKey,
-164: const serverBalance = asNumber(snapshot.wallet_balance);
-237: const response = unwrapJson(await this.auth.rpc("push_sd_link_transaction", {
-238: p_device_key: config.deviceKey,
-249: sd_link_version: "1.2.4",
-281: const rows = await this.auth.rpc("pull_sd_link_transactions", {
-282: p_device_key: config.deviceKey,
-294: metadata.sd_link_device_key === config.deviceKey &&
-295: Boolean(metadata.sd_link_local_transaction_id);
-327: walletDatabasePath: config.databasePath,
-336: p_device_key: config.deviceKey,
-387: config.lastExpectedLocalBalance ?? snapshot.wallet_balance,
-399: const serverBalance = asNumber(snapshot.wallet_balance);
+6: const { readAchievementProgress } = require("./achievement-reader");
+17: } = require("./wallet-db");
+55: if (text.includes("물류") || text.includes("SD 기사")) return "sd_logistics";
+57: return "sd_wallet";
+63: // sdlink-local-* 은 거래기록을 남기지 않고 잔액만 바꾸는 구형 앱을
+65: if (id.startsWith("sdlink-local-")) return false;
+66: if (id.startsWith("sdlink-remote-")) return true;
+67: if (id.startsWith("sdlink-")) return true;
+77: this.backupDirectory = path.join(userDataDirectory, "sdlink", "backups");
+95: async registerDevice() {
+99: const response = unwrapJson(await this.auth.rpc("register_sd_link_device", {
+100: p_device_key: config.deviceKey,
+101: p_device_name: config.deviceName,
+102: p_wallet_fingerprint: fingerprint,
+109: walletFingerprint: fingerprint,
+121: const response = unwrapJson(await this.auth.rpc("request_sd_wallet_migration", {
+122: p_local_wallet_fingerprint: fingerprint,
+130: bank_name: account.bankName,
+136: walletFingerprint: fingerprint,
+146: const response = unwrapJson(await this.auth.rpc("get_sd_link_snapshot", {
+147: p_device_key: config.deviceKey,
+165: const serverBalance = asNumber(snapshot.wallet_balance);
+238: const response = unwrapJson(await this.auth.rpc("push_sd_link_transaction", {
+239: p_device_key: config.deviceKey,
+250: sd_link_version: "1.2.4",
+282: const rows = await this.auth.rpc("pull_sd_link_transactions", {
+283: p_device_key: config.deviceKey,
+295: metadata.sd_link_device_key === config.deviceKey &&
+296: Boolean(metadata.sd_link_local_transaction_id);
+325: async syncAchievementProgress(config, bitcoinResult) {
+327: const items = readAchievementProgress({
+333: const rows = await this.auth.rpc("sync_sd_achievement_progress", {
+335: p_source_app: "sdlink-desktop",
+339: // 업적 서버 SQL이 아직 적용되지 않았거나 개별 확장팩 DB가 잠겨도
+348: walletDatabasePath: config.databasePath,
+357: p_device_key: config.deviceKey,
+408: config.lastExpectedLocalBalance ?? snapshot.wallet_balance,
+419: const achievementResult = await this.syncAchievementProgress(config, bitcoinResult);
+421: const serverBalance = asNumber(snapshot.wallet_balance);
+438: const achievementText = achievementResult.synced
+439: ? ` / 업적 ${achievementResult.count}항목 동기화`
+440: : achievementResult.error
+441: ? " / 업적 동기화 대기"
+443: const message = `완료 · PC ${pushResult.pushed}건 전송 / 온라인 ${pullResult.pulled}건 반영${rejectedText}${bitcoinText}${achievementText}`;
 
 -- src/sync-state.js --
 9: const directory = path.join(userDataDirectory, "sdlink");
@@ -801,6 +933,46 @@ files=19 bytes=1427722
 288: if(rerender)render();return walletSnapshot;
 290: function walletAdjust(amount,memo){
 291: if(!requireWallet())return Promise.reject(new Error("SD지갑 미연결"));
+293: const job=walletQueue.then(async()=>{
+294: const r=await window.sdLogistics.transact(signed,memo);
+295: walletSnapshot=r.state;renderWalletConnection();return r.transaction;
+297: walletQueue=job.catch(()=>{});return job;
+301: if(!requireWallet())return false;
+303: void walletAdjust(-amount,desc).then(()=>render()).catch(err=>toast(err.message));return true;
+311: function ensureHeadquartersUnlock(){
+312: if(rankFromRep(state.logisticsRep).rank==="S" && state.headquartersLevel<1){
+313: state.headquartersLevel=1;
+315: toast("S등급 달성 · SD 물류 본부 Lv.1이 해금되었습니다.");
+320: if(state.headquartersLevel>=9)return 12;
+321: if(state.headquartersLevel>=3)return 10;
+326: if(state.headquartersLevel<2)return 0;
+327: return Math.floor(state.headquartersLevel/2)*2;
+333: if(state.headquartersLevel>=10)mult*=1.10;
+341: if(state.headquartersLevel>=10)mult*=1.10;
+360: return driverMissions.filter(m=>state.headquartersLevel>=m.level);
+364: const r=headquartersLevels[level];
+368: state.logisticsRevenue>=r.revenue &&
+373: async function upgradeHeadquarters(){
+374: const next=state.headquartersLevel+1,r=headquartersLevels[next];
+375: if(!r||!hqRequirementsMet(next)){toast("본부 승급 조건이 충족되지 않았습니다.");return;}
+376: if(!requireWallet())return;
+378: await walletAdjust(-r.fee,`SD 물류 본부 Lv.${next} 승급`);
+379: state.headquartersLevel=next;state.hqPerkPoints=(state.hqPerkPoints||0)+1;
+380: save();render();toast(`물류 본부 Lv.${next} 달성 · 특성 포인트 +1 · ${r.unlock} 해금`);
+381: }catch(e){toast(e?.message||"본부 승급 실패");}
+385: if(state.hqPerkPoints<=0){toast("사용 가능한 본부 특성 포인트가 없습니다.");return;}
+392: toast(`본부 특성 적용 · ${label}`);
+398: toast("초기화할 본부 특성이 없습니다.");
+401: if(!confirm(`본부 특성을 초기화할까요?\n사용한 특성 포인트 ${spent}개가 모두 반환됩니다.`))return;
+407: toast(`본부 특성 초기화 완료 · ${spent}포인트 반환`);
+411: if(state.headquartersLevel<2){toast("물류 본부 Lv.2부터 기사를 고용할 수 있습니다.");return;}
+412: if(state.employees.length>=driverLimit()){toast("현재 본부 레벨의 기사 정원이 가득 찼습니다.");return;}
+413: if(!requireWallet())return;
+419: await walletAdjust(-cost,`SD 물류 본부 · ${name} 기사 채용`);
+437: if(!requireWallet())return;
+441: if(state.headquartersLevel<m.level){toast("아직 해금되지 않은 기사 임무입니다.");return;}
+447: renderHeadquarters();
+457: renderHeadquarters();
 ... match limit reached ...
 
 -- SDLogisticsCenter/public/index.html --
@@ -1085,7 +1257,37 @@ files=17 bytes=79158
 1571: brokenGpuCount += 1;
 1573: gpuDurabilityChanges.push({
 1582: if (gpuDurabilityChanges.length > 0) {
-... match limit reached ...
+1583: syncRoomGpuCounts(db, reward.accountId, reward.roomKey);
+1586: reward.gpuDurabilityChanges = gpuDurabilityChanges;
+1587: reward.brokenGpuCount = brokenGpuCount;
+1608: const breakText = brokenGpuCount > 0
+1609: ? ` · GPU ${brokenGpuCount}개 내구도 0%로 파손`
+1724: const activeGpuRows = db.prepare(`
+1725: SELECT gpu.account_id, gpu.room_key, gpu.slot_index, gpu.durability
+1726: FROM bitcoin_gpu_units AS gpu
+1728: ON room.account_id = gpu.account_id
+1729: AND room.room_key = gpu.room_key
+1730: WHERE room.owned = 1 AND gpu.durability > 0
+1731: ORDER BY gpu.account_id, gpu.room_key, gpu.slot_index
+1735: for (const row of activeGpuRows) {
+1740: activeRoomMap.set(key, { accountId, roomKey, gpus: 0, gpuUnits: [] });
+1743: room.gpus += 1;
+1744: room.gpuUnits.push({
+1888: function autoFindWalletDatabase({ appDataPath, homePath }) {
+1890: path.join(appDataPath, "SD지갑", "data", "sdwallet.sqlite"),
+1891: path.join(appDataPath, "sdwallet-desktop", "data", "sdwallet.sqlite"),
+1892: path.join(appDataPath, "SDWallet", "data", "sdwallet.sqlite"),
+1893: path.join(homePath, "Downloads", "SDWallet_Stage8_Desktop", "data", "sdwallet.sqlite"),
+1894: path.join(homePath, "Desktop", "SDWallet_Stage8_Desktop", "data", "sdwallet.sqlite"),
+1898: if (validateWalletDatabase(candidate).ok) {
+1915: "sdwallet.sqlite",
+1918: if (fs.existsSync(candidate) && validateWalletDatabase(candidate).ok) {
+1931: ELECTRICITY_FEE_PER_GPU_KRW,
+1933: GPU_PRICE,
+1934: GPUS_PER_FRAME,
+1937: autoFindWalletDatabase,
+1939: buyGpu,
+1948: validateWalletDatabase,
 
 -- main.js --
 18: ELECTRICITY_FEE_PER_GPU_KRW,

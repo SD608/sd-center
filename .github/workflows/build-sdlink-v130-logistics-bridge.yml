@@ -1,0 +1,67 @@
+name: Build SD Link v1.3.0 logistics bridge
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build-sdlink-v130-logistics-bridge.yml"
+      - "tools/patch-sdlink-v130-logistics-bridge.py"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build patched SD Link package
+        run: python tools/patch-sdlink-v130-logistics-bridge.py
+
+      - name: Verify package
+        run: |
+          python - <<'PY'
+          import json, zipfile
+          from pathlib import Path
+          p=Path('downloads/extensions/SDLink_v1.3.0_Desktop.zip')
+          assert p.is_file() and p.stat().st_size > 60000, p.stat().st_size if p.exists() else 'missing'
+          with zipfile.ZipFile(p) as z:
+              names=z.namelist()
+              pkg_name=next(n for n in names if n.endswith('package.json') and 'node_modules/' not in n)
+              root=pkg_name[:-len('package.json')]
+              pkg=json.loads(z.read(pkg_name))
+              assert pkg['version']=='1.3.0'
+              reader=z.read(root+'src/logistics-reader.js').decode('utf-8')
+              engine=z.read(root+'src/sync-engine.js').decode('utf-8')
+              achievements=z.read(root+'src/achievement-reader.js').decode('utf-8')
+              main=z.read(root+'main.js').decode('utf-8')
+              assert 'SDLINK_LOGISTICS_BRIDGE_V130' in reader
+              assert 'sync_sd_logistics_progress' in engine
+              assert 'integration-state.json' in engine
+              assert 'logisticsProgress' in achievements
+              assert 'clearIntegrationState' in main
+          catalog=json.load(open('update/extensions-catalog.json',encoding='utf-8'))
+          assert catalog['apps']['sdlink-desktop']['version']=='1.3.0'
+          policy=json.load(open('update/desktop-policy.json',encoding='utf-8'))
+          assert policy['apps']['sdlink-desktop']['minVersion']=='1.3.0'
+          print('verification OK',p.stat().st_size)
+          PY
+
+      - name: Commit build and catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            downloads/extensions/SDLink_v1.3.0_Desktop.zip \
+            update/extensions-catalog.json \
+            update/desktop-policy.json \
+            extensions-data.js \
+            assets/js/extensions-data.js
+          if git diff --cached --quiet; then
+            echo "No build changes"
+            exit 0
+          fi
+          git commit -m "build: publish SD Link v1.3.0 logistics bridge"
+          git push
