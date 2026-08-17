@@ -1,0 +1,2581 @@
+SD achievement storage audit
+Generated from current extension ZIPs.
+
+===== SDBitcoinMiner_v1.2.2_Desktop.zip =====
+tables=bitcoin_account_stats, bitcoin_electricity, bitcoin_electricity_history, bitcoin_gpu_units, bitcoin_history, bitcoin_mining_clock, bitcoin_rooms, bitcoin_schema_meta
+
+-- public/index.html --
+15: <div class="ambient ambient-gold"></div>
+41: <section class="account-strip">
+44: <strong id="accountLabel">연결되지 않음</strong>
+48: <strong id="accountBalance">₩0</strong>
+82: <button type="button" data-view="vault">비트코인 금고</button>
+83: <button type="button" data-view="history">기록</button>
+120: <div class="window-unit">
+121: <span class="window-light"></span>
+133: <strong id="roomGpuCount">0 / 0</strong>
+135: <strong id="roomMinedBtc">0.00 BTC</strong>
+199: <section id="vaultView" class="view-panel hidden">
+202: <p class="section-kicker">BITCOIN VAULT</p>
+208: <div class="vault-layout">
+209: <section class="bitcoin-vault">
+210: <div class="vault-ring ring-one"></div>
+211: <div class="vault-ring ring-two"></div>
+212: <div class="bitcoin-coin" aria-label="회전하는 비트코인">
+217: <div class="vault-metrics">
+220: <strong id="vaultBtcBalance">0.00 BTC</strong>
+224: <strong id="vaultBtcValue">₩0</strong>
+228: <strong id="totalSoldBtc">0.00 BTC</strong>
+232: <strong id="totalSalesKrw">₩0</strong>
+238: <p class="section-kicker">SELL BITCOIN</p>
+259: <button id="sellBitcoinButton" class="button primary full" type="button">
+270: <section id="historyView" class="view-panel hidden">
+278: <div id="historyList" class="history-list">
+332: <select id="accountSelect">
+
+-- public/js/app.js --
+3: const bridge = window.sdBitcoinMiner;
+5: const state = {
+8: accounts: [],
+9: account: null,
+13: history: [],
+24: accountLabel: document.getElementById("accountLabel"),
+25: accountBalance: document.getElementById("accountBalance"),
+41: vault: document.getElementById("vaultView"),
+42: history: document.getElementById("historyView"),
+51: roomGpuCount: document.getElementById("roomGpuCount"),
+52: roomMinedBtc: document.getElementById("roomMinedBtc"),
+61: vaultBtcBalance: document.getElementById("vaultBtcBalance"),
+62: vaultBtcValue: document.getElementById("vaultBtcValue"),
+63: totalSoldBtc: document.getElementById("totalSoldBtc"),
+64: totalSalesKrw: document.getElementById("totalSalesKrw"),
+68: sellBitcoinButton: document.getElementById("sellBitcoinButton"),
+70: historyList: document.getElementById("historyList"),
+83: accountSelect: document.getElementById("accountSelect"),
+138: if (!state.account || !electricity) {
+182: `GPU ${electricity.activeGpuCount}개 × ${formatMoney(feePerGpu)} = 하루 ${formatMoney(electricity.dailyFeeKrw)}이 UTC 날짜 기준으로 자동 결제됩니다.`;
+186: function maskAccountNumber(value) {
+197: window.clearTimeout(state.toastTimer);
+201: state.toastTimer = window.setTimeout(() => {
+225: if (viewName === "vault") {
+226: renderVault();
+231: if (!state.account) {
+232: elements.accountLabel.textContent = "연결되지 않음";
+233: elements.accountBalance.textContent = formatMoney(0);
+239: elements.accountLabel.textContent =
+240: `${state.account.bankName} · ${state.account.ownerName} · ${maskAccountNumber(state.account.accountNumber)}`;
+241: elements.accountBalance.textContent = formatMoney(state.account.balance);
+310: card.addEventListener("click", () => {
+327: const gpuBySlot = new Map(
+328: (Array.isArray(room.gpuUnits) ? room.gpuUnits : []).map((unit) => [Number(unit.slotIndex), unit]),
+339: for (let slotIndex = 0; slotIndex < state.config.gpusPerFrame; slotIndex += 1) {
+340: const globalIndex = rackIndex * state.config.gpusPerFrame + slotIndex;
+341: const slot = document.createElement("div");
+342: const unit = gpuBySlot.get(globalIndex);
+347: slot.className = `gpu-slot ${installed ? "installed" : ""} ${broken ? "broken" : ""}`.trim();
+362: slot.append(fan, label, light);
+363: rack.appendChild(slot);
+380: `틀 ${room.frames}/3 · GPU ${room.gpus}/${room.frames * state.config.gpusPerFrame} · 누적 ${room.minedBtc.toFixed(2)} BTC`;
+382: elements.roomGpuCount.textContent =
+384: elements.roomMinedBtc.textContent = formatBtc(room.minedBtc);
+404: function renderVault() {
+408: elements.vaultBtcBalance.textContent = formatBtc(btc);
+409: elements.vaultBtcValue.textContent = formatMoney(value);
+410: elements.totalSoldBtc.textContent = formatBtc(state.stats?.totalSoldBtc || 0);
+411: elements.totalSalesKrw.textContent = formatMoney(state.stats?.totalSalesKrw || 0);
+415: function renderHistory() {
+416: elements.historyList.replaceChildren();
+418: if (state.history.length === 0) {
+422: elements.historyList.appendChild(empty);
+426: for (const entry of state.history) {
+428: item.className = "history-item";
+
+-- shared/open-center.js --
+25: stdio: "ignore",
+26: windowsHide: false,
+
+-- src/mining-service.js --
+106: slotIndex: Math.max(0, Math.trunc(Number(unit.slotIndex))),
+112: (_, slotIndex) => ({ slotIndex, durability: 100 }),
+131: slotIndex: unit.slotIndex,
+133: durabilityBefore: unit.durability,
+144: accountId: room.accountId,
+148: brokenGpuCount: gpuSuccesses.filter((entry) => entry.broke).length,
+
+-- src/settings.js --
+8: selectedAccountId: "",
+12: class SettingsStore {
+55: if (typeof patch.selectedAccountId === "string") {
+56: this.data.selectedAccountId = patch.selectedAccountId;
+68: module.exports = { SettingsStore };
+
+-- src/wallet-database.js --
+30: PRAGMA foreign_keys = ON;
+50: AND name IN ('users', 'accounts', 'transactions')
+53: const missing = ["users", "accounts", "transactions"].filter(
+74: CREATE TABLE IF NOT EXISTS bitcoin_account_stats (
+75: account_id TEXT PRIMARY KEY,
+77: total_sold_btc REAL NOT NULL DEFAULT 0 CHECK (total_sold_btc >= 0),
+78: total_sales_krw INTEGER NOT NULL DEFAULT 0 CHECK (total_sales_krw >= 0),
+80: FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+83: CREATE TABLE IF NOT EXISTS bitcoin_rooms (
+84: account_id TEXT NOT NULL,
+89: mined_btc REAL NOT NULL DEFAULT 0 CHECK (mined_btc >= 0),
+93: PRIMARY KEY (account_id, room_key),
+94: FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+97: CREATE TABLE IF NOT EXISTS bitcoin_gpu_units (
+98: account_id TEXT NOT NULL,
+100: slot_index INTEGER NOT NULL CHECK (slot_index BETWEEN 0 AND 14),
+104: PRIMARY KEY (account_id, room_key, slot_index),
+105: FOREIGN KEY (account_id, room_key)
+106: REFERENCES bitcoin_rooms(account_id, room_key) ON DELETE CASCADE
+109: CREATE INDEX IF NOT EXISTS idx_bitcoin_gpu_units_account_room
+110: ON bitcoin_gpu_units(account_id, room_key, slot_index);
+112: CREATE TABLE IF NOT EXISTS bitcoin_mining_clock (
+117: CREATE TABLE IF NOT EXISTS bitcoin_schema_meta (
+123: CREATE TABLE IF NOT EXISTS bitcoin_history (
+125: account_id TEXT NOT NULL,
+128: action_type IN ('buy_room','buy_frame','buy_gpu','mine','sell','decorate')
+134: FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+137: CREATE TABLE IF NOT EXISTS bitcoin_electricity (
+138: account_id TEXT PRIMARY KEY,
+146: FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+149: CREATE TABLE IF NOT EXISTS bitcoin_electricity_history (
+151: account_id TEXT NOT NULL,
+156: FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+159: CREATE INDEX IF NOT EXISTS idx_bitcoin_electricity_history_account_created
+160: ON bitcoin_electricity_history(account_id, created_at DESC);
+162: CREATE INDEX IF NOT EXISTS idx_bitcoin_history_account_created
+163: ON bitcoin_history(account_id, created_at DESC);
+169: syncRoomGpuCounts(db);
+221: "bitcoin_rooms",
+229: ALTER TABLE bitcoin_rooms
+244: FROM bitcoin_schema_meta
+254: const accounts = db
+258: account_id,
+260: FROM bitcoin_account_stats
+265: for (const account of accounts) {
+266: const accountId = String(
+267: account.account_id,
+270: const currentAccountBtc =
+271: roundBtc(account.btc_balance);
+279: mined_btc
+280: FROM bitcoin_rooms
+281: WHERE account_id = ?
+285: .all(accountId);
+289: UPDATE bitcoin_rooms
+291: WHERE account_id = ?
+
+-- forge.config.js --
+8: executableName: "SDBitcoinMiner",
+16: name: "sdbitcoinminer",
+17: setupExe: "SDBitcoinMiner-Setup.exe",
+
+-- main.js --
+7: BrowserWindow,
+15: const { SettingsStore } = require("./src/settings");
+29: getAccountState,
+30: listAccounts,
+31: processMiningWindow,
+34: sellBitcoin,
+54: let mainWindow = null;
+55: let settingsStore = null;
+63: settingsStore?.get()
+68: function showMainWindow() {
+69: if (!mainWindow) {
+73: if (mainWindow.isMinimized()) {
+74: mainWindow.restore();
+77: mainWindow.show();
+78: mainWindow.focus();
+98: click: showMainWindow,
+115: tray.on("double-click", showMainWindow);
+118: function configureWindowsStartup() {
+120: process.platform !== "win32" ||
+142: function createWindow() {
+143: mainWindow = new BrowserWindow({
+172: mainWindow.webContents.setWindowOpenHandler(
+176: mainWindow.webContents.on(
+178: (event) => event.preventDefault(),
+181: mainWindow.webContents.on(
+183: (event, navigationUrl) => {
+185: event.preventDefault();
+196: event.preventDefault();
+199: event.preventDefault();
+204: mainWindow.on("close", (event) => {
+209: event.preventDefault();
+210: mainWindow.hide();
+215: process.platform === "win32"
+227: // 일부 Windows 환경에서는 풍선 알림을
+233: mainWindow.once("ready-to-show", () => {
+235: showMainWindow();
+239: mainWindow.loadFile(
+257: const result = processMiningWindow(
+265: Array.isArray(result.billingEvents) &&
+266: result.billingEvents.length > 0 &&
+267: mainWindow &&
+268: !mainWindow.isDestroyed()
+270: mainWindow.webContents.send(
+272: result.billingEvents,
+278: mainWindow &&
+279: !mainWindow.isDestroyed()
+281: mainWindow.webContents.send(
+289: mainWindow &&
+290: !mainWindow.isDestroyed()
+292: mainWindow.webContents.send(
+297: totalBtc:
+299: (total, reward) =>
+300: total +
+332: () => settingsStore.get(),
+337: (event, patch) =>
+
+-- package.json --
+2: "name": "sd-bitcoin-miner-desktop",
+
+-- preload.js --
+5: contextBridge.exposeInMainWorld("sdBitcoinMiner", {
+11: listAccounts: () => ipcRenderer.invoke("wallet:list-accounts"),
+12: getState: (accountId) => ipcRenderer.invoke("wallet:get-state", accountId),
+17: reactivateElectricity: (accountId) =>
+18: ipcRenderer.invoke("electricity:reactivate", accountId),
+19: sellBitcoin: (payload) => ipcRenderer.invoke("bitcoin:sell", payload),
+23: (event, events) => callback(events),
+29: (event, rewards) =>
+37: (event, result) =>
+
+-- sd-app.json --
+2: "id": "bitcoin",
+
+===== SDFleaMarket_v1.1.4_Desktop.zip =====
+tables=(none found in source)
+
+-- main.js --
+6: const { app, BrowserWindow, ipcMain, safeStorage } = require("electron");
+18: { id: "alley", name: "길거리", subtitle: "빠른 수량 파밍지", description: "긴 직선형 도로를 따라 이동하며 좌우 벽면의 파밍 포인트를 빠르게 훑는 지역입니다.", foundChance: 78, nodeCount: 6, maxBoxes: 4, specialMinTier: "normal", weights: { worn: 80, normal: 20, fancy: 0, premium: 0, safe: 0 } },
+19: { id: "abandoned_store", name: "상가", subtitle: "중급 파밍지", description: "입구 근처 벽돌을 주운 뒤 유리문에 던져 깨고 진입해야 하는 상가입니다. 내부 진열대와 캐비닛에서 평범한 상자와 고급 상자를 노릴 수 있습니다.", foundChance: 70, nodeCount: 8, maxBoxes: 3, specialMinTier: "fancy", weights: { worn: 30, normal: 50, fancy: 20, premium: 0, s…
+20: { id: "logistics", name: "물류센터", subtitle: "S등급 고가 파밍지", description: "회사 등급 S 이상만 출입 가능한 고가 파밍지입니다. 벽면 적재 구역 위주로 최고급 상자를 노릴 수 있습니다.", foundChance: 64, nodeCount: 8, maxBoxes: 2, specialMinTier: "fancy", requiredCompanyGrade: "S", weights: { worn: 8, normal: 35, fancy: 40, premiu…
+21: { id: "bank", name: "은행", subtitle: "준비작업형 특수 파밍지", description: "필수 침투 장비 준비작업을 끝내면 피날래에 진입할 수 있으며, 선택 준비작업으로 경비원 체력을 절반으로 낮출 수 있습니다. 피날래에서는 금고가 확정으로 등장하며 기존 금고와 같은 보상 풀을 사용합니다.", foundChance: 0, nodeCount: 7, maxBoxes: 0, specialMinTier: "safe", weights: { worn: 0, normal: 0, f…
+31: abandoned_store: [
+34: { type: "counter", label: "계산대", icon: "▤" },
+37: logistics: [
+43: bank_prep: [
+47: { type: "counter", label: "보안 데스크", icon: "▤" },
+51: const BANK_PREP_ORDER = [
+55: const BANK_GUARD_BASE_HP = 50;
+56: const BANK_GUARD_WEAK_HP = 25;
+57: const BANK_GUARD_BODY_DAMAGE = 10;
+58: const BANK_GUARD_HEAD_DAMAGE = 25;
+59: const BANK_GUARD_ATTACK_DAMAGE = 10;
+89: const STATE_FILE_NAME = "flea-state.json";
+94: const BANK_FINALE_COST = 500000;
+103: let mainWindow;
+126: bankPrep: { equipment: false, guardWeakening: false },
+133: history: [],
+142: merged.gunOwned = Boolean(parsed?.gunOwned || parsed?.bankPrep?.equipment);
+143: const legacyPrep = parsed?.bankPrep || {};
+144: merged.bankPrep = {
+201: const result = await integration.syncFleaInventory(localItems);
+212: state.history.unshift({
+230: return { ok: true, removed, synced: Number(result?.synced_count || ownedIds.size) };
+277: const totalWeight = pool.reduce((sum, tier) => sum + Number(location.weights[tier.id] || 0), 0);
+278: let roll = randomInt(Math.max(1, totalWeight)) + 1;
+349: const totalWeight = pool.reduce((sum, entry) => sum + Number(entry[2] || 0), 0);
+350: let roll = Math.random() * totalWeight;
+397: state.history.unshift({ type: "power", at: now, text: `품질 자동 관리기 전기세 ${bill.toLocaleString("ko-KR")}원` });
+406: state.history.unshift({ type: "power-missed", at: now, text: `품질 자동 관리기 전기세 미납 · ${elapsedDays}일 가치 하락 반영` });
+416: state.history.unshift({ type: "quality", at: now, text: `${elapsedDays}일 경과 · 보관 물품 가치 하락 반영` });
+426: const wallet = integration?.walletState?.() || { connected: false, balance: 0, account: null };
+431: walletAccountNumber: wallet.account?.accountNumber || "",
+439: bankPrep: { ...state.bankPrep },
+456: prices: { cutter: CUTTER_PRICE, stethoscope: STETHOSCOPE_PRICE, qualityManager: QUALITY_MANAGER_PRICE, backpack: BACKPACK_PRICE, bankFinale: BANK_FINALE_COST },
+463: function nextBankPrepStep() {
+464: const progress = state.bankPrep || {};
+465: return BANK_PREP_ORDER.find((step) => !progress[step.id]) || null;
+473: const positions = [...MISSION_NODE_POSITIONS].sort(() => Math.random() - 0.5).slice(0, Number(location.nodeCount || 10));
+479: const storeGateNodes = location.id === "abandoned_store"
+481: { id: "STORE-BRICK", searched: false, kind: "store-brick", objectType: "brick", objectLabel: "입구 옆 벽돌", objectIcon: "🧱" },
+482: { id: "STORE-DOOR", searched: false, kind: "store-door", objectType: "glassdoor", objectLabel: "상가 유리문", objectIcon: "▦" },
+493: foundCount: 0,
+494: searchCount: 0,
+495: missStreak: 0,
+497: storeBrickOwned: false,
+498: storeDoorBroken: location.id !== "abandoned_store",
+500: nodes: [...storeGateNodes, ...regularNodes],
+501: safe: location.id === "abandoned_store" && randomInt(100) < 5 ? {
+510: function buildBankPrepMission(step) {
+521: const object = randomSearchObject("bank_prep");
+528: return { id: `PREP-${index + 1}`, searched: false, objectType: "counter", objectLabel: "경비 장비 제어 단말기", objectIcon: "⌨️", kind: "prep-target", prepTargetId: "guardWeakening" };
+
+-- package.json --
+2: "name": "sd-flea-market-pc",
+8: "check": "node --check main.js && node --check preload.js && node --check src/wallet-db.js && node --check src/sd-integration.js && node --check public/mission3d.js && node --check public/bankchase.js && node --check public/app.js"
+
+-- preload.js --
+5: contextBridge.exposeInMainWorld("flea", {
+6: getState: () => ipcRenderer.invoke("flea:get-state"),
+7: refreshCompany: () => ipcRenderer.invoke("flea:refresh-company"),
+8: refreshInventory: () => ipcRenderer.invoke("flea:refresh-inventory"),
+9: startMission: (locationId, bankMode = "") => ipcRenderer.invoke("flea:start-mission", locationId, bankMode),
+10: searchMissionNode: (nodeId) => ipcRenderer.invoke("flea:search-node", nodeId),
+11: triggerBankGuardAlert: () => ipcRenderer.invoke("flea:bank-guard-alert"),
+12: shootBankGuard: (nodeId, hitZone) => ipcRenderer.invoke("flea:shoot-bank-guard", nodeId, hitZone),
+13: bankGuardHitPlayer: () => ipcRenderer.invoke("flea:bank-guard-hit-player"),
+14: unlockBankDoor: (code) => ipcRenderer.invoke("flea:unlock-bank-door", code),
+15: finishMission: () => ipcRenderer.invoke("flea:finish-mission"),
+16: finishBankChase: (success) => ipcRenderer.invoke("flea:finish-bank-chase", Boolean(success)),
+17: startMissionSafe: (safeId) => ipcRenderer.invoke("flea:start-mission-safe", safeId),
+18: missionSafeListen: (safeId, dialNumber) => ipcRenderer.invoke("flea:mission-safe-listen", safeId, dialNumber),
+19: missionSafeAttempt: (safeId, dialNumber) => ipcRenderer.invoke("flea:mission-safe-attempt", safeId, dialNumber),
+20: setFullscreen: (enabled) => ipcRenderer.invoke("flea:set-fullscreen", Boolean(enabled)),
+21: buyCutter: () => ipcRenderer.invoke("flea:buy-cutter"),
+22: buyStethoscope: () => ipcRenderer.invoke("flea:buy-stethoscope"),
+23: buyQualityManager: () => ipcRenderer.invoke("flea:buy-quality-manager"),
+24: buyCart: () => ipcRenderer.invoke("flea:buy-cart"),
+25: startBoxOpen: (boxId) => ipcRenderer.invoke("flea:start-box-open", boxId),
+26: completeCut: (boxId, step) => ipcRenderer.invoke("flea:complete-cut", boxId, step),
+27: safeListen: (boxId, dialNumber) => ipcRenderer.invoke("flea:safe-listen", boxId, dialNumber),
+28: safeAttempt: (boxId, dialNumber) => ipcRenderer.invoke("flea:safe-attempt", boxId, dialNumber),
+29: devReset: () => ipcRenderer.invoke("flea:dev-reset"),
+
+-- public/app.js --
+3: const api = window.flea || createBrowserFallbackApi();
+6: const STORAGE_KEY = "sd-flea-market-browser-state-v1";
+11: const BANK_FINALE_COST = 500000;
+26: { id: "alley", name: "길거리", subtitle: "빠른 수량 파밍지", description: "긴 직선형 도로를 따라 이동하며 좌우 벽면의 파밍 포인트를 빠르게 훑는 지역입니다.", foundChance: 78, nodeCount: 6, maxBoxes: 4, specialMinTier: "normal", weights: { worn: 80, normal: 20, fancy: 0, premium: 0, safe: 0 } },
+27: { id: "abandoned_store", name: "상가", subtitle: "중급 파밍지", description: "입구 근처 벽돌을 주운 뒤 유리문에 던져 깨고 진입해야 하는 상가입니다. 내부 진열대와 캐비닛에서 평범한 상자와 고급 상자를 노릴 수 있습니다.", foundChance: 70, nodeCount: 8, maxBoxes: 3, specialMinTier: "fancy", weights: { worn: 30, normal: 50, fancy: 20, premium: 0, s…
+28: { id: "logistics", name: "물류센터", subtitle: "S등급 고가 파밍지", description: "회사 등급 S 이상만 출입 가능한 고가 파밍지입니다. 벽면 적재 구역 위주로 최고급 상자를 노릴 수 있습니다.", foundChance: 64, nodeCount: 8, maxBoxes: 2, specialMinTier: "fancy", requiredCompanyGrade: "S", weights: { worn: 8, normal: 35, fancy: 40, premiu…
+29: { id: "bank", name: "은행", subtitle: "준비작업형 특수 파밍지", description: "필수 침투 장비 준비작업을 끝내면 피날래에 진입할 수 있으며, 선택 준비작업으로 경비원 체력을 절반으로 낮출 수 있습니다. 피날래에서는 금고가 확정으로 등장하며 기존 금고와 같은 보상 풀을 사용합니다.", foundChance: 0, nodeCount: 7, maxBoxes: 0, specialMinTier: "safe", weights: { worn: 0, normal: 0, f…
+39: abandoned_store: [
+42: { type: "counter", label: "계산대", icon: "▤" },
+45: logistics: [
+51: bank_prep: [
+55: { type: "counter", label: "보안 데스크", icon: "▤" },
+59: const BANK_PREP_ORDER = [
+63: const BANK_GUARD_BASE_HP = 50;
+64: const BANK_GUARD_WEAK_HP = 25;
+65: const BANK_GUARD_BODY_DAMAGE = 10;
+66: const BANK_GUARD_HEAD_DAMAGE = 25;
+67: const BANK_GUARD_ATTACK_DAMAGE = 10;
+113: bankPrep: { equipment: false, guardWeakening: false },
+120: history: [],
+126: const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+129: merged.gunOwned = Boolean(saved?.gunOwned || saved?.bankPrep?.equipment);
+130: const legacyPrep = saved?.bankPrep || {};
+131: merged.bankPrep = {
+141: let localState = loadState();
+146: localStorage.setItem(STORAGE_KEY, JSON.stringify(localState));
+148: // localStorage가 차단된 환경에서도 현재 세션은 계속 동작하도록 둡니다.
+194: const totalWeight = pool.reduce((sum, tier) => sum + Number(location.weights[tier.id] || 0), 0);
+195: let roll = randomInt(Math.max(1, totalWeight)) + 1;
+266: const totalWeight = pool.reduce((sum, entry) => sum + Number(entry[2] || 0), 0);
+267: let roll = Math.random() * totalWeight;
+312: localState.history.unshift({ type: "power", at: now, text: `품질 자동 관리기 전기세 ${bill.toLocaleString("ko-KR")}원` });
+321: localState.history.unshift({ type: "quality", at: now, text: `${elapsedDays}일 경과 · 보관 물품 가치 하락 반영` });
+339: bankPrep: { ...localState.bankPrep },
+347: prices: { cutter: CUTTER_PRICE, stethoscope: STETHOSCOPE_PRICE, qualityManager: QUALITY_MANAGER_PRICE, backpack: BACKPACK_PRICE, bankFinale: BANK_FINALE_COST },
+362: localState.history.unshift({ type: "item", at: Date.now(), text: `${item.name} 획득` });
+388: function makeBankDoorCode() {
+393: function nextBankPrepStep() {
+394: const progress = localState.bankPrep || {};
+395: return BANK_PREP_ORDER.find((step) => !progress[step.id]) || null;
+403: const positions = [...MISSION_NODE_POSITIONS].sort(() => Math.random() - 0.5).slice(0, Number(location.nodeCount || 10));
+416: const storeGateNodes = location.id === "abandoned_store"
+418: { id: "STORE-BRICK", searched: false, kind: "store-brick", objectType: "brick", objectLabel: "입구 옆 벽돌", objectIcon: "🧱" },
+419: { id: "STORE-DOOR", searched: false, kind: "store-door", objectType: "glassdoor", objectLabel: "상가 유리문", objectIcon: "▦" },
+430: foundCount: 0,
+431: searchCount: 0,
+432: missStreak: 0,
+434: storeBrickOwned: false,
+435: storeDoorBroken: location.id !== "abandoned_store",
+437: nodes: [...storeGateNodes, ...regularNodes],
+438: safe: location.id === "abandoned_store" && randomInt(100) < 5 ? {
+447: function buildBankPrepMission(step) {
+458: const object = randomSearchObject("bank_prep");
+465: return { id: `PREP-${index + 1}`, searched: false, objectType: "counter", objectLabel: "경비 장비 제어 단말기", objectIcon: "⌨️", kind: "prep-target", prepTargetId: "guardWeakening" };
+471: bankGuardNode(1, 9.4, 11.2, -Math.PI / 2, false),
+
+-- public/bankchase.js --
+9: if (!canvas) throw new Error("BankChaseGame requires a canvas");
+11: const safeCount = clamp(Math.trunc(Number(options.safeCount || 1)), 1, 6);
+12: const risk = clamp(((safeCount - 1) / 5) * 1.6, 0, 1.6);
+64: if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+67: const AudioCtor = window.AudioContext || window.webkitAudioContext;
+70: if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+176: dpr = Math.min(2, window.devicePixelRatio || 1);
+241: function handleKey(event) {
+243: const key = String(event.key || "").toLowerCase();
+244: if ((key === "a" || key === "arrowleft") && !event.repeat) {
+248: if ((key === "d" || key === "arrowright") && !event.repeat) {
+261: function handleKeyUp(event) {
+263: const key = String(event.key || "").toLowerCase();
+432: ctx.restore();
+457: ctx.restore();
+481: ctx.restore();
+541: ctx.restore();
+598: ctx.restore();
+603: ctx.restore();
+612: ctx.restore();
+679: getState: () => ({ durability, distance, targetDistance, lane, speedKmh, cruiseSpeedKmh, maxSpeedKmh, throttleHeld, safeCount, risk, chaseTuning: { ...chaseTuning } }),
+683: window.BankChaseGame = { create };
+
+-- public/index.html --
+19: <button class="phone-app" data-app="boxes"><span class="phone-app-icon box-icon">▣</span><strong>상자 보관함</strong><small><b id="phoneBoxCount">0</b>개 보관</small></button>
+21: <button class="phone-app" data-app="items"><span class="phone-app-icon item-icon">◆</span><strong>물건 보관함</strong><small><b id="phoneItemCount">0</b>개 보관</small></button>
+46: <section id="bankOperationPanel" class="bank-operation-panel hidden">
+47: <div class="bank-operation-head">
+49: <p class="eyebrow">BANK OPERATION</p>
+53: <span id="bankPrepProgress" class="bank-progress-badge">필수 0/1</span>
+55: <div id="bankPrepSteps" class="bank-prep-steps"></div>
+56: <div class="bank-operation-footer">
+57: <div class="bank-finale-info">
+59: <strong id="bankFinaleCost">₩50,000</strong>
+60: <small id="bankOperationStatus">준비작업을 먼저 완료하세요.</small>
+62: <div class="bank-operation-actions">
+63: <button id="bankMissionButton" class="ghost bank-mission-button">준비작업 시작</button>
+64: <button id="bankFinaleButton" class="primary bank-mission-button" disabled>피날래 시작</button>
+86: <div class="mission-loot-head"><span>이번 임무 획득</span><strong id="missionLootCount">0 / 4</strong></div>
+97: <div id="bankCombatHud" class="bank-combat-hud hidden">
+98: <div class="bank-player-health">
+100: <strong><b id="bankPlayerHp">100</b><small>/ 100</small></strong>
+101: <i class="bank-player-health-track"><em id="bankPlayerHpBar"></em></i>
+103: <div><span>GUARDS</span><strong id="bankGuardCount">0 / 3</strong></div>
+104: <div id="bankAlarmState" class="bank-alarm-state">시야 경계 중</div>
+125: <div class="bulk-status"><strong id="bulkSelectedCount">0개 선택</strong><span>등급별 전체 선택 후에도 각 상자는 직접 3단계를 진행합니다.</span></div>
+150: <div class="panel-heading item-vault-heading"><div><p class="eyebrow">ITEM VAULT</p><h1>물건 보관함</h1><p>보관 시간이 지나면 물건의 현재 가치가 떨어집니다. 품질 자동 관리기를 보유하면 가치 하락을 막을 수 있습니다.</p><div id="itemProtectionStatus" class="protection-status">자동 관리기 상태 확인 중...</div></div><div class="online-sync-bo…
+169: <div id="bankChase" class="bank-chase hidden" aria-live="polite">
+170: <canvas id="bankChaseCanvas" class="bank-chase-canvas" aria-label="은행 오토바이 추격전"></canvas>
+171: <div class="bank-chase-top">
+172: <div class="bank-chase-badge"><span>오토바이 추격전</span><strong>100 → W → 150 KM/H</strong></div>
+173: <div class="bank-chase-status">
+175: <div class="bank-chase-durability"><i id="bankChaseDurabilityBar"></i></div>
+176: <strong id="bankChaseDurability">100%</strong>
+178: <div class="bank-chase-distance"><span>도주 거리</span><strong id="bankChaseDistance">0 / 1,000m</strong></div>
+180: <div class="bank-chase-bottom">
+181: <div class="bank-chase-loot"><span>운반 중인 금고</span><strong id="bankChaseLootValue">0개</strong><small id="bankChaseDifficulty">추격 강도 · 낮음</small><small>금고를 많이 들고 나올수록 추격 거리가 길어지고 장애물·충돌 피해가 강해집니다.</small></div>
+182: <div class="bank-chase-guide"><b>A / ←</b><span>왼쪽 차선</span><b>W / ↑</b><span>가속 · 최대 150</span><b>D / →</b><span>오른쪽 차선</span></div>
+184: <div id="bankChaseImpact" class="bank-chase-impact hidden">충돌!</div>
+185: <div id="bankChaseResult" class="bank-chase-result hidden">
+186: <div class="bank-chase-result-card">
+188: <h2 id="bankChaseResultTitle">도주 성공</h2>
+189: <p id="bankChaseResultText">추격을 따돌렸습니다.</p>
+190: <strong id="bankChaseResultValue">₩0</strong>
+191: <button id="bankChaseReturn" class="primary">휴대폰으로 복귀</button>
+214: <div id="bankUvModal" class="bank-uv-modal hidden" role="dialog" aria-modal="true">
+215: <div class="bank-uv-card">
+216: <div class="bank-uv-head">
+218: <button id="bankUvClose" class="modal-close" type="button">×</button>
+220: <div id="bankUvSurface" class="bank-uv-surface">
+221: <div class="bank-door-seam"></div>
+222: <div class="bank-keypad"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+223: <div id="bankUvBeam" class="bank-uv-beam"></div>
+224: <div id="bankUvTraces" class="bank-uv-traces"></div>
+226: <div class="bank-uv-code-row">
+228: <div id="bankUvDigits" class="bank-uv-digits"><b>?</b><b>?</b><b>?</b><b>?</b></div>
+230: <div class="bank-uv-controls">
+232: <input id="bankUvCodeInput" type="text" inputmode="numeric" maxlength="4" placeholder="4자리 입력" autocomplete="off">
+233: <button id="bankUvConfirm" class="primary" type="button" disabled>비밀번호 입력 · 문 열기</button>
+
+-- public/mission3d.js --
+51: function buildStore() {
+64: storeDoorCells: [[14,14],[15,14],[14,15],[15,15]],
+65: storeDoorPoint: { x: 15, y: 16.35 },
+84: function buildLogistics() {
+105: floorType: "warehouse", label: "LOGISTICS HUB"
+110: function buildBankPrep() {
+134: floorType: "concrete", label: "BANK PREP OFFICE"
+139: function buildBank() {
+150: bankDoorCells: [[14,14],[15,14],[14,15],[15,15]],
+151: bankDoorPoint: { x: 15, y: 16.2 },
+169: floorType: "concrete", label: "BANK LOBBY / VAULT"
+174: const MAPS = { alley: buildAlley(), abandoned_store: buildStore(), logistics: buildLogistics(), bank_prep: buildBankPrep(), bank: buildBank() };
+180: // FLEA_MISSION3D_BLACKSCREEN_V114
+181: // 일부 Windows/Electron 환경에서 옵션이 붙은 Canvas2D 컨텍스트 생성이 실패할 수 있어
+194: let safeState = null;
+208: let missionState = null;
+231: const dpr = Math.min(1.5, Math.max(1, window.devicePixelRatio || 1));
+274: nodes.forEach((node, index) => {
+286: safeState = nextSafe ? { ...nextSafe } : null;
+295: function setBankDoorOpen(open) {
+296: if (mapId !== "bank" || !Array.isArray(map.bankDoorCells)) return;
+297: for (const [x,y] of map.bankDoorCells) {
+302: function setStoreDoorOpen(open) {
+303: if (mapId !== "abandoned_store" || !Array.isArray(map.storeDoorCells)) return;
+304: for (const [x,y] of map.storeDoorCells) {
+310: missionState = nextMission ? { ...nextMission } : null;
+311: if (mapId === "bank") {
+312: setBankDoorOpen(Boolean(missionState?.bankDoorUnlocked));
+315: if (mapId === "abandoned_store") setStoreDoorOpen(Boolean(missionState?.storeDoorBroken));
+321: missionState = null;
+322: if (mapId === "bank") setBankDoorOpen(false);
+323: if (mapId === "abandoned_store") setStoreDoorOpen(false);
+334: active = false; searching = false; nodePositions.clear(); nodes = []; safeState = null; safePosition = null; missionState = null;
+368: if (mapId === "bank") return Boolean(missionState.bankDoorUnlocked);
+369: return mapId === "bank_prep" && missionState.missionType === "bank-prep" && missionState.prepId === "guardWeakening";
+420: const aimScore=Math.min(headDist,bodyDist)/Math.max(1,scale)+angle*4;
+421: if (aimScore < bestAngle || (Math.abs(aimScore-bestAngle)<.01 && distance<bestDistance)) {
+422: best={...node,hitZone:zone};bestAngle=aimScore;bestDistance=distance;bestZone=zone;
+428: function aimedStoreDoor() {
+429: if (!active || mapId !== "abandoned_store" || missionState?.storeDoorBroken || !map.storeDoorPoint) return null;
+430: const dx=map.storeDoorPoint.x-player.x,dy=map.storeDoorPoint.y-player.y,distance=Math.hypot(dx,dy);
+434: return nodes.find((node)=>node.kind==="store-door"&&!node.searched)||null;
+518: ctx.restore();
+584: counter:{shape:"counter",color:"#90785c",size:1.34},
+608: ctx.restore();
+621: ctx.restore();
+688: }else if(shape==="counter"){
+712: [ [-.46,-.18,.4,.001], [.02,-.18,.4,.001], [-.2,-.41,.4,.001] ].forEach(([bx,by,bw])=>{ctx.beginPath();ctx.moveTo(s*(bx+bw*.5),s*by);ctx.lineTo(s*(bx+bw*.5),s*(by+.18));ctx.stroke();});
+755: ctx.restore();
+855: ctx.restore();
+861: for(const node of nodes){if(node.searched||node.kind==="store-door")continue;const pos=nodePositions.get(node.id);if(!pos)continue;const p=screenProject(pos.x,pos.y,.68);if(p&&p.distance<18)visible.push({node,pos,p});}
+888: ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle="rgba(0,0,0,.72)";ctx.fillRect(x,y,w,h);ctx.fillStyle=hp/maxHp>.5?"#70ef96":hp/maxHp>.25?"#ffd166":"#ff6874";ctx.fillRect(x,y,w*(hp/maxHp),h);ctx.strokeStyle="rgba(255,255,255,.25)";ctx.strokeRect(x,y,w,h);ctx.fillStyle="#eaf5ff";ctx…
+892: ctx.fillText(near?"E  은행 금고":"BANK SAFE",p.screenX,baseY-scale*.94);ctx.restore();
+923: ctx.restore();
+947: ctx.fillStyle="#2b3034";ctx.beginPath();ctx.arc(0,-s*.48,s*.17,0,TAU);ctx.fill();ctx.strokeStyle="#89939a";ctx.stroke();ctx.fillStyle="#727c82";ctx.fillRect(-s*.03,-s*.62,s*.06,s*.28);ctx.fillRect(-s*.14,-s*.51,s*.28,s*.06);ctx.fillStyle="#181c1e";ctx.fillRect(s*.24,-s*.68,s*.08,…
+
+-- sd-app.json --
+2: "id": "sd-flea-market",
+
+-- src/sd-integration.js --
+5: const { inspectDatabase, getAccount, applyTransaction } = require("./wallet-db");
+102: const selectedId = String(link?.config?.selectedAccountId || "").trim();
+109: const selected = (selectedId && inspected.accounts.find((account) => account.id === selectedId)) || inspected.accounts[0] || null;
+115: selectedAccountId: selected.id,
+122: return { connected: false, path: "", selected: null, selectedAccountId: "", source: "none" };
+244: async function logisticsProgress(currentUserData, safeStorage) {
+245: // FLEA_LOGISTICS_HQ_UNLOCK_V114
+253: return { onlineLinked: false, rep: 0, grade: "F", logisticsGrade: "F", headquartersLevel: 0, eligibleForSContent: false, userId: "" };
+256: return { onlineLinked: false, rep: 0, grade: "F", logisticsGrade: "F", headquartersLevel: 0, eligibleForSContent: false, userId: auth.userId || "" };
+270: "get_sd_flea_company_snapshot",
+274: const snapshotRep = Number(snapshot?.logistics_rep ?? snapshot?.logisticsRep ?? 0);
+280: // 아래 sd_logistics_progress 직접 조회가 최종 기준입니다.
+285: const rows = await fetchJson(`${SUPABASE_URL}/rest/v1/sd_logistics_progress?select=state&user_id=eq.${encodeURIComponent(userId)}&limit=1`, {
+292: const state = Array.isArray(rows) ? rows[0]?.state : null;
+293: if (state && typeof state === "object") {
+294: const progressRep = Number(state.logisticsRep ?? state.logistics_rep ?? 0);
+304: const logisticsGrade = rankFromRep(rep);
+311: grade: eligibleForSContent ? "S" : logisticsGrade,
+312: logisticsGrade,
+326: this.company = { onlineLinked: false, rep: 0, grade: "F", logisticsGrade: "F", headquartersLevel: 0, eligibleForSContent: false, userId: "" };
+332: if (!wallet.connected) return { connected: false, balance: 0, account: null, source: wallet.source };
+334: const account = getAccount(wallet.path, wallet.selectedAccountId);
+335: return { connected: true, balance: Number(account.balance || 0), account, path: wallet.path, source: wallet.source };
+337: return { connected: false, balance: 0, account: null, source: "error" };
+344: const tx = applyTransaction(wallet.path, wallet.selectedAccountId, Number(amount), String(memo || "SD 플리마켓 가상거래"));
+350: this.company = await logisticsProgress(this.userDataPath, this.safeStorage);
+355: async syncFleaInventory(items) {
+371: "sync_sd_flea_pc_inventory",
+
+-- src/wallet-db.js --
+22: db.exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=7000;");
+26: const rows=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','accounts','transactions')").all();
+28: return ["users","accounts","transactions"].every(n=>names.has(n));
+30: function normalizeAccount(row){
+33: bankName:String(row.bank_name||""),accountNumber:String(row.account_number||""),
+44: const accounts=db.prepare(`
+45: SELECT a.*,u.username FROM accounts a JOIN users u ON u.id=a.user_id
+47: `).all().map(normalizeAccount);
+48: return {path:path.resolve(filePath),accounts,integrity:"ok"};
+51: function getAccount(filePath,accountId){
+55: SELECT a.*,u.username FROM accounts a JOIN users u ON u.id=a.user_id
+57: `).get(String(accountId));
+59: return normalizeAccount(row);
+62: function listRecentTransactions(filePath,accountId,limit=50){
+67: SELECT id,account_id,transaction_type,amount,memo,created_at
+68: FROM transactions WHERE account_id=?
+70: `).all(String(accountId),safe).map(r=>({
+71: id:String(r.id),accountId:String(r.account_id),transactionType:String(r.transaction_type||""),
+76: function applyTransaction(filePath,accountId,signedAmount,memo){
+83: const current=db.prepare("SELECT balance FROM accounts WHERE id=? LIMIT 1").get(String(accountId));
+85: const before=Number(current.balance||0);
+86: const after=before+amount;
+90: const id=`sdflea-c${centerVersion()}-v${safeVersion(APP_VERSION)}-${crypto.randomUUID()}`;
+91: db.prepare("UPDATE accounts SET balance=?,updated_at=? WHERE id=?").run(after,now,String(accountId));
+93: INSERT INTO transactions(id,account_id,transaction_type,amount,memo,created_at)
+95: `).run(id,String(accountId),amount>0?"deposit":"withdraw",Math.abs(amount),String(memo||"SD 플리마켓 가상거래").slice(0,180),now);
+97: return {id,signedAmount:amount,before,after,account:getAccount(filePath,accountId)};
+101: module.exports={applyTransaction,getAccount,inspectDatabase,listRecentTransactions};
+
+===== SDLink_v1.2.8_Desktop.zip =====
+tables=applied_remote, meta, processed_local
+
+-- main.js --
+7: BrowserWindow,
+15: const { ConfigStore } = require("./src/config-store");
+17: const { inspectDatabase, fingerprintAccount, getAccount } = require("./src/wallet-db");
+20: const { inspectBitcoinSource } = require("./src/bitcoin-reader");
+23: const ACCOUNT_URL = `${WEBSITE_URL}account.html`;
+27: let mainWindow = null;
+28: let configStore = null;
+30: let syncState = null;
+39: if (mainWindow && !mainWindow.isDestroyed()) {
+40: mainWindow.webContents.send("sdlink:status", payload);
+44: function createWindow() {
+45: mainWindow = new BrowserWindow({
+63: mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+64: mainWindow.webContents.on("will-navigate", (event, url) => {
+65: if (url !== mainWindow.webContents.getURL()) event.preventDefault();
+67: mainWindow.once("ready-to-show", () => mainWindow.show());
+68: mainWindow.on("close", (event) => {
+70: event.preventDefault();
+71: mainWindow.hide();
+78: mainWindow.on("closed", () => { mainWindow = null; });
+79: mainWindow.loadFile(path.join(__dirname, "public", "index.html"));
+82: function showMainWindow() {
+83: if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+84: mainWindow.show();
+85: mainWindow.focus();
+89: const config = configStore?.load();
+91: if (!config.databasePath || !config.selectedAccountId) return;
+104: { label: "SD Link 열기", click: showMainWindow },
+115: tray.on("double-click", showMainWindow);
+163: const config = configStore.load();
+167: const selected = inspection.accounts.find((item) => item.id === config.selectedAccountId) || null;
+175: const config = configStore.load();
+182: if (includeSnapshot && result.auth.authenticated && config.databasePath && config.selectedAccountId) {
+193: ipcMain.handle("sdlink:get-state", (_event, includeSnapshot) => appState(Boolean(includeSnapshot)));
+198: const result = await dialog.showOpenDialog(mainWindow, {
+210: ipcMain.handle("sdlink:choose-bitcoin-source", async () => {
+211: const result = await dialog.showOpenDialog(mainWindow, {
+221: const inspected = inspectBitcoinSource(sourcePath);
+225: configStore.update({
+226: bitcoinSourcePath: path.resolve(sourcePath),
+227: lastBitcoinQuantity: inspected.quantity,
+232: ipcMain.handle("sdlink:select-wallet", (_event, databasePath, accountId) => {
+234: const account = inspection.accounts.find((item) => item.id === String(accountId));
+235: if (!account) throw new Error("선택한 계좌를 찾지 못했습니다.");
+236: const current = configStore.load();
+239: String(accountId) !== String(current.selectedAccountId || accountId);
+243: const fingerprint = fingerprintAccount(account);
+244: configStore.update({
+246: selectedAccountId: String(accountId),
+252: ipcMain.handle("sdlink:login", async (_event, email, password, remember) => {
+254: const config = configStore.load();
+275: ipcMain.handle("sdlink:set-auto-sync", (_event, enabled) => {
+276: configStore.update({ autoSync: Boolean(enabled) });
+282: const answer = await dialog.showMessageBox(mainWindow, {
+292: const current = configStore.load();
+
+-- package.json --
+16: "check": "node --check main.js && node --check preload.js && node --check forge.config.js && node --check src/config-store.js && node --check src/auth-service.js && node --check src/wallet-db.js && node --check src/sync-state.js && node --check src/sync-engine.js && node --check …
+
+-- preload.js --
+9: chooseBitcoinSource: () => ipcRenderer.invoke("sdlink:choose-bitcoin-source"),
+10: selectWallet: (databasePath, accountId) =>
+11: ipcRenderer.invoke("sdlink:select-wallet", databasePath, accountId),
+21: openAccount: () => ipcRenderer.invoke("sdlink:open-account"),
+24: const listener = (_event, payload) => callback(payload);
+
+-- public/app.js --
+5: "overallDot","overallState","notice","localBadge","localInfo","accountChooser",
+8: "onlineBalance","lastSync","syncMessage","autoSync","syncButton","bitcoinSourceInfo",
+11: let state = null;
+55: function renderAccounts(inspection) {
+56: elements.accountChooser.innerHTML = "";
+57: if (!inspection?.accounts?.length) {
+58: elements.accountChooser.hidden = true;
+61: elements.accountChooser.hidden = false;
+62: for (const account of inspection.accounts) {
+65: button.className = "account-option";
+66: button.innerHTML = `<span><b>${account.bankName} · ${account.accountNumber}</b><br><small>${account.ownerName} / ${account.username}</small></span><strong>${won(account.balance)}</strong>`;
+67: button.addEventListener("click", async () => {
+70: state = await window.sdLink.selectWallet(inspection.path, account.id);
+78: elements.accountChooser.appendChild(button);
+92: elements.localInfo.innerHTML = `<b>${selected.bankName} ${selected.accountNumber}</b><br>${selected.ownerName} · ${selected.username}<br>현재 로컬 잔액 <b>${won(selected.balance)}</b><br><small>${config.databasePath}</small>`;
+93: elements.accountChooser.hidden = true;
+117: elements.migrationInfo.innerHTML = `기존 잔액 이전이 승인되었습니다.<br>온라인 계좌 <b>${snapshot?.account_number || "-"}</b> · ${won(snapshot?.wallet_balance)}`;
+143: if (elements.bitcoinSourceInfo) {
+144: if (config.bitcoinSourcePath) {
+145: const btcText = Number(config.lastBitcoinQuantity ?? 0).toLocaleString("ko-KR", { maximumFractionDigits: 8 });
+146: elements.bitcoinSourceInfo.className = "info-box";
+147: elements.bitcoinSourceInfo.innerHTML = `BTC 원본 <b>${config.bitcoinSourcePath}</b><br>최근 감지 수량 <b>${btcText} BTC</b>`;
+149: elements.bitcoinSourceInfo.className = "info-box muted";
+150: elements.bitcoinSourceInfo.textContent = "선택한 SD지갑 계좌의 실제 판매 가능 BTC를 자동으로 읽습니다.";
+184: state = await window.sdLink.getState(includeSnapshot);
+199: $("autoDetectButton").addEventListener("click", async () => {
+202: const matches = await window.sdLink.autoDetect();
+208: renderAccounts(selectedInspection);
+217: $("chooseBitcoinButton")?.addEventListener("click", async () => {
+219: const result = await window.sdLink.chooseBitcoinSource();
+228: $("chooseDbButton").addEventListener("click", async () => {
+230: const inspection = await window.sdLink.chooseDatabase();
+233: renderAccounts(inspection);
+240: elements.loginForm.addEventListener("submit", async (event) => {
+241: event.preventDefault();
+245: state = await window.sdLink.login(elements.email.value, elements.password.value, elements.remember.checked);
+256: elements.logoutButton.addEventListener("click", async () => {
+257: state = await window.sdLink.logout();
+262: elements.registerButton.addEventListener("click", async () => {
+265: await window.sdLink.registerDevice();
+275: elements.migrationButton.addEventListener("click", async () => {
+278: const result = await window.sdLink.requestMigration();
+288: elements.syncButton.addEventListener("click", async () => {
+291: const result = await window.sdLink.sync();
+301: elements.autoSync.addEventListener("change", async () => {
+302: state = await window.sdLink.setAutoSync(elements.autoSync.checked);
+306: $("websiteButton").addEventListener("click", () => window.sdLink.openWebsite());
+307: $("accountButton").addEventListener("click", () => window.sdLink.openAccount());
+308: $("mobileButton").addEventListener("click", () => window.sdLink.openMobileDownload());
+309: $("resetButton").addEventListener("click", async () => {
+310: const result = await window.sdLink.reset();
+312: state = result;
+317: window.sdLink.onStatus((payload) => {
+
+-- public/index.html --
+14: <div class="top-actions"><button id="websiteButton" class="ghost">홈페이지</button><button id="accountButton" class="ghost">내 계정</button></div>
+30: <div id="accountChooser" class="account-chooser" hidden></div>
+61: <div id="bitcoinSourceInfo" class="info-box muted">선택한 SD지갑 계좌의 실제 판매 가능 BTC를 자동으로 읽습니다. (bitcoin_account_stats.btc_balance)</div>
+62: <div class="row"><button id="chooseBitcoinButton" class="secondary">구형 BTC 원본 선택</button></div>
+
+-- sd-app.json --
+5: "improvement": "Windows 로그인 시 SD종합센터와 함께 자동 실행되고 시작 창은 숨긴 채 백그라운드·트레이에서 동기화합니다."
+
+-- src/bitcoin-reader.js --
+9: "bitcoinQuantity", "bitcoin_quantity", "bitcoinBalance", "bitcoin_balance",
+11: "minedBTC", "minedBtc", "mined_btc",
+12: "currentMinedBTC", "currentMinedBtc", "current_mined_btc",
+13: "totalBTC", "totalBtc", "total_btc"
+40: if ((lower.includes("btc") || lower.includes("bitcoin")) && !lower.includes("price")) {
+96: let score = 0;
+97: if (lower.includes("btc") || lower.includes("bitcoin")) score += 10;
+98: if (/(quantity|balance|amount|mined|current|holding)/.test(lower)) score += 5;
+99: if (lowerTable.includes("btc") || lowerTable.includes("bitcoin")) score += 6;
+100: if (score >= 10) candidates.push({ table, column, score });
+104: candidates.sort((a, b) => b.score - a.score);
+132: function readExactWalletBitcoin(filePath, accountId) {
+135: if (!filePath || !accountId || !fs.existsSync(filePath)) return null;
+142: WHERE type = 'table' AND name = 'bitcoin_account_stats'
+149: FROM bitcoin_account_stats
+150: WHERE account_id = ?
+152: `).get(String(accountId));
+158: sourceHint: 'SDBitcoinMiner:bitcoin_account_stats.btc_balance',
+160: exactAccount: true,
+170: SELECT SUM(COALESCE(current_btc, 0)) AS total
+171: FROM bitcoin_rooms
+172: WHERE account_id = ?
+173: `).get(String(accountId));
+174: roomCurrentBtc = numberOrNull(roomRow?.total);
+187: sourceHint: 'SDBitcoinMiner:bitcoin_account_stats.btc_balance',
+189: exactAccount: true,
+209: if (/(bitcoin|btc|mining|miner|save|state|data)/.test(lower)) return true;
+267: function readBitcoinSnapshot({ walletDatabasePath, accountId, configuredPath }) {
+268: // SDBitcoinMiner는 선택한 SD지갑의 같은 SQLite 안에
+269: // 계좌별 보유 BTC를 bitcoin_account_stats.btc_balance로 저장합니다.
+271: const exact = readExactWalletBitcoin(walletDatabasePath, accountId);
+285: module.exports = { readBitcoinSnapshot, inspectBitcoinSource: inspect, readExactWalletBitcoin };
+
+-- src/config-store.js --
+10: selectedAccountId: "",
+33: class ConfigStore {
+55: config.deviceName = `Windows PC (${process.env.COMPUTERNAME || "SD Link"})`;
+84: module.exports = { ConfigStore };
+
+-- src/sync-engine.js --
+5: const { readBitcoinSnapshot } = require("./bitcoin-reader");
+9: fingerprintAccount,
+10: getAccount,
+14: setAccountBalance,
+48: if (text.includes("SD비트코인") || text.includes("BTC")) return "sd_bitcoin";
+49: if (text.includes("SD광부") || text.includes("광물") || text.includes("채굴 판매")) return "sd_miner";
+50: if (text.includes("SD슬롯")) return "sd_slot";
+51: if (text.includes("홀짝")) return "sd_odd_even";
+52: if (text.includes("SD묵찌빠")) return "sd_mukjippa";
+54: if (text.includes("물류") || text.includes("SD 기사")) return "sd_logistics";
+55: if (text.includes("금고") || text.includes("금괴")) return "sd_vault";
+72: constructor({ authService, configStore, syncState, userDataDirectory, onStatus }) {
+74: this.configStore = configStore;
+75: this.syncState = syncState;
+87: const config = this.configStore.load();
+88: if (!config.databasePath || !config.selectedAccountId) {
+96: const account = getAccount(config.databasePath, config.selectedAccountId);
+97: const fingerprint = fingerprintAccount(account);
+102: p_previous_account_number: account.accountNumber,
+105: const updated = this.configStore.update({
+113: return { config: updated, account, server: response };
+118: const account = getAccount(config.databasePath, config.selectedAccountId);
+119: const fingerprint = fingerprintAccount(account);
+122: p_previous_account_number: account.accountNumber,
+123: p_local_username: account.username,
+124: p_local_owner_name: account.ownerName,
+125: p_migrated_balance: account.balance,
+129: bank_name: account.bankName,
+130: account_id_hash: fingerprint.slice(0, 16),
+131: local_transaction_count: listTransactionIds(config.databasePath, account.id).length,
+134: const updated = this.configStore.update({
+148: const updated = this.configStore.update({
+156: const account = getAccount(config.databasePath, config.selectedAccountId);
+161: listTransactionIds(config.databasePath, account.id),
+165: const adjustment = setAccountBalance(
+167: account.id,
+179: const updated = this.configStore.update({
+190: const account = getAccount(config.databasePath, config.selectedAccountId);
+191: let allTransactions = listTransactions(config.databasePath, account.id);
+214: const unexplainedDifference = account.balance - (expectedBalance + pendingNet);
+218: account.id,
+223: allTransactions = listTransactions(config.databasePath, account.id);
+246: local_account_id: account.id,
+305: config.selectedAccountId,
+324: async syncBitcoinSnapshot(config) {
+326: const snapshot = readBitcoinSnapshot({
+328: accountId: config.selectedAccountId,
+329: configuredPath: config.bitcoinSourcePath || "",
+335: const response = unwrapJson(await this.auth.rpc("upsert_sd_bitcoin_snapshot", {
+342: this.configStore.update({
+343: bitcoinSourcePath: snapshot.sourcePath,
+344: lastBitcoinQuantity: snapshot.quantity,
+345: lastBitcoinSyncAt: new Date().toISOString(),
+346: lastBitcoinSourceHint: snapshot.sourceHint || "",
+375: this.configStore.update({ lastSyncAt: new Date().toISOString(), lastSyncMessage: message });
+
+-- src/sync-state.js --
+16: CREATE TABLE IF NOT EXISTS meta (
+20: CREATE TABLE IF NOT EXISTS processed_local (
+24: CREATE TABLE IF NOT EXISTS applied_remote (
+39: INSERT INTO meta(key, value) VALUES(?, ?)
+40: ON CONFLICT(key) DO UPDATE SET value = excluded.value
+60: INSERT OR IGNORE INTO processed_local(transaction_id, processed_at)
+69: INSERT OR IGNORE INTO processed_local(transaction_id, processed_at)
+92: INSERT OR IGNORE INTO applied_remote(server_transaction_id, sync_seq, applied_at)
+
+-- src/wallet-db.js --
+13: db.exec("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 900;");
+20: WHERE type = 'table' AND name IN ('users', 'accounts', 'transactions')
+23: return ["users", "accounts", "transactions"].every((name) => names.has(name));
+26: function normalizeAccount(row) {
+31: bankName: String(row.bank_name || ""),
+32: accountNumber: String(row.account_number || ""),
+47: // Electron 메인 스레드를 수 초간 막아 Windows의 “응답 없음”을 유발할 수 있습니다.
+55: const accounts = db.prepare(`
+57: FROM accounts a
+60: `).all().map(normalizeAccount);
+61: if (accounts.length === 0) {
+64: const transactionCount = Number(
+65: db.prepare("SELECT COUNT(*) AS count FROM transactions").get()?.count || 0,
+69: accounts,
+70: transactionCount,
+78: function getAccount(filePath, accountId) {
+83: FROM accounts a
+87: `).get(String(accountId));
+89: return normalizeAccount(row);
+95: function fingerprintAccount(account) {
+98: account.id,
+99: account.userId,
+100: account.username.toLowerCase(),
+101: account.bankName,
+102: account.accountNumber,
+103: account.ownerName,
+108: function listTransactionIds(filePath, accountId) {
+112: "SELECT id FROM transactions WHERE account_id = ? ORDER BY created_at ASC, rowid ASC",
+113: ).all(String(accountId)).map((row) => String(row.id));
+119: function listTransactions(filePath, accountId) {
+123: SELECT id, account_id, transaction_type, amount, memo, created_at
+125: WHERE account_id = ?
+127: `).all(String(accountId)).map((row) => ({
+129: accountId: String(row.account_id),
+143: const destination = path.join(backupDirectory, `sdwallet-before-link-${stamp}.sqlite`);
+160: function setAccountBalance(filePath, accountId, targetBalance, memo) {
+163: const current = db.prepare("SELECT balance FROM accounts WHERE id = ?").get(String(accountId));
+165: const before = Number(current.balance);
+170: if (before === after) return null;
+171: const difference = after - before;
+177: UPDATE accounts SET balance = ?, updated_at = ? WHERE id = ?
+178: `).run(after, now, String(accountId));
+180: INSERT INTO transactions(id, account_id, transaction_type, amount, memo, created_at)
+184: String(accountId),
+195: return { id, difference, before, after };
+201: function recordSyntheticTransaction(filePath, accountId, difference, memo) {
+208: INSERT INTO transactions(id, account_id, transaction_type, amount, memo, created_at)
+212: String(accountId),
+224: function applyRemoteTransaction(filePath, accountId, remote) {
+238: const current = db.prepare("SELECT balance FROM accounts WHERE id = ?")
+239: .get(String(accountId));
+244: const before = Number(current.balance);
+245: const after = before + amount;
+251: INSERT INTO transactions(id, account_id, transaction_type, amount, memo, created_at)
+255: String(accountId),
+
+===== SDLogisticsCenter_Season0_Desktop.zip =====
+tables=(none found in source)
+
+-- SDLogisticsCenter/forge.config.js --
+4: packagerConfig:{asar:true,executableName:"SDLogisticsCenter",icon:path.join(__dirname,"public","icons","icon")},
+6: makers:[{name:"@electron-forge/maker-squirrel",config:{name:"sdlogisticscenter",setupExe:"SDLogisticsCenter-Setup.exe",setupIcon:path.join(__dirname,"public","icons","icon.ico")}}]
+
+-- SDLogisticsCenter/main.js --
+4: const {app,BrowserWindow,dialog,ipcMain,shell}=require("electron");
+5: const {ConfigStore}=require("./src/config-store");
+10: app.setName("SDLogisticsCenter");
+11: let mainWindow=null,configStore=null;
+13: function createWindow(){
+14: mainWindow=new BrowserWindow({
+20: mainWindow.webContents.setWindowOpenHandler(()=>({action:"deny"}));
+21: mainWindow.webContents.on("will-navigate",(event,url)=>{if(url!==mainWindow.webContents.getURL())event.preventDefault();});
+22: mainWindow.once("ready-to-show",()=>mainWindow.show());
+23: mainWindow.on("closed",()=>{mainWindow=null;});
+24: mainWindow.loadFile(path.join(__dirname,"public","index.html"));
+53: let c=configStore.load();
+56: if(found.length)c=configStore.save({databasePath:found[0].path,selectedAccountId:found[0].accounts[0]?.id||""});
+58: if(!c.databasePath||!fs.existsSync(c.databasePath))return{connected:false,config:c,accounts:[],selected:null,transactions:[]};
+60: const selected=i.accounts.find(a=>a.id===String(c.selectedAccountId))||i.accounts[0]||null;
+61: if(selected&&selected.id!==c.selectedAccountId)c=configStore.update({selectedAccountId:selected.id});
+62: return{connected:Boolean(selected),config:c,path:i.path,accounts:i.accounts,selected,transactions:selected?listRecentTransactions(i.path,selected.id,50):[]};
+65: ipcMain.handle("sdlogistics:wallet-state",()=>currentState());
+66: ipcMain.handle("sdlogistics:auto-detect",()=>{
+68: if(found.length)configStore.save({databasePath:found[0].path,selectedAccountId:found[0].accounts[0]?.id||""});
+71: ipcMain.handle("sdlogistics:choose-db",async()=>{
+72: const r=await dialog.showOpenDialog(mainWindow,{title:"SD지갑 데이터베이스 선택",properties:["openFile"],filters:[{name:"SD지갑 SQLite",extensions:["sqlite","db"]},{name:"모든 파일",extensions:["*"]}]});
+75: configStore.save({databasePath:i.path,selectedAccountId:i.accounts[0]?.id||""});
+78: ipcMain.handle("sdlogistics:select-account",(_e,id)=>{
+79: const c=configStore.load();
+82: const a=i.accounts.find(x=>x.id===String(id));
+84: configStore.update({selectedAccountId:a.id});
+87: ipcMain.handle("sdlogistics:wallet-transaction",(_e,amount,memo)=>{
+94: app.whenReady().then(async()=>{const updateCheck=await checkRequiredUpdate({appId:"sd-logistics-center-desktop",currentVersion:packageJson.version,userDataPath:app.getPath("userData")});if(!updateCheck.ok){const detail=updateCheck.reason==="update-required"?`${updateCheck.message…
+95: app.on("window-all-closed",()=>{if(process.platform!=="darwin")app.quit();});
+
+-- SDLogisticsCenter/package.json --
+2: "name": "sd-logistics-center-desktop",
+16: "check": "node --check main.js && node --check preload.js && node --check forge.config.js && node --check src/config-store.js && node --check src/wallet-db.js && node --check public/app.js"
+
+-- SDLogisticsCenter/preload.js --
+3: contextBridge.exposeInMainWorld("sdLogistics",{
+4: getWalletState:()=>ipcRenderer.invoke("sdlogistics:wallet-state"),
+5: autoDetectWallet:()=>ipcRenderer.invoke("sdlogistics:auto-detect"),
+6: chooseWalletDatabase:()=>ipcRenderer.invoke("sdlogistics:choose-db"),
+7: selectAccount:(id)=>ipcRenderer.invoke("sdlogistics:select-account",id),
+8: transact:(amount,memo)=>ipcRenderer.invoke("sdlogistics:wallet-transaction",amount,memo)
+
+-- SDLogisticsCenter/public/app.js --
+2: const KEY = "sd_logistics_center_desktop_progress_v101";
+3: const OLD_KEY = "sd_logistics_center_desktop_progress_v100";
+12: const PROGRESSION_RESET_MARKER_KEY = "sd_logistics_progress_reset_epoch";
+32: 2:{contracts:35, xlarge:3, revenue:4000000, fleet:6, fee:500000, unlock:"기사 시스템 · 정원 2명"},
+33: 3:{contracts:50, xlarge:5, revenue:7000000, fleet:8, fee:750000, unlock:"차량 슬롯 10대"},
+34: 4:{contracts:70, xlarge:8, revenue:11000000, fleet:8, fee:1000000, unlock:"기사 정원 4명"},
+35: 5:{contracts:95, xlarge:12, revenue:17000000, fleet:8, fee:1500000, unlock:"장거리 계약"},
+36: 6:{contracts:125, xlarge:16, revenue:25000000, fleet:8, fee:2000000, unlock:"기사 정원 6명 · 물류창고"},
+37: 7:{contracts:160, xlarge:21, revenue:35000000, fleet:8, fee:3000000, unlock:"본부 경영 특성 강화"},
+38: 8:{contracts:200, xlarge:27, revenue:48000000, fleet:10, fee:4000000, unlock:"기사 정원 8명 · 해외 화물"},
+39: 9:{contracts:245, xlarge:34, revenue:65000000, fleet:10, fee:5500000, unlock:"차량 슬롯 12대"},
+40: 10:{contracts:300, xlarge:42, revenue:90000000, fleet:12, fee:8000000, unlock:"기사 정원 10명 · 대형 물류기업"}
+70: const baseState = {
+73: logisticsRep:0,
+77: logisticsRevenue:0,
+81: driverRevenue:0,
+91: logisticsUiOpen:{
+101: let state = load();
+107: if(localStorage.getItem(PROGRESSION_RESET_MARKER_KEY)===String(PROGRESSION_RESET_EPOCH))return false;
+109: localStorage.removeItem(KEY);
+110: state=structuredClone(baseState);
+113: localStorage.setItem(PROGRESSION_RESET_MARKER_KEY,String(PROGRESSION_RESET_EPOCH));
+114: localStorage.setItem(KEY,JSON.stringify(state));
+131: totalEarned:Number(e.totalEarned)||0
+158: const raw=localStorage.getItem(KEY);
+168: logisticsRevenue:Number(parsed.logisticsRevenue)||0,
+172: driverRevenue:Number(parsed.driverRevenue)||0,
+182: logisticsUiOpen:{
+183: contracts:parsed.logisticsUiOpen?.contracts !== false,
+184: fleet:parsed.logisticsUiOpen?.fleet !== false
+191: const oldRaw=localStorage.getItem(OLD_KEY);
+196: const derivedRevenue=Number(old.logisticsRevenue)||
+204: logisticsRevenue:derivedRevenue,
+206: driverRevenue:0,
+222: logisticsUiOpen:{
+236: localStorage.setItem(KEY,JSON.stringify(copy));
+265: const pathEl=$("#walletDbPath"),select=$("#walletAccountSelect"),owner=$("#walletOwnerText"),account=$("#walletAccountText");
+269: select.innerHTML=(walletSnapshot?.accounts||[]).length
+270: ?walletSnapshot.accounts.map(a=>`<option value="${a.id}" ${a.id===selectedId?"selected":""}>${a.ownerName||a.username||"사용자"} · ${a.accountNumber||a.id}</option>`).join("")
+272: select.disabled=!(walletSnapshot?.accounts||[]).length;
+276: if(owner)owner.textContent=`${a.ownerName||a.username||"SD지갑 사용자"} · ${a.bankName||"SD Bank"}`;
+277: if(account)account.textContent=`${a.accountNumber||a.id} · ${won(a.balance)}`;
+280: if(owner)owner.textContent="계좌 미연결";if(account)account.textContent="-";
+287: walletSnapshot=await window.sdLogistics.getWalletState();renderWalletConnection();
+294: const r=await window.sdLogistics.transact(signed,memo);
+312: if(rankFromRep(state.logisticsRep).rank==="S" && state.headquartersLevel<1){
+330: function businessRevenueMultiplier(){
+368: state.logisticsRevenue>=r.revenue &&
+420: state.employees.push({id:crypto.randomUUID(),name,hiredAt:Date.now(),missionId:null,active:false,nextPayoutAt:null,totalEarned:0});
+468: state.driverRevenue+=payout;state.logisticsRevenue+=payout;
+469: driver.totalEarned=(driver.totalEarned||0)+payout;
+510: // - 진행 중 계약은 화면 왼쪽 상단 LIVE LOGISTICS에 표시
+518: const currentRank=rankFromRep(state.logisticsRep).rank;
+588: count:ids.length,
+597: (candidate.excess===best.excess && candidate.count < best.count) ||
+
+-- SDLogisticsCenter/public/index.html --
+6: <title>SD Logistics Center · Season 0 Desktop v1.0.7</title>
+13: <div class="eyebrow">LIVE LOGISTICS</div>
+16: <span id="activeDeliveryDockCount" class="tiny-badge">0건</span>
+60: <select id="walletAccountSelect" disabled>
+74: <strong id="walletAccountText">-</strong>
+82: <strong id="logisticsRank">F</strong>
+83: <small id="logisticsRepText">0 / 100</small>
+97: <details id="contractsMenu" class="panel logistics-menu-collapsible" open>
+103: <span class="logistics-summary-meta" id="contractsSummaryMeta">계약 목록</span>
+105: <div class="logistics-menu-body">
+106: <div class="panel-title-row logistics-menu-toolbar">
+119: <div><span>차량 슬롯</span><strong id="fleetSlotText">1 / 8</strong></div>
+120: <div><span>운송 중</span><strong id="activeDeliveryCount">0건</strong></div>
+143: <details id="fleetMenu" class="logistics-section-collapsible" open>
+144: <summary class="section-heading sub logistics-section-summary">
+146: <div class="eyebrow">LOGISTICS FLEET</div>
+149: <div class="logistics-summary-right">
+151: <span class="logistics-summary-meta" id="fleetSummaryMeta">1대 보유</span>
+155: <div class="logistics-section-body">
+163: <span class="tiny-badge" id="fleetCountBadge">1 / 8</span>
+
+-- SDLogisticsCenter/src/config-store.js --
+4: class ConfigStore{
+5: constructor(directory){this.file=path.join(directory,"sd-logistics-wallet.json");fs.mkdirSync(directory,{recursive:true});}
+6: load(){try{const p=JSON.parse(fs.readFileSync(this.file,"utf8"));return{databasePath:String(p.databasePath||""),selectedAccountId:String(p.selectedAccountId||"")};}catch{return{databasePath:"",selectedAccountId:""};}}
+7: save(next){const v={databasePath:String(next.databasePath||""),selectedAccountId:String(next.selectedAccountId||"")};fs.writeFileSync(this.file,JSON.stringify(v,null,2),"utf8");return v;}
+10: module.exports={ConfigStore};
+
+-- SDLogisticsCenter/src/wallet-db.js --
+22: db.exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=7000;");
+26: const rows=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','accounts','transactions')").all();
+28: return ["users","accounts","transactions"].every(n=>names.has(n));
+30: function normalizeAccount(row){
+33: bankName:String(row.bank_name||""),accountNumber:String(row.account_number||""),
+44: const accounts=db.prepare(`
+45: SELECT a.*,u.username FROM accounts a JOIN users u ON u.id=a.user_id
+47: `).all().map(normalizeAccount);
+48: return {path:path.resolve(filePath),accounts,integrity:"ok"};
+51: function getAccount(filePath,accountId){
+55: SELECT a.*,u.username FROM accounts a JOIN users u ON u.id=a.user_id
+57: `).get(String(accountId));
+59: return normalizeAccount(row);
+62: function listRecentTransactions(filePath,accountId,limit=50){
+67: SELECT id,account_id,transaction_type,amount,memo,created_at
+68: FROM transactions WHERE account_id=?
+70: `).all(String(accountId),safe).map(r=>({
+71: id:String(r.id),accountId:String(r.account_id),transactionType:String(r.transaction_type||""),
+76: function applyTransaction(filePath,accountId,signedAmount,memo){
+83: const current=db.prepare("SELECT balance FROM accounts WHERE id=? LIMIT 1").get(String(accountId));
+85: const before=Number(current.balance||0);
+86: const after=before+amount;
+90: const id=`sdlogistics-c${centerVersion()}-v${safeVersion(APP_VERSION)}-${crypto.randomUUID()}`;
+91: db.prepare("UPDATE accounts SET balance=?,updated_at=? WHERE id=?").run(after,now,String(accountId));
+93: INSERT INTO transactions(id,account_id,transaction_type,amount,memo,created_at)
+95: `).run(id,String(accountId),amount>0?"deposit":"withdraw",Math.abs(amount),String(memo||"SD 물류센터 가상거래").slice(0,180),now);
+97: return {id,signedAmount:amount,before,after,account:getAccount(filePath,accountId)};
+101: module.exports={applyTransaction,getAccount,inspectDatabase,listRecentTransactions};
+
+===== SDMiner_v1.1.1_Desktop.zip =====
+tables=mining_history, mining_inventory, mining_upgrades
+
+-- SDMiner/forge.config.js --
+8: executableName: "SDMiner",
+18: name: "sdminer",
+19: setupExe: "SDMiner-Setup.exe",
+
+-- SDMiner/main.js --
+7: BrowserWindow,
+13: const { SettingsStore } = require("./src/settings");
+16: addMinedOre,
+18: getAccount,
+22: getRecentMiningHistory,
+23: getSalesHistory,
+24: listAccounts,
+26: sellAllOre,
+27: sellOre,
+31: ORES,
+32: drawOre,
+42: let mainWindow = null;
+43: let settingsStore = null;
+45: const lastMineAtByAccount = new Map();
+48: function createWindow() {
+49: mainWindow = new BrowserWindow({
+75: mainWindow.webContents.setWindowOpenHandler(
+79: mainWindow.webContents.on(
+81: (event) => event.preventDefault(),
+84: mainWindow.webContents.on(
+86: (event, navigationUrl) => {
+88: event.preventDefault();
+97: event.preventDefault();
+100: event.preventDefault();
+105: mainWindow.once("ready-to-show", () => {
+106: mainWindow.show();
+109: mainWindow.loadFile(
+115: return settingsStore.get().walletDatabasePath;
+120: return settingsStore.get();
+123: ipcMain.handle("settings:save", (event, patch) => {
+124: return settingsStore.update(patch);
+129: ores: ORES,
+146: settingsStore.update({
+148: selectedAccountId: "",
+161: mainWindow,
+197: settingsStore.update({
+199: selectedAccountId: "",
+210: ipcMain.handle("wallet:list-accounts", () => {
+216: accounts: [],
+224: accounts: listAccounts(databasePath),
+230: accounts: [],
+237: "wallet:get-account-state",
+238: (event, accountId) => {
+241: if (!databasePath || !accountId) {
+244: account: null,
+246: history: [],
+247: salesHistory: [],
+253: const normalizedAccountId =
+254: String(accountId);
+255: const account = getAccount(
+257: normalizedAccountId,
+260: if (!account) {
+263: account: null,
+265: history: [],
+266: salesHistory: [],
+
+-- SDMiner/package.json --
+2: "name": "sdminer-desktop",
+
+-- SDMiner/preload.js --
+8: contextBridge.exposeInMainWorld("sdMiner", {
+24: listWalletAccounts: () =>
+25: ipcRenderer.invoke("wallet:list-accounts"),
+27: getAccountState: (accountId) =>
+29: "wallet:get-account-state",
+30: accountId,
+33: mine: (accountId) =>
+34: ipcRenderer.invoke("mining:mine", accountId),
+36: buyAutoMiningUpgrade: (accountId) =>
+39: accountId,
+42: sellOre: (payload) =>
+45: sellAllOre: (accountId) =>
+48: accountId,
+
+-- SDMiner/public/index.html --
+23: <p class="eyebrow">SD JOB CENTER · MINER</p>
+59: <div class="mine-entrance">
+70: <span>SD MINE</span>
+76: <p class="section-kicker">CONNECTED ACCOUNT</p>
+77: <h2 id="entranceAccountName">계좌를 연결하세요</h2>
+83: id="enterMineButton"
+84: class="enter-mine-button"
+96: <section id="mineView" class="mine-layout hidden">
+97: <section class="mine-panel">
+98: <div class="mine-toolbar">
+104: <div class="mine-toolbar-actions">
+110: id="leaveMineButton"
+119: <div class="mine-scene">
+152: <div id="oreDrop" class="ore-drop hidden">
+153: <div id="oreDropIcon" class="ore-icon stone"></div>
+154: <strong id="oreDropName">돌</strong>
+155: <span id="oreDropChance">47.6%</span>
+158: <div class="mine-floor"></div>
+165: <div class="mine-footer">
+172: <strong id="totalMined">0회</strong>
+176: <strong id="lastOre">없음</strong>
+182: <section class="panel-card account-card">
+185: <p class="section-kicker">MINER ACCOUNT</p>
+188: <span id="accountUsername" class="account-user">
+193: <div class="account-chip">
+195: <strong id="accountBank">-</strong>
+196: <span id="accountNumber">-</span>
+198: <span id="accountOwner">-</span>
+202: <p id="accountBalance" class="balance-value">₩0</p>
+231: <strong id="statsTotalMined">0개</strong>
+243: <strong id="statsSalesRevenue">₩0</strong>
+247: <strong id="statsSaleCount">0회</strong>
+255: <p class="section-kicker">ORE MARKET</p>
+308: <section class="sales-history-panel">
+317: <div id="salesHistoryList" class="history-list">
+322: <section class="history-panel">
+330: <div id="historyList" class="history-list">
+384: <select id="accountSelect">
+
+-- SDMiner/public/js/app.js --
+3: const bridge = window.sdMiner;
+5: const state = {
+8: ores: [],
+13: accounts: [],
+14: account: null,
+19: history: [],
+20: salesHistory: [],
+23: insideMine: false,
+24: minePending: false,
+27: oreDropTimer: null,
+42: mineView: document.getElementById("mineView"),
+44: entranceAccountName: document.getElementById(
+45: "entranceAccountName",
+50: enterMineButton: document.getElementById(
+51: "enterMineButton",
+53: leaveMineButton: document.getElementById(
+54: "leaveMineButton",
+63: oreDrop: document.getElementById("oreDrop"),
+64: oreDropIcon: document.getElementById(
+65: "oreDropIcon",
+67: oreDropName: document.getElementById(
+68: "oreDropName",
+70: oreDropChance: document.getElementById(
+71: "oreDropChance",
+74: totalMined: document.getElementById(
+75: "totalMined",
+77: lastOre: document.getElementById("lastOre"),
+79: accountUsername: document.getElementById(
+80: "accountUsername",
+82: accountBank: document.getElementById(
+83: "accountBank",
+85: accountNumber: document.getElementById(
+86: "accountNumber",
+88: accountOwner: document.getElementById(
+89: "accountOwner",
+91: accountBalance: document.getElementById(
+92: "accountBalance",
+122: historyList: document.getElementById(
+123: "historyList",
+125: salesHistoryList: document.getElementById(
+126: "salesHistoryList",
+128: statsTotalMined: document.getElementById(
+129: "statsTotalMined",
+137: statsSalesRevenue: document.getElementById(
+138: "statsSalesRevenue",
+140: statsSaleCount: document.getElementById(
+141: "statsSaleCount",
+160: accountSelect: document.getElementById(
+161: "accountSelect",
+204: function maskAccountNumber(value) {
+215: window.clearTimeout(state.toastTimer);
+219: state.toastTimer = window.setTimeout(() => {
+224: function oreByKey(key) {
+225: return state.config.ores.find(
+226: (ore) => ore.key === key,
+
+-- SDMiner/sd-app.json --
+3: "id": "miner",
+
+-- SDMiner/src/mining-engine.js --
+5: const ORES = Object.freeze([
+43: const ORE_MAP = new Map(
+44: ORES.map((ore) => [ore.key, ore]),
+47: function drawOre() {
+51: for (const ore of ORES) {
+52: cursor += ore.weight;
+56: key: ore.key,
+57: name: ore.name,
+58: probability: ore.probability,
+59: price: ore.price,
+72: function getOre(key) {
+73: return ORE_MAP.get(String(key)) || null;
+77: ORES,
+78: drawOre,
+79: getOre,
+
+-- SDMiner/src/open-center.js --
+23: stdio: "ignore",
+24: windowsHide: true,
+
+-- SDMiner/src/settings.js --
+8: selectedAccountId: "",
+11: class SettingsStore {
+62: if (typeof patch.selectedAccountId === "string") {
+63: this.data.selectedAccountId =
+64: patch.selectedAccountId;
+73: SettingsStore,
+
+-- SDMiner/src/wallet-database.js --
+7: const { ORES, getOre } = require("./mining-engine");
+10: ORES.map((ore) => ore.key),
+27: PRAGMA foreign_keys = ON;
+53: AND name IN ('users', 'accounts', 'transactions')
+61: "accounts",
+90: CREATE TABLE IF NOT EXISTS mining_inventory (
+91: account_id TEXT PRIMARY KEY,
+97: total_mined INTEGER NOT NULL DEFAULT 0 CHECK (total_mined >= 0),
+99: FOREIGN KEY (account_id)
+100: REFERENCES accounts(id)
+104: CREATE TABLE IF NOT EXISTS mining_upgrades (
+105: account_id TEXT PRIMARY KEY,
+110: FOREIGN KEY (account_id)
+111: REFERENCES accounts(id)
+115: CREATE TABLE IF NOT EXISTS mining_history (
+117: account_id TEXT NOT NULL,
+118: ore_type TEXT NOT NULL CHECK (
+119: ore_type IN (
+128: action_type IN ('mine', 'sell')
+133: FOREIGN KEY (account_id)
+134: REFERENCES accounts(id)
+138: CREATE INDEX IF NOT EXISTS idx_mining_history_account_created
+139: ON mining_history(account_id, created_at DESC);
+143: function ensureInventoryRow(db, accountId) {
+148: INSERT OR IGNORE INTO mining_inventory (
+149: account_id,
+154: ).run(accountId, now);
+157: function ensureUpgradeRow(db, accountId) {
+162: INSERT OR IGNORE INTO mining_upgrades (
+163: account_id,
+168: ).run(accountId, now);
+204: function mapAccount(row) {
+207: bankName: String(row.bank_name),
+208: accountNumber: String(row.account_number),
+216: function listAccounts(databasePath) {
+226: accounts.id,
+227: accounts.bank_name,
+228: accounts.account_number,
+229: accounts.owner_name,
+230: accounts.balance,
+231: accounts.updated_at,
+233: FROM accounts
+235: ON users.id = accounts.user_id
+236: ORDER BY accounts.updated_at DESC
+241: return rows.map(mapAccount);
+247: function getAccount(databasePath, accountId) {
+257: accounts.id,
+258: accounts.bank_name,
+259: accounts.account_number,
+260: accounts.owner_name,
+261: accounts.balance,
+262: accounts.updated_at,
+264: FROM accounts
+266: ON users.id = accounts.user_id
+267: WHERE accounts.id = ?
+
+===== SDMukjippa_Version1_1_Desktop.zip =====
+tables=accounts, sd_mukjippa_hands, sd_mukjippa_sessions, transactions, users
+
+-- SDMukjippa_Version1_1_Desktop/src/settings.js --
+8: selectedAccountId: "",
+15: class SettingsStore {
+38: selectedAccountId: typeof parsed.selectedAccountId === "string" ? parsed.selectedAccountId : "",
+62: if (typeof patch.selectedAccountId === "string") this.data.selectedAccountId = patch.selectedAccountId;
+72: module.exports = { SettingsStore };
+
+-- SDMukjippa_Version1_1_Desktop/src/wallet-database.js --
+8: MAX_STREAK,
+14: winnerOfDifferentMoves,
+20: db.exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;");
+28: const names = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','accounts','transactions')`)
+30: const missing = ["users", "accounts", "transactions"].filter((name) => !names.includes(name));
+41: CREATE TABLE IF NOT EXISTS sd_mukjippa_sessions (
+43: account_id TEXT NOT NULL,
+45: streak INTEGER NOT NULL DEFAULT 0 CHECK(streak BETWEEN 0 AND 8),
+59: FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
+61: CREATE UNIQUE INDEX IF NOT EXISTS idx_sd_mukjippa_one_active
+62: ON sd_mukjippa_sessions(account_id) WHERE status='active';
+63: CREATE INDEX IF NOT EXISTS idx_sd_mukjippa_sessions_account_created
+64: ON sd_mukjippa_sessions(account_id, created_at DESC);
+66: CREATE TABLE IF NOT EXISTS sd_mukjippa_hands (
+70: phase_before TEXT NOT NULL,
+71: attacker_before TEXT,
+80: FOREIGN KEY(session_id) REFERENCES sd_mukjippa_sessions(id) ON DELETE CASCADE
+82: CREATE INDEX IF NOT EXISTS idx_sd_mukjippa_hands_session
+83: ON sd_mukjippa_hands(session_id, hand_number DESC);
+87: function mapAccount(row) {
+90: bankName: String(row.bank_name),
+91: accountNumber: String(row.account_number),
+103: accountId: String(row.account_id),
+105: streak: Number(row.streak),
+123: phaseBefore: String(row.phase_before),
+124: attackerBefore: row.attacker_before ? String(row.attacker_before) : null,
+136: function listAccounts(databasePath) {
+141: SELECT accounts.id, accounts.bank_name, accounts.account_number,
+142: accounts.owner_name, accounts.balance, accounts.updated_at, users.username
+143: FROM accounts LEFT JOIN users ON users.id=accounts.user_id
+144: ORDER BY accounts.updated_at DESC
+145: `).all().map(mapAccount);
+149: function getAccount(databasePath, accountId) {
+154: SELECT accounts.id, accounts.bank_name, accounts.account_number,
+155: accounts.owner_name, accounts.balance, accounts.updated_at, users.username
+156: FROM accounts LEFT JOIN users ON users.id=accounts.user_id WHERE accounts.id=?
+157: `).get(accountId);
+158: return row ? mapAccount(row) : null;
+162: function getRecentTransactions(databasePath, accountId, limit = 12) {
+167: FROM transactions WHERE account_id=? ORDER BY created_at DESC LIMIT ?
+168: `).all(accountId, Math.min(30, Math.max(1, Math.trunc(limit)))).map((row) => ({
+175: function activeSessionRow(db, accountId) {
+176: return db.prepare(`SELECT * FROM sd_mukjippa_sessions WHERE account_id=? AND status='active' ORDER BY created_at DESC LIMIT 1`).get(accountId);
+179: function getGameState(databasePath, accountId) {
+183: const session = activeSessionRow(db, accountId);
+184: const hands = session ? db.prepare(`SELECT * FROM sd_mukjippa_hands WHERE session_id=? ORDER BY hand_number DESC LIMIT 20`)
+186: const history = db.prepare(`
+187: SELECT id, stake, streak, potential_payout, status, result, created_at, ended_at
+188: FROM sd_mukjippa_sessions WHERE account_id=? AND status!='active'
+190: `).all(accountId).map((row) => ({
+191: id: String(row.id), stake: Number(row.stake), streak: Number(row.streak),
+197: SELECT COUNT(*) AS games,
+198: SUM(CASE WHEN status='cashed_out' THEN 1 ELSE 0 END) AS wins,
+199: SUM(CASE WHEN status='lost' THEN 1 ELSE 0 END) AS losses,
+200: COALESCE(MAX(streak),0) AS best_streak,
+
+-- SDMukjippa_Version1_1_Desktop/src/game-engine.js --
+12: const MAX_STREAK = 8;
+34: function winnerOfDifferentMoves(playerMove, computerMove) {
+38: const playerWins = (
+43: return playerWins ? "player" : "computer";
+46: function calculateReward(stakeValue, streakValue) {
+48: const streak = Math.trunc(Number(streakValue));
+49: if (!Number.isInteger(streak) || streak < 1 || streak > MAX_STREAK) {
+52: const exponent = BigInt(streak - 1);
+60: function multiplierForStreak(streakValue) {
+61: const streak = Math.trunc(Number(streakValue));
+62: if (!Number.isInteger(streak) || streak < 1 || streak > MAX_STREAK) return 0;
+63: return 1.9 * (1.5 ** (streak - 1));
+89: MAX_STREAK,
+95: multiplierForStreak,
+100: winnerOfDifferentMoves,
+
+-- SDMukjippa_Version1_1_Desktop/main.js --
+5: const { app, BrowserWindow, dialog, ipcMain, session } = require("electron");
+6: const { SettingsStore } = require("./src/settings");
+7: const { MAX_STREAK, MOVES, multiplierForStreak } = require("./src/game-engine");
+9: autoFindWalletDatabase, cashOut, continueStreak, getAccount, getGameState,
+10: getRecentTransactions, listAccounts, playHand, startSession, validateWalletDatabase,
+15: let mainWindow = null;
+16: let settingsStore = null;
+18: function createWindow() {
+19: mainWindow = new BrowserWindow({
+28: mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+29: mainWindow.webContents.on("will-attach-webview", (event) => event.preventDefault());
+30: mainWindow.webContents.on("will-navigate", (event, url) => {
+31: try { if (new URL(url).protocol !== "file:") event.preventDefault(); }
+32: catch { event.preventDefault(); }
+34: mainWindow.once("ready-to-show", () => mainWindow.show());
+35: mainWindow.on("closed", () => { mainWindow = null; });
+36: mainWindow.loadFile(path.join(__dirname, "public", "index.html"));
+39: function walletPath() { return settingsStore.get().walletDatabasePath; }
+49: env: environment, detached: true, stdio: "ignore", windowsHide: false,
+56: settings: settingsStore.get(), moves: MOVES, maxStreak: MAX_STREAK,
+57: multipliers: Array.from({ length: MAX_STREAK }, (_, index) => multiplierForStreak(index + 1)),
+59: ipcMain.handle("mjp:save-settings", (event, patch) => settingsStore.update(patch));
+63: settingsStore.update({ walletDatabasePath: found, selectedAccountId: "" });
+67: const result = await dialog.showOpenDialog(mainWindow, {
+75: settingsStore.update({ walletDatabasePath: databasePath, selectedAccountId: "" });
+78: ipcMain.handle("wallet:list-accounts", () => {
+80: if (!databasePath) return { connected: false, accounts: [] };
+81: try { return { connected: true, databasePath, accounts: listAccounts(databasePath) }; }
+82: catch (error) { return { connected: false, databasePath, accounts: [], error: error.message }; }
+84: ipcMain.handle("wallet:get-account", (event, accountId) => {
+86: if (!databasePath || !accountId) return { connected: false, account: null, transactions: [] };
+88: const account = getAccount(databasePath, String(accountId));
+89: return { connected: Boolean(account), account, transactions: account ? getRecentTransactions(databasePath, String(accountId), 12) : [] };
+90: } catch (error) { return { connected: false, account: null, transactions: [], error: error.message }; }
+92: ipcMain.handle("mjp:get-state", (event, accountId) => {
+94: if (!databasePath || !accountId) return { ok: false, error: "계좌를 연결하세요." };
+95: try { return { ok: true, ...getGameState(databasePath, String(accountId)) }; }
+98: ipcMain.handle("mjp:start", (event, payload) => {
+100: const result = startSession({ databasePath: walletPath(), accountId: String(payload?.accountId || ""), betAmount: payload?.betAmount });
+101: settingsStore.update({ selectedAccountId: String(payload?.accountId || ""), betAmount: payload?.betAmount });
+105: ipcMain.handle("mjp:play-hand", (event, payload) => {
+106: try { return { ok: true, ...playHand({ databasePath: walletPath(), accountId: String(payload?.accountId || ""), sessionId: String(payload?.sessionId || ""), playerMove: payload?.playerMove }) }; }
+109: ipcMain.handle("mjp:continue", (event, payload) => {
+110: try { return { ok: true, ...continueStreak({ databasePath: walletPath(), accountId: String(payload?.accountId || ""), sessionId: String(payload?.sessionId || "") }) }; }
+113: ipcMain.handle("mjp:cashout", (event, payload) => {
+114: try { return { ok: true, ...cashOut({ databasePath: walletPath(), accountId: String(payload?.accountId || ""), sessionId: String(payload?.sessionId || "") }) }; }
+121: settingsStore = new SettingsStore(path.join(app.getPath("userData"), "settings.json"));
+124: createWindow();
+126: app.on("second-instance", () => { if (mainWindow) { if (mainWindow.isMinimized()) mainWindow.restore(); mainWindow.show(); mainWindow.focus(); } });
+127: app.on("window-all-closed", () => app.quit());
+
+-- SDMukjippa_Version1_1_Desktop/preload.js --
+5: contextBridge.exposeInMainWorld("sdMukjippa", {
+10: listWalletAccounts: () => ipcRenderer.invoke("wallet:list-accounts"),
+11: getWalletAccount: (accountId) => ipcRenderer.invoke("wallet:get-account", accountId),
+12: getGameState: (accountId) => ipcRenderer.invoke("mjp:get-state", accountId),
+15: continueStreak: (payload) => ipcRenderer.invoke("mjp:continue", payload),
+
+-- SDMukjippa_Version1_1_Desktop/tools/test-game.js --
+10: winnerOfDifferentMoves,
+13: cashOut, continueStreak, getAccount, getGameState, playHand, startSession,
+16: assert.equal(winnerOfDifferentMoves("rock", "scissors"), "player");
+17: assert.equal(winnerOfDifferentMoves("scissors", "rock"), "computer");
+18: assert.equal(winnerOfDifferentMoves("paper", "paper"), "tie");
+31: PRAGMA foreign_keys=ON;
+32: CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL);
+33: CREATE TABLE accounts (
+34: id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, bank_name TEXT NOT NULL,
+35: account_number TEXT NOT NULL, owner_name TEXT NOT NULL,
+37: FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+39: CREATE TABLE transactions (
+40: id TEXT PRIMARY KEY, account_id TEXT NOT NULL,
+43: FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
+47: db.prepare("INSERT INTO users VALUES (1,'tester','x',?)").run(now);
+48: db.prepare("INSERT INTO accounts VALUES (?,?,?,?,?,?,?,?)").run("account-1", 1, "SD은행", "100-000", "테스터", 1000000, now, now);
+53: try { return local.prepare("SELECT computer_move FROM sd_mukjippa_sessions WHERE id=?").get(sessionId).computer_move; }
+56: function winningMove(move) {
+62: function winOneMatch(sessionId) {
+64: let result = playHand({ databasePath, accountId: "account-1", sessionId, playerMove: winningMove(computer) });
+68: result = playHand({ databasePath, accountId: "account-1", sessionId, playerMove: computer });
+69: assert.equal(result.reveal.matchResult, "player_win");
+73: let started = startSession({ databasePath, accountId: "account-1", betAmount: 10000 });
+75: assert.equal(getGameState(databasePath, "account-1").session.id, started.session.id);
+76: let result = winOneMatch(started.session.id);
+77: assert.equal(result.session.streak, 1);
+79: result = continueStreak({ databasePath, accountId: "account-1", sessionId: started.session.id });
+81: result = winOneMatch(started.session.id);
+82: assert.equal(result.session.streak, 2);
+84: let paid = cashOut({ databasePath, accountId: "account-1", sessionId: started.session.id });
+87: assert.equal(getAccount(databasePath, "account-1").balance, 1018500);
+88: const duplicate = cashOut({ databasePath, accountId: "account-1", sessionId: started.session.id });
+92: started = startSession({ databasePath, accountId: "account-1", betAmount: 1000 });
+94: result = playHand({ databasePath, accountId: "account-1", sessionId: started.session.id, playerMove: losingMove(computer) });
+97: result = playHand({ databasePath, accountId: "account-1", sessionId: started.session.id, playerMove: computer });
+98: assert.equal(result.reveal.matchResult, "computer_win");
+100: assert.equal(getGameState(databasePath, "account-1").session, null);
+101: assert.equal(getAccount(databasePath, "account-1").balance, 1017500);
+103: started = startSession({ databasePath, accountId: "account-1", betAmount: 1000 });
+104: for (let streak = 1; streak <= 8; streak += 1) {
+105: result = winOneMatch(started.session.id);
+106: assert.equal(result.session.streak, streak);
+107: if (streak < 8) {
+109: continueStreak({ databasePath, accountId: "account-1", sessionId: started.session.id });
+116: assert.equal(getAccount(databasePath, "account-1").balance, 1048963);
+123: assert.match(ui, /event\.key === "F5"/);
+124: assert.match(ui, /1\.5 \*\* \(streak - 1\)/);
+127: console.log("Mukjippa engine, persistence, prepayment, streak and settlement tests OK");
+
+-- SDMukjippa_Version1_1_Desktop/sd-app.json --
+2: "id": "sd-mukjippa",
+
+-- SDMukjippa_Version1_1_Desktop/public/js/app.js --
+3: const api = window.sdMukjippa;
+4: const state = {
+7: maxStreak: 8,
+9: accounts: [],
+10: account: null,
+13: history: [],
+22: accountSelect: document.querySelector("#accountSelect"),
+44: gameHistory: document.querySelector("#gameHistory"),
+64: streakTitle: document.querySelector("#streakTitle"),
+65: streakTrack: document.querySelector("#streakTrack"),
+89: return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+107: function currentStreak() {
+108: return Number(state.session?.streak || 0);
+111: function payoutForPreview(streak, stake = parseBet()) {
+112: if (!streak || !stake) return 0;
+113: return Math.floor(stake * 1.9 * (1.5 ** (streak - 1)));
+135: const streak = index + 1;
+138: <div class="reward-row ${streak === state.maxStreak ? "max" : ""}">
+139: <span>${streak}연승${streak === state.maxStreak ? " · 자동정산" : ""}</span>
+147: function renderStreak() {
+148: const streak = currentStreak();
+149: elements.streakTrack.innerHTML = state.multipliers.map((multiplier, index) => {
+151: const className = step <= streak ? "done" : (step === streak + 1 && state.session ? "current" : "");
+152: return `<div class="streak-step ${className}"><strong>${step}연승</strong><span>${formatMultiplier(multiplier)}</span></div>`;
+156: elements.streakTitle.textContent = "도전을 시작하세요";
+160: elements.streakTitle.textContent = streak > 0 ? `${streak}연승 진행 중` : "첫 승리를 노리는 중";
+164: function renderAccounts() {
+165: const selected = state.settings?.selectedAccountId || "";
+166: elements.accountSelect.innerHTML = state.accounts.length
+167: ? state.accounts.map((account) => `
+168: <option value="${escapeHtml(account.id)}" ${account.id === selected ? "selected" : ""}>
+169: ${escapeHtml(account.bankName)} · ${escapeHtml(account.accountNumber)} · ${escapeHtml(account.ownerName)}
+200: if (hand.matchResult === "player_win") result = "플레이어 승리";
+201: if (hand.matchResult === "computer_win") result = "컴퓨터 승리";
+205: <div><strong>${hand.phaseBefore === "rps" ? "공격권 결정" : "묵찌빠"}</strong><span class="detail">#${hand.handNumber} · 검증 ${hand.commitment.slice(0, 8)}</span></div>
+212: function renderHistory() {
+213: if (!state.history.length) {
+214: elements.gameHistory.innerHTML = '<p class="empty">완료된 도전이 없습니다.</p>';
+217: elements.gameHistory.innerHTML = state.history.map((item) => {
+218: const win = item.status === "cashed_out";
+220: <div class="history-row">
+221: <div><strong>${win ? `${item.streak}연승 정산` : `${item.streak}연승에서 실패`}</strong><small>도전금 ${formatKrw(item.stake)}</small></div>
+222: <span class="amount ${win ? "win" : "loss"}">${win ? `+${formatKrw(item.payout)}` : "0원"}</span>
+229: const stats = state.stats || { games: 0, bestStreak: 0, totalStake: 0, totalPayout: 0 };
+231: elements.statBest.textContent = `${stats.bestStreak}연승`;
+232: elements.statStake.textContent = formatKrw(stats.totalStake);
+233: elements.statPayout.textContent = formatKrw(stats.totalPayout);
+256: renderStreak();
+257: elements.arena.classList.remove("win", "lose");
+262: elements.statusText.textContent = state.account ? "도전금을 정하고 게임을 시작하세요" : "계좌를 연결하고 게임을 시작하세요";
+291: elements.callText.textContent = `${state.session.streak}연승!`;
+296: elements.continueButton.textContent = `${state.session.streak + 1}연승 도전`;
+306: renderHistory();
+317: const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+320: if (state.audioContext?.state === "suspended") state.audioContext.resume();
+
+-- SDMukjippa_Version1_1_Desktop/public/index.html --
+35: <section class="streak-card">
+36: <div class="streak-heading">
+39: <h2 id="streakTitle">도전을 시작하세요</h2>
+46: <div id="streakTrack" class="streak-track"></div>
+141: <select id="accountSelect" aria-label="계좌 선택"><option value="">계좌를 연결하세요</option></select>
+172: <section class="card history-card">
+174: <div id="gameHistory" class="game-history"><p class="empty">완료된 도전이 없습니다.</p></div>
+
+-- SDMukjippa_Version1_1_Desktop/package.json --
+2: "name": "sd-mukjippa-desktop",
+
+===== SDOddEven_v1.1.1_Desktop.zip =====
+tables=(none found in source)
+
+-- SDOddEven/sd-app.json --
+3: "id": "odd-even",
+
+-- SDOddEven/public/index.html --
+173: id="oddButton"
+174: class="choice-button odd"
+182: id="evenButton"
+183: class="choice-button even"
+213: <div class="account-chip">
+215: <strong id="accountBank">-</strong>
+216: <span id="accountNumber">-</span>
+218: <span id="accountOwner">-</span>
+222: <p id="accountBalance" class="balance-value">₩0</p>
+223: <p id="accountUpdatedAt" class="metric-footnote">-</p>
+226: id="changeAccountButton"
+236: <div class="history-heading">
+243: id="refreshAccountButton"
+252: <p class="empty-history">거래내역이 없습니다.</p>
+320: <select id="accountSelect">
+
+-- SDOddEven/public/js/app.js --
+3: const bridge = window.sdOddEven;
+5: const state = {
+7: accounts: [],
+8: account: null,
+80: oddButton: document.getElementById("oddButton"),
+81: evenButton: document.getElementById(
+82: "evenButton",
+97: changeAccountButton: document.getElementById(
+98: "changeAccountButton",
+100: refreshAccountButton: document.getElementById(
+101: "refreshAccountButton",
+104: accountBank: document.getElementById(
+105: "accountBank",
+107: accountNumber: document.getElementById(
+108: "accountNumber",
+110: accountOwner: document.getElementById(
+111: "accountOwner",
+113: accountBalance: document.getElementById(
+114: "accountBalance",
+116: accountUpdatedAt: document.getElementById(
+117: "accountUpdatedAt",
+133: accountSelect: document.getElementById(
+134: "accountSelect",
+171: function maskAccountNumber(value) {
+182: window.clearTimeout(state.toastTimer);
+186: state.toastTimer = window.setTimeout(() => {
+210: return Math.max(0, Math.trunc(Number(state.account?.balance || 0)));
+222: const balance = Number(state.account?.balance || 0);
+229: Boolean(state.account) && stake > balance,
+380: function renderAccount() {
+381: const connected = Boolean(state.account);
+393: elements.accountBank.textContent = "-";
+394: elements.accountNumber.textContent = "-";
+395: elements.accountOwner.textContent = "-";
+396: elements.accountBalance.textContent =
+398: elements.accountUpdatedAt.textContent = "-";
+402: elements.accountBank.textContent =
+403: state.account.bankName;
+404: elements.accountNumber.textContent =
+405: maskAccountNumber(
+406: state.account.accountNumber,
+408: elements.accountOwner.textContent =
+409: state.account.ownerName;
+410: elements.accountBalance.textContent =
+411: formatMoney(state.account.balance);
+412: elements.accountUpdatedAt.textContent =
+414: state.account.updatedAt,
+425: empty.className = "empty-history";
+464: async function loadSelectedAccount() {
+465: const accountId =
+466: state.settings?.selectedAccountId;
+468: if (!accountId) {
+469: state.account = null;
+471: renderAccount();
+477: await bridge.getWalletAccount(accountId);
+
+-- SDOddEven/src/wallet-database.js --
+20: PRAGMA foreign_keys = ON;
+46: AND name IN ('users', 'accounts', 'transactions')
+54: "accounts",
+81: function mapAccount(row) {
+84: bankName: String(row.bank_name),
+85: accountNumber: String(row.account_number),
+93: function listAccounts(databasePath) {
+101: accounts.id,
+102: accounts.bank_name,
+103: accounts.account_number,
+104: accounts.owner_name,
+105: accounts.balance,
+106: accounts.updated_at,
+108: FROM accounts
+110: ON users.id = accounts.user_id
+111: ORDER BY accounts.updated_at DESC
+116: return rows.map(mapAccount);
+122: function getAccount(databasePath, accountId) {
+130: accounts.id,
+131: accounts.bank_name,
+132: accounts.account_number,
+133: accounts.owner_name,
+134: accounts.balance,
+135: accounts.updated_at,
+137: FROM accounts
+139: ON users.id = accounts.user_id
+140: WHERE accounts.id = ?
+143: .get(accountId);
+145: return row ? mapAccount(row) : null;
+153: accountId,
+169: WHERE account_id = ?
+174: .all(accountId, Math.min(30, Math.max(1, limit)))
+189: accountId,
+204: const account = db
+210: FROM accounts
+214: .get(accountId);
+216: if (!account) {
+220: const currentBalance = Number(account.balance);
+242: UPDATE accounts
+249: .run(nextBalance, now, accountId);
+257: INSERT INTO transactions (
+259: account_id,
+269: accountId,
+401: getAccount,
+403: listAccounts,
+
+-- SDOddEven/src/game-engine.js --
+18: accountId,
+78: accountId: String(accountId),
+129: if (!["odd", "even"].includes(choice)) {
+135: ? "even"
+136: : "odd";
+147: accountId: round.accountId,
+
+-- SDOddEven/src/open-center.js --
+23: stdio: "ignore",
+24: windowsHide: true,
+
+-- SDOddEven/src/settings.js --
+8: selectedAccountId: "",
+15: class SettingsStore {
+89: if (typeof patch.selectedAccountId === "string") {
+90: this.data.selectedAccountId =
+91: patch.selectedAccountId;
+123: SettingsStore,
+
+-- SDOddEven/package.json --
+2: "name": "sd-odd-even-desktop",
+
+-- SDOddEven/forge.config.js --
+8: executableName: "SDOddEven",
+18: name: "sdoddeven",
+19: setupExe: "SDOddEven-Setup.exe",
+
+-- SDOddEven/main.js --
+7: BrowserWindow,
+13: const { SettingsStore } = require("./src/settings");
+17: getAccount,
+19: listAccounts,
+31: let mainWindow = null;
+32: let settingsStore = null;
+35: function createWindow() {
+36: mainWindow = new BrowserWindow({
+62: mainWindow.webContents.setWindowOpenHandler(
+66: mainWindow.webContents.on(
+68: (event) => event.preventDefault(),
+71: mainWindow.webContents.on(
+73: (event, navigationUrl) => {
+75: event.preventDefault();
+84: event.preventDefault();
+87: event.preventDefault();
+92: mainWindow.once("ready-to-show", () => {
+93: mainWindow.show();
+96: mainWindow.loadFile(
+102: return settingsStore.get().walletDatabasePath;
+107: return settingsStore.get();
+110: ipcMain.handle("settings:save", (event, patch) => {
+111: return settingsStore.update(patch);
+124: settingsStore.update({
+126: selectedAccountId: "",
+139: mainWindow,
+175: settingsStore.update({
+177: selectedAccountId: "",
+188: ipcMain.handle("wallet:list-accounts", () => {
+194: accounts: [],
+202: accounts: listAccounts(databasePath),
+208: accounts: [],
+215: "wallet:get-account",
+216: (event, accountId) => {
+219: if (!databasePath || !accountId) {
+222: account: null,
+228: const account = getAccount(
+230: String(accountId),
+233: const transactions = account
+236: String(accountId),
+242: connected: Boolean(account),
+243: account,
+249: account: null,
+259: (event, payload) => {
+260: const settings = settingsStore.get();
+261: const accountId = String(
+262: payload?.accountId || "",
+267: !accountId
+276: const account = getAccount(
+278: accountId,
+281: if (!account) {
+288: accountId,
+292: balance: account.balance,
+295: settingsStore.update({
+296: selectedAccountId: accountId,
+
+-- SDOddEven/preload.js --
+8: contextBridge.exposeInMainWorld("sdOddEven", {
+21: listWalletAccounts: () =>
+22: ipcRenderer.invoke("wallet:list-accounts"),
+24: getWalletAccount: (accountId) =>
+26: "wallet:get-account",
+27: accountId,
+
+===== SDSlot_Stage7_Desktop.zip =====
+tables=accounts, sd_slot_rounds, transactions, users
+
+-- SDSlot_Stage7_Desktop/src/settings.js --
+8: selectedAccountId: "",
+13: class SettingsStore {
+54: if (typeof patch.selectedAccountId === "string") {
+55: this.data.selectedAccountId = patch.selectedAccountId;
+68: module.exports = { SettingsStore };
+
+-- SDSlot_Stage7_Desktop/src/slot-engine.js --
+11: { key: "gold", name: "금", multiplier: 10, from: 98501, to: 99500, probability: "1%" },
+14: { key: "seven", name: "7", multiplier: 100, from: 99951, to: 99990, probability: "0.04%" },
+15: { key: "red-seven", name: "빨간 7", multiplier: 250, from: 99991, to: 99999, probability: "0.009%" },
+16: { key: "gold-seven", name: "황금색 7", multiplier: 500, from: 100000, to: 100000, probability: "0.001%" }
+73: jackpot: result.key === "gold-seven",
+
+-- SDSlot_Stage7_Desktop/src/wallet-database.js --
+13: db.exec("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
+23: WHERE type='table' AND name IN ('users','accounts','transactions')
+25: const missing = ["users", "accounts", "transactions"].filter((name) => !names.includes(name));
+36: function ensureSlotSchema(db) {
+38: CREATE TABLE IF NOT EXISTS sd_slot_rounds (
+40: account_id TEXT NOT NULL,
+51: FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+53: CREATE INDEX IF NOT EXISTS idx_sd_slot_rounds_account_created
+54: ON sd_slot_rounds(account_id, created_at DESC);
+58: function mapAccount(row) {
+61: bankName: String(row.bank_name),
+62: accountNumber: String(row.account_number),
+70: function listAccounts(databasePath) {
+73: ensureSlotSchema(db);
+76: SELECT accounts.id, accounts.bank_name, accounts.account_number,
+77: accounts.owner_name, accounts.balance, accounts.updated_at,
+79: FROM accounts
+80: LEFT JOIN users ON users.id = accounts.user_id
+81: ORDER BY accounts.updated_at DESC
+82: `).all().map(mapAccount);
+88: function getAccount(databasePath, accountId) {
+91: ensureSlotSchema(db);
+94: SELECT accounts.id, accounts.bank_name, accounts.account_number,
+95: accounts.owner_name, accounts.balance, accounts.updated_at,
+97: FROM accounts
+98: LEFT JOIN users ON users.id = accounts.user_id
+99: WHERE accounts.id = ?
+100: `).get(accountId);
+101: return row ? mapAccount(row) : null;
+107: function getRecentTransactions(databasePath, accountId, limit = 10) {
+113: WHERE account_id = ?
+116: `).all(accountId, Math.min(30, Math.max(1, Math.trunc(limit)))).map((row) => ({
+128: function beginSpin({ databasePath, accountId, spin }) {
+131: ensureSlotSchema(db);
+133: const account = db.prepare("SELECT id, balance FROM accounts WHERE id = ?").get(accountId);
+134: if (!account) throw new Error("연결 계좌를 찾을 수 없습니다.");
+135: const balance = Number(account.balance);
+145: db.prepare(`UPDATE accounts SET balance=?, updated_at=? WHERE id=?`)
+146: .run(nextBalance, now, accountId);
+148: INSERT INTO transactions (id, account_id, transaction_type, amount, memo, created_at)
+150: `).run(transactionId, accountId, spin.stake, "SD슬롯 베팅", now);
+152: INSERT INTO sd_slot_rounds (
+153: id, account_id, stake, roll, result_key, result_name,
+157: roundId, accountId, spin.stake, spin.roll, spin.resultKey,
+175: ensureSlotSchema(db);
+177: const round = db.prepare("SELECT * FROM sd_slot_rounds WHERE id = ?").get(roundId);
+180: const account = db.prepare("SELECT id, balance FROM accounts WHERE id = ?").get(round.account_id);
+181: if (!account) throw new Error("연결 계좌를 찾을 수 없습니다.");
+187: balance: Number(account.balance),
+193: let nextBalance = Number(account.balance);
+200: db.prepare("UPDATE accounts SET balance=?, updated_at=? WHERE id=?")
+201: .run(nextBalance, now, round.account_id);
+203: INSERT INTO transactions (id, account_id, transaction_type, amount, memo, created_at)
+207: round.account_id,
+221: db.prepare("UPDATE sd_slot_rounds SET status='settled', settled_at=? WHERE id=?")
+
+-- SDSlot_Stage7_Desktop/main.js --
+7: BrowserWindow,
+13: const { SettingsStore } = require("./src/settings");
+14: const { createSpinResult, SYMBOLS } = require("./src/slot-engine");
+18: getAccount,
+20: listAccounts,
+28: let mainWindow = null;
+29: let settingsStore = null;
+31: function createWindow() {
+32: mainWindow = new BrowserWindow({
+53: mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+54: mainWindow.webContents.on("will-attach-webview", (event) => event.preventDefault());
+55: mainWindow.webContents.on("will-navigate", (event, url) => {
+57: if (new URL(url).protocol !== "file:") event.preventDefault();
+59: event.preventDefault();
+62: mainWindow.once("ready-to-show", () => mainWindow.show());
+63: mainWindow.on("closed", () => { mainWindow = null; });
+64: mainWindow.loadFile(path.join(__dirname, "public", "index.html"));
+68: return settingsStore.get().walletDatabasePath;
+85: stdio: "ignore",
+86: windowsHide: false,
+93: ipcMain.handle("slot:get-bootstrap", () => ({
+94: settings: settingsStore.get(),
+98: ipcMain.handle("slot:save-settings", (event, patch) => settingsStore.update(patch));
+106: settingsStore.update({ walletDatabasePath: found, selectedAccountId: "" });
+111: const result = await dialog.showOpenDialog(mainWindow, {
+120: settingsStore.update({ walletDatabasePath: databasePath, selectedAccountId: "" });
+124: ipcMain.handle("wallet:list-accounts", () => {
+126: if (!databasePath) return { connected: false, accounts: [] };
+128: return { connected: true, databasePath, accounts: listAccounts(databasePath) };
+130: return { connected: false, databasePath, accounts: [], error: error.message };
+134: ipcMain.handle("wallet:get-account", (event, accountId) => {
+136: if (!databasePath || !accountId) {
+137: return { connected: false, account: null, transactions: [] };
+140: const account = getAccount(databasePath, String(accountId));
+142: connected: Boolean(account),
+143: account,
+144: transactions: account
+145: ? getRecentTransactions(databasePath, String(accountId), 10)
+149: return { connected: false, account: null, transactions: [], error: error.message };
+153: ipcMain.handle("slot:start", (event, payload) => {
+155: const accountId = String(payload?.accountId || "");
+156: if (!databasePath || !accountId) {
+162: const payment = beginSpin({ databasePath, accountId, spin });
+163: settingsStore.update({
+164: selectedAccountId: accountId,
+178: ipcMain.handle("slot:settle", (event, roundId) => {
+195: settingsStore = new SettingsStore(path.join(app.getPath("userData"), "settings.json"));
+198: createWindow();
+202: if (!mainWindow) return;
+203: if (mainWindow.isMinimized()) mainWindow.restore();
+204: mainWindow.show();
+205: mainWindow.focus();
+208: app.on("window-all-closed", () => app.quit());
+
+-- SDSlot_Stage7_Desktop/preload.js --
+5: contextBridge.exposeInMainWorld("sdSlot", {
+6: getBootstrap: () => ipcRenderer.invoke("slot:get-bootstrap"),
+7: saveSettings: (patch) => ipcRenderer.invoke("slot:save-settings", patch),
+10: listWalletAccounts: () => ipcRenderer.invoke("wallet:list-accounts"),
+11: getWalletAccount: (accountId) => ipcRenderer.invoke("wallet:get-account", accountId),
+12: startSpin: (payload) => ipcRenderer.invoke("slot:start", payload),
+13: settleSpin: (roundId) => ipcRenderer.invoke("slot:settle", roundId),
+
+-- SDSlot_Stage7_Desktop/tools/test-slot.js --
+9: const { createSpinResult, resultForRoll, SYMBOLS } = require("../src/slot-engine");
+10: const { beginSpin, getAccount, settleRound } = require("../src/wallet-database");
+15: [96501, "iron"], [98500, "iron"], [98501, "gold"], [99500, "gold"],
+17: [99951, "seven"], [99990, "seven"], [99991, "red-seven"], [99999, "red-seven"],
+18: [100000, "gold-seven"],
+30: assert.deepEqual(jackpot.reels, ["gold-seven", "gold-seven", "gold-seven"]);
+33: const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "sdslot-test-"));
+37: PRAGMA foreign_keys=ON;
+38: CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL);
+39: CREATE TABLE accounts (
+40: id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, bank_name TEXT NOT NULL,
+41: account_number TEXT NOT NULL, owner_name TEXT NOT NULL,
+43: FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+45: CREATE TABLE transactions (
+46: id TEXT PRIMARY KEY, account_id TEXT NOT NULL,
+49: FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
+53: db.prepare("INSERT INTO users VALUES (1,'tester','x',?)").run(now);
+54: db.prepare("INSERT INTO accounts VALUES (?,?,?,?,?,?,?,?)").run(
+55: "account-1", 1, "SD은행", "100-000", "테스터", 1000000, now, now,
+60: const started = beginSpin({ databasePath: dbPath, accountId: "account-1", spin });
+65: assert.equal(getAccount(dbPath, "account-1").balance, 1249000);
+81: assert.match(uiJs, /setBet\(state\.account\.balance\)/);
+82: assert.match(uiJs, /event\.key !== "F5"/);
+87: console.log("Slot boundaries, RTP, prepayment and settlement tests OK");
+
+-- SDSlot_Stage7_Desktop/sd-app.json --
+2: "id": "sd-slot",
+
+-- SDSlot_Stage7_Desktop/public/js/app.js --
+3: const api = window.sdSlot;
+4: const state = {
+7: accounts: [],
+8: account: null,
+15: accountSelect: document.getElementById("accountSelect"),
+41: { key: "gold", name: "금", art: "◆" },
+44: { key: "seven", name: "7", art: "7" },
+45: { key: "red-seven", name: "빨간 7", art: "7" },
+46: { key: "gold-seven", name: "황금색 7", art: "7" },
+87: <div class="pay-row ${symbol.key === "gold-seven" ? "jackpot-row" : ""}">
+96: function renderAccounts() {
+97: const selected = state.settings?.selectedAccountId || "";
+98: elements.accountSelect.innerHTML = state.accounts.length
+99: ? state.accounts.map((account) => `
+100: <option value="${account.id}" ${account.id === selected ? "selected" : ""}>
+101: ${escapeHtml(account.bankName)} · ${escapeHtml(account.accountNumber)} · ${escapeHtml(account.ownerName)}
+124: async function loadAccounts({ autoSelect = true } = {}) {
+125: const result = await api.listWalletAccounts();
+127: state.accounts = [];
+128: state.account = null;
+129: renderAccounts();
+136: state.accounts = result.accounts;
+137: if (autoSelect && state.accounts.length) {
+138: const exists = state.accounts.some((account) => account.id === state.settings.selectedAccountId);
+139: if (!exists) state.settings.selectedAccountId = state.accounts[0].id;
+141: renderAccounts();
+143: await loadSelectedAccount();
+147: async function loadSelectedAccount() {
+148: const accountId = elements.accountSelect.value || state.settings?.selectedAccountId || "";
+149: if (!accountId) {
+150: state.account = null;
+156: state.settings.selectedAccountId = accountId;
+157: await api.saveSettings({ selectedAccountId: accountId });
+158: const result = await api.getWalletAccount(accountId);
+160: state.account = null;
+166: state.account = result.account;
+167: elements.balanceText.textContent = formatKrw(result.account.balance);
+174: const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+177: if (state.audioContext?.state === "suspended") state.audioContext.resume();
+214: function playWinSound(multiplier) {
+216: [0, 4, 7, 12].forEach((step, index) => tone(base * (2 ** (step / 12)), index * .11, .22, "sine", .055));
+221: pattern.forEach((step, index) => tone(420 * (2 ** (step / 12)), index * .095, .28, "triangle", .065));
+245: window.setTimeout(() => elements.fireworks.replaceChildren(), 2600);
+249: return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+256: return window.setInterval(() => {
+265: window.clearInterval(timers[index]);
+271: window.setTimeout(() => reel.classList.remove("stopping"), 260);
+281: elements.accountSelect.disabled = busy;
+287: if (!state.account) {
+311: accountId: state.account.id,
+316: state.account.balance = started.balanceAfterBet;
+327: state.account.balance = settlement.balance;
+331: elements.resultBoard.classList.add("win");
+340: playWinSound(started.multiplier);
+347: await loadSelectedAccount();
+
+-- SDSlot_Stage7_Desktop/public/index.html --
+41: <div class="reel-window">
+91: <select id="accountSelect" aria-label="계좌 선택"><option value="">계좌를 연결하세요</option></select>
+108: <section class="card history-card">
+
+-- SDSlot_Stage7_Desktop/package.json --
+2: "name": "sd-slot-desktop",
+15: "test": "node tools/test-slot.js"
+
+===== SDVault_v1.2.1_Desktop.zip =====
+tables=(none found in source)
+
+-- SDVault/forge.config.js --
+8: executableName: "SDVault",
+18: name: "sdvault",
+19: setupExe: "SDVault-Setup.exe",
+
+-- SDVault/main.js --
+7: BrowserWindow,
+13: const { SettingsStore } = require("./src/settings");
+16: readWalletAccounts,
+17: readWalletAccount,
+21: fetchGoldPrice,
+22: normalizeGoldPrice,
+23: } = require("./src/gold-provider");
+31: let mainWindow = null;
+32: let settingsStore = null;
+39: function createWindow() {
+40: mainWindow = new BrowserWindow({
+61: mainWindow.webContents.setWindowOpenHandler(() => ({
+65: mainWindow.webContents.on("will-navigate", (event, navigationUrl) => {
+67: event.preventDefault();
+78: event.preventDefault();
+81: event.preventDefault();
+85: mainWindow.webContents.on("will-attach-webview", (event) => {
+86: event.preventDefault();
+89: mainWindow.once("ready-to-show", () => {
+90: mainWindow.show();
+93: mainWindow.loadFile(path.join(__dirname, "public", "index.html"));
+98: return settingsStore.getPublicSettings();
+101: ipcMain.handle("settings:save", (event, patch) => {
+102: return settingsStore.updatePublicSettings(patch);
+115: settingsStore.update({
+126: const result = await dialog.showOpenDialog(mainWindow, {
+152: settingsStore.update({
+154: selectedAccountId: "",
+164: ipcMain.handle("wallet:list-accounts", () => {
+165: const settings = settingsStore.get();
+170: accounts: [],
+175: const accounts = readWalletAccounts(settings.walletDatabasePath);
+180: accounts,
+186: accounts: [],
+192: ipcMain.handle("wallet:get-account", (event, accountId) => {
+193: const settings = settingsStore.get();
+195: if (!settings.walletDatabasePath || !accountId) {
+198: account: null,
+203: const account = readWalletAccount(
+205: String(accountId),
+209: connected: Boolean(account),
+211: account,
+217: account: null,
+224: const settings = settingsStore.get();
+227: configured: settingsStore.hasPin(),
+232: ipcMain.handle("pin:setup", async (event, pin) => {
+242: if (settingsStore.hasPin()) {
+249: await settingsStore.setPin(normalizedPin);
+256: ipcMain.handle("pin:verify", async (event, pin) => {
+268: const valid = await settingsStore.verifyPin(String(pin || ""));
+300: ipcMain.handle("pin:change", async (event, payload) => {
+311: const valid = await settingsStore.verifyPin(currentPin);
+320: await settingsStore.setPin(newPin);
+325: ipcMain.handle("gold:fetch", async (event, config) => {
+326: const settings = settingsStore.get();
+
+-- SDVault/package.json --
+2: "name": "sdvault-desktop",
+16: "mock-api": "node tools/mock-gold-api.js",
+17: "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-reader.js && node --check src/gold-provider.js && node --check public/js/app.js && node --check tools/mock-gold-api.js"
+
+-- SDVault/preload.js --
+5: contextBridge.exposeInMainWorld("sdVault", {
+12: listWalletAccounts: () =>
+13: ipcRenderer.invoke("wallet:list-accounts"),
+14: getWalletAccount: (accountId) =>
+15: ipcRenderer.invoke("wallet:get-account", accountId),
+26: fetchGoldPrice: (config) =>
+27: ipcRenderer.invoke("gold:fetch", config),
+
+-- SDVault/public/index.html --
+24: <p class="eyebrow">SD VAULT · SIMULATION</p>
+40: id="closeVaultButton"
+41: class="button button-gold hidden"
+54: <section class="vault-zone">
+55: <div id="vault" class="vault is-locked" tabindex="0">
+56: <div class="vault-shell">
+57: <div class="vault-interior">
+61: <span>SD GOLD RESERVE</span>
+62: <span id="vaultTotalWeight" class="vault-total-weight">0.00g</span>
+65: <div id="goldShelves" class="gold-shelves">
+66: <div class="empty-vault">
+71: <div class="vault-floor"></div>
+74: <div class="vault-door">
+83: <div id="vaultDial" class="vault-dial">
+91: <div class="vault-handle">
+97: <strong>SD VAULT</strong>
+106: <div id="vaultStatus" class="vault-status">
+129: <div class="account-chip">
+131: <strong id="accountBank">-</strong>
+132: <span id="accountNumber">-</span>
+134: <span id="accountOwner">-</span>
+138: <p id="accountBalance" class="balance-value">₩0</p>
+139: <p id="accountUpdatedAt" class="metric-footnote">-</p>
+154: <p class="panel-kicker">GOLD PRICE</p>
+161: <p id="goldPricePerGram" class="gold-price">₩0</p>
+166: <strong id="goldPricePerDon">₩0</strong>
+170: <strong id="goldSource">개발용 시세</strong>
+174: <strong id="goldFetchedAt">-</strong>
+179: id="refreshGoldButton"
+180: class="button button-gold full-width"
+188: <p class="panel-kicker">GOLD EQUIVALENT</p>
+192: <p id="goldEquivalent" class="equivalent-value">0.00g</p>
+199: <p id="goldBarSummary" class="equivalent-sub">
+254: <p class="panel-kicker">VAULT SETTINGS</p>
+296: <select id="accountSelect">
+312: id="goldApiUrl"
+314: placeholder="https://api.example.com/gold"
+321: <select id="goldPriceUnit">
+330: id="goldSourceName"
+342: id="goldApiJsonPath"
+352: id="testGoldApiButton"
+353: class="button button-gold"
+367: <p id="goldApiTestMessage" class="settings-message"></p>
+
+-- SDVault/public/js/app.js --
+3: const bridge = window.sdVault;
+5: const state = {
+11: isVaultOpen: false,
+12: vaultOpening: false,
+14: accounts: [],
+15: account: null,
+17: goldPrice: {
+25: accountTimer: null,
+28: goldRenderSignature: "",
+29: goldAnimationPlayed: false,
+33: vault: document.getElementById("vault"),
+34: vaultDial: document.getElementById("vaultDial"),
+35: vaultStatus: document.getElementById("vaultStatus"),
+36: goldShelves: document.getElementById("goldShelves"),
+37: vaultTotalWeight: document.getElementById("vaultTotalWeight"),
+38: closeVaultButton: document.getElementById("closeVaultButton"),
+57: accountBank: document.getElementById("accountBank"),
+58: accountNumber: document.getElementById("accountNumber"),
+59: accountOwner: document.getElementById("accountOwner"),
+60: accountBalance: document.getElementById("accountBalance"),
+61: accountUpdatedAt: document.getElementById("accountUpdatedAt"),
+63: goldPricePerGram: document.getElementById("goldPricePerGram"),
+64: goldPricePerDon: document.getElementById("goldPricePerDon"),
+65: goldSource: document.getElementById("goldSource"),
+66: goldFetchedAt: document.getElementById("goldFetchedAt"),
+68: refreshGoldButton: document.getElementById("refreshGoldButton"),
+70: goldEquivalent: document.getElementById("goldEquivalent"),
+71: goldBarSummary: document.getElementById("goldBarSummary"),
+78: accountSelect: document.getElementById("accountSelect"),
+80: goldApiUrl: document.getElementById("goldApiUrl"),
+81: goldPriceUnit: document.getElementById("goldPriceUnit"),
+82: goldSourceName: document.getElementById("goldSourceName"),
+83: goldApiJsonPath: document.getElementById("goldApiJsonPath"),
+84: testGoldApiButton: document.getElementById("testGoldApiButton"),
+86: goldApiTestMessage: document.getElementById("goldApiTestMessage"),
+125: function resetGoldPriceToWaiting() {
+126: state.goldPrice = {
+135: function maskAccountNumber(value) {
+146: window.clearTimeout(state.toastTimer);
+150: state.toastTimer = window.setTimeout(() => {
+190: elements.pinDots.forEach((dot, index) => {
+217: await runVaultOpeningSequence();
+226: elements.vault.classList.remove("pin-error");
+227: void elements.vault.offsetWidth;
+228: elements.vault.classList.add("pin-error");
+233: await runVaultOpeningSequence();
+239: async function requestOpenVault() {
+240: if (state.isVaultOpen || state.vaultOpening) {
+258: async function runVaultOpeningSequence() {
+259: if (state.vaultOpening || state.isVaultOpen) {
+263: state.vaultOpening = true;
+264: elements.closeVaultButton.classList.add("hidden");
+265: elements.vault.classList.remove("is-open", "is-unlocking");
+266: elements.vault.classList.add("is-locked");
+267: elements.vaultStatus.textContent = "최신 금 시세 확인 중...";
+
+-- SDVault/sd-app.json --
+3: "id": "vault",
+12: "accent": "gold"
+
+-- SDVault/src/gold-provider.js --
+4: "goldPrice",
+5: "gold_price",
+20: function normalizeGoldPrice(price, unit) {
+137: async function fetchGoldPrice({
+166: "User-Agent": "SDVault/1.0",
+217: pricePerGramKrw: normalizeGoldPrice(rawPrice, unit),
+223: fetchGoldPrice,
+224: normalizeGoldPrice,
+
+-- SDVault/src/open-center.js --
+23: stdio: "ignore",
+24: windowsHide: true,
+
+-- SDVault/src/settings.js --
+12: selectedAccountId: "",
+14: goldApiUrl: "",
+15: goldApiJsonPath: "",
+16: goldSourceName: "사용자 지정 API",
+17: goldPriceUnit: "don",
+18: goldWeightUnit: "g",
+19: demoGoldPricePerDon: 826000,
+20: lastGoldPricePerGram: 0,
+21: lastGoldPriceAt: "",
+27: class SettingsStore {
+48: if (!["g", "kg"].includes(normalized.goldWeightUnit)) {
+49: normalized.goldWeightUnit = "g";
+98: selectedAccountId:
+99: typeof patch.selectedAccountId === "string"
+100: ? patch.selectedAccountId
+101: : this.data.selectedAccountId,
+103: goldApiUrl:
+104: typeof patch.goldApiUrl === "string"
+105: ? patch.goldApiUrl.trim()
+106: : this.data.goldApiUrl,
+108: goldApiJsonPath:
+109: typeof patch.goldApiJsonPath === "string"
+110: ? patch.goldApiJsonPath.trim()
+111: : this.data.goldApiJsonPath,
+113: goldSourceName:
+114: typeof patch.goldSourceName === "string"
+115: ? patch.goldSourceName.trim().slice(0, 60)
+116: : this.data.goldSourceName,
+118: goldPriceUnit:
+119: patch.goldPriceUnit === "gram" ||
+120: patch.goldPriceUnit === "don"
+121: ? patch.goldPriceUnit
+122: : this.data.goldPriceUnit,
+124: goldWeightUnit:
+125: ["g", "kg"].includes(patch.goldWeightUnit)
+126: ? patch.goldWeightUnit
+127: : this.data.goldWeightUnit,
+129: demoGoldPricePerDon:
+130: Number.isFinite(Number(patch.demoGoldPricePerDon))
+131: ? Math.max(1, Math.trunc(Number(patch.demoGoldPricePerDon)))
+132: : this.data.demoGoldPricePerDon,
+134: lastGoldPricePerGram:
+135: Number.isFinite(Number(patch.lastGoldPricePerGram))
+136: ? Math.max(0, Number(patch.lastGoldPricePerGram))
+137: : this.data.lastGoldPricePerGram,
+139: lastGoldPriceAt:
+140: typeof patch.lastGoldPriceAt === "string"
+141: ? patch.lastGoldPriceAt
+142: : this.data.lastGoldPriceAt,
+200: SettingsStore,
+
+-- SDVault/src/wallet-reader.js --
+29: AND name IN ('users', 'accounts')
+35: if (!tables.includes("users") || !tables.includes("accounts")) {
+56: function readWalletAccounts(databasePath) {
+64: accounts.id,
+65: accounts.bank_name,
+66: accounts.account_number,
+67: accounts.owner_name,
+68: accounts.balance,
+69: accounts.updated_at,
+71: FROM accounts
+72: LEFT JOIN users ON users.id = accounts.user_id
+73: ORDER BY accounts.updated_at DESC
+80: bankName: String(row.bank_name),
+81: accountNumber: String(row.account_number),
+92: function readWalletAccount(databasePath, accountId) {
+100: accounts.id,
+101: accounts.bank_name,
+102: accounts.account_number,
+103: accounts.owner_name,
+104: accounts.balance,
+105: accounts.updated_at,
+107: FROM accounts
+108: LEFT JOIN users ON users.id = accounts.user_id
+109: WHERE accounts.id = ?
+112: .get(accountId);
+120: bankName: String(row.bank_name),
+121: accountNumber: String(row.account_number),
+205: readWalletAccounts,
+206: readWalletAccount,
+
+-- SDVault/tools/mock-gold-api.js --
+9: if (request.url !== "/gold") {
+31: goldPrice: basePricePerDon,
+38: "Cache-Control": "no-store",
+47: `테스트 금 시세 API: http://127.0.0.1:${port}/gold`,
+
+===== STA_Version6_Desktop.zip =====
+tables=accounts, sta_operations, transactions, users
+
+-- STA_Version6_Desktop/public/index.html --
+21: <label class="account-box">
+23: <select id="accountSelect"></select>
+111: <div class="danger-counter">충돌 <strong id="laserHitText">0 / 5</strong></div>
+118: <section id="vaultScene" class="scene game-scene">
+124: <div id="vaultArea" class="vault-area" tabindex="0">
+125: <div class="vault-door">
+126: <div class="vault-ring" id="vaultRing">
+127: <div class="vault-center"><strong id="vaultPercent">0%</strong><span>잠금 해제</span></div>
+130: <div class="vault-prompt">여기를 빠르게 클릭하거나 Space를 누르세요</div>
+142: <div class="cash-total"><span>미정산 현금</span><strong id="lootCashText">0원</strong></div>
+167: <div><span>운반 충돌 손실</span><strong id="payoutLossText">-0원</strong></div>
+170: <label class="payout-account"><span>보수를 지급받을 계좌</span><select id="payoutAccountSelect"></select></label>
+
+-- STA_Version6_Desktop/public/js/app.js --
+4: const api = window.staApi;
+9: const state = {
+12: accounts: [],
+13: account: null,
+29: accountSelect: $("#accountSelect"), balanceText: $("#balanceText"), refreshButton: $("#refreshButton"),
+36: laserCanvas: $("#laserCanvas"), laserHitText: $("#laserHitText"), vaultArea: $("#vaultArea"),
+37: vaultRing: $("#vaultRing"), vaultPercent: $("#vaultPercent"), lootArea: $("#lootArea"),
+40: payoutRawText: $("#payoutRawText"), payoutLossText: $("#payoutLossText"), payoutFinalText: $("#payoutFinalText"),
+41: payoutAccountSelect: $("#payoutAccountSelect"), payoutRefreshButton: $("#payoutRefreshButton"), payoutButton: $("#payoutButton"),
+86: if (!this.context) this.context = new (window.AudioContext || window.webkitAudioContext)();
+87: if (this.context.state === "suspended") this.context.resume();
+110: success() { [440, 554, 659, 880].forEach((f, i) => this.tone(f, .25, "triangle", .11, i * .08)); }
+114: vault() { this.tone(170 + Math.random() * 35, .05, "square", .06); }
+115: payout() { [523,659,784,1046].forEach((f,i) => this.tone(f,.35,"sine",.13,i*.1)); }
+133: scenes.forEach((scene) => scene.classList.toggle("active", scene.id === id));
+156: async function refreshAccounts(showMessage = false) {
+157: const result = await api.listWalletAccounts();
+158: state.accounts = result.accounts || [];
+159: const previous = elements.accountSelect.value || state.settings?.selectedAccountId || "";
+160: elements.accountSelect.innerHTML = "";
+165: elements.accountSelect.append(option);
+166: state.account = null;
+168: renderPayoutAccounts();
+172: if (state.accounts.length === 0) {
+176: elements.accountSelect.append(option);
+177: state.account = null;
+179: renderPayoutAccounts();
+182: state.accounts.forEach((account) => {
+184: option.value = account.id;
+185: option.textContent = `${account.bankName} ${account.accountNumber} · ${formatMoney(account.balance)}`;
+186: elements.accountSelect.append(option);
+188: const selected = state.accounts.some((account) => account.id === previous) ? previous : state.accounts[0].id;
+189: elements.accountSelect.value = selected;
+190: await selectAccount(selected, false);
+191: renderPayoutAccounts();
+195: async function selectAccount(accountId, persist = true) {
+196: if (!accountId) return;
+197: const result = await api.getWalletAccount(accountId);
+198: state.account = result.account || null;
+200: elements.balanceText.textContent = state.account ? formatMoney(state.account.balance) : "계좌 없음";
+201: if (persist) await saveSettings({ selectedAccountId: accountId });
+204: function renderPayoutAccounts() {
+205: const previous = elements.payoutAccountSelect.value;
+206: elements.payoutAccountSelect.innerHTML = "";
+207: state.accounts.forEach((account) => {
+209: option.value = account.id;
+210: option.textContent = `${account.bankName} ${account.accountNumber} · ${account.ownerName} · ${formatMoney(account.balance)}`;
+211: elements.payoutAccountSelect.append(option);
+213: if (state.accounts.some((account) => account.id === previous)) elements.payoutAccountSelect.value = previous;
+214: else if (state.account) elements.payoutAccountSelect.value = state.account.id;
+251: const hackingDone = ["raid_ready","raid_laser","raid_vault","raid_loot","transport_ready","transport","payout"].includes(phase);
+255: raid: phase === "raid_ready" ? "open" : ["raid_laser","raid_vault","raid_loot"].includes(phase) ? "active" : raidDone ? "complete" : "locked",
+273: const totalSeconds = Math.max(0, Math.ceil(Number(remainingMs || 0) / 1000));
+274: const minutes = Math.floor(totalSeconds / 60);
+275: const seconds = totalSeconds % 60;
+
+-- STA_Version6_Desktop/src/wallet-database.js --
+17: VAULT_DECAY_AMOUNT,
+18: VAULT_REQUIRED_HITS,
+26: db.exec("PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;");
+34: const names = db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','accounts','transactions')`)
+36: const missing = ["users", "accounts", "transactions"].filter((name) => !names.includes(name));
+47: CREATE TABLE IF NOT EXISTS sta_operations (
+49: entry_account_id TEXT NOT NULL,
+58: vault_progress INTEGER NOT NULL DEFAULT 0,
+68: payout_account_id TEXT,
+90: function mapAccount(row) {
+93: bankName: String(row.bank_name),
+94: accountNumber: String(row.account_number),
+102: function listAccounts(databasePath) {
+106: SELECT accounts.id,accounts.bank_name,accounts.account_number,accounts.owner_name,
+107: accounts.balance,accounts.updated_at,users.username
+108: FROM accounts LEFT JOIN users ON users.id=accounts.user_id
+109: ORDER BY accounts.updated_at DESC
+110: `).all().map(mapAccount);
+114: function getAccount(databasePath, accountId) {
+118: SELECT accounts.id,accounts.bank_name,accounts.account_number,accounts.owner_name,
+119: accounts.balance,accounts.updated_at,users.username
+120: FROM accounts LEFT JOIN users ON users.id=accounts.user_id WHERE accounts.id=?
+121: `).get(accountId);
+122: return row ? mapAccount(row) : null;
+126: function getRecentTransactions(databasePath, accountId, limit = 10) {
+131: WHERE account_id=? ORDER BY created_at DESC LIMIT ?
+132: `).all(accountId, Math.min(30, Math.max(1, limit))).map((row) => ({
+150: entryAccountId: String(row.entry_account_id),
+159: vaultProgress: Number(row.vault_progress),
+167: payoutAccountId: row.payout_account_id ? String(row.payout_account_id) : null,
+179: db.prepare("UPDATE sta_operations SET phase='transport_ready',transport_unlock_at=NULL,updated_at=? WHERE id=? AND phase='raid_loot'")
+187: db.prepare("UPDATE sta_operations SET phase='transport_ready',transport_unlock_at=NULL,updated_at=? WHERE id=?")
+229: function startOperation({ databasePath, accountId, nowMs = Date.now() }) {
+239: const account = db.prepare("SELECT id,balance FROM accounts WHERE id=?").get(accountId);
+240: if (!account) throw new Error("연결 계좌를 찾을 수 없습니다.");
+241: if (Number(account.balance) < ENTRY_FEE) throw new Error("STA 작전 입장료 50,000원을 결제할 잔액이 부족합니다.");
+246: const nextBalance = Number(account.balance) - ENTRY_FEE;
+247: db.prepare("UPDATE accounts SET balance=?,updated_at=? WHERE id=?").run(nextBalance, now, accountId);
+248: db.prepare("INSERT INTO transactions (id,account_id,transaction_type,amount,memo,created_at) VALUES (?,?,'withdraw',?,?,?)")
+249: .run(transactionId, accountId, ENTRY_FEE, "STA 작전 참가비", now);
+251: INSERT INTO sta_operations (
+252: id,entry_account_id,entry_fee,status,phase,hacking_round,hacking_layout,hacking_connections,
+255: `).run(id, accountId, ENTRY_FEE, JSON.stringify(createHackingLayout()), transactionId, now, now);
+305: db.prepare(`UPDATE sta_operations SET phase=?,hacking_round=?,hacking_layout=?,hacking_connections=?,updated_at=? WHERE id=?`)
+324: db.prepare("UPDATE sta_operations SET phase='raid_laser',laser_hits=0,laser_checkpoint=0,updated_at=? WHERE id=?").run(now, operationId);
+338: db.prepare("UPDATE sta_operations SET laser_checkpoint=?,updated_at=? WHERE id=?").run(value, now, operationId);
+351: db.prepare("UPDATE sta_operations SET laser_hits=?,status='failed',phase='failed',updated_at=?,ended_at=? WHERE id=?")
+356: db.prepare("UPDATE sta_operations SET laser_hits=?,updated_at=? WHERE id=?").run(hits, now, operationId);
+368: db.prepare("UPDATE sta_operations SET phase='raid_vault',vault_progress=0,updated_at=? WHERE id=?").run(now, operationId);
+375: function vaultHit({ databasePath, operationId, nowMs = Date.now() }) {
+379: const row = requireActive(db, operationId, "raid_vault");
+380: const progress = Math.min(VAULT_REQUIRED_HITS, Number(row.vault_progress) + 1);
+381: let phase = "raid_vault";
+384: if (progress >= VAULT_REQUIRED_HITS) {
+390: db.prepare(`UPDATE sta_operations SET phase=?,vault_progress=?,loot_started_at=?,loot_ends_at=?,last_loot_click_ms=0,updated_at=? WHERE id=?`)
+
+-- STA_Version6_Desktop/src/operation-engine.js --
+8: const VAULT_REQUIRED_HITS = 100;
+9: const VAULT_DECAY_AMOUNT = 1;
+10: const VAULT_DECAY_IDLE_MS = 800;
+11: const VAULT_DECAY_INTERVAL_MS = 400;
+17: const TRANSPORT_LOSS_PER_HIT = 0.05;
+39: const collisionCount = Math.max(0, Math.trunc(Number(hits) || 0));
+40: const rate = Math.max(0, 1 - collisionCount * TRANSPORT_LOSS_PER_HIT);
+55: TRANSPORT_LOSS_PER_HIT,
+56: VAULT_DECAY_AMOUNT,
+57: VAULT_DECAY_IDLE_MS,
+58: VAULT_DECAY_INTERVAL_MS,
+59: VAULT_REQUIRED_HITS,
+
+-- STA_Version6_Desktop/src/settings.js --
+8: selectedAccountId: "",
+14: class SettingsStore {
+31: selectedAccountId: typeof parsed.selectedAccountId === "string" ? parsed.selectedAccountId : "",
+52: if (typeof patch.selectedAccountId === "string") this.data.selectedAccountId = patch.selectedAccountId;
+61: module.exports = { SettingsStore };
+
+-- STA_Version6_Desktop/main.js --
+5: const { app, BrowserWindow, dialog, ipcMain, session } = require("electron");
+6: const { SettingsStore } = require("./src/settings");
+13: let mainWindow = null;
+14: let settingsStore = null;
+16: function createWindow() {
+17: mainWindow = new BrowserWindow({
+38: mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+39: mainWindow.webContents.on("will-attach-webview", (event) => event.preventDefault());
+40: mainWindow.webContents.on("will-navigate", (event, url) => {
+41: try { if (new URL(url).protocol !== "file:") event.preventDefault(); }
+42: catch { event.preventDefault(); }
+44: mainWindow.once("ready-to-show", () => {
+45: mainWindow.maximize();
+46: mainWindow.show();
+48: mainWindow.on("closed", () => { mainWindow = null; });
+49: mainWindow.loadFile(path.join(__dirname, "public", "index.html"));
+52: function walletPath() { return settingsStore.get().walletDatabasePath; }
+65: stdio: "ignore",
+66: windowsHide: false,
+73: return async (event, payload) => {
+74: try { return { ok: true, ...(await handler(event, payload)) }; }
+87: settings: settingsStore.get(),
+92: vaultRequiredHits: engine.VAULT_REQUIRED_HITS,
+93: vaultDecayAmount: engine.VAULT_DECAY_AMOUNT,
+94: vaultDecayIdleMs: engine.VAULT_DECAY_IDLE_MS,
+95: vaultDecayIntervalMs: engine.VAULT_DECAY_INTERVAL_MS,
+101: transportLossPerHit: engine.TRANSPORT_LOSS_PER_HIT,
+104: ipcMain.handle("sta:save-settings", (event, patch) => settingsStore.update(patch));
+108: settingsStore.update({ walletDatabasePath: found, selectedAccountId: "" });
+112: const result = await dialog.showOpenDialog(mainWindow, {
+121: settingsStore.update({ walletDatabasePath: databasePath, selectedAccountId: "" });
+124: ipcMain.handle("wallet:list-accounts", () => {
+126: if (!databasePath) return { connected: false, accounts: [] };
+127: try { return { connected: true, databasePath, accounts: wallet.listAccounts(databasePath) }; }
+128: catch (error) { return { connected: false, databasePath, accounts: [], error: error.message }; }
+130: ipcMain.handle("wallet:get-account", (event, accountId) => {
+132: if (!databasePath || !accountId) return { connected: false, account: null, transactions: [] };
+134: const account = wallet.getAccount(databasePath, String(accountId));
+135: return { connected: Boolean(account), account, transactions: account ? wallet.getRecentTransactions(databasePath, String(accountId), 12) : [] };
+136: } catch (error) { return { connected: false, account: null, transactions: [], error: error.message }; }
+140: ipcMain.handle("sta:start", safe((event, payload) => {
+141: const accountId = String(payload?.accountId || "");
+142: const result = wallet.startOperation({ databasePath: requireWalletPath(), accountId });
+143: settingsStore.update({ selectedAccountId: accountId });
+146: ipcMain.handle("sta:hacking-connect", safe((event, payload) => wallet.hackingConnect({
+150: ipcMain.handle("sta:start-raid", safe((event, payload) => wallet.startRaid({
+153: ipcMain.handle("sta:laser-hit", safe((event, payload) => wallet.laserHit({
+156: ipcMain.handle("sta:laser-checkpoint", safe((event, payload) => wallet.laserCheckpoint({
+159: ipcMain.handle("sta:laser-pass", safe((event, payload) => wallet.laserPass({
+162: ipcMain.handle("sta:vault-hit", safe((event, payload) => wallet.vaultHit({
+165: ipcMain.handle("sta:vault-decay", safe((event, payload) => wallet.vaultDecay({
+168: ipcMain.handle("sta:loot-click", safe((event, payload) => wallet.lootClick({
+171: ipcMain.handle("sta:finalize-loot", safe((event, payload) => wallet.finalizeLoot({
+174: ipcMain.handle("sta:start-transport", safe((event, payload) => wallet.startTransport({
+177: ipcMain.handle("sta:transport-hit", safe((event, payload) => wallet.transportHit({
+
+-- STA_Version6_Desktop/tools/test-operation.js --
+14: PRAGMA foreign_keys=ON;
+15: CREATE TABLE users (
+21: CREATE TABLE accounts (
+24: bank_name TEXT NOT NULL,
+25: account_number TEXT NOT NULL,
+30: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+32: CREATE TABLE transactions (
+34: account_id TEXT NOT NULL,
+39: FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+43: db.prepare("INSERT INTO users (username,password_hash,created_at) VALUES ('tester','x',?)").run(now);
+44: db.prepare("INSERT INTO accounts (id,user_id,bank_name,account_number,owner_name,balance,created_at,updated_at) VALUES ('a1',1,'SD은행','111-111','테스터',1000000,?,?)").run(now, now);
+45: db.prepare("INSERT INTO accounts (id,user_id,bank_name,account_number,owner_name,balance,created_at,updated_at) VALUES ('a2',1,'SD은행','222-222','테스터',100000,?,?)").run(now, now);
+72: const first = dbApi.startOperation({ databasePath, accountId: "a1" });
+79: let state = dbApi.getOperationState(databasePath);
+83: state = dbApi.startRaid({ databasePath, operationId: first.operation.id });
+95: const second = dbApi.startOperation({ databasePath, accountId: "a1" });
+105: dbApi.vaultHit({ databasePath, operationId: second.operation.id, nowMs: baseMs });
+107: let decay = dbApi.vaultDecay({ databasePath, operationId: second.operation.id, nowMs: baseMs + 1 });
+108: assert.equal(decay.operation.vaultProgress, 9);
+109: for (let i = 9; i < engine.VAULT_REQUIRED_HITS; i += 1) {
+110: dbApi.vaultHit({ databasePath, operationId: second.operation.id, nowMs: baseMs });
+112: state = dbApi.getOperationState(databasePath, baseMs);
+124: state = dbApi.getOperationState(databasePath, lootEndMs + 1);
+128: state = dbApi.startTransport({ databasePath, operationId: second.operation.id, nowMs: lootEndMs + 2 });
+140: const payout = dbApi.payout({ databasePath, operationId: second.operation.id, accountId: "a2", nowMs: payoutMs });
+144: assert.throws(() => dbApi.payout({ databasePath, operationId: second.operation.id, accountId: "a2", nowMs: payoutMs + 1 }));
+145: state = dbApi.getOperationState(databasePath, payoutMs + 1000);
+151: () => dbApi.startOperation({ databasePath, accountId: "a1", nowMs: payoutMs + 1000 }),
+156: accountId: "a1",
+
+-- STA_Version6_Desktop/preload.js --
+10: listWalletAccounts: () => ipcRenderer.invoke("wallet:list-accounts"),
+11: getWalletAccount: (accountId) => ipcRenderer.invoke("wallet:get-account", accountId),
+19: vaultHit: (payload) => ipcRenderer.invoke("sta:vault-hit", payload),
+20: vaultDecay: (payload) => ipcRenderer.invoke("sta:vault-decay", payload),
