@@ -27,22 +27,34 @@ jobs:
           from pathlib import Path
 
           root = Path('/tmp/flea112-inspect')
-          targets = [root/'main.js', root/'public/app.js']
+          targets=[]
+          for path in root.rglob('*'):
+            if path.is_file() and path.suffix.lower() in {'.js','.html'}:
+              try:
+                text=path.read_text(encoding='utf-8')
+              except Exception:
+                continue
+              if any(k.lower() in text.lower() for k in [
+                'BankChaseGame','bankChaseDifficultyLabel','startBankChase','finishBankChase',
+                'safeOpened','bankLoot','safe-node','은행 금고','오토바이','motorcycle'
+              ]):
+                targets.append(path)
+
           needles = [
-            'buildBankFinaleMission', 'startMissionSafe', 'finishMissionSafe',
-            'safeOpened', 'chasePending', 'finishBankChase', 'startBankChase',
-            'bank-chase', 'motorcycle', '오토바이', 'CHASE_', 'bankLoot',
-            'safe-node', 'openBank', 'vault'
+            'buildBankFinaleMission','startMissionSafe','missionSafeAttempt','finishMission',
+            'finishBankChase','bankChaseDifficultyLabel','startBankChase','BankChaseGame',
+            'safeOpened','bankLoot','safe-node','오토바이','lootValue','durability','targetDistance',
+            'damage','spawn','police','rock','bus'
           ]
           out=[]
-          for path in targets:
+          for path in sorted(targets):
             text=path.read_text(encoding='utf-8')
             lines=text.splitlines()
             out.append(f'===== {path.relative_to(root)} =====')
             blocks=[]
             for i,line in enumerate(lines):
               if any(n.lower() in line.lower() for n in needles):
-                start=max(0,i-35); end=min(len(lines),i+95)
+                start=max(0,i-28); end=min(len(lines),i+82)
                 if blocks and start <= blocks[-1][1] + 4:
                   blocks[-1]=(blocks[-1][0],max(blocks[-1][1],end))
                 else:
@@ -61,5 +73,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add diagnostics/flea-bank-carry-source.txt
-          git commit -m '진단: 플리마켓 금고 운반·추격전 구조 확인'
+          git commit -m '진단: 금고 운반·추격전 세부 구조 확인'
           git push origin HEAD:feature/flea-red-diamond
