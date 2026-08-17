@@ -1,0 +1,67 @@
+name: Inspect center app update lock
+
+on:
+  push:
+    branches:
+      - fix/center-app-update-lock
+    paths:
+      - '.github/workflows/inspect-center-app-update-lock.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/center-app-update-lock
+          fetch-depth: 0
+
+      - name: Inspect v2.2.4 app updater
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/center224 && mkdir -p /tmp/center224
+          gh release download 'v.2.2.4' --repo 'SD608/sd-center' --pattern 'SDCenter-2.2.4-full.nupkg' --dir /tmp/center224
+          unzip -q /tmp/center224/SDCenter-2.2.4-full.nupkg -d /tmp/center224/nupkg
+          ASAR=$(find /tmp/center224/nupkg -type f -name app.asar | head -n1)
+          if [ -z "$ASAR" ]; then echo 'app.asar not found'; find /tmp/center224/nupkg -maxdepth 5 -type f | head -100; exit 1; fi
+          npx --yes @electron/asar extract "$ASAR" /tmp/center224/app
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('/tmp/center224/app')
+          out=[]
+          for p in root.rglob('*.js'):
+              text=p.read_text(encoding='utf-8', errors='replace')
+              lines=text.splitlines()
+              hits=[]
+              for i,line in enumerate(lines):
+                  low=line.lower()
+                  if any(k in low for k in ('installed-apps','backup-','rename(', 'renameSync', 'updateapp', 'installzip', 'app-update')):
+                      hits.append(i)
+              if not hits: continue
+              out.append(f'=== {p.relative_to(root)} ===')
+              used=set()
+              for i in hits:
+                  lo=max(0,i-18); hi=min(len(lines),i+35)
+                  if any(j in used for j in range(lo,hi)): continue
+                  used.update(range(lo,hi))
+                  out.append(f'-- around line {i+1} --')
+                  for j in range(lo,hi): out.append(f'{j+1:04d}: {lines[j]}')
+          Path('diagnostics').mkdir(exist_ok=True)
+          Path('diagnostics/center-v224-app-update-lock.txt').write_text('\n'.join(out)+'\n',encoding='utf-8')
+          PY
+
+      - name: Commit diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/center-v224-app-update-lock.txt
+          git commit -m '진단: 센터 v2.2.4 확장팩 업데이트 잠금' || exit 0
+          git push origin HEAD:fix/center-app-update-lock
