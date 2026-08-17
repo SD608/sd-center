@@ -32,8 +32,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # v1.2.7 저장 파일은 손상되어 있어 마지막 정상 배포본 v1.2.4를 기준으로 재구성합니다.
           python tools/patch-sdlink-v128-autostart.py \
-            downloads/extensions/SDLink_v1.2.7_Desktop.zip \
+            downloads/extensions/SDLink_v1.2.4_Desktop.zip \
             downloads/extensions/SDLink_v1.2.8_Desktop.zip
 
       - name: Validate SD Link v1.2.8
