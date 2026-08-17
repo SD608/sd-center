@@ -1,0 +1,8 @@
+SD logistics / SD Link / flea release verification
+
+logistics: v1.1.0 / JS syntax 7 files PASS / 1428906 bytes
+sdlink: v1.3.0 / JS syntax 12 files PASS / 79738 bytes
+flea: v1.1.5 / JS syntax 7 files PASS / 963226 bytes
+
+Catalog/policy/extension data: PASS
+Active version chain: logistics 1.1.0 / SD Link 1.3.0 / flea 1.1.5
