@@ -1,12 +1,12 @@
 {
-  "catalogVersion": 25,
-  "updatedAt": "2026-08-18T07:25:00+09:00",
+  "catalogVersion": 26,
+  "updatedAt": "2026-08-18T07:35:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
-      "version": "1.2.9",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.9_Desktop.zip?v=129",
-      "notes": "PC 확장팩의 공용 sdwallet.sqlite 상태·거래 기록을 읽어 SD Online 계정의 업적 진행도로 누적 동기화합니다. 업적 서버가 일시적으로 없어도 기존 지갑 동기화는 계속 동작합니다."
+      "version": "1.3.0",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.3.0_Desktop.zip?v=130",
+      "notes": "물류센터 v1.1.0의 PC 평판·본부레벨을 홈페이지 계정으로 병합 동기화하고, 플리마켓이 안전하게 읽는 비밀정보 없는 공용 연결 상태를 제공합니다. 기존 업적 동기화도 유지합니다."
     },
     "sd-logistics-center-desktop": {
       "name": "SD 물류센터",
