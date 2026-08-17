@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 26,
-  "updatedAt": "2026-08-18T07:35:00+09:00",
+  "catalogVersion": 27,
+  "updatedAt": "2026-08-18T07:45:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -40,11 +40,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.1.4",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.4_Desktop.zip?v=114",
+      "version": "1.1.5",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.5_Desktop.zip?v=115",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "물류 평판 7,000(S등급) 또는 물류 본부 Lv.1 이상이면 S등급 전용 지역을 해금하도록 SD Link 계정 연동을 통합했습니다. 은행 습격 3D Canvas2D는 컨텍스트·크기·레이어 오류가 전체 검은 화면으로 번지지 않도록 방어 렌더링을 적용했습니다.",
+      "notes": "SD Link v1.3.0 공용 연결 상태를 우선 읽어 온라인 연결 오판을 제거하고, 물류 평판 7,000 또는 본부 Lv.1 이상 해금을 안정화했습니다. isLimitedItem 런타임 오류를 수정했으며 v1.1.4의 은행 3D 검은 화면 방어 렌더링을 유지합니다.",
       "requiredCenterVersion": "2.2.0"
     },
     "vault": {
