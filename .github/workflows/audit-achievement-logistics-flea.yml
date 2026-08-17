@@ -1,0 +1,33 @@
+name: Audit achievement logistics flea integration
+
+on:
+  push:
+    paths:
+      - ".github/workflows/audit-achievement-logistics-flea.yml"
+      - "tools/audit-achievement-logistics-flea.py"
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Audit current extension ZIP internals
+        run: python tools/audit-achievement-logistics-flea.py
+
+      - name: Commit diagnostic report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diagnostics/achievement-logistics-flea-audit.txt
+          if git diff --cached --quiet; then
+            echo "No diagnostic changes"
+            exit 0
+          fi
+          git commit -m "diagnostics: inspect achievement logistics flea integration"
+          git push
