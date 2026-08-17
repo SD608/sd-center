@@ -1,0 +1,2010 @@
+SD integration audit
+Purpose: achievements + logistics→flea unlock + flea bank 3D black-screen diagnostics
+
+===== SDFleaMarket_v1.1.3_Desktop.zip =====
+files=16 bytes=960636
+
+-- README.md --
+3: SD종합센터에서 설치하는 PC 확장팩 정식 배포판입니다. 공식 확장팩 센터 기준 **SD 물류회사 S등급(물류 평판 7000 이상)** 에서 해금됩니다.
+8: - 해금 조건: `SD 물류회사 S등급`
+22: - 공식 확장팩 배포 자체가 물류회사 S등급에서 해금되며, 확장팩 내부 물류센터도 S등급 콘텐츠로 유지됩니다.
+95: ## v0.3.3 은행 준비작업 흐름 수정
+98: - 은행 선택 시 바로 임무를 시작하지 않고 은행 전용 준비작업 허브를 먼저 표시합니다.
+100: - 준비작업 완료 후 휴대폰 복귀 또는 은행 준비작업 허브 복귀 중 선택할 수 있습니다.
+105: - 탐색 완료 후 같은 팝업에서 발견한 상자, 준비작업 장비, 은행 상호작용 결과 또는 빈 결과를 표시합니다.
+109: ## v0.3.5 은행 피날래 상호작용 강화
+110: - 은행 보안문을 실제 맵 벽/문 형태로 표시하며 잠금 해제 전에는 충돌 판정으로 내부 진입이 불가능합니다.
+113: - 은행 금고 3개는 피날래마다 확정 등장합니다. 빈 금고는 제거했으며 각 금고는 기존 금고와 동일한 safe 아이템 보상 풀을 사용합니다.
+116: ## v0.3.6 은행 피날래 가시성/잠금문 보강
+118: - 은행 피날래 금고 3개를 실제 이동 가능한 내부 벽면 앞으로 재배치하고 금빛 바닥 표시와 `BANK SAFE` 라벨을 추가했습니다. 금고는 모두 확정 등장하며 보상은 기존 금고와 동일한 `safe` 아이템 풀을 사용합니다.
+119: - 은행 잠금문이 닫힌 동안 맵 전체 통로를 가로막도록 충돌 구조를 변경했습니다. UV 비밀번호를 맞춰 문이 열리기 전에는 옆으로 우회해서 내부로 들어갈 수 없습니다.
+120: - 준비작업 3단계 장비를 권총으로 변경하고, 은행에서 경비원을 화면 중앙에 조준한 뒤 좌클릭으로 권총 사격 제압하도록 변경했습니다.
+121: - 은행 준비작업 카드의 장비 설명 문구를 제거했습니다.
+124: ## v0.3.7 은행 금고/UV/준비작업 수정
+125: - 은행 금고 성공 후 UI가 멈추던 문제를 수정하고 개방 결과 화면으로 바로 전환합니다.
+126: - 은행 피날래 금고를 6개로 늘리고 그중 2개는 빈 금고(꽝)가 되도록 했습니다.
+129: - 은행 준비작업 파밍 포인트가 벽 안에 생성되지 않도록 스폰 좌표와 보정 로직을 개선했습니다.
+130: - 은행 금고 결과는 왼쪽 사이드바에 아이템/꽝 기록으로 누적됩니다.
+132: ## v0.3.8 탐색 HUD 및 은행 탈출 조건
+135: - 은행 피날래는 금고를 최소 1개 이상 털기 전에는 EXIT로 탈출할 수 없습니다.
+136: - 은행 피날래 완료 판정도 최소 금고 1개 개방 기준으로 변경했습니다.
+147: - 은행 준비작업 입장 명칭 분리
+148: - 은행 피날래 EXIT 이후 1인칭 차량 추격전 자동 연결
+151: - 충돌 시 차량 내구도 감소, 0% 시 해당 은행 습격 물품 전부 손실
+177: ## v0.4.9 추격전/은행 전투 HUD 보강
+179: - 은행 피날레 좌측 하단에 플레이어 HP 숫자/체력 바 표시
+183: ## v0.4.8 은행 준비작업/전투 및 물류센터 진입 개편
+184: - 은행 준비작업을 2개로 재구성했습니다. 필수 작업은 한 임무에서 청진기와 UV 라이트를 모두 확보하며, 선택 작업은 경비원 무장 약화입니다.
+200: - 은행 경비 기본 시선을 입구 반대 방향으로 변경
+206: ## v0.6.1 경제 밸런스 / 은행 추격 위험도
+210: - 은행 피날레 시작 비용은 500,000원입니다.
+211: - 은행에서 확보한 물품 가치가 높을수록 오토바이 추격전의 도주 거리, 장애물 밀도, 버스 출현률, 충돌 피해가 연속적으로 증가합니다.
+216: - v0.6.2까지의 파밍/은행/전투/추격전 기능을 정식 확장팩으로 승격
+217: - 공식 확장팩 센터에서 SD 물류회사 S등급(평판 7000 이상) 확인 후 다운로드 해금
+226: - 은행 준비작업에서 청진기·UV 라이트·권총 등 목표 장비 확보 시 효과음 재생
+228: - 은행 금고에서 실제 아이템이 나온 경우 획득 효과음 재생(꽝은 재생하지 않음)
+235: - SD Link 온라인 계정의 물류 평판으로 S등급(7,000) 실시간 확인
+236: - S등급 미만 또는 온라인 등급 확인 실패 시 물류센터 잠금
+
+-- RELEASE_NOTES.txt --
+2: - 은행 피날레에서는 금고를 현장에서 열지 않고 금고 자체를 들고 탈출합니다.
+10: - 은행 금고는 기존처럼 현장에서 직접 개방합니다.
+30: 주의: SD Link에서 홈페이지 계정 로그인이 유지되어 있어야 하며 Supabase 플리마켓 SQL이 적용되어 있어야 합니다.
+
+-- main.js --
+20: { id: "logistics", name: "물류센터", subtitle: "S등급 고가 파밍지", description: "회사 등급 S 이상만 출입 가능한 고가 파밍지입니다. 벽면 적재 구역 위주로 최고급 상자를 노릴 수 있습니다.", foundChance: 64, nodeCount: 8, maxBoxes: 2, specialMinTier: "fancy", requiredCompanyGrade: "S", weights: { worn: 8, normal: 35, fancy: 40, premium: 17, safe: 0 } },
+21: { id: "bank", name: "은행", subtitle: "준비작업형 특수 파밍지", description: "필수 침투 장비 준비작업을 끝내면 피날래에 진입할 수 있으며, 선택 준비작업으로 경비원 체력을 절반으로 낮출 수 있습니다. 피날래에서는 금고가 확정으로 등장하며 기존 금고와 같은 보상 풀을 사용합니다.", foundChance: 0, nodeCount: 7, maxBoxes: 0, specialMinTier: "safe", weights: { worn: 0, normal: 0, fancy: 0, premium: 0, safe: 100 }, specia…
+37: logistics: [
+43: bank_prep: [
+51: const BANK_PREP_ORDER = [
+55: const BANK_GUARD_BASE_HP = 50;
+56: const BANK_GUARD_WEAK_HP = 25;
+57: const BANK_GUARD_BODY_DAMAGE = 10;
+58: const BANK_GUARD_HEAD_DAMAGE = 25;
+59: const BANK_GUARD_ATTACK_DAMAGE = 10;
+94: const BANK_FINALE_COST = 500000;
+126: bankPrep: { equipment: false, guardWeakening: false },
+142: merged.gunOwned = Boolean(parsed?.gunOwned || parsed?.bankPrep?.equipment);
+143: const legacyPrep = parsed?.bankPrep || {};
+144: merged.bankPrep = {
+252: function gradeRank(grade) {
+263: function locationUnlocked(location) {
+265: return gradeRank(resolveCompanyGrade()) >= gradeRank(location.requiredCompanyGrade);
+394: const wallet = integration?.walletState?.() || { connected: false, balance: 0 };
+395: if (wallet.connected && Number(wallet.balance || 0) >= bill) {
+396: integration.adjustWallet(-bill, `SD 플리마켓 · 품질 자동 관리기 전기세 ${elapsedDays}일`);
+426: const wallet = integration?.walletState?.() || { connected: false, balance: 0, account: null };
+430: walletConnected: Boolean(wallet.connected),
+431: walletAccountNumber: wallet.account?.accountNumber || "",
+432: balance: Number(wallet.balance || 0),
+439: bankPrep: { ...state.bankPrep },
+456: prices: { cutter: CUTTER_PRICE, stethoscope: STETHOSCOPE_PRICE, qualityManager: QUALITY_MANAGER_PRICE, backpack: BACKPACK_PRICE, bankFinale: BANK_FINALE_COST },
+463: function nextBankPrepStep() {
+464: const progress = state.bankPrep || {};
+465: return BANK_PREP_ORDER.find((step) => !progress[step.id]) || null;
+510: function buildBankPrepMission(step) {
+521: const object = randomSearchObject("bank_prep");
+534: bankGuardNode(1, 9.4, 11.2, -Math.PI / 2, false),
+535: bankGuardNode(2, 14.0, 9.4, -Math.PI / 2, false),
+536: bankGuardNode(3, 18.6, 11.2, -Math.PI / 2, false),
+541: missionType: "bank-prep",
+543: locationId: "bank_prep",
+564: function bankGuardNode(index, x, y, facing, weak = false, extra = false) {
+565: const maxHp = weak ? BANK_GUARD_WEAK_HP : BANK_GUARD_BASE_HP;
+567: id: `BANK-GUARD-${index}`,
+582: function buildBankFinaleMission() {
+586: id: `BANK-SAFE-${index + 1}`,
+592: objectLabel: `은행 금고 ${index + 1}`,
+598: const weak = Boolean(state.bankPrep?.guardWeakening);
+601: missionType: "bank-finale",
+602: name: "은행 피날래",
+603: locationId: "bank",
+604: locationName: "은행",
+610: bankDoorUnlocked: false,
+611: bankCode: makeBankDoorCode(),
+618: bankLootItemIds: [],
+619: bankLootValue: 0,
+622: { id: "BANK-DOOR", searched: false, kind: "door", objectType: "panel", objectLabel: "은행 출입문 패널", objectIcon: "⌘", worldX: 15.0, worldY: 16.35 },
+623: bankGuardNode(1, 9.8, 12.25, -Math.PI / 2, weak),
+624: bankGuardNode(2, 15.0, 11.15, -Math.PI / 2, weak),
+625: bankGuardNode(3, 20.2, 12.25, -Math.PI / 2, weak),
+632: function bankGuardTotal(mission) {
+639: mission.missionType === "bank-finale" ||
+640: (mission.missionType === "bank-prep" && mission.prepId === "guardWeakening")
+645: function removeBankLoot(mission) {
+646: const ids = new Set(Array.isArray(mission?.bankLootItemIds) ? mission.bankLootItemIds : []);
+657: function failBankFinale(reason = "경비원에게 제압되었습니다.") {
+659: if (!mission || mission.missionType !== "bank-finale") return 0;
+660: const lostValue = removeBankLoot(mission);
+661: state.history.unshift({ type: "bank-failed", at: Date.now(), text: `${reason} · 습격 획득품 손실 ${lostValue.toLocaleString("ko-KR")}원` });
+662: state.bankPrep = { equipment: false, guardWeakening: false };
+672: function startMission(locationId = "alley", bankMode = "") {
+675: if (!locationUnlocked(location)) return { ok: false, error: `물류센터는 회사 등급 ${location.requiredCompanyGrade} 이상부터 이용할 수 있습니다.`, state: publicState() };
+678: if (location.id === "bank") {
+679: const prep = state.bankPrep || {};
+680: const mode = String(bankMode || (prep.equipment ? "finale" : "equipment"));
+683: state.activeMission = buildBankPrepMission(BANK_PREP_ORDER[0]);
+690: state.activeMission = buildBankPrepMission(BANK_PREP_ORDER[1]);
+696: const wallet = integration?.walletState?.() || { connected: false, balance: 0 };
+697: if (!wallet.connected) return { ok: false, error: "SD지갑 가상계좌를 찾지 못했습니다. SD Link에서 지갑을 먼저 연결하세요.", state: publicState() };
+698: if (Number(wallet.balance || 0) < BANK_FINALE_COST) return { ok: false, error: `은행 피날래 시작 비용 ${BANK_FINALE_COST.toLocaleString("ko-KR")}원이 부족합니다.`, state: publicState() };
+699: integration.adjustWallet(-BANK_FINALE_COST, "SD 플리마켓 · 은행 피날래 진입 비용");
+700: state.history.unshift({ type: "bank", at: Date.now(), text: `은행 피날래 진입 비용 ${BANK_FINALE_COST.toLocaleString("ko-KR")}원 지출` });
+701: state.activeMission = buildBankFinaleMission();
+711: function unlockBankDoor(code) {
+... match limit reached ...
+
+-- package.json --
+8: "check": "node --check main.js && node --check preload.js && node --check src/wallet-db.js && node --check src/sd-integration.js && node --check public/mission3d.js && node --check public/bankchase.js && node --check public/app.js"
+
+-- preload.js --
+3: const { contextBridge, ipcRenderer } = require("electron");
+6: getState: () => ipcRenderer.invoke("flea:get-state"),
+7: refreshCompany: () => ipcRenderer.invoke("flea:refresh-company"),
+8: refreshInventory: () => ipcRenderer.invoke("flea:refresh-inventory"),
+9: startMission: (locationId, bankMode = "") => ipcRenderer.invoke("flea:start-mission", locationId, bankMode),
+10: searchMissionNode: (nodeId) => ipcRenderer.invoke("flea:search-node", nodeId),
+11: triggerBankGuardAlert: () => ipcRenderer.invoke("flea:bank-guard-alert"),
+12: shootBankGuard: (nodeId, hitZone) => ipcRenderer.invoke("flea:shoot-bank-guard", nodeId, hitZone),
+13: bankGuardHitPlayer: () => ipcRenderer.invoke("flea:bank-guard-hit-player"),
+14: unlockBankDoor: (code) => ipcRenderer.invoke("flea:unlock-bank-door", code),
+15: finishMission: () => ipcRenderer.invoke("flea:finish-mission"),
+16: finishBankChase: (success) => ipcRenderer.invoke("flea:finish-bank-chase", Boolean(success)),
+17: startMissionSafe: (safeId) => ipcRenderer.invoke("flea:start-mission-safe", safeId),
+18: missionSafeListen: (safeId, dialNumber) => ipcRenderer.invoke("flea:mission-safe-listen", safeId, dialNumber),
+19: missionSafeAttempt: (safeId, dialNumber) => ipcRenderer.invoke("flea:mission-safe-attempt", safeId, dialNumber),
+20: setFullscreen: (enabled) => ipcRenderer.invoke("flea:set-fullscreen", Boolean(enabled)),
+21: buyCutter: () => ipcRenderer.invoke("flea:buy-cutter"),
+22: buyStethoscope: () => ipcRenderer.invoke("flea:buy-stethoscope"),
+23: buyQualityManager: () => ipcRenderer.invoke("flea:buy-quality-manager"),
+24: buyCart: () => ipcRenderer.invoke("flea:buy-cart"),
+25: startBoxOpen: (boxId) => ipcRenderer.invoke("flea:start-box-open", boxId),
+26: completeCut: (boxId, step) => ipcRenderer.invoke("flea:complete-cut", boxId, step),
+27: safeListen: (boxId, dialNumber) => ipcRenderer.invoke("flea:safe-listen", boxId, dialNumber),
+28: safeAttempt: (boxId, dialNumber) => ipcRenderer.invoke("flea:safe-attempt", boxId, dialNumber),
+29: devReset: () => ipcRenderer.invoke("flea:dev-reset"),
+
+-- public/app.js --
+11: const BANK_FINALE_COST = 500000;
+28: { id: "logistics", name: "물류센터", subtitle: "S등급 고가 파밍지", description: "회사 등급 S 이상만 출입 가능한 고가 파밍지입니다. 벽면 적재 구역 위주로 최고급 상자를 노릴 수 있습니다.", foundChance: 64, nodeCount: 8, maxBoxes: 2, specialMinTier: "fancy", requiredCompanyGrade: "S", weights: { worn: 8, normal: 35, fancy: 40, premium: 17, safe: 0 } },
+29: { id: "bank", name: "은행", subtitle: "준비작업형 특수 파밍지", description: "필수 침투 장비 준비작업을 끝내면 피날래에 진입할 수 있으며, 선택 준비작업으로 경비원 체력을 절반으로 낮출 수 있습니다. 피날래에서는 금고가 확정으로 등장하며 기존 금고와 같은 보상 풀을 사용합니다.", foundChance: 0, nodeCount: 7, maxBoxes: 0, specialMinTier: "safe", weights: { worn: 0, normal: 0, fancy: 0, premium: 0, safe: 100 }, specia…
+45: logistics: [
+51: bank_prep: [
+59: const BANK_PREP_ORDER = [
+63: const BANK_GUARD_BASE_HP = 50;
+64: const BANK_GUARD_WEAK_HP = 25;
+65: const BANK_GUARD_BODY_DAMAGE = 10;
+66: const BANK_GUARD_HEAD_DAMAGE = 25;
+67: const BANK_GUARD_ATTACK_DAMAGE = 10;
+106: walletBalance: 0,
+113: bankPrep: { equipment: false, guardWeakening: false },
+126: const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+129: merged.gunOwned = Boolean(saved?.gunOwned || saved?.bankPrep?.equipment);
+130: const legacyPrep = saved?.bankPrep || {};
+131: merged.bankPrep = {
+146: localStorage.setItem(STORAGE_KEY, JSON.stringify(localState));
+148: // localStorage가 차단된 환경에서도 현재 세션은 계속 동작하도록 둡니다.
+167: function gradeRank(grade) {
+180: function locationUnlocked(location) {
+182: return gradeRank(resolveCompanyGrade()) >= gradeRank(location.requiredCompanyGrade);
+311: localState.walletBalance -= bill;
+332: balance: localState.walletBalance,
+339: bankPrep: { ...localState.bankPrep },
+347: prices: { cutter: CUTTER_PRICE, stethoscope: STETHOSCOPE_PRICE, qualityManager: QUALITY_MANAGER_PRICE, backpack: BACKPACK_PRICE, bankFinale: BANK_FINALE_COST },
+388: function makeBankDoorCode() {
+393: function nextBankPrepStep() {
+394: const progress = localState.bankPrep || {};
+395: return BANK_PREP_ORDER.find((step) => !progress[step.id]) || null;
+447: function buildBankPrepMission(step) {
+458: const object = randomSearchObject("bank_prep");
+471: bankGuardNode(1, 9.4, 11.2, -Math.PI / 2, false),
+472: bankGuardNode(2, 14.0, 9.4, -Math.PI / 2, false),
+473: bankGuardNode(3, 18.6, 11.2, -Math.PI / 2, false),
+478: missionType: "bank-prep",
+480: locationId: "bank_prep",
+501: function bankGuardNode(index, x, y, facing, weak = false, extra = false) {
+502: const maxHp = weak ? BANK_GUARD_WEAK_HP : BANK_GUARD_BASE_HP;
+504: id: `BANK-GUARD-${index}`,
+519: function buildBankFinaleMission() {
+523: id: `BANK-SAFE-${index + 1}`,
+529: objectLabel: `은행 금고 ${index + 1}`,
+535: const weak = Boolean(localState.bankPrep?.guardWeakening);
+538: missionType: "bank-finale",
+539: name: "은행 피날래",
+540: locationId: "bank",
+541: locationName: "은행",
+547: bankDoorUnlocked: false,
+548: bankCode: makeBankDoorCode(),
+555: bankLootItemIds: [],
+556: bankLootValue: 0,
+559: { id: "BANK-DOOR", searched: false, kind: "door", objectType: "panel", objectLabel: "은행 출입문 패널", objectIcon: "⌘", worldX: 15.0, worldY: 16.35 },
+560: bankGuardNode(1, 9.8, 12.25, -Math.PI / 2, weak),
+561: bankGuardNode(2, 15.0, 11.15, -Math.PI / 2, weak),
+562: bankGuardNode(3, 20.2, 12.25, -Math.PI / 2, weak),
+569: function bankGuardTotal(mission) {
+574: return Boolean(mission && (mission.missionType === "bank-finale" || (mission.missionType === "bank-prep" && mission.prepId === "guardWeakening")));
+577: function removeBankLoot(mission) {
+578: const ids = new Set(Array.isArray(mission?.bankLootItemIds) ? mission.bankLootItemIds : []);
+589: function failBankFinale(reason = "경비원에게 제압되었습니다.") {
+591: if (!mission || mission.missionType !== "bank-finale") return 0;
+592: const lostValue = removeBankLoot(mission);
+593: localState.history.unshift({ type: "bank-failed", at: Date.now(), text: `${reason} · 습격 획득품 손실 ${lostValue.toLocaleString("ko-KR")}원` });
+594: localState.bankPrep = { equipment: false, guardWeakening: false };
+619: async startMission(locationId = "alley", bankMode = "") {
+624: if (!locationUnlocked(location)) {
+629: if (location.id === "bank") {
+630: const prep = localState.bankPrep || {};
+631: const mode = String(bankMode || (prep.equipment ? "finale" : "equipment"));
+634: localState.activeMission = buildBankPrepMission(BANK_PREP_ORDER[0]);
+641: localState.activeMission = buildBankPrepMission(BANK_PREP_ORDER[1]);
+647: if (localState.walletBalance < BANK_FINALE_COST) {
+648: return { ok: false, error: `은행 피날래 시작 비용 ${BANK_FINALE_COST.toLocaleString("ko-KR")}원이 부족합니다.`, state: publicState() };
+650: localState.walletBalance -= BANK_FINALE_COST;
+651: localState.history.unshift({ type: "bank", at: Date.now(), text: `은행 피날래 진입 비용 ${BANK_FINALE_COST.toLocaleString("ko-KR")}원 지출` });
+652: localState.activeMission = buildBankFinaleMission();
+662: async unlockBankDoor(code) {
+664: if (!mission || mission.missionType !== "bank-finale") return { ok: false, error: "은행 피날래가 진행 중이 아닙니다.", state: publicState() };
+666: if (mission.bankDoorUnlocked) return { ok: true, alreadyUnlocked: true, state: publicState() };
+... match limit reached ...
+
+-- public/bankchase.js --
+8: const canvas = options.canvas;
+9: if (!canvas) throw new Error("BankChaseGame requires a canvas");
+10: const ctx = canvas.getContext("2d", { alpha: false });
+175: const rect = canvas.getBoundingClientRect();
+176: dpr = Math.min(2, window.devicePixelRatio || 1);
+179: canvas.width = Math.round(width * dpr);
+180: canvas.height = Math.round(height * dpr);
+683: window.BankChaseGame = { create };
+
+-- public/index.html --
+5: <meta name="viewport" content="width=device-width,initial-scale=1">
+13: <div class="phone-device">
+16: <div class="phone-title"><small>SD COMPANY DEVICE</small><h1>플리마켓</h1><p>업무용 휴대폰</p></div>
+31: <div class="wallet-panel"><span>SD지갑 잔액</span><strong id="balance">₩0</strong></div>
+46: <section id="bankOperationPanel" class="bank-operation-panel hidden">
+47: <div class="bank-operation-head">
+49: <p class="eyebrow">BANK OPERATION</p>
+50: <h2>은행 준비작업</h2>
+53: <span id="bankPrepProgress" class="bank-progress-badge">필수 0/1</span>
+55: <div id="bankPrepSteps" class="bank-prep-steps"></div>
+56: <div class="bank-operation-footer">
+57: <div class="bank-finale-info">
+59: <strong id="bankFinaleCost">₩50,000</strong>
+60: <small id="bankOperationStatus">준비작업을 먼저 완료하세요.</small>
+62: <div class="bank-operation-actions">
+63: <button id="bankMissionButton" class="ghost bank-mission-button">준비작업 시작</button>
+64: <button id="bankFinaleButton" class="primary bank-mission-button" disabled>피날래 시작</button>
+94: <canvas id="mission3DCanvas" class="mission-3d-canvas" aria-label="1인칭 3D 파밍 화면"></canvas>
+95: <div id="mission3DHelp" class="mission-3d-help"><span>입장 시 마우스 자동 고정</span><span>WASD 이동</span><span>SHIFT 달리기</span><span>E 수색/금고/탈출</span><span>좌클릭 권총 사격(은행)</span><span class="exit-help">EXIT · 초록색 문</span></div>
+96: <div id="mission3DPointer" class="mission-3d-pointer">화면을 클릭하면 마우스 시점이 고정됩니다.</div>
+97: <div id="bankCombatHud" class="bank-combat-hud hidden">
+98: <div class="bank-player-health">
+100: <strong><b id="bankPlayerHp">100</b><small>/ 100</small></strong>
+101: <i class="bank-player-health-track"><em id="bankPlayerHpBar"></em></i>
+103: <div><span>GUARDS</span><strong id="bankGuardCount">0 / 3</strong></div>
+104: <div id="bankAlarmState" class="bank-alarm-state">시야 경계 중</div>
+145: <p class="prototype-note">SD 플리마켓 PC 확장팩은 공식 배포 기준 SD 물류회사 S등급에서 해금됩니다.</p>
+169: <div id="bankChase" class="bank-chase hidden" aria-live="polite">
+170: <canvas id="bankChaseCanvas" class="bank-chase-canvas" aria-label="은행 오토바이 추격전"></canvas>
+171: <div class="bank-chase-top">
+172: <div class="bank-chase-badge"><span>오토바이 추격전</span><strong>100 → W → 150 KM/H</strong></div>
+173: <div class="bank-chase-status">
+175: <div class="bank-chase-durability"><i id="bankChaseDurabilityBar"></i></div>
+176: <strong id="bankChaseDurability">100%</strong>
+178: <div class="bank-chase-distance"><span>도주 거리</span><strong id="bankChaseDistance">0 / 1,000m</strong></div>
+180: <div class="bank-chase-bottom">
+181: <div class="bank-chase-loot"><span>운반 중인 금고</span><strong id="bankChaseLootValue">0개</strong><small id="bankChaseDifficulty">추격 강도 · 낮음</small><small>금고를 많이 들고 나올수록 추격 거리가 길어지고 장애물·충돌 피해가 강해집니다.</small></div>
+182: <div class="bank-chase-guide"><b>A / ←</b><span>왼쪽 차선</span><b>W / ↑</b><span>가속 · 최대 150</span><b>D / →</b><span>오른쪽 차선</span></div>
+184: <div id="bankChaseImpact" class="bank-chase-impact hidden">충돌!</div>
+185: <div id="bankChaseResult" class="bank-chase-result hidden">
+186: <div class="bank-chase-result-card">
+188: <h2 id="bankChaseResultTitle">도주 성공</h2>
+189: <p id="bankChaseResultText">추격을 따돌렸습니다.</p>
+190: <strong id="bankChaseResultValue">₩0</strong>
+191: <button id="bankChaseReturn" class="primary">휴대폰으로 복귀</button>
+214: <div id="bankUvModal" class="bank-uv-modal hidden" role="dialog" aria-modal="true">
+215: <div class="bank-uv-card">
+216: <div class="bank-uv-head">
+217: <div><p class="eyebrow">UV ACCESS</p><h2>은행 출입문 비밀번호 확인</h2><p>UV 라이트를 움직여 문에 남은 숫자 흔적 4개를 직접 찾으세요.</p></div>
+218: <button id="bankUvClose" class="modal-close" type="button">×</button>
+220: <div id="bankUvSurface" class="bank-uv-surface">
+221: <div class="bank-door-seam"></div>
+222: <div class="bank-keypad"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+223: <div id="bankUvBeam" class="bank-uv-beam"></div>
+224: <div id="bankUvTraces" class="bank-uv-traces"></div>
+226: <div class="bank-uv-code-row">
+228: <div id="bankUvDigits" class="bank-uv-digits"><b>?</b><b>?</b><b>?</b><b>?</b></div>
+230: <div class="bank-uv-controls">
+232: <input id="bankUvCodeInput" type="text" inputmode="numeric" maxlength="4" placeholder="4자리 입력" autocomplete="off">
+233: <button id="bankUvConfirm" class="primary" type="button" disabled>비밀번호 입력 · 문 열기</button>
+235: <div id="bankUvStatus" class="bank-uv-status">UV 빛으로 문 표면을 천천히 훑어보세요.</div>
+246: <script src="./mission3d.js?v=0.5.9" defer></script>
+247: <script src="./bankchase.js?v=0.5.10" defer></script>
+
+-- public/mission3d.js --
+84: function buildLogistics() {
+105: floorType: "warehouse", label: "LOGISTICS HUB"
+110: function buildBankPrep() {
+134: floorType: "concrete", label: "BANK PREP OFFICE"
+139: function buildBank() {
+150: bankDoorCells: [[14,14],[15,14],[14,15],[15,15]],
+151: bankDoorPoint: { x: 15, y: 16.2 },
+169: floorType: "concrete", label: "BANK LOBBY / VAULT"
+174: const MAPS = { alley: buildAlley(), abandoned_store: buildStore(), logistics: buildLogistics(), bank_prep: buildBankPrep(), bank: buildBank() };
+178: const canvas = options.canvas;
+179: if (!container || !canvas) throw new Error("Mission3D requires container and canvas");
+180: const ctx = canvas.getContext("2d", { alpha: false });
+221: const dpr = Math.min(1.5, window.devicePixelRatio || 1);
+222: canvas.width = Math.floor(width * dpr);
+223: canvas.height = Math.floor(height * dpr);
+224: canvas.style.width = `${box.width}px`;
+225: canvas.style.height = `${box.height}px`;
+283: function setBankDoorOpen(open) {
+284: if (mapId !== "bank" || !Array.isArray(map.bankDoorCells)) return;
+285: for (const [x,y] of map.bankDoorCells) {
+299: if (mapId === "bank") {
+300: setBankDoorOpen(Boolean(missionState?.bankDoorUnlocked));
+310: if (mapId === "bank") setBankDoorOpen(false);
+315: container.classList.add("three-d-active");
+324: container.classList.remove("three-d-active");
+325: if (document.pointerLockElement === canvas) document.exitPointerLock?.();
+356: if (mapId === "bank") return Boolean(missionState.bankDoorUnlocked);
+357: return mapId === "bank_prep" && missionState.missionType === "bank-prep" && missionState.prepId === "guardWeakening";
+361: // 은행/준비작업 입구는 맵 남쪽(+Y)이므로 기본 방향은 입구 반대쪽(-Y)입니다.
+512: const cameraX=x/width-.5,rayAngle=player.angle+cameraX*FOV,hit=castRay(rayAngle);
+880: ctx.fillText(near?"E  은행 금고":"BANK SAFE",p.screenX,baseY-scale*.94);ctx.restore();
+987: function drawBankDoorLabel(now){
+988: if(mapId!=="bank"||missionState?.bankDoorUnlocked||!map.bankDoorPoint)return;
+989: const p=screenProject(map.bankDoorPoint.x,map.bankDoorPoint.y);if(!p||p.distance>12)return;
+995: ctx.shadowBlur=8;ctx.fillStyle="#e8dcff";ctx.font=`900 ${Math.max(13,h*.31)}px Segoe UI, sans-serif`;ctx.fillText("BANK ACCESS",p.screenX,y-h*.09);
+1029: if(!active)return;ctx.clearRect(0,0,width,height);drawBackground();drawWalls();drawProps();drawGuardVisionCones();drawNodes(now);drawSafe(now);drawStoreDoorLabel(now);drawBankDoorLabel(now);drawExitDoorLabel(now);drawExitWaypoint(now);drawGunModel(now);drawBrickThrowFx(now);drawHud();
+1055: const p=canvas.requestPointerLock?.();
+1059: function onMouseMove(event){if(!active||document.pointerLockElement!==canvas)return;rotate(event.movementX*mouseSensitivity);player.pitch=clamp((player.pitch||0)+event.movementY*mouseSensitivity*.38,-.18,.18);}
+1060: function onPointerLockChange(){pointerLocked=document.pointerLockElement===canvas;container.classList.toggle("pointer-locked",pointerLocked);if(pointerLocked)autoLockPending=false;options.onPointerLockChange?.(pointerLocked);}
+1062: function onCanvasClick(){
+1064: if(document.pointerLockElement!==canvas){requestPointer();return;}
+1067: canvas.addEventListener("click",onCanvasClick);document.addEventListener("mousemove",onMouseMove);document.addEventListener("pointerlockchange",onPointerLockChange);window.addEventListener("resize",resize);
+1074: destroy(){unmount();canvas.removeEventListener("click",onCanvasClick);document.removeEventListener("mousemove",onMouseMove);document.removeEventListener("pointerlockchange",onPointerLockChange);window.removeEventListener("resize",resize);resizeObserver?.disconnect();}
+1078: window.Mission3D={create};
+
+-- public/style.css --
+1: :root{color-scheme:dark;--bg:#090c11;--panel:#111722;--panel2:#161e2b;--line:#273244;--text:#eef5ff;--muted:#8f9eb2;--cyan:#41d9ff;--green:#7fffb2;--warn:#ffd166;--danger:#ff6b7a}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 15% -10%,#173044 0,transparent 35%),var(--bg)…
+122: .warehouse.map-logistics{background:linear-gradient(180deg,#34434a 0 17%,#202a2f 17% 100%);border-color:#4b626d;box-shadow:inset 0 0 100px #0009}
+123: .map-logistics .warehouse-grid{background-image:linear-gradient(#ffffff0a 1px,transparent 1px),linear-gradient(90deg,#ffffff0a 1px,transparent 1px);background-size:36px 36px}.logi-conveyor{position:absolute;left:17%;right:17%;top:43%;height:56px;background:repeating-linear-gradient(90deg,#4e5960 0 22px,#252d31 22px 28p…
+143: .opening-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;text-align:left}.opening-title-row .eyebrow{margin-top:0}.opening-title-row h2{margin:4px 0}.open-skip-button{min-width:92px;margin-top:2px;font-weight:850;border-color:#46586e;background:#151e2a}.open-skip-button:hover{border…
+185: .phone-device{width:min(430px,94vw);height:min(780px,92vh);min-height:650px;position:relative;overflow:hidden;border:2px solid #33465d;border-radius:42px;background:linear-gradient(180deg,#102235 0%,#0d1622 42%,#081018 100%);box-shadow:0 40px 110px #000d,inset 0 0 0 7px #05080d,inset 0 0 0 9px #1b2837;padding:24px 25px…
+186: .phone-device:before{content:"";position:absolute;top:10px;left:50%;width:112px;height:24px;transform:translateX(-50%);background:#040609;border-radius:0 0 16px 16px;z-index:5}
+198: .entry-logistics{background:linear-gradient(180deg,#27343a,#0d1418)}.entry-door{display:none}.entry-logistics .entry-door{display:block;position:absolute;top:0;bottom:0;width:51%;background:repeating-linear-gradient(90deg,#45545b 0 26px,#354249 26px 32px);border-color:#111a1e;box-shadow:inset 0 0 80px #0007;z-index:3;t…
+199: @media(max-width:760px){.phone-device{height:760px;min-height:620px}.tier-select-wrap{align-items:flex-start;flex-direction:column}.phone-app-icon{width:68px;height:68px}.phone-title{padding-top:22px}}
+228: .mission-3d-canvas{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:4;background:#05070a;cursor:crosshair;image-rendering:auto}
+229: .warehouse.three-d-active .mission-3d-canvas{display:block}
+230: .warehouse.three-d-active .warehouse-grid,.warehouse.three-d-active .map-scene,.warehouse.three-d-active .rack,.warehouse.three-d-active .player,.warehouse.three-d-active .search-node{display:none!important}
+231: .warehouse.three-d-active{background:#05070a;border-color:#34495c;box-shadow:inset 0 0 80px #000b,0 0 0 1px #41d9ff12}
+234: .warehouse.three-d-active .mission-3d-help{display:flex}
+236: .warehouse.three-d-active:not(.pointer-locked) .mission-3d-pointer{display:block}
+238: .warehouse.three-d-active .mission-hint{z-index:9;border-color:#3a536c;background:#05090edb;color:#e1f5ff;box-shadow:0 10px 30px #0009}
+239: .warehouse.three-d-active .mission-hint kbd{background:#173148;border:1px solid #3b7998;border-radius:6px;padding:2px 7px;color:#fff}
+240: .warehouse.three-d-active.mission-urgent{border-color:#8b3544;box-shadow:inset 0 0 90px #000c,0 0 0 1px #ff5d7444,0 0 28px #ff5d7418}
+275: .warehouse.three-d-active .mission-3d-canvas{image-rendering:auto;filter:saturate(1.04) contrast(1.03)}
+276: body.mission-immersive .warehouse.three-d-active{background:#020304}
+278: /* v0.3.3 · 은행 준비작업 허브 */
+279: .bank-operation-panel{margin-top:18px;border:1px solid #35485d;border-radius:22px;background:linear-gradient(155deg,#101924,#0a1119);padding:22px;box-shadow:0 18px 44px #0006,inset 0 0 0 1px #ffffff06}
+280: .bank-operation-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.bank-operation-head h2{margin:3px 0 7px;font-size:26px}.bank-operation-head p:last-child{margin:0;color:#91a3b7}.bank-progress-badge{min-width:74px;text-align:center;padding:9px 12px;border:1px solid #40607a;border-radius:9…
+281: .bank-prep-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}.bank-prep-step{min-height:122px;border:1px solid #2d4052;border-radius:16px;background:#0c141d;padding:16px;display:flex;flex-direction:column;gap:7px;position:relative;overflow:hidden}.bank-prep-step:after{content:"";po…
+282: .bank-operation-footer{display:flex;justify-content:space-between;gap:18px;align-items:center;border-top:1px solid #263648;padding-top:18px}.bank-finale-info{display:flex;flex-direction:column;gap:3px}.bank-finale-info span{font-size:11px;color:#7f93a8}.bank-finale-info strong{font-size:22px;color:#f3f8ff}.bank-finale-…
+283: @media(max-width:800px){.bank-prep-steps{grid-template-columns:1fr}.bank-operation-footer{align-items:stretch;flex-direction:column}.bank-mission-button{width:100%;min-width:0}}
+297: /* v0.3.5 · 은행 UV 출입문 퍼즐 */
+298: .bank-uv-modal{position:fixed;inset:0;z-index:180;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 35%,#1c1834dd,#030509f4 64%);backdrop-filter:blur(12px)}
+299: .bank-uv-card{width:min(860px,95vw);border:1px solid #5b5482;border-radius:24px;background:linear-gradient(160deg,#171528,#0b0d14 68%);box-shadow:0 32px 110px #000e,inset 0 0 0 1px #ffffff08;padding:26px;position:relative}
+300: .bank-uv-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.bank-uv-head h2{margin:4px 0 7px;font-size:28px}.bank-uv-head p:last-child{margin:0;color:#9da6b8}.bank-uv-head .modal-close{position:static;flex:0 0 auto}
+301: .bank-uv-surface{height:320px;margin:22px 0 16px;border:1px solid #434c5b;border-radius:18px;position:relative;overflow:hidden;background:linear-gradient(90deg,#333b45 0 49.4%,#171d23 49.4% 50.6%,#3b444e 50.6% 100%);box-shadow:inset 0 0 90px #000b,0 18px 45px #0008;cursor:crosshair}
+302: .bank-uv-surface:before,.bank-uv-surface:after{content:"";position:absolute;top:0;bottom:0;width:14px;background:linear-gradient(#59636d,#20262c);box-shadow:inset 0 0 0 1px #74808b55}.bank-uv-surface:before{left:2.5%}.bank-uv-surface:after{right:2.5%}
+303: .bank-door-seam{position:absolute;left:50%;top:0;bottom:0;width:4px;transform:translateX(-50%);background:#080b0f;box-shadow:0 0 0 1px #65717b44}
+304: .bank-keypad{position:absolute;right:11%;top:50%;transform:translateY(-50%);width:92px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:12px;border-radius:10px;background:#171c22;border:1px solid #6f7a84;box-shadow:0 8px 24px #000b}
+305: .bank-keypad span{aspect-ratio:1;border-radius:4px;background:linear-gradient(#4e5963,#242c33);border:1px solid #7a879244}
+306: .bank-uv-beam{position:absolute;left:50%;top:50%;width:190px;height:190px;transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;background:radial-gradient(circle,#c895ff38 0,#874cff24 28%,#5f28d112 54%,transparent 72%);box-shadow:0 0 40px #a66cff55,inset 0 0 24px #d7b3ff22;mix-blend-mode:screen}
+307: .bank-uv-trace{position:absolute;transform:translate(-50%,-50%);font-size:38px;font-weight:950;color:#f0d9ff;text-shadow:0 0 9px #b65cff,0 0 22px #7d33ff;opacity:.04;filter:blur(1px);transition:.18s}.bank-uv-trace.revealed{opacity:.96;filter:none}
+308: .bank-uv-code-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 16px;border:1px solid #343849;border-radius:14px;background:#0c0e15}.bank-uv-code-row>span{font-size:12px;color:#9ba3b3}.bank-uv-digits{display:flex;gap:8px}.bank-uv-digits b{display:grid;place-items:center;width:46px;…
+309: .bank-uv-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}.bank-uv-controls>span{font-size:12px;color:#8f98a8;margin-right:auto}.bank-uv-controls input{width:130px;padding:12px 14px;border-radius:10px;border:1px solid #424b5b;background:#080b10;color:#fff;font-weight:800;letter-spacing:.…
+310: body.mission-immersive .bank-uv-modal{z-index:190}
+311: @media(max-width:650px){.bank-uv-card{padding:18px}.bank-uv-surface{height:260px}.bank-uv-controls input,.bank-uv-controls button{width:100%}.bank-uv-controls>span{width:100%;margin-right:0}}
+318: /* v0.4.1 · 은행 차량 추격전 / 하단 임무 안내 가독성 */
+321: .bank-chase{position:fixed;inset:0;z-index:220;background:#030609;overflow:hidden;color:#eef7ff}
+322: .bank-chase-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#05090e}
+323: .bank-chase-top{position:absolute;left:24px;right:24px;top:20px;z-index:3;display:grid;grid-template-columns:auto minmax(260px,430px) auto;align-items:center;gap:18px;pointer-events:none}
+324: .bank-chase-badge,.bank-chase-distance,.bank-chase-status{border:1px solid #ffffff24;border-radius:14px;background:#05090ddb;backdrop-filter:blur(10px);box-shadow:0 12px 34px #0008}
+325: .bank-chase-badge{display:flex;align-items:center;gap:13px;padding:12px 16px}.bank-chase-badge span{font-size:11px;letter-spacing:.13em;color:#8ea6bb;font-weight:900}.bank-chase-badge strong{font-size:20px;color:#e7f8ff}
+326: .bank-chase-status{display:grid;grid-template-columns:auto minmax(100px,1fr) auto;align-items:center;gap:10px;padding:12px 15px}.bank-chase-status>span{font-size:12px;color:#9eb1c3;font-weight:850}.bank-chase-status>strong{min-width:48px;text-align:right;font-size:15px}.bank-chase-durability{height:11px;border-radius:9…
+327: .bank-chase-distance{display:flex;flex-direction:column;align-items:flex-end;padding:10px 14px}.bank-chase-distance span{font-size:10px;color:#879caf;font-weight:800}.bank-chase-distance strong{font-size:17px;font-variant-numeric:tabular-nums}
+328: .bank-chase-bottom{position:absolute;left:24px;right:24px;bottom:24px;z-index:3;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;pointer-events:none}.bank-chase-loot{position:static;display:flex;flex:0 1 340px;min-width:220px;max-width:340px;flex-direction:column;gap:3px;padding:14px 16px;border…
+329: .bank-chase-guide{position:static;flex:0 0 auto;display:grid;grid-template-columns:auto auto;gap:7px 9px;align-items:center;padding:13px 15px;border:1px solid #ffffff20;border-radius:14px;background:#05090dde;backdrop-filter:blur(10px);box-shadow:0 12px 34px #0008;pointer-events:none}.bank-chase-guide b{padding:5px 8px…
+330: .bank-chase-impact{position:absolute;left:50%;top:35%;z-index:5;transform:translate(-50%,-50%);padding:14px 24px;border:1px solid #ff8790;border-radius:13px;background:#420d15e6;color:#ffdfe2;font-size:25px;font-weight:950;letter-spacing:.08em;text-shadow:0 2px 10px #000;box-shadow:0 0 45px #ff3f5066;pointer-events:non…
+331: .bank-chase-result{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:#020408d9;backdrop-filter:blur(12px)}.bank-chase-result-card{width:min(520px,90vw);padding:34px;text-align:center;border:1px solid #38516a;border-radius:24px;background:linear-gradient(155deg,#111b28,#080e15);box-shadow:0…
+332: @media(max-width:760px){.bank-chase-top{left:10px;right:10px;top:10px;grid-template-columns:1fr 1fr}.bank-chase-status{grid-column:1/-1;grid-row:2}.bank-chase-badge,.bank-chase-distance{min-width:0}.bank-chase-bottom{left:10px;right:10px;bottom:10px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-i…
+333: @media(max-width:520px){.bank-chase-bottom{grid-template-columns:1fr}.bank-chase-guide{justify-self:end}.bank-chase-loot{width:100%}}
+337: /* v0.4.8 bank prep / combat / manual logistics entry */
+338: .bank-operation-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.bank-operation-actions .bank-mission-button{min-width:210px}.bank-prep-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.bank-prep-step.optional{border-style:dashed}.bank-prep-step.optional .step-number:after{content:" · 선택";color…
+339: .bank-combat-hud{position:absolute;left:18px;top:18px;z-index:14;display:flex;gap:8px;align-items:stretch;pointer-events:none}.bank-combat-hud>div{min-width:105px;padding:9px 12px;border:1px solid #35506a;border-radius:11px;background:#05090edb;box-shadow:0 8px 24px #0008}.bank-combat-hud span{display:block;font-size:9…
+340: .entry-logistics.manual .entry-caption{opacity:1;bottom:10%;font-size:22px}.entry-logistics.manual .entry-door{cursor:grab;touch-action:none;user-select:none;transition:transform .22s ease-out;display:flex;align-items:center;justify-content:center}.entry-logistics.manual .entry-door:before{position:absolute;top:50%;pad…
+341: @media(max-width:800px){.bank-operation-actions{width:100%;justify-content:stretch}.bank-operation-actions .bank-mission-button{width:100%;min-width:0}.bank-combat-hud{left:10px;top:10px;gap:5px}.bank-combat-hud>div{min-width:82px;padding:7px 9px}.bank-alarm-state{min-width:95px!important;font-size:10px}}
+343: /* v0.4.9 - 은행 전투 HUD 가독성 */
+344: .bank-combat-hud{left:18px!important;top:auto!important;bottom:92px!important;display:flex;align-items:flex-end;gap:10px;z-index:18!important}
+345: .bank-combat-hud>div{background:#03070ceb!important;border-color:#45617d!important;box-shadow:0 12px 34px #000c,0 0 0 1px #ffffff08!important}
+346: .bank-player-health{min-width:210px!important;padding:12px 14px!important;border-color:#a6404b!important;background:linear-gradient(145deg,#19080b,#05090eea)!important}
+347: .bank-player-health span{font-size:10px!important;color:#ff9aa3!important}
+348: .bank-player-health strong{display:flex;align-items:baseline;gap:6px;margin-top:2px;font-variant-numeric:tabular-nums}
+349: .bank-player-health strong b{font-size:30px;color:#fff;font-weight:950}
+350: .bank-player-health strong small{font-size:12px;color:#9da9b5}
+351: .bank-player-health-track{display:block;width:100%;height:9px;margin-top:7px;border-radius:999px;overflow:hidden;background:#271116;border:1px solid #623039}
+352: .bank-player-health-track em{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff4054,#ff7b73);box-shadow:0 0 12px #ff405477;transition:width .18s ease}
+353: .bank-player-health-track em.critical{animation:bankHpPulse .65s infinite alternate;background:linear-gradient(90deg,#ff1f37,#ff5365)}
+354: @keyframes bankHpPulse{from{filter:brightness(.8)}to{filter:brightness(1.45)}}
+355: body.mission-immersive .bank-combat-hud{left:22px!important;bottom:88px!important}
+356: @media(max-width:800px){.bank-combat-hud{left:10px!important;bottom:82px!important;gap:6px}.bank-player-health{min-width:155px!important;padding:9px 10px!important}.bank-player-health strong b{font-size:24px}.bank-combat-hud>div:not(.bank-player-health){min-width:76px!important;padding:7px 8px!important}}
+
+-- sd-app.json --
+6: "description": "SD지갑과 SD Link 계정을 연동하는 SD 플리마켓 PC 확장팩입니다. 파밍, 상자 개봉, 은행 습격, 온라인 물품 동기화와 오토바이 추격전을 포함합니다.",
+
+-- src/sd-integration.js --
+5: const { inspectDatabase, getAccount, applyTransaction } = require("./wallet-db");
+7: const SUPABASE_URL = "https://qmatphbjzafdtlyviqoa.supabase.co";
+8: const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_H2qTl_30-7hPUYFhJ_N_QA_X71xZswO";
+9: const S_RANK_REP = 2200;
+12: function rankFromRep(value) {
+37: function sdLinkRoots(currentUserData) {
+42: process.env.SD_LINK_USER_DATA,
+44: appData && path.join(appData, "sdlink-desktop"),
+45: appData && path.join(appData, "SDLink"),
+48: parent && path.join(parent, "sdlink-desktop"),
+60: function findSdLinkData(currentUserData) {
+61: for (const root of sdLinkRoots(currentUserData)) {
+62: const configPath = path.join(root, "sdlink", "config.json");
+63: const sessionPath = path.join(root, "sdlink", "online-session.dat");
+71: function walletCandidates(currentUserData) {
+84: ["SDWallet", "data", "sdwallet.sqlite"],
+85: ["SD지갑", "data", "sdwallet.sqlite"],
+86: ["sdwallet-desktop", "data", "sdwallet.sqlite"],
+87: ["apps", "SDWallet", "data", "sdwallet.sqlite"],
+88: ["apps", "SD지갑", "data", "sdwallet.sqlite"],
+89: ["data", "sdwallet.sqlite"],
+90: ["sdwallet.sqlite"],
+99: function resolveWallet(currentUserData) {
+100: const link = findSdLinkData(currentUserData);
+103: const paths = uniqueExisting([configuredPath, ...walletCandidates(currentUserData)]);
+116: source: configuredPath && path.resolve(configuredPath).toLowerCase() === inspected.path.toLowerCase() ? "sd-link" : "auto",
+175: const body = await fetchJson(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+179: apikey: SUPABASE_PUBLISHABLE_KEY,
+199: const link = findSdLinkData(currentUserData);
+228: error.code = "SD_LINK_NOT_CONNECTED";
+232: return fetchJson(`${SUPABASE_URL}/rest/v1/rpc/${encodeURIComponent(functionName)}`, {
+236: apikey: SUPABASE_PUBLISHABLE_KEY,
+244: async function logisticsProgress(currentUserData, safeStorage) {
+269: const snapshotRep = Number(snapshot?.logistics_rep ?? snapshot?.logisticsRep ?? 0);
+275: // 아래의 기존 sd_logistics_progress 조회로 계속 진행합니다.
+280: const rows = await fetchJson(`${SUPABASE_URL}/rest/v1/sd_logistics_progress?select=state&user_id=eq.${encodeURIComponent(userId)}&limit=1`, {
+283: apikey: SUPABASE_PUBLISHABLE_KEY,
+287: const fallbackRep = Math.max(0, Number(Array.isArray(rows) ? rows[0]?.state?.logisticsRep : 0) || 0);
+299: grade: rankFromRep(rep),
+313: walletState() {
+314: const wallet = resolveWallet(this.userDataPath);
+315: if (!wallet.connected) return { connected: false, balance: 0, account: null, source: wallet.source };
+317: const account = getAccount(wallet.path, wallet.selectedAccountId);
+318: return { connected: true, balance: Number(account.balance || 0), account, path: wallet.path, source: wallet.source };
+324: adjustWallet(amount, memo) {
+325: const wallet = resolveWallet(this.userDataPath);
+326: if (!wallet.connected) throw new Error("SD지갑 가상계좌를 찾지 못했습니다. SD Link에서 지갑을 먼저 연결하세요.");
+327: const tx = applyTransaction(wallet.path, wallet.selectedAccountId, Number(amount), String(memo || "SD 플리마켓 가상거래"));
+328: return { transaction: tx, wallet: this.walletState() };
+333: this.company = await logisticsProgress(this.userDataPath, this.safeStorage);
+360: return { ...this.company, requiredRep: S_RANK_REP };
+364: module.exports = { SdIntegration, rankFromRep, S_RANK_REP };
+
+-- src/wallet-db.js --
+33: bankName:String(row.bank_name||""),accountNumber:String(row.account_number||""),
+
+===== SDLink_v1.2.8_Desktop.zip =====
+files=23 bytes=72593
+
+-- forge.config.js --
+8: executableName: "SDLink",
+16: name: "sdlink",
+17: setupExe: "SDLink-Setup.exe",
+
+-- main.js --
+17: const { inspectDatabase, fingerprintAccount, getAccount } = require("./src/wallet-db");
+40: mainWindow.webContents.send("sdlink:status", payload);
+128: ["sdwallet-desktop", "data", "sdwallet.sqlite"],
+129: ["SD지갑", "data", "sdwallet.sqlite"],
+130: ["SDWallet", "data", "sdwallet.sqlite"],
+131: ["data", "sdwallet.sqlite"],
+132: ["sdwallet.sqlite"],
+141: function autoDetectWallet() {
+193: ipcMain.handle("sdlink:get-state", (_event, includeSnapshot) => appState(Boolean(includeSnapshot)));
+195: ipcMain.handle("sdlink:auto-detect", () => autoDetectWallet());
+197: ipcMain.handle("sdlink:choose-db", async () => {
+210: ipcMain.handle("sdlink:choose-bitcoin-source", async () => {
+232: ipcMain.handle("sdlink:select-wallet", (_event, databasePath, accountId) => {
+247: walletFingerprint: fingerprint,
+252: ipcMain.handle("sdlink:login", async (_event, email, password, remember) => {
+266: ipcMain.handle("sdlink:logout", async () => {
+271: ipcMain.handle("sdlink:register-device", async () => syncEngine.registerDevice());
+272: ipcMain.handle("sdlink:request-migration", async () => syncEngine.requestMigration());
+273: ipcMain.handle("sdlink:sync", async () => syncEngine.syncOnce());
+275: ipcMain.handle("sdlink:set-auto-sync", (_event, enabled) => {
+281: ipcMain.handle("sdlink:reset", async () => {
+296: if (linked?.snapshot?.device_id) {
+297: await authService.rpc("revoke_sd_link_device", {
+298: p_device_id: linked.snapshot.device_id,
+322: ipcMain.handle("sdlink:open-website", () => shell.openExternal(WEBSITE_URL));
+323: ipcMain.handle("sdlink:open-account", () => shell.openExternal(ACCOUNT_URL));
+324: ipcMain.handle("sdlink:open-mobile-download", () => shell.openExternal(MOBILE_DOWNLOAD_URL));
+361: // SD_LINK_BACKGROUND_AUTOSTART_V128
+365: app: SdLinkAutoStartApp,
+366: BrowserWindow: SdLinkAutoStartBrowserWindow,
+368: const SD_LINK_AUTO_START_ARGUMENT = "--sd-link-auto-start";
+369: const SD_LINK_STARTED_FROM_WINDOWS_LOGIN = process.argv.includes(
+370: SD_LINK_AUTO_START_ARGUMENT,
+373: if (SD_LINK_STARTED_FROM_WINDOWS_LOGIN) {
+381: SdLinkAutoStartApp.on("browser-window-created", (_event, window) => {
+388: SdLinkAutoStartApp.whenReady()
+391: for (const window of SdLinkAutoStartBrowserWindow.getAllWindows()) {
+
+-- package.json --
+2: "name": "sdlink-desktop",
+16: "check": "node --check main.js && node --check preload.js && node --check forge.config.js && node --check src/config-store.js && node --check src/auth-service.js && node --check src/wallet-db.js && node --check src/sync-state.js && node --check src/sync-engine.js && node --check src/bitcoin-reader.js && node --check pu…
+
+-- preload.js --
+3: const { contextBridge, ipcRenderer } = require("electron");
+5: contextBridge.exposeInMainWorld("sdLink", {
+6: getState: (includeSnapshot = false) => ipcRenderer.invoke("sdlink:get-state", includeSnapshot),
+7: autoDetect: () => ipcRenderer.invoke("sdlink:auto-detect"),
+8: chooseDatabase: () => ipcRenderer.invoke("sdlink:choose-db"),
+9: chooseBitcoinSource: () => ipcRenderer.invoke("sdlink:choose-bitcoin-source"),
+10: selectWallet: (databasePath, accountId) =>
+11: ipcRenderer.invoke("sdlink:select-wallet", databasePath, accountId),
+13: ipcRenderer.invoke("sdlink:login", email, password, remember),
+14: logout: () => ipcRenderer.invoke("sdlink:logout"),
+15: registerDevice: () => ipcRenderer.invoke("sdlink:register-device"),
+16: requestMigration: () => ipcRenderer.invoke("sdlink:request-migration"),
+17: sync: () => ipcRenderer.invoke("sdlink:sync"),
+18: setAutoSync: (enabled) => ipcRenderer.invoke("sdlink:set-auto-sync", enabled),
+19: reset: () => ipcRenderer.invoke("sdlink:reset"),
+20: openWebsite: () => ipcRenderer.invoke("sdlink:open-website"),
+21: openAccount: () => ipcRenderer.invoke("sdlink:open-account"),
+22: openMobileDownload: () => ipcRenderer.invoke("sdlink:open-mobile-download"),
+25: ipcRenderer.on("sdlink:status", listener);
+26: return () => ipcRenderer.removeListener("sdlink:status", listener);
+
+-- public/app.js --
+66: button.innerHTML = `<span><b>${account.bankName} · ${account.accountNumber}</b><br><small>${account.ownerName} / ${account.username}</small></span><strong>${won(account.balance)}</strong>`;
+70: state = await window.sdLink.selectWallet(inspection.path, account.id);
+92: elements.localInfo.innerHTML = `<b>${selected.bankName} ${selected.accountNumber}</b><br>${selected.ownerName} · ${selected.username}<br>현재 로컬 잔액 <b>${won(selected.balance)}</b><br><small>${config.databasePath}</small>`;
+117: elements.migrationInfo.innerHTML = `기존 잔액 이전이 승인되었습니다.<br>온라인 계좌 <b>${snapshot?.account_number || "-"}</b> · ${won(snapshot?.wallet_balance)}`;
+140: elements.onlineBalance.textContent = won(snapshot?.wallet_balance);
+184: state = await window.sdLink.getState(includeSnapshot);
+202: const matches = await window.sdLink.autoDetect();
+204: setNotice("자동으로 찾지 못했습니다. ‘직접 선택’으로 sdwallet.sqlite를 지정하세요.", "warning");
+219: const result = await window.sdLink.chooseBitcoinSource();
+230: const inspection = await window.sdLink.chooseDatabase();
+245: state = await window.sdLink.login(elements.email.value, elements.password.value, elements.remember.checked);
+257: state = await window.sdLink.logout();
+265: await window.sdLink.registerDevice();
+278: const result = await window.sdLink.requestMigration();
+291: const result = await window.sdLink.sync();
+302: state = await window.sdLink.setAutoSync(elements.autoSync.checked);
+306: $("websiteButton").addEventListener("click", () => window.sdLink.openWebsite());
+307: $("accountButton").addEventListener("click", () => window.sdLink.openAccount());
+308: $("mobileButton").addEventListener("click", () => window.sdLink.openMobileDownload());
+310: const result = await window.sdLink.reset();
+317: window.sdLink.onStatus((payload) => {
+
+-- public/index.html --
+5: <meta name="viewport" content="width=device-width, initial-scale=1" />
+27: <div class="card-head"><span class="step">1</span><div><h2>로컬 지갑 선택</h2><p>현재 사용 중인 sdwallet.sqlite를 연결합니다.</p></div><span id="localBadge" class="badge">미선택</span></div>
+
+-- sd-app.json --
+2: "id": "sdlink-desktop",
+
+-- src/auth-service.js --
+6: const SUPABASE_URL = "https://qmatphbjzafdtlyviqoa.supabase.co";
+7: const SUPABASE_PUBLISHABLE_KEY =
+33: this.directory = path.join(userDataDirectory, "sdlink");
+142: `${SUPABASE_URL}/auth/v1/token?grant_type=${encodeURIComponent(grantType)}`,
+147: apikey: SUPABASE_PUBLISHABLE_KEY,
+213: await this.requestJson(`${SUPABASE_URL}/auth/v1/logout`, {
+216: apikey: SUPABASE_PUBLISHABLE_KEY,
+228: return await this.requestJson(`${SUPABASE_URL}/rest/v1/${route}`, {
+232: apikey: SUPABASE_PUBLISHABLE_KEY,
+253: module.exports = { AuthService, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY };
+
+-- src/bitcoin-reader.js --
+132: function readExactWalletBitcoin(filePath, accountId) {
+213: function collectRoots(walletDatabasePath) {
+215: let current = path.dirname(path.resolve(walletDatabasePath));
+267: function readBitcoinSnapshot({ walletDatabasePath, accountId, configuredPath }) {
+271: const exact = readExactWalletBitcoin(walletDatabasePath, accountId);
+285: module.exports = { readBitcoinSnapshot, inspectBitcoinSource: inspect, readExactWalletBitcoin };
+
+-- src/config-store.js --
+11: deviceKey: "",
+12: deviceName: "",
+19: walletFingerprint: "",
+26: function ensureDeviceKey(value) {
+35: this.directory = path.join(userDataDirectory, "sdlink");
+51: deviceKey: ensureDeviceKey(parsed.deviceKey),
+54: if (!config.deviceName) {
+55: config.deviceName = `Windows PC (${process.env.COMPUTERNAME || "SD Link"})`;
+66: deviceKey: ensureDeviceKey(config.deviceKey),
+
+-- src/sync-engine.js --
+16: } = require("./wallet-db");
+54: if (text.includes("물류") || text.includes("SD 기사")) return "sd_logistics";
+56: return "sd_wallet";
+62: // sdlink-local-* 은 거래기록을 남기지 않고 잔액만 바꾸는 구형 앱을
+64: if (id.startsWith("sdlink-local-")) return false;
+65: if (id.startsWith("sdlink-remote-")) return true;
+66: if (id.startsWith("sdlink-")) return true;
+76: this.backupDirectory = path.join(userDataDirectory, "sdlink", "backups");
+94: async registerDevice() {
+98: const response = unwrapJson(await this.auth.rpc("register_sd_link_device", {
+99: p_device_key: config.deviceKey,
+100: p_device_name: config.deviceName,
+101: p_wallet_fingerprint: fingerprint,
+108: walletFingerprint: fingerprint,
+120: const response = unwrapJson(await this.auth.rpc("request_sd_wallet_migration", {
+121: p_local_wallet_fingerprint: fingerprint,
+129: bank_name: account.bankName,
+135: walletFingerprint: fingerprint,
+145: const response = unwrapJson(await this.auth.rpc("get_sd_link_snapshot", {
+146: p_device_key: config.deviceKey,
+164: const serverBalance = asNumber(snapshot.wallet_balance);
+237: const response = unwrapJson(await this.auth.rpc("push_sd_link_transaction", {
+238: p_device_key: config.deviceKey,
+249: sd_link_version: "1.2.4",
+281: const rows = await this.auth.rpc("pull_sd_link_transactions", {
+282: p_device_key: config.deviceKey,
+294: metadata.sd_link_device_key === config.deviceKey &&
+295: Boolean(metadata.sd_link_local_transaction_id);
+327: walletDatabasePath: config.databasePath,
+336: p_device_key: config.deviceKey,
+387: config.lastExpectedLocalBalance ?? snapshot.wallet_balance,
+399: const serverBalance = asNumber(snapshot.wallet_balance);
+
+-- src/sync-state.js --
+9: const directory = path.join(userDataDirectory, "sdlink");
+
+-- src/wallet-db.js --
+31: bankName: String(row.bank_name || ""),
+97: "sd608-wallet-v1",
+101: account.bankName,
+143: const destination = path.join(backupDirectory, `sdwallet-before-link-${stamp}.sqlite`);
+172: const id = `sdlink-${crypto.randomUUID()}`;
+206: const id = `sdlink-local-${crypto.randomUUID()}`;
+225: const localId = `sdlink-remote-${String(remote.transaction_id)}`;
+
+-- ∞äñ∞╣ÿ_δ░Å_δÅÖΩ╕░φÖö_δ│╡Ω╡¼.txt --
+16: 5. 같은 sdwallet.sqlite와 같은 계좌 선택
+
+===== SDLogisticsCenter_Season0_Desktop.zip =====
+files=19 bytes=1427722
+
+-- SDLogisticsCenter/forge.config.js --
+4: packagerConfig:{asar:true,executableName:"SDLogisticsCenter",icon:path.join(__dirname,"public","icons","icon")},
+6: makers:[{name:"@electron-forge/maker-squirrel",config:{name:"sdlogisticscenter",setupExe:"SDLogisticsCenter-Setup.exe",setupIcon:path.join(__dirname,"public","icons","icon.ico")}}]
+
+-- SDLogisticsCenter/main.js --
+6: const {applyTransaction,inspectDatabase,listRecentTransactions}=require("./src/wallet-db");
+10: app.setName("SDLogisticsCenter");
+30: ["SDWallet","data","sdwallet.sqlite"],["SD지갑","data","sdwallet.sqlite"],["sdwallet-desktop","data","sdwallet.sqlite"],
+31: ["apps","SDWallet","data","sdwallet.sqlite"],["apps","SD지갑","data","sdwallet.sqlite"],["data","sdwallet.sqlite"],["sdwallet.sqlite"]
+34: path.resolve(appsFolder,"SDWallet","data","sdwallet.sqlite"),
+35: path.resolve(appsFolder,"SD지갑","data","sdwallet.sqlite")
+65: ipcMain.handle("sdlogistics:wallet-state",()=>currentState());
+66: ipcMain.handle("sdlogistics:auto-detect",()=>{
+71: ipcMain.handle("sdlogistics:choose-db",async()=>{
+78: ipcMain.handle("sdlogistics:select-account",(_e,id)=>{
+87: ipcMain.handle("sdlogistics:wallet-transaction",(_e,amount,memo)=>{
+94: app.whenReady().then(async()=>{const updateCheck=await checkRequiredUpdate({appId:"sd-logistics-center-desktop",currentVersion:packageJson.version,userDataPath:app.getPath("userData")});if(!updateCheck.ok){const detail=updateCheck.reason==="update-required"?`${updateCheck.message}\n\n현재 버전: v${packageJson.version}\n필수 …
+
+-- SDLogisticsCenter/package.json --
+2: "name": "sd-logistics-center-desktop",
+16: "check": "node --check main.js && node --check preload.js && node --check forge.config.js && node --check src/config-store.js && node --check src/wallet-db.js && node --check public/app.js"
+
+-- SDLogisticsCenter/preload.js --
+2: const {contextBridge,ipcRenderer}=require("electron");
+3: contextBridge.exposeInMainWorld("sdLogistics",{
+4: getWalletState:()=>ipcRenderer.invoke("sdlogistics:wallet-state"),
+5: autoDetectWallet:()=>ipcRenderer.invoke("sdlogistics:auto-detect"),
+6: chooseWalletDatabase:()=>ipcRenderer.invoke("sdlogistics:choose-db"),
+7: selectAccount:(id)=>ipcRenderer.invoke("sdlogistics:select-account",id),
+8: transact:(amount,memo)=>ipcRenderer.invoke("sdlogistics:wallet-transaction",amount,memo)
+
+-- SDLogisticsCenter/public/app.js --
+2: const KEY = "sd_logistics_center_desktop_progress_v101";
+3: const OLD_KEY = "sd_logistics_center_desktop_progress_v100";
+12: const PROGRESSION_RESET_MARKER_KEY = "sd_logistics_progress_reset_epoch";
+17: {key:"small",  label:"소형",   name:"소형 밴",         cost:250000,  order:0, stack:1,  speed:1.00, minRank:"F", desc:"적재 1스택 · 가장 빠름"},
+18: {key:"medium", label:"중형",   name:"중형 트럭",       cost:700000,  order:1, stack:3,  speed:0.86, minRank:"E", desc:"적재 3스택 · 빠름"},
+19: {key:"large",  label:"대형",   name:"대형 카고",       cost:1500000, order:2, stack:6,  speed:0.72, minRank:"C", desc:"적재 6스택 · 보통"},
+20: {key:"xlarge", label:"초대형", name:"초대형 트레일러", cost:3000000, order:3, stack:12, speed:0.58, minRank:"A", desc:"적재 12스택 · 가장 느림"},
+22: const ranks = [
+23: {rank:"F", min:0, next:300},
+24: {rank:"E", min:300, next:800},
+25: {rank:"D", min:800, next:1600},
+26: {rank:"C", min:1600, next:2800},
+27: {rank:"B", min:2800, next:4500},
+28: {rank:"A", min:4500, next:7000},
+29: {rank:"S", min:7000, next:null},
+31: const headquartersLevels = {
+32: 2:{contracts:35, xlarge:3, revenue:4000000, fleet:6, fee:500000, unlock:"기사 시스템 · 정원 2명"},
+33: 3:{contracts:50, xlarge:5, revenue:7000000, fleet:8, fee:750000, unlock:"차량 슬롯 10대"},
+34: 4:{contracts:70, xlarge:8, revenue:11000000, fleet:8, fee:1000000, unlock:"기사 정원 4명"},
+35: 5:{contracts:95, xlarge:12, revenue:17000000, fleet:8, fee:1500000, unlock:"장거리 계약"},
+36: 6:{contracts:125, xlarge:16, revenue:25000000, fleet:8, fee:2000000, unlock:"기사 정원 6명 · 물류창고"},
+37: 7:{contracts:160, xlarge:21, revenue:35000000, fleet:8, fee:3000000, unlock:"본부 경영 특성 강화"},
+38: 8:{contracts:200, xlarge:27, revenue:48000000, fleet:10, fee:4000000, unlock:"기사 정원 8명 · 해외 화물"},
+39: 9:{contracts:245, xlarge:34, revenue:65000000, fleet:10, fee:5500000, unlock:"차량 슬롯 12대"},
+40: 10:{contracts:300, xlarge:42, revenue:90000000, fleet:12, fee:8000000, unlock:"기사 정원 10명 · 대형 물류기업"}
+42: const headquartersUnlocks = [
+43: {level:1, text:"물류 본부 개설"},
+49: {level:7, text:"본부 특성 강화"},
+73: logisticsRep:0,
+76: headquartersLevel:0,
+77: logisticsRevenue:0,
+91: logisticsUiOpen:{
+107: if(localStorage.getItem(PROGRESSION_RESET_MARKER_KEY)===String(PROGRESSION_RESET_EPOCH))return false;
+108: const walletBalance=Number(state?.balance)||0;
+109: localStorage.removeItem(KEY);
+111: state.balance=walletBalance;
+113: localStorage.setItem(PROGRESSION_RESET_MARKER_KEY,String(PROGRESSION_RESET_EPOCH));
+114: localStorage.setItem(KEY,JSON.stringify(state));
+158: const raw=localStorage.getItem(KEY);
+161: const hq=Number(parsed.headquartersLevel)||0;
+167: headquartersLevel:hq,
+168: logisticsRevenue:Number(parsed.logisticsRevenue)||0,
+182: logisticsUiOpen:{
+183: contracts:parsed.logisticsUiOpen?.contracts !== false,
+184: fleet:parsed.logisticsUiOpen?.fleet !== false
+191: const oldRaw=localStorage.getItem(OLD_KEY);
+194: const hq=Number(old.headquartersLevel)||0;
+196: const derivedRevenue=Number(old.logisticsRevenue)||
+204: logisticsRevenue:derivedRevenue,
+222: logisticsUiOpen:{
+236: localStorage.setItem(KEY,JSON.stringify(copy));
+243: function rankFromRep(rep){
+244: let r=ranks[0];
+245: for(const x of ranks){
+251: function rankIndex(rank){
+252: return ranks.findIndex(x=>x.rank===rank);
+254: let walletReady=false,walletSnapshot=null,walletQueue=Promise.resolve();
+256: function requireWallet(){
+257: if(walletReady&&walletSnapshot?.selected)return true;
+260: function setWalletStatus(text,type=""){
+261: const el=$("#walletLinkStatus");if(!el)return;
+262: el.textContent=text;el.className=`wallet-status-badge ${type}`.trim();
+264: function renderWalletConnection(){
+265: const pathEl=$("#walletDbPath"),select=$("#walletAccountSelect"),owner=$("#walletOwnerText"),account=$("#walletAccountText");
+266: if(pathEl)pathEl.value=walletSnapshot?.path||"";
+268: const selectedId=walletSnapshot?.selected?.id||"";
+269: select.innerHTML=(walletSnapshot?.accounts||[]).length
+270: ?walletSnapshot.accounts.map(a=>`<option value="${a.id}" ${a.id===selectedId?"selected":""}>${a.ownerName||a.username||"사용자"} · ${a.accountNumber||a.id}</option>`).join("")
+272: select.disabled=!(walletSnapshot?.accounts||[]).length;
+274: if(walletSnapshot?.selected){
+275: const a=walletSnapshot.selected;
+276: if(owner)owner.textContent=`${a.ownerName||a.username||"SD지갑 사용자"} · ${a.bankName||"SD Bank"}`;
+278: state.balance=Number(a.balance||0);walletReady=true;setWalletStatus("연결됨","connected");
+281: state.balance=0;walletReady=false;setWalletStatus("미연결","error");
+283: const bal=$("#walletBalance");if(bal)bal.textContent=walletReady?won(state.balance):"SD지갑 연결 필요";
+286: async function refreshWallet({rerender=true}={}){
+287: walletSnapshot=await window.sdLogistics.getWalletState();renderWalletConnection();
+288: if(rerender)render();return walletSnapshot;
+290: function walletAdjust(amount,memo){
+291: if(!requireWallet())return Promise.reject(new Error("SD지갑 미연결"));
+... match limit reached ...
+
+-- SDLogisticsCenter/public/index.html --
+5: <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+6: <title>SD Logistics Center · Season 0 Desktop v1.0.7</title>
+13: <div class="eyebrow">LIVE LOGISTICS</div>
+25: <div class="wallet-pill">
+27: <strong id="walletBalance">연결 확인 중…</strong>
+43: <section class="panel wallet-connect-panel">
+46: <div class="eyebrow">SHARED SD WALLET</div>
+50: <span id="walletLinkStatus" class="wallet-status-badge">연결 확인 중</span>
+53: <div class="wallet-connect-grid">
+56: <input id="walletDbPath" type="text" readonly placeholder="SD지갑을 자동으로 찾는 중…" />
+60: <select id="walletAccountSelect" disabled>
+66: <div class="wallet-connect-actions">
+67: <button id="walletAutoDetectBtn">SD지갑 자동 찾기</button>
+68: <button id="walletChooseDbBtn">직접 선택</button>
+69: <button id="walletRefreshBtn" class="primary">잔액 새로고침</button>
+72: <div class="wallet-selected-summary">
+73: <span id="walletOwnerText">계좌 미연결</span>
+74: <strong id="walletAccountText">-</strong>
+82: <strong id="logisticsRank">F</strong>
+83: <small id="logisticsRepText">0 / 100</small>
+97: <details id="contractsMenu" class="panel logistics-menu-collapsible" open>
+103: <span class="logistics-summary-meta" id="contractsSummaryMeta">계약 목록</span>
+105: <div class="logistics-menu-body">
+106: <div class="panel-title-row logistics-menu-toolbar">
+117: <div><span>회사 등급</span><strong id="companyRank">F</strong></div>
+136: <span>다음 등급까지</span><span id="rankProgressText">0%</span>
+138: <div class="progress"><div id="rankProgressBar"></div></div>
+143: <details id="fleetMenu" class="logistics-section-collapsible" open>
+144: <summary class="section-heading sub logistics-section-summary">
+146: <div class="eyebrow">LOGISTICS FLEET</div>
+149: <div class="logistics-summary-right">
+151: <span class="logistics-summary-meta" id="fleetSummaryMeta">1대 보유</span>
+155: <div class="logistics-section-body">
+179: <div class="eyebrow">S-RANK ENDGAME</div>
+180: <h2>SD 물류 본부</h2>
+182: <span class="platform-label">S등급 이후 장기 성장</span>
+185: <section id="headquartersPanel" class="panel headquarters-panel"></section>
+
+-- SDLogisticsCenter/public/styles.css --
+19: .wallet-pill{background:rgba(17,26,47,.88);border:1px solid var(--line);border-radius:18px;padding:11px 16px;display:flex;flex-direction:column;align-items:flex-end;box-shadow:var(--shadow)}
+20: .wallet-pill span{font-size:11px;color:var(--muted)}
+21: .wallet-pill strong{font-size:19px}
+103: .wallet-pill{padding:9px 11px}
+104: .wallet-pill strong{font-size:15px}
+602: /* ===== v0.7 · S등급 물류 본부 / 직원 기사 ===== */
+603: .headquarters-panel{
+799: /* ===== v0.8 · 기사 전용 자동수익 / 본부 특성 ===== */
+839: /* ===== v0.9 · 물류 본부 접기/펼치기 + 특성 초기화 ===== */
+909: .logistics-menu-collapsible,
+910: .logistics-section-collapsible{
+913: .logistics-menu-collapsible > summary,
+914: .logistics-section-collapsible > summary{
+919: .logistics-menu-collapsible > summary::-webkit-details-marker,
+920: .logistics-section-collapsible > summary::-webkit-details-marker{
+923: .logistics-menu-collapsible > summary{
+929: .logistics-menu-collapsible > summary h3{
+932: .logistics-menu-collapsible > summary p{
+935: .logistics-menu-collapsible > summary::after,
+936: .logistics-section-summary::after{
+943: .logistics-menu-collapsible[open] > summary::after,
+944: .logistics-section-collapsible[open] > .logistics-section-summary::after{
+947: .logistics-menu-body{
+950: .logistics-menu-toolbar{
+953: .logistics-summary-meta{
+965: .logistics-section-collapsible{
+969: .logistics-section-summary{
+975: .logistics-section-summary::after{
+978: .logistics-summary-right{
+986: .logistics-section-body{
+990: .logistics-menu-collapsible > summary{
+993: .logistics-summary-right{
+998: .logistics-menu-toolbar{
+1005: .wallet-connect-panel{margin-top:14px}
+1006: .wallet-status-badge{
+1011: .wallet-status-badge.connected{border-color:#347452;background:#10291e;color:#9ce0b8}
+1012: .wallet-status-badge.error{border-color:#81424c;background:#31171d;color:#ffc0c8}
+1013: .wallet-connect-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:10px;margin-top:14px}
+1014: .wallet-connect-grid label{display:grid;gap:6px}
+1015: .wallet-connect-grid label>span{color:var(--muted);font-size:11px;font-weight:800}
+1016: .wallet-connect-grid input,.wallet-connect-grid select{
+1020: .wallet-connect-grid input[readonly]{color:#a8bad7}
+1021: .wallet-connect-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+1022: .wallet-selected-summary{
+1026: .wallet-selected-summary span{color:var(--muted);font-size:11px}
+1027: .wallet-selected-summary strong{font-size:13px;text-align:right}
+1028: .ledger-row .wallet-tx-type{
+1033: .wallet-connect-grid{grid-template-columns:1fr}
+1034: .wallet-selected-summary{align-items:flex-start;flex-direction:column}
+
+-- SDLogisticsCenter/README.md --
+6: - SD지갑 `sdwallet.sqlite`를 직접 연결합니다.
+7: - 차량 구매/판매, 본부 승급, 기사 채용, 배송·기사 수익이 같은 SD지갑 거래내역에 기록됩니다.
+10: 설치: SD종합센터 → 앱 추가 → SDLogisticsCenter_Season0_Desktop.zip
+27: - 회사 등급 계산 함수 `rankFromRep`, `rankIndex` 누락 복구
+30: - 물류 본부 초기 렌더 중단 수정
+40: - 차량/본부/기사/기존 진행 데이터 유지
+
+-- SDLogisticsCenter/src/config-store.js --
+5: constructor(directory){this.file=path.join(directory,"sd-logistics-wallet.json");fs.mkdirSync(directory,{recursive:true});}
+
+-- SDLogisticsCenter/src/wallet-db.js --
+33: bankName:String(row.bank_name||""),accountNumber:String(row.account_number||""),
+90: const id=`sdlogistics-c${centerVersion()}-v${safeVersion(APP_VERSION)}-${crypto.randomUUID()}`;
+
+===== SDBitcoinMiner_v1.2.2_Desktop.zip =====
+files=17 bytes=79158
+
+-- public/index.html --
+5: <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+37: 실제 암호화폐가 아닌 가상경제 시뮬레이션입니다. X를 눌러도 시스템 트레이에서 채굴하며, 가동 중인 GPU 1개당 UTC 기준 하루 100,000원의 전기세가 결제되지 않으면 채굴이 중지됩니다.
+64: <p id="electricityDescription">GPU를 설치하면 GPU 1개당 UTC 날짜 기준 하루 100,000원이 청구됩니다.</p>
+70: <div><span>다음 결제</span><strong id="electricityNextBilling">GPU 설치 후 시작</strong></div>
+133: <strong id="roomGpuCount">0 / 0</strong>
+161: <strong id="gpuPrice">₩0</strong>
+162: <button id="buyGpuButton" class="button primary" type="button">
+163: GPU 구매
+309: <p class="section-kicker">WALLET CONNECTION</p>
+328: <p id="walletPathText" class="path-text">연결된 DB 없음</p>
+
+-- public/css/style.css --
+531: .gpu-slot {
+542: .gpu-slot.installed {
+549: .gpu-fan {
+557: .gpu-slot:not(.installed) .gpu-fan {
+566: .gpu-light {
+574: .gpu-slot.installed .gpu-light {
+1086: /* v1.2.0 GPU durability */
+1087: .gpu-slot.broken {
+1092: .gpu-slot.broken .gpu-fan {
+1095: .gpu-slot.broken .gpu-light {
+
+-- public/js/app.js --
+15: pendingPurchaseRoomKey: "",
+51: roomGpuCount: document.getElementById("roomGpuCount"),
+54: gpuPrice: document.getElementById("gpuPrice"),
+56: buyGpuButton: document.getElementById("buyGpuButton"),
+82: walletPathText: document.getElementById("walletPathText"),
+144: "계좌를 연결하고 GPU를 설치하면 UTC 날짜 기준 일일 전기세가 적용됩니다.";
+149: if (!electricity.hasActiveGpus) {
+153: elements.electricityNextBilling.textContent = "GPU 설치 후 시작";
+156: "가동 중인 GPU가 없어 전기세가 청구되지 않습니다.";
+180: const feePerGpu = electricity.feePerGpuKrw ?? state.config?.electricityFeePerGpuKrw ?? 100000;
+182: `GPU ${electricity.activeGpuCount}개 × ${formatMoney(feePerGpu)} = 하루 ${formatMoney(electricity.dailyFeeKrw)}이 UTC 날짜 기준으로 자동 결제됩니다.`;
+240: `${state.account.bankName} · ${state.account.ownerName} · ${maskAccountNumber(state.account.accountNumber)}`;
+248: function createMiniRack(index, frames, gpus) {
+255: Math.min(state.config.gpusPerFrame, gpus - index * state.config.gpusPerFrame),
+258: rack.title = `틀 ${index + 1}: GPU ${installedInRack}개`;
+290: mini.appendChild(createMiniRack(index, room.frames, room.gpus));
+296: <span>그래픽카드 <strong>${room.gpus}개</strong></span>
+327: const gpuBySlot = new Map(
+328: (Array.isArray(room.gpuUnits) ? room.gpuUnits : []).map((unit) => [Number(unit.slotIndex), unit]),
+339: for (let slotIndex = 0; slotIndex < state.config.gpusPerFrame; slotIndex += 1) {
+340: const globalIndex = rackIndex * state.config.gpusPerFrame + slotIndex;
+342: const unit = gpuBySlot.get(globalIndex);
+347: slot.className = `gpu-slot ${installed ? "installed" : ""} ${broken ? "broken" : ""}`.trim();
+350: fan.className = "gpu-fan";
+354: ? `GPU ${globalIndex + 1} · 내구도 ${durability}%`
+356: ? `GPU ${globalIndex + 1} · 파손`
+360: light.className = "gpu-light";
+380: `틀 ${room.frames}/3 · GPU ${room.gpus}/${room.frames * state.config.gpusPerFrame} · 누적 ${room.minedBtc.toFixed(2)} BTC`;
+382: elements.roomGpuCount.textContent =
+383: `${room.gpus} / ${room.frames * state.config.gpusPerFrame}`;
+386: elements.gpuPrice.textContent = formatMoney(state.config.gpuPrice);
+397: elements.buyGpuButton.disabled =
+399: room.gpus >= room.frames * state.config.gpusPerFrame;
+481: elements.walletPathText.textContent =
+493: elements.walletPathText.textContent = result.databasePath;
+507: `${account.username} · ${account.bankName} · ${account.accountNumber} · ${formatMoney(account.balance)}`;
+562: elements.walletPathText.textContent =
+563: state.settings.walletDatabasePath || "연결된 DB 없음";
+578: state.pendingPurchaseRoomKey = roomKey;
+586: state.pendingPurchaseRoomKey = "";
+600: if (!state.account || !state.pendingPurchaseRoomKey) {
+606: roomKey: state.pendingPurchaseRoomKey,
+614: const purchasedRoom = state.pendingPurchaseRoomKey;
+640: async function buyGpu() {
+641: const result = await bridge.buyGpu({
+731: const result = await bridge.autoDetectWallet();
+744: const result = await bridge.chooseWalletDatabase();
+794: elements.buyGpuButton.addEventListener("click", buyGpu);
+957: (total, reward) => total + Number(reward.brokenGpuCount || 0),
+961: showToast(`채굴 성공으로 GPU ${brokenCount}개가 내구도 0%가 되어 파손되었습니다.`);
+977: if (!state.settings.walletDatabasePath || state.accounts.length === 0) {
+978: const detected = await bridge.autoDetectWallet();
+
+-- src/mining-service.js --
+103: const gpuUnits = Array.isArray(room.gpuUnits)
+104: ? room.gpuUnits
+111: { length: Math.max(0, Math.trunc(Number(room.gpus || 0))) },
+116: const gpuSuccesses = [];
+118: for (const unit of gpuUnits) {
+130: gpuSuccesses.push({
+147: gpuSuccesses,
+148: brokenGpuCount: gpuSuccesses.filter((entry) => entry.broke).length,
+
+-- src/settings.js --
+7: walletDatabasePath: "",
+51: if (typeof patch.walletDatabasePath === "string") {
+52: this.data.walletDatabasePath = patch.walletDatabasePath.trim();
+
+-- src/wallet-database.js --
+17: const GPU_PRICE = 1550000;
+19: const ELECTRICITY_FEE_PER_GPU_KRW = 100000;
+21: const GPUS_PER_FRAME = 5;
+36: function validateWalletDatabase(databasePath) {
+88: gpus INTEGER NOT NULL DEFAULT 0 CHECK (gpus BETWEEN 0 AND 15),
+97: CREATE TABLE IF NOT EXISTS bitcoin_gpu_units (
+109: CREATE INDEX IF NOT EXISTS idx_bitcoin_gpu_units_account_room
+110: ON bitcoin_gpu_units(account_id, room_key, slot_index);
+128: action_type IN ('buy_room','buy_frame','buy_gpu','mine','sell','decorate')
+168: migrateGpuUnitsV1(db);
+169: syncRoomGpuCounts(db);
+398: function migrateGpuUnitsV1(db) {
+399: const migrationKey = "gpu_units_v1";
+411: SELECT account_id, room_key, gpus
+413: WHERE gpus > 0
+418: const gpuCount = Math.max(0, Math.min(15, Math.trunc(Number(room.gpus || 0))));
+419: for (let slotIndex = 0; slotIndex < gpuCount; slotIndex += 1) {
+421: INSERT OR IGNORE INTO bitcoin_gpu_units (
+437: function syncRoomGpuCounts(db, accountId = "", roomKey = "") {
+451: SET gpus = (
+453: FROM bitcoin_gpu_units AS gpu
+454: WHERE gpu.account_id = bitcoin_rooms.account_id
+455: AND gpu.room_key = bitcoin_rooms.room_key
+456: AND gpu.durability > 0
+462: function listGpuUnitsForAccount(db, accountId) {
+465: FROM bitcoin_gpu_units
+628: bankName: String(row.bank_name),
+643: gpus: Number(row.gpus),
+663: function mapElectricity(row, activeGpuCount = 0) {
+674: feePerGpuKrw: ELECTRICITY_FEE_PER_GPU_KRW,
+675: dailyFeeKrw: Number(activeGpuCount || 0) * ELECTRICITY_FEE_PER_GPU_KRW,
+682: activeGpuCount: Number(activeGpuCount || 0),
+683: hasActiveGpus: Number(activeGpuCount || 0) > 0,
+684: nextBillingAt: status === "active" && Number(activeGpuCount || 0) > 0
+721: const activeGpuCount = Number(
+723: SELECT COUNT(*) AS gpu_count
+724: FROM bitcoin_gpu_units AS gpu
+726: ON room.account_id = gpu.account_id
+727: AND room.room_key = gpu.room_key
+728: WHERE gpu.account_id = ?
+730: AND gpu.durability > 0
+731: `).get(accountId)?.gpu_count || 0,
+740: if (activeGpuCount <= 0 || String(row.status) === "suspended") {
+742: electricity: mapElectricity(row, activeGpuCount),
+752: const dailyFeeKrw = activeGpuCount * ELECTRICITY_FEE_PER_GPU_KRW;
+799: electricity: mapElectricity(row, activeGpuCount),
+849: electricity: mapElectricity(row, activeGpuCount),
+926: const activeGpuCount = Number(
+928: SELECT COUNT(*) AS gpu_count
+929: FROM bitcoin_gpu_units AS gpu
+931: ON room.account_id = gpu.account_id
+932: AND room.room_key = gpu.room_key
+933: WHERE gpu.account_id = ?
+935: AND gpu.durability > 0
+936: `).get(accountId)?.gpu_count || 0,
+943: electricity: mapElectricity(updated, activeGpuCount),
+960: accounts.bank_name,
+986: accounts.bank_name,
+1006: gpus,
+1017: const gpuUnits = listGpuUnitsForAccount(db, accountId);
+1019: room.gpuUnits = gpuUnits.filter((unit) => unit.roomKey === room.roomKey);
+1072: const activeGpuCount = gpuUnits.reduce(
+1086: electricity: mapElectricity(electricityRow, activeGpuCount),
+1261: function buyGpu(databasePath, accountId, roomKey) {
+1280: const capacity = Number(room.frames) * GPUS_PER_FRAME;
+1288: FROM bitcoin_gpu_units
+1311: amount: GPU_PRICE,
+1314: actionType: "buy_gpu",
+1318: INSERT INTO bitcoin_gpu_units (
+1327: syncRoomGpuCounts(db, accountId, roomKey);
+1542: let brokenGpuCount = 0;
+1543: const gpuDurabilityChanges = [];
+1544: for (const gpuResult of Array.isArray(reward.gpuSuccesses) ? reward.gpuSuccesses : []) {
+1545: const slotIndex = Math.max(0, Math.trunc(Number(gpuResult.slotIndex)));
+1546: const successes = Math.max(0, Math.trunc(Number(gpuResult.successes)));
+1553: FROM bitcoin_gpu_units
+1565: UPDATE bitcoin_gpu_units
+1571: brokenGpuCount += 1;
+1573: gpuDurabilityChanges.push({
+1582: if (gpuDurabilityChanges.length > 0) {
+... match limit reached ...
+
+-- main.js --
+18: ELECTRICITY_FEE_PER_GPU_KRW,
+20: GPU_PRICE,
+21: GPUS_PER_FRAME,
+24: autoFindWalletDatabase,
+26: buyGpu,
+35: validateWalletDatabase,
+36: } = require("./src/wallet-database");
+61: function currentWalletPath() {
+64: .walletDatabasePath || ""
+250: currentWalletPath();
+346: gpuPrice: GPU_PRICE,
+350: gpusPerFrame: GPUS_PER_FRAME,
+352: gpuChancePercent: SUCCESS_PROBABILITY * 100,
+354: ELECTRICITY_FEE_PER_GPU_KRW,
+364: "wallet:auto-detect",
+367: autoFindWalletDatabase({
+379: walletDatabasePath: found,
+396: "wallet:choose-database",
+430: validateWalletDatabase(
+443: walletDatabasePath:
+462: "wallet:list-accounts",
+465: currentWalletPath();
+494: "wallet:get-state",
+501: currentWalletPath(),
+529: currentWalletPath(),
+558: currentWalletPath(),
+581: "shop:buy-gpu",
+586: const result = buyGpu(
+587: currentWalletPath(),
+615: currentWalletPath(),
+652: currentWalletPath(),
+672: currentWalletPath(),
+
+-- package.json --
+6: "description": "GPU별 전기세·내구도와 0.02% 확률을 적용한 SD지갑 연동 비트코인 채굴 시뮬레이션",
+7: "author": "SDWallet",
+16: "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-database.js && node --check src/mining-service.js && node --check public/js/app.js"
+
+-- preload.js --
+3: const { contextBridge, ipcRenderer } = require("electron");
+6: getSettings: () => ipcRenderer.invoke("settings:get"),
+7: saveSettings: (patch) => ipcRenderer.invoke("settings:save", patch),
+8: getConfig: () => ipcRenderer.invoke("app:get-config"),
+9: autoDetectWallet: () => ipcRenderer.invoke("wallet:auto-detect"),
+10: chooseWalletDatabase: () => ipcRenderer.invoke("wallet:choose-database"),
+11: listAccounts: () => ipcRenderer.invoke("wallet:list-accounts"),
+12: getState: (accountId) => ipcRenderer.invoke("wallet:get-state", accountId),
+13: buyRoom: (payload) => ipcRenderer.invoke("room:buy", payload),
+14: buyFrame: (payload) => ipcRenderer.invoke("shop:buy-frame", payload),
+15: buyGpu: (payload) => ipcRenderer.invoke("shop:buy-gpu", payload),
+16: decorateRoom: (payload) => ipcRenderer.invoke("room:decorate", payload),
+18: ipcRenderer.invoke("electricity:reactivate", accountId),
+19: sellBitcoin: (payload) => ipcRenderer.invoke("bitcoin:sell", payload),
+21: ipcRenderer.on(
+27: ipcRenderer.on(
+35: ipcRenderer.on(
+
+-- README.md --
+175: 자동 찾기에 실패하면 `DB 직접 선택`으로 SD지갑의 `sdwallet.sqlite` 파일을 선택합니다.
+195: - 원룸당 틀 3개·GPU 15개
+196: - 10초마다 GPU별 독립 채굴
+205: - 맵의 GPU·BTC 표시
+212: - 이전 GPU당 채굴 성공 확률: 10초마다 0.25%
+220: - 채굴 판정: GPU당 10초마다 0.02%
+222: - GPU 가격: 1,550,000원
+223: - 전기세: 가동 가능한 GPU 1개당 UTC 하루 100,000원
+224: - 채굴 성공한 해당 GPU 내구도: 1% 감소
+225: - 내구도 0%: GPU 파손, 같은 슬롯에 새 GPU를 구매해야 재가동
+226: - 기존 GPU는 업데이트 시 내구도 100%로 1회 마이그레이션
+
+-- sd-app.json --
+6: "description": "가상 채굴방과 GPU를 구매하고 BTC를 채굴·판매합니다.",
+7: "improvement": "GPU 1개당 하루 전기세 10만원, GPU 가격 155만원, 채굴 성공 시 해당 GPU 내구도 1% 감소, 0% 파손, 채굴 확률 0.02%를 적용했습니다.",
+
+===== SDMiner_v1.1.1_Desktop.zip =====
+files=17 bytes=76322
+
+-- SDMiner/main.js --
+17: autoFindWalletDatabase,
+28: validateWalletDatabase,
+29: } = require("./src/wallet-database");
+114: function currentWalletPath() {
+115: return settingsStore.get().walletDatabasePath;
+136: ipcMain.handle("wallet:auto-detect", () => {
+137: const found = autoFindWalletDatabase({
+147: walletDatabasePath: found,
+158: "wallet:choose-database",
+187: validateWalletDatabase(databasePath);
+198: walletDatabasePath: databasePath,
+210: ipcMain.handle("wallet:list-accounts", () => {
+211: const databasePath = currentWalletPath();
+237: "wallet:get-account-state",
+239: const databasePath = currentWalletPath();
+314: const databasePath = currentWalletPath();
+376: currentWalletPath();
+403: const databasePath = currentWalletPath();
+433: const databasePath = currentWalletPath();
+
+-- SDMiner/package.json --
+7: "author": "SDWallet",
+16: "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-database.js && node --check src/mining-engine.js && node --check public/js/app.js"
+
+-- SDMiner/preload.js --
+5: ipcRenderer,
+10: ipcRenderer.invoke("settings:get"),
+13: ipcRenderer.invoke("settings:save", patch),
+16: ipcRenderer.invoke("mining:get-config"),
+18: autoDetectWallet: () =>
+19: ipcRenderer.invoke("wallet:auto-detect"),
+21: chooseWalletDatabase: () =>
+22: ipcRenderer.invoke("wallet:choose-database"),
+24: listWalletAccounts: () =>
+25: ipcRenderer.invoke("wallet:list-accounts"),
+28: ipcRenderer.invoke(
+29: "wallet:get-account-state",
+34: ipcRenderer.invoke("mining:mine", accountId),
+37: ipcRenderer.invoke(
+43: ipcRenderer.invoke("shop:sell", payload),
+46: ipcRenderer.invoke(
+
+-- SDMiner/public/css/style.css --
+860: .upgrade-card.unlocked {
+900: .upgrade-card.unlocked .upgrade-symbol span {
+904: .upgrade-card.unlocked .upgrade-symbol span::before {
+932: .upgrade-card.unlocked .upgrade-purchase strong {
+
+-- SDMiner/public/index.html --
+7: content="width=device-width, initial-scale=1.0"
+195: <strong id="accountBank">-</strong>
+341: <p class="section-kicker">WALLET CONNECTION</p>
+362: id="autoDetectWalletButton"
+370: id="chooseWalletDatabaseButton"
+378: <p id="walletPathText" class="path-text">
+
+-- SDMiner/public/js/app.js --
+17: autoMiningUnlocked: false,
+82: accountBank: document.getElementById(
+83: "accountBank",
+150: autoDetectWalletButton: document.getElementById(
+151: "autoDetectWalletButton",
+153: chooseWalletDatabaseButton:
+155: "chooseWalletDatabaseButton",
+157: walletPathText: document.getElementById(
+158: "walletPathText",
+263: `${state.account.bankName} · ${state.account.ownerName}`;
+272: elements.accountBank.textContent = "-";
+283: elements.accountBank.textContent =
+284: state.account.bankName;
+346: const unlocked = Boolean(
+347: state.upgrade?.autoMiningUnlocked,
+352: "unlocked",
+353: unlocked,
+379: if (unlocked) {
+619: autoMiningUnlocked: false,
+635: autoMiningUnlocked: false,
+652: autoMiningUnlocked: false,
+662: await bridge.listWalletAccounts();
+668: elements.walletPathText.textContent =
+679: autoMiningUnlocked: false,
+688: elements.walletPathText.textContent =
+704: `${account.username} · ${account.bankName} · ${account.accountNumber} · ${formatMoney(
+733: elements.walletPathText.textContent =
+734: state.settings.walletDatabasePath ||
+746: async function autoDetectWallet() {
+747: const result = await bridge.autoDetectWallet();
+761: async function chooseWalletDatabase() {
+763: await bridge.chooseWalletDatabase();
+904: !state.upgrade?.autoMiningUnlocked
+959: state.upgrade?.autoMiningUnlocked
+1076: autoMiningUnlocked: false,
+1116: elements.autoDetectWalletButton.addEventListener(
+1118: autoDetectWallet,
+1121: elements.chooseWalletDatabaseButton.addEventListener(
+1123: chooseWalletDatabase,
+1200: !state.settings.walletDatabasePath ||
+1204: await bridge.autoDetectWallet();
+
+-- SDMiner/README.md --
+139: 자동 찾기에 실패하면 `DB 직접 선택`을 눌러 SD지갑의 `sdwallet.sqlite`를 선택합니다.
+144: C:\Users\사용자명\AppData\Roaming\sdwallet-desktop\data\sdwallet.sqlite
+
+-- SDMiner/src/settings.js --
+7: walletDatabasePath: "",
+57: if (typeof patch.walletDatabasePath === "string") {
+58: this.data.walletDatabasePath =
+59: patch.walletDatabasePath.trim();
+
+-- SDMiner/src/wallet-database.js --
+34: function validateWalletDatabase(databasePath) {
+106: auto_mining_unlocked INTEGER NOT NULL DEFAULT 0
+107: CHECK (auto_mining_unlocked IN (0, 1)),
+173: autoMiningUnlocked: Boolean(
+174: row?.auto_mining_unlocked,
+207: bankName: String(row.bank_name),
+227: accounts.bank_name,
+258: accounts.bank_name,
+337: auto_mining_unlocked,
+675: auto_mining_unlocked,
+686: currentUpgrade?.auto_mining_unlocked,
+719: auto_mining_unlocked = 1,
+774: autoMiningUnlocked: true,
+1163: function autoFindWalletDatabase({
+1172: "sdwallet.sqlite",
+1176: "sdwallet-desktop",
+1178: "sdwallet.sqlite",
+1182: "SDWallet",
+1184: "sdwallet.sqlite",
+1189: "SDWallet_Stage8_Desktop",
+1191: "sdwallet.sqlite",
+1196: "SDWallet_Stage8_Desktop",
+1198: "sdwallet.sqlite",
+1203: "SDWallet_Stage7_Desktop",
+1205: "sdwallet.sqlite",
+1210: "SDWallet_Stage7_Desktop",
+1212: "sdwallet.sqlite",
+1217: if (validateWalletDatabase(candidate).ok) {
+1236: "sdwallet.sqlite",
+1241: validateWalletDatabase(candidate).ok
+1256: autoFindWalletDatabase,
+1267: validateWalletDatabase,
+
+===== SDMukjippa_Version1_1_Desktop.zip =====
+files=21 bytes=44451
+
+-- SDMukjippa_Version1_1_Desktop/src/settings.js --
+7: walletDatabasePath: "",
+37: walletDatabasePath: typeof parsed.walletDatabasePath === "string" ? parsed.walletDatabasePath : "",
+61: if (typeof patch.walletDatabasePath === "string") this.data.walletDatabasePath = patch.walletDatabasePath.trim();
+
+-- SDMukjippa_Version1_1_Desktop/src/wallet-database.js --
+24: function validateWalletDatabase(databasePath) {
+90: bankName: String(row.bank_name),
+141: SELECT accounts.id, accounts.bank_name, accounts.account_number,
+154: SELECT accounts.id, accounts.bank_name, accounts.account_number,
+439: function autoFindWalletDatabase({ appDataPath, homePath }) {
+441: path.join(appDataPath, "SD지갑", "data", "sdwallet.sqlite"),
+442: path.join(appDataPath, "sdwallet-desktop", "data", "sdwallet.sqlite"),
+443: path.join(appDataPath, "SDWallet", "data", "sdwallet.sqlite"),
+444: path.join(homePath, "Downloads", "SDWallet_Stage9_Desktop", "data", "sdwallet.sqlite"),
+445: path.join(homePath, "Desktop", "SDWallet_Stage9_Desktop", "data", "sdwallet.sqlite"),
+447: for (const candidate of uniqueExisting(candidates)) if (validateWalletDatabase(candidate).ok) return candidate;
+451: const candidate = path.join(appDataPath, entry.name, "data", "sdwallet.sqlite");
+452: if (fs.existsSync(candidate) && validateWalletDatabase(candidate).ok) return candidate;
+459: autoFindWalletDatabase,
+469: validateWalletDatabase,
+
+-- SDMukjippa_Version1_1_Desktop/main.js --
+9: autoFindWalletDatabase, cashOut, continueStreak, getAccount, getGameState,
+10: getRecentTransactions, listAccounts, playHand, startSession, validateWalletDatabase,
+11: } = require("./src/wallet-database");
+39: function walletPath() { return settingsStore.get().walletDatabasePath; }
+60: ipcMain.handle("wallet:auto-detect", () => {
+61: const found = autoFindWalletDatabase({ appDataPath: app.getPath("appData"), homePath: app.getPath("home") });
+63: settingsStore.update({ walletDatabasePath: found, selectedAccountId: "" });
+66: ipcMain.handle("wallet:choose-database", async () => {
+73: const validation = validateWalletDatabase(databasePath);
+75: settingsStore.update({ walletDatabasePath: databasePath, selectedAccountId: "" });
+78: ipcMain.handle("wallet:list-accounts", () => {
+79: const databasePath = walletPath();
+84: ipcMain.handle("wallet:get-account", (event, accountId) => {
+85: const databasePath = walletPath();
+93: const databasePath = walletPath();
+100: const result = startSession({ databasePath: walletPath(), accountId: String(payload?.accountId || ""), betAmount: payload?.betAmount });
+106: try { return { ok: true, ...playHand({ databasePath: walletPath(), accountId: String(payload?.accountId || ""), sessionId: String(payload?.sessionId || ""), playerMove: payload?.playerMove }) }; }
+110: try { return { ok: true, ...continueStreak({ databasePath: walletPath(), accountId: String(payload?.accountId || ""), sessionId: String(payload?.sessionId || "") }) }; }
+114: try { return { ok: true, ...cashOut({ databasePath: walletPath(), accountId: String(payload?.accountId || ""), sessionId: String(payload?.sessionId || "") }) }; }
+
+-- SDMukjippa_Version1_1_Desktop/preload.js --
+3: const { contextBridge, ipcRenderer } = require("electron");
+6: getBootstrap: () => ipcRenderer.invoke("mjp:get-bootstrap"),
+7: saveSettings: (patch) => ipcRenderer.invoke("mjp:save-settings", patch),
+8: autoDetectWallet: () => ipcRenderer.invoke("wallet:auto-detect"),
+9: chooseWalletDatabase: () => ipcRenderer.invoke("wallet:choose-database"),
+10: listWalletAccounts: () => ipcRenderer.invoke("wallet:list-accounts"),
+11: getWalletAccount: (accountId) => ipcRenderer.invoke("wallet:get-account", accountId),
+12: getGameState: (accountId) => ipcRenderer.invoke("mjp:get-state", accountId),
+13: startGame: (payload) => ipcRenderer.invoke("mjp:start", payload),
+14: playHand: (payload) => ipcRenderer.invoke("mjp:play-hand", payload),
+15: continueStreak: (payload) => ipcRenderer.invoke("mjp:continue", payload),
+16: cashOut: (payload) => ipcRenderer.invoke("mjp:cashout", payload),
+17: openCenter: () => ipcRenderer.invoke("center:open"),
+
+-- SDMukjippa_Version1_1_Desktop/tools/test-game.js --
+14: } = require("../src/wallet-database");
+28: const databasePath = path.join(temporary, "wallet.sqlite");
+34: id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, bank_name TEXT NOT NULL,
+48: db.prepare("INSERT INTO accounts VALUES (?,?,?,?,?,?,?,?)").run("account-1", 1, "SD은행", "100-000", "테스터", 1000000, now, now);
+
+-- SDMukjippa_Version1_1_Desktop/public/js/app.js --
+69: walletMessage: document.querySelector("#walletMessage"),
+169: ${escapeHtml(account.bankName)} · ${escapeHtml(account.accountNumber)} · ${escapeHtml(account.ownerName)}
+454: const result = await api.listWalletAccounts();
+460: elements.walletMessage.textContent = result.error || "SD지갑을 한 번 실행한 뒤 자동 연결을 누르세요.";
+470: elements.walletMessage.textContent = `${result.databasePath} · F5로 새로고침`;
+490: const accountResult = await api.getWalletAccount(accountId);
+494: elements.walletMessage.textContent = accountResult.error || "계좌를 불러오지 못했습니다.";
+617: const accountResult = await api.getWalletAccount(state.account.id);
+713: const result = await api.autoDetectWallet();
+714: elements.walletMessage.textContent = result.found ? "SD지갑을 찾았습니다." : "SD지갑 데이터베이스를 자동으로 찾지 못했습니다.";
+715: if (result.found) { state.settings.walletDatabasePath = result.path; await loadAccounts(); }
+718: const result = await api.chooseWalletDatabase();
+719: if (result?.ok) { state.settings.walletDatabasePath = result.path; await loadAccounts(); }
+720: else if (!result?.canceled && result?.error) elements.walletMessage.textContent = result.error;
+756: const detected = await api.autoDetectWallet();
+758: state.settings.walletDatabasePath = detected.path;
+
+-- SDMukjippa_Version1_1_Desktop/public/index.html --
+5: <meta name="viewport" content="width=device-width, initial-scale=1">
+136: <section class="card wallet-card">
+142: <div class="wallet-balance"><span>현재 잔액</span><strong id="balanceText">-</strong></div>
+143: <div class="wallet-actions">
+147: <p id="walletMessage" class="small-message">SD지갑을 실행한 뒤 자동 연결을 누르세요. F5는 계좌와 진행 상태를 새로고침합니다.</p>
+
+-- SDMukjippa_Version1_1_Desktop/public/css/style.css --
+38: .ghost-button, .icon-button, .wallet-actions button { border: 1px solid var(--line); border-radius: 11px; background: rgba(255,255,255,.045); padding: 10px 13px; }
+40: .ghost-button:hover, .icon-button:hover, .wallet-actions button:hover { border-color: rgba(190,133,255,.48); background: rgba(168,105,255,.1); }
+115: .wallet-card select { width: 100%; margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; background: #151020; color: white; padding: 11px; outline: none; }
+116: .wallet-balance { display: flex; justify-content: space-between; align-items: flex-end; padding: 15px 2px 13px; }
+117: .wallet-balance span { color: var(--muted); font-size: 11px; }
+118: .wallet-balance strong { color: var(--gold); font-size: 25px; }
+119: .wallet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+===== SDSlot_Stage7_Desktop.zip =====
+files=21 bytes=31770
+
+-- SDSlot_Stage7_Desktop/src/settings.js --
+7: walletDatabasePath: "",
+51: if (typeof patch.walletDatabasePath === "string") {
+52: this.data.walletDatabasePath = patch.walletDatabasePath.trim();
+
+-- SDSlot_Stage7_Desktop/src/wallet-database.js --
+17: function validateWalletDatabase(databasePath) {
+61: bankName: String(row.bank_name),
+76: SELECT accounts.id, accounts.bank_name, accounts.account_number,
+94: SELECT accounts.id, accounts.bank_name, accounts.account_number,
+288: function autoFindWalletDatabase({ appDataPath, homePath }) {
+290: path.join(appDataPath, "SD지갑", "data", "sdwallet.sqlite"),
+291: path.join(appDataPath, "sdwallet-desktop", "data", "sdwallet.sqlite"),
+292: path.join(appDataPath, "SDWallet", "data", "sdwallet.sqlite"),
+293: path.join(homePath, "Downloads", "SDWallet_Stage9_Desktop", "data", "sdwallet.sqlite"),
+294: path.join(homePath, "Desktop", "SDWallet_Stage9_Desktop", "data", "sdwallet.sqlite"),
+298: if (validateWalletDatabase(candidate).ok) return candidate;
+304: const candidate = path.join(appDataPath, entry.name, "data", "sdwallet.sqlite");
+305: if (fs.existsSync(candidate) && validateWalletDatabase(candidate).ok) return candidate;
+313: autoFindWalletDatabase,
+319: validateWalletDatabase,
+
+-- SDSlot_Stage7_Desktop/main.js --
+16: autoFindWalletDatabase,
+22: validateWalletDatabase,
+23: } = require("./src/wallet-database");
+67: function walletPath() {
+68: return settingsStore.get().walletDatabasePath;
+100: ipcMain.handle("wallet:auto-detect", () => {
+101: const found = autoFindWalletDatabase({
+106: settingsStore.update({ walletDatabasePath: found, selectedAccountId: "" });
+110: ipcMain.handle("wallet:choose-database", async () => {
+118: const validation = validateWalletDatabase(databasePath);
+120: settingsStore.update({ walletDatabasePath: databasePath, selectedAccountId: "" });
+124: ipcMain.handle("wallet:list-accounts", () => {
+125: const databasePath = walletPath();
+134: ipcMain.handle("wallet:get-account", (event, accountId) => {
+135: const databasePath = walletPath();
+154: const databasePath = walletPath();
+179: const databasePath = walletPath();
+
+-- SDSlot_Stage7_Desktop/preload.js --
+3: const { contextBridge, ipcRenderer } = require("electron");
+6: getBootstrap: () => ipcRenderer.invoke("slot:get-bootstrap"),
+7: saveSettings: (patch) => ipcRenderer.invoke("slot:save-settings", patch),
+8: autoDetectWallet: () => ipcRenderer.invoke("wallet:auto-detect"),
+9: chooseWalletDatabase: () => ipcRenderer.invoke("wallet:choose-database"),
+10: listWalletAccounts: () => ipcRenderer.invoke("wallet:list-accounts"),
+11: getWalletAccount: (accountId) => ipcRenderer.invoke("wallet:get-account", accountId),
+12: startSpin: (payload) => ipcRenderer.invoke("slot:start", payload),
+13: settleSpin: (roundId) => ipcRenderer.invoke("slot:settle", roundId),
+14: openCenter: () => ipcRenderer.invoke("center:open"),
+
+-- SDSlot_Stage7_Desktop/tools/test-slot.js --
+10: const { beginSpin, getAccount, settleRound } = require("../src/wallet-database");
+34: const dbPath = path.join(tmp, "wallet.sqlite");
+40: id TEXT PRIMARY KEY, user_id INTEGER NOT NULL, bank_name TEXT NOT NULL,
+55: "account-1", 1, "SD은행", "100-000", "테스터", 1000000, now, now,
+
+-- SDSlot_Stage7_Desktop/public/js/app.js --
+17: walletMessage: document.getElementById("walletMessage"),
+101: ${escapeHtml(account.bankName)} · ${escapeHtml(account.accountNumber)} · ${escapeHtml(account.ownerName)}
+125: const result = await api.listWalletAccounts();
+131: elements.walletMessage.textContent = result.error || "SD지갑을 한 번 실행한 뒤 자동 연결을 누르세요.";
+142: elements.walletMessage.textContent = result.databasePath;
+158: const result = await api.getWalletAccount(accountId);
+162: elements.walletMessage.textContent = result.error || "계좌를 불러오지 못했습니다.";
+372: const detected = await api.autoDetectWallet();
+374: state.settings.walletDatabasePath = detected.path;
+418: elements.walletMessage.textContent = "F5로 계좌 목록과 잔액을 새로고침하는 중...";
+423: const result = await api.autoDetectWallet();
+424: elements.walletMessage.textContent = result.found ? result.path : "SD지갑 데이터베이스를 자동으로 찾지 못했습니다.";
+426: state.settings.walletDatabasePath = result.path;
+433: const result = await api.chooseWalletDatabase();
+435: elements.walletMessage.textContent = result.ok ? result.path : result.error;
+437: state.settings.walletDatabasePath = result.path;
+455: if (!result.ok) elements.walletMessage.textContent = result.error;
+
+-- SDSlot_Stage7_Desktop/public/index.html --
+5: <meta name="viewport" content="width=device-width, initial-scale=1">
+86: <section class="card wallet-card">
+92: <div class="wallet-status">
+96: <div class="wallet-actions">
+100: <p id="walletMessage" class="small-message">SD지갑을 한 번 실행한 뒤 자동 연결을 누르세요. 계좌 변경 후 F5를 누르면 새로고침됩니다.</p>
+
+-- SDSlot_Stage7_Desktop/public/css/style.css --
+256: .wallet-card select { width: 100%; height: 44px; border-radius: 10px; border: 1px solid var(--line); color: #eaf0fd; background: #0a0d15; padding: 0 10px; }
+257: .wallet-status { display: flex; justify-content: space-between; align-items: end; padding: 18px 2px 11px; }
+258: .wallet-status span { color: var(--muted); font-size: 12px; }
+259: .wallet-status strong { color: #fff; font-size: 25px; }
+260: .wallet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+261: .wallet-actions button { border: 1px solid var(--line); border-radius: 10px; color: #dfe6f3; background: #1b2230; padding: 9px; }
+262: .wallet-actions button:first-child { background: #29151b; border-color: #5d2530; color: #ffb3be; }
+
+===== SDOddEven_v1.1.1_Desktop.zip =====
+files=23 bytes=64529
+
+-- SDOddEven/public/index.html --
+7: content="width=device-width, initial-scale=1.0"
+198: <p class="section-kicker">CONNECTED WALLET</p>
+201: <div id="walletEmpty" class="wallet-empty">
+204: id="connectWalletButton"
+212: <div id="walletConnected" class="hidden">
+215: <strong id="accountBank">-</strong>
+298: id="autoDetectWalletButton"
+306: id="chooseWalletDatabaseButton"
+314: <p id="walletPathText" class="path-text">
+
+-- SDOddEven/public/css/style.css --
+780: .wallet-empty {
+
+-- SDOddEven/public/js/app.js --
+88: walletEmpty: document.getElementById(
+89: "walletEmpty",
+91: walletConnected: document.getElementById(
+92: "walletConnected",
+94: connectWalletButton: document.getElementById(
+95: "connectWalletButton",
+104: accountBank: document.getElementById(
+105: "accountBank",
+123: autoDetectWalletButton: document.getElementById(
+124: "autoDetectWalletButton",
+126: chooseWalletDatabaseButton:
+128: "chooseWalletDatabaseButton",
+130: walletPathText: document.getElementById(
+131: "walletPathText",
+383: elements.walletEmpty.classList.toggle(
+387: elements.walletConnected.classList.toggle(
+393: elements.accountBank.textContent = "-";
+402: elements.accountBank.textContent =
+403: state.account.bankName;
+477: await bridge.getWalletAccount(accountId);
+500: await bridge.listWalletAccounts();
+506: elements.walletPathText.textContent =
+521: elements.walletPathText.textContent =
+536: `${account.bankName} · ${account.accountNumber} · ${formatMoney(
+563: elements.walletPathText.textContent =
+564: state.settings.walletDatabasePath ||
+576: async function autoDetectWallet() {
+577: const result = await bridge.autoDetectWallet();
+591: async function chooseWalletDatabase() {
+593: await bridge.chooseWalletDatabase();
+788: elements.connectWalletButton.addEventListener(
+803: elements.autoDetectWalletButton.addEventListener(
+805: autoDetectWallet,
+808: elements.chooseWalletDatabaseButton.addEventListener(
+810: chooseWalletDatabase,
+1056: !state.settings.walletDatabasePath ||
+1060: await bridge.autoDetectWallet();
+
+-- SDOddEven/src/wallet-database.js --
+27: function validateWalletDatabase(databasePath) {
+84: bankName: String(row.bank_name),
+102: accounts.bank_name,
+131: accounts.bank_name,
+322: function autoFindWalletDatabase({
+331: "sdwallet.sqlite",
+335: "sdwallet-desktop",
+337: "sdwallet.sqlite",
+341: "SDWallet",
+343: "sdwallet.sqlite",
+348: "SDWallet_Stage7_Desktop",
+350: "sdwallet.sqlite",
+355: "SDWallet_Stage7_Desktop",
+357: "sdwallet.sqlite",
+362: if (validateWalletDatabase(candidate).ok) {
+381: "sdwallet.sqlite",
+386: validateWalletDatabase(candidate).ok
+400: autoFindWalletDatabase,
+404: validateWalletDatabase,
+
+-- SDOddEven/src/settings.js --
+7: walletDatabasePath: "",
+84: if (typeof patch.walletDatabasePath === "string") {
+85: this.data.walletDatabasePath =
+86: patch.walletDatabasePath.trim();
+
+-- SDOddEven/package.json --
+7: "author": "SDWallet",
+16: "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-database.js && node --check src/game-engine.js && node --check public/js/app.js"
+
+-- SDOddEven/main.js --
+16: autoFindWalletDatabase,
+20: validateWalletDatabase,
+21: } = require("./src/wallet-database");
+101: function currentWalletPath() {
+102: return settingsStore.get().walletDatabasePath;
+114: ipcMain.handle("wallet:auto-detect", () => {
+115: const found = autoFindWalletDatabase({
+125: walletDatabasePath: found,
+136: "wallet:choose-database",
+165: validateWalletDatabase(databasePath);
+176: walletDatabasePath: databasePath,
+188: ipcMain.handle("wallet:list-accounts", () => {
+189: const databasePath = currentWalletPath();
+215: "wallet:get-account",
+217: const databasePath = currentWalletPath();
+266: !settings.walletDatabasePath ||
+277: settings.walletDatabasePath,
+344: const walletResult = applyGameResult({
+346: settings.walletDatabasePath,
+357: balance: walletResult.balance,
+358: transaction: walletResult.transaction,
+
+-- SDOddEven/README.md --
+106: 자동 찾기가 실패하면 `DB 직접 선택`을 눌러 `sdwallet.sqlite` 파일을 선택합니다.
+111: C:\Users\사용자명\AppData\Roaming\SD지갑\data\sdwallet.sqlite
+
+-- SDOddEven/preload.js --
+5: ipcRenderer,
+10: ipcRenderer.invoke("settings:get"),
+13: ipcRenderer.invoke("settings:save", patch),
+15: autoDetectWallet: () =>
+16: ipcRenderer.invoke("wallet:auto-detect"),
+18: chooseWalletDatabase: () =>
+19: ipcRenderer.invoke("wallet:choose-database"),
+21: listWalletAccounts: () =>
+22: ipcRenderer.invoke("wallet:list-accounts"),
+24: getWalletAccount: (accountId) =>
+25: ipcRenderer.invoke(
+26: "wallet:get-account",
+31: ipcRenderer.invoke("game:start", payload),
+34: ipcRenderer.invoke("game:stop", roundId),
+37: ipcRenderer.invoke("game:resolve", payload),
+
+===== SDVault_v1.2.1_Desktop.zip =====
+files=18 bytes=67897
+
+-- SDVault/main.js --
+15: autoFindWalletDatabase,
+16: readWalletAccounts,
+17: readWalletAccount,
+18: validateWalletDatabase,
+19: } = require("./src/wallet-reader");
+105: ipcMain.handle("wallet:auto-detect", () => {
+106: const found = autoFindWalletDatabase({
+116: walletDatabasePath: found,
+125: ipcMain.handle("wallet:choose-database", async () => {
+142: const validation = validateWalletDatabase(databasePath);
+153: walletDatabasePath: databasePath,
+164: ipcMain.handle("wallet:list-accounts", () => {
+167: if (!settings.walletDatabasePath) {
+175: const accounts = readWalletAccounts(settings.walletDatabasePath);
+179: databasePath: settings.walletDatabasePath,
+185: databasePath: settings.walletDatabasePath,
+192: ipcMain.handle("wallet:get-account", (event, accountId) => {
+195: if (!settings.walletDatabasePath || !accountId) {
+203: const account = readWalletAccount(
+204: settings.walletDatabasePath,
+210: databasePath: settings.walletDatabasePath,
+216: databasePath: settings.walletDatabasePath,
+
+-- SDVault/package.json --
+7: "author": "SDWallet",
+17: "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-reader.js && node --check src/gold-provider.js && node --check public/js/app.js && node --check tools/mock-gold-api.js"
+
+-- SDVault/preload.js --
+3: const { contextBridge, ipcRenderer } = require("electron");
+6: getSettings: () => ipcRenderer.invoke("settings:get"),
+7: saveSettings: (patch) => ipcRenderer.invoke("settings:save", patch),
+9: autoDetectWallet: () => ipcRenderer.invoke("wallet:auto-detect"),
+10: chooseWalletDatabase: () =>
+11: ipcRenderer.invoke("wallet:choose-database"),
+12: listWalletAccounts: () =>
+13: ipcRenderer.invoke("wallet:list-accounts"),
+14: getWalletAccount: (accountId) =>
+15: ipcRenderer.invoke("wallet:get-account", accountId),
+17: getPinStatus: () => ipcRenderer.invoke("pin:status"),
+18: setupPin: (pin) => ipcRenderer.invoke("pin:setup", pin),
+19: verifyPin: (pin) => ipcRenderer.invoke("pin:verify", pin),
+21: ipcRenderer.invoke("pin:change", {
+27: ipcRenderer.invoke("gold:fetch", config),
+
+-- SDVault/public/css/style.css --
+647: .vault.is-unlocking .vault-dial {
+651: .vault.is-unlocking .vault-handle {
+1008: .three-column {
+1017: .three-column {
+
+-- SDVault/public/index.html --
+7: content="width=device-width, initial-scale=1.0"
+98: <span>CLICK TO UNLOCK</span>
+114: <p class="panel-kicker">CONNECTED WALLET</p>
+117: <div id="walletDisconnected" class="connection-empty">
+120: id="connectWalletButton"
+128: <div id="walletConnected" class="hidden">
+131: <strong id="accountBank">-</strong>
+142: id="changeWalletButton"
+277: id="autoDetectWalletButton"
+284: id="chooseWalletDatabaseButton"
+292: <p id="walletPathText" class="path-text">연결된 DB 없음</p>
+372: <div class="three-column">
+
+-- SDVault/public/js/app.js --
+52: walletDisconnected: document.getElementById("walletDisconnected"),
+53: walletConnected: document.getElementById("walletConnected"),
+54: connectWalletButton: document.getElementById("connectWalletButton"),
+55: changeWalletButton: document.getElementById("changeWalletButton"),
+57: accountBank: document.getElementById("accountBank"),
+73: autoDetectWalletButton: document.getElementById("autoDetectWalletButton"),
+74: chooseWalletDatabaseButton: document.getElementById(
+75: "chooseWalletDatabaseButton",
+77: walletPathText: document.getElementById("walletPathText"),
+265: elements.vault.classList.remove("is-open", "is-unlocking");
+303: elements.vault.classList.add("is-unlocking");
+349: elements.vault.classList.remove("is-unlocking");
+359: async function loadWalletAccounts() {
+360: const result = await bridge.listWalletAccounts();
+366: elements.walletPathText.textContent =
+379: elements.walletPathText.textContent = result.databasePath;
+395: `${account.bankName} · ${account.accountNumber} · ${formatMoney(account.balance)}`;
+428: const result = await bridge.getWalletAccount(accountId);
+444: elements.walletDisconnected.classList.toggle(
+448: elements.walletConnected.classList.toggle(
+454: elements.accountBank.textContent = "-";
+462: elements.accountBank.textContent = state.account.bankName;
+933: elements.walletPathText.textContent =
+934: state.settings.walletDatabasePath ||
+943: async function autoDetectWallet() {
+944: elements.autoDetectWalletButton.disabled = true;
+947: const result = await bridge.autoDetectWallet();
+957: await loadWalletAccounts();
+960: elements.autoDetectWalletButton.disabled = false;
+964: async function chooseWalletDatabase() {
+965: const result = await bridge.chooseWalletDatabase();
+977: await loadWalletAccounts();
+1155: elements.connectWalletButton.addEventListener(
+1160: elements.changeWalletButton.addEventListener(
+1165: elements.autoDetectWalletButton.addEventListener(
+1167: autoDetectWallet,
+1170: elements.chooseWalletDatabaseButton.addEventListener(
+1172: chooseWalletDatabase,
+1268: await loadWalletAccounts();
+1271: !state.settings.walletDatabasePath ||
+1274: const detected = await bridge.autoDetectWallet();
+1278: await loadWalletAccounts();
+
+-- SDVault/README.md --
+186: 5. 기존 SD지갑의 `sdwallet.sqlite` 선택
+193: C:\Users\사용자명\AppData\Roaming\SD지갑\data\sdwallet.sqlite
+
+-- SDVault/src/settings.js --
+11: walletDatabasePath: "",
+93: walletDatabasePath:
+94: typeof patch.walletDatabasePath === "string"
+95: ? patch.walletDatabasePath
+96: : this.data.walletDatabasePath,
+
+-- SDVault/src/wallet-reader.js --
+17: function validateWalletDatabase(databasePath) {
+56: function readWalletAccounts(databasePath) {
+65: accounts.bank_name,
+80: bankName: String(row.bank_name),
+92: function readWalletAccount(databasePath, accountId) {
+101: accounts.bank_name,
+120: bankName: String(row.bank_name),
+151: function autoFindWalletDatabase({ appDataPath, homePath }) {
+153: path.join(appDataPath, "SD지갑", "data", "sdwallet.sqlite"),
+156: "sdwallet-desktop",
+158: "sdwallet.sqlite",
+160: path.join(appDataPath, "SDWallet", "data", "sdwallet.sqlite"),
+161: path.join(homePath, "AppData", "Roaming", "SD지갑", "data", "sdwallet.sqlite"),
+162: path.join(homePath, "Downloads", "SDWallet_Stage7_Desktop", "data", "sdwallet.sqlite"),
+163: path.join(homePath, "Desktop", "SDWallet_Stage7_Desktop", "data", "sdwallet.sqlite"),
+167: if (validateWalletDatabase(candidate).ok) {
+186: "sdwallet.sqlite",
+191: validateWalletDatabase(candidate).ok
+204: autoFindWalletDatabase,
+205: readWalletAccounts,
+206: readWalletAccount,
+207: validateWalletDatabase,
+
+===== STA_Version6_Desktop.zip =====
+files=21 bytes=53872
+
+-- STA_Version6_Desktop/public/index.html --
+5: <meta name="viewport" content="width=device-width, initial-scale=1">
+20: <div class="wallet-strip">
+102: <div class="canvas-shell hacking-shell">
+103: <canvas id="hackingCanvas" width="1100" height="560"></canvas>
+113: <div class="canvas-shell laser-shell">
+114: <canvas id="laserCanvas" width="1100" height="620"></canvas>
+156: <div class="canvas-shell transport-shell">
+157: <canvas id="transportCanvas" width="1100" height="620"></canvas>
+
+-- STA_Version6_Desktop/public/css/style.css --
+26: .wallet-strip { display: flex; align-items: center; gap: 8px; min-width: 0; }
+75: .canvas-shell { max-width: 1500px; height: calc(100vh - 210px); min-height: 520px; margin: 0 auto; padding: 18px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(180deg,#0f141c,#080b10); box-shadow: var(--shadow); display: grid; place-items: center; }
+76: canvas { display: block; width: 100%; height: 100%; max-height: 680px; border-radius: 14px; background: #080b10; touch-action: none; }
+
+-- STA_Version6_Desktop/public/js/app.js --
+17: operationCooldownUnlockAt: null,
+35: transportStatus: $("#transportStatus"), hackingCanvas: $("#hackingCanvas"), hackingRoundText: $("#hackingRoundText"),
+36: laserCanvas: $("#laserCanvas"), laserHitText: $("#laserHitText"), vaultArea: $("#vaultArea"),
+38: lootTimerText: $("#lootTimerText"), lootCashText: $("#lootCashText"), transportCanvas: $("#transportCanvas"),
+157: const result = await api.listWalletAccounts();
+185: option.textContent = `${account.bankName} ${account.accountNumber} · ${formatMoney(account.balance)}`;
+197: const result = await api.getWalletAccount(accountId);
+210: option.textContent = `${account.bankName} ${account.accountNumber} · ${account.ownerName} · ${formatMoney(account.balance)}`;
+218: if (!state.settings?.walletDatabasePath) {
+220: state.operationCooldownUnlockAt = null;
+228: state.operationCooldownUnlockAt = null;
+234: state.operationCooldownUnlockAt = result.operationCooldownUnlockAt || null;
+241: const unlockMs = Date.parse(String(state.operationCooldownUnlockAt || ""));
+242: if (!Number.isFinite(unlockMs)) return Math.max(0, Number(state.operationCooldownRemainingMs || 0));
+243: return Math.max(0, unlockMs - Date.now());
+373: renderHackingCanvas();
+376: function renderHackingCanvas() {
+377: const canvas = elements.hackingCanvas;
+378: const ctx = canvas.getContext("2d");
+391: ctx.clearRect(0, 0, canvas.width, canvas.height);
+393: ctx.fillRect(0, 0, canvas.width, canvas.height);
+396: for (let x = 0; x < canvas.width; x += 40) {
+397: ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+399: for (let y = 0; y < canvas.height; y += 40) {
+400: ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+448: ctx.fillText("같은 색 단자 가까이 가져가면 자동으로 연결됩니다.", canvas.width / 2, 525);
+452: const rect = canvas.getBoundingClientRect();
+454: x: (event.clientX - rect.left) * canvas.width / rect.width,
+455: y: (event.clientY - rect.top) * canvas.height / rect.height,
+482: renderHackingCanvas();
+495: renderHackingCanvas();
+497: renderHackingCanvas();
+509: canvas.setPointerCapture(event.pointerId);
+533: canvas.onpointerdown = down;
+534: canvas.onpointermove = move;
+535: canvas.onpointerup = up;
+536: canvas.onpointercancel = up;
+551: const canvas = elements.laserCanvas;
+552: const ctx = canvas.getContext("2d");
+680: ctx.fillRect(0, 0, canvas.width, canvas.height);
+685: ctx.fillRect(0, 0, canvas.width, canvas.height);
+688: for (let x = 0; x < canvas.width; x += 36) {
+689: ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+691: for (let y = 0; y < canvas.height; y += 36) {
+692: ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+696: ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+774: player.x = Math.max(28, Math.min(canvas.width - 28, player.x));
+775: player.y = Math.max(28, Math.min(canvas.height - 28, player.y));
+946: const canvas = elements.transportCanvas;
+947: const ctx = canvas.getContext("2d");
+1118: function drawMiniMap(cameraX, cameraY) {
+1119: const map = { x: canvas.width - 220, y: 20, w: 195, h: 126 };
+1141: ctx.strokeRect(cameraX * sx, cameraY * sy, canvas.width * sx, canvas.height * sy);
+1146: const cameraX = Math.max(0, Math.min(world.width - canvas.width, player.x - canvas.width / 2));
+1147: const cameraY = Math.max(0, Math.min(world.height - canvas.height, player.y - canvas.height / 2));
+1149: ctx.fillRect(0, 0, canvas.width, canvas.height);
+1151: ctx.translate(-cameraX, -cameraY);
+1213: ctx.fillRect(18, canvas.height - 92, 205, 68);
+1215: ctx.strokeRect(18, canvas.height - 92, 205, 68);
+1219: ctx.fillText("STA NIGHT DELIVERY", 32, canvas.height - 67);
+1222: ctx.fillText(`${speedKmh} km/h`, 32, canvas.height - 36);
+1225: ctx.fillText("W 가속 · 키를 놓거나 S를 누르면 즉시 정지 · A/D 조향·제자리 회전", 238, canvas.height - 38);
+1226: drawMiniMap(cameraX, cameraY);
+1289: elements.autoDetectButton.addEventListener("click",async()=>{const result=await api.autoDetectWallet();if(!result.found){showToast("SD지갑 데이터베이스를 자동으로 찾지 못했습니다.");return;}state.settings=(await api.getBootstrap()).settings;await refreshAccounts(true);await refreshOperation();});
+1290: elements.chooseDbButton.addEventListener("click",async()=>{const result=await api.chooseWalletDatabase();if(result.canceled)return;if(!result.ok){showToast(result.error);return;}state.settings=(await api.getBootstrap()).settings;await refreshAccounts(true);await refreshOperation();});
+1303: if(!state.settings.walletDatabasePath){const result=await api.autoDetectWallet();if(result.found){state.bootstrap=await api.getBootstrap();state.settings=state.bootstrap.settings;renderSettings();}}
+
+-- STA_Version6_Desktop/src/wallet-database.js --
+30: function validateWalletDatabase(databasePath) {
+63: transport_unlock_at TEXT,
+64: next_operation_unlock_at TEXT,
+78: if (!columns.includes("transport_unlock_at")) {
+79: db.exec("ALTER TABLE sta_operations ADD COLUMN transport_unlock_at TEXT");
+81: if (!columns.includes("next_operation_unlock_at")) {
+82: db.exec("ALTER TABLE sta_operations ADD COLUMN next_operation_unlock_at TEXT");
+93: bankName: String(row.bank_name),
+106: SELECT accounts.id,accounts.bank_name,accounts.account_number,accounts.owner_name,
+118: SELECT accounts.id,accounts.bank_name,accounts.account_number,accounts.owner_name,
+179: db.prepare("UPDATE sta_operations SET phase='transport_ready',transport_unlock_at=NULL,updated_at=? WHERE id=? AND phase='raid_loot'")
+187: db.prepare("UPDATE sta_operations SET phase='transport_ready',transport_unlock_at=NULL,updated_at=? WHERE id=?")
+194: SELECT next_operation_unlock_at,ended_at FROM sta_operations
+197: if (!row) return { unlockAt: null, remainingMs: 0 };
+198: const unlockMs = row.next_operation_unlock_at
+199: ? Date.parse(String(row.next_operation_unlock_at))
+201: if (!Number.isFinite(unlockMs)) return { unlockAt: null, remainingMs: 0 };
+203: unlockAt: new Date(unlockMs).toISOString(),
+204: remainingMs: Math.max(0, unlockMs - nowMs),
+219: operationCooldownUnlockAt: cooldown.unlockAt,
+441: db.prepare("UPDATE sta_operations SET phase='transport_ready',transport_unlock_at=NULL,updated_at=? WHERE id=?")
+500: const nextOperationUnlockAt = new Date(nowMs + OPERATION_COOLDOWN_MS).toISOString();
+501: db.prepare("UPDATE sta_operations SET phase='payout',next_operation_unlock_at=?,updated_at=? WHERE id=?")
+502: .run(nextOperationUnlockAt, now, operationId);
+518: const storedUnlockMs = Date.parse(String(row.next_operation_unlock_at || ""));
+519: const nextOperationUnlockAt = Number.isFinite(storedUnlockMs)
+520: ? new Date(storedUnlockMs).toISOString()
+522: const cooldownRemainingMs = Math.max(0, Date.parse(nextOperationUnlockAt) - nowMs);
+532: db.prepare(`UPDATE sta_operations SET status='completed',phase='completed',payout_account_id=?,payout_transaction_id=?,next_operation_unlock_at=?,updated_at=?,ended_at=? WHERE id=?`)
+533: .run(accountId, transactionId, nextOperationUnlockAt, now, now, operationId);
+535: return { amount, balance, transactionId, completed: true, operationCooldownUnlockAt: nextOperationUnlockAt, operationCooldownRemainingMs: cooldownRemainingMs };
+551: function autoFindWalletDatabase({ appDataPath, homePath }) {
+553: path.join(appDataPath, "SD지갑", "data", "sdwallet.sqlite"),
+554: path.join(appDataPath, "sdwallet-desktop", "data", "sdwallet.sqlite"),
+555: path.join(appDataPath, "SDWallet", "data", "sdwallet.sqlite"),
+556: path.join(homePath, "Downloads", "SDWallet_Stage9_Desktop", "data", "sdwallet.sqlite"),
+557: path.join(homePath, "Desktop", "SDWallet_Stage9_Desktop", "data", "sdwallet.sqlite"),
+559: for (const candidate of uniqueExisting(candidates)) if (validateWalletDatabase(candidate).ok) return candidate;
+563: const candidate = path.join(appDataPath, entry.name, "data", "sdwallet.sqlite");
+564: if (fs.existsSync(candidate) && validateWalletDatabase(candidate).ok) return candidate;
+571: autoFindWalletDatabase,
+589: validateWalletDatabase,
+
+-- STA_Version6_Desktop/src/settings.js --
+7: walletDatabasePath: "",
+30: walletDatabasePath: typeof parsed.walletDatabasePath === "string" ? parsed.walletDatabasePath : "",
+51: if (typeof patch.walletDatabasePath === "string") this.data.walletDatabasePath = patch.walletDatabasePath.trim();
+
+-- STA_Version6_Desktop/main.js --
+8: const wallet = require("./src/wallet-database");
+52: function walletPath() { return settingsStore.get().walletDatabasePath; }
+79: function requireWalletPath() {
+80: const databasePath = walletPath();
+105: ipcMain.handle("wallet:auto-detect", () => {
+106: const found = wallet.autoFindWalletDatabase({ appDataPath: app.getPath("appData"), homePath: app.getPath("home") });
+108: settingsStore.update({ walletDatabasePath: found, selectedAccountId: "" });
+111: ipcMain.handle("wallet:choose-database", async () => {
+119: const validation = wallet.validateWalletDatabase(databasePath);
+121: settingsStore.update({ walletDatabasePath: databasePath, selectedAccountId: "" });
+124: ipcMain.handle("wallet:list-accounts", () => {
+125: const databasePath = walletPath();
+127: try { return { connected: true, databasePath, accounts: wallet.listAccounts(databasePath) }; }
+130: ipcMain.handle("wallet:get-account", (event, accountId) => {
+131: const databasePath = walletPath();
+134: const account = wallet.getAccount(databasePath, String(accountId));
+135: return { connected: Boolean(account), account, transactions: account ? wallet.getRecentTransactions(databasePath, String(accountId), 12) : [] };
+139: ipcMain.handle("sta:get-state", safe(() => wallet.getOperationState(requireWalletPath())));
+142: const result = wallet.startOperation({ databasePath: requireWalletPath(), accountId });
+146: ipcMain.handle("sta:hacking-connect", safe((event, payload) => wallet.hackingConnect({
+147: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+150: ipcMain.handle("sta:start-raid", safe((event, payload) => wallet.startRaid({
+151: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+153: ipcMain.handle("sta:laser-hit", safe((event, payload) => wallet.laserHit({
+154: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+156: ipcMain.handle("sta:laser-checkpoint", safe((event, payload) => wallet.laserCheckpoint({
+157: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""), checkpoint: payload?.checkpoint,
+159: ipcMain.handle("sta:laser-pass", safe((event, payload) => wallet.laserPass({
+160: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+162: ipcMain.handle("sta:vault-hit", safe((event, payload) => wallet.vaultHit({
+163: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+165: ipcMain.handle("sta:vault-decay", safe((event, payload) => wallet.vaultDecay({
+166: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+168: ipcMain.handle("sta:loot-click", safe((event, payload) => wallet.lootClick({
+169: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+171: ipcMain.handle("sta:finalize-loot", safe((event, payload) => wallet.finalizeLoot({
+172: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+174: ipcMain.handle("sta:start-transport", safe((event, payload) => wallet.startTransport({
+175: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+177: ipcMain.handle("sta:transport-hit", safe((event, payload) => wallet.transportHit({
+178: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+180: ipcMain.handle("sta:transport-checkpoint", safe((event, payload) => wallet.transportCheckpoint({
+181: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""), checkpoint: payload?.checkpoint,
+183: ipcMain.handle("sta:transport-arrive", safe((event, payload) => wallet.transportArrive({
+184: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""),
+186: ipcMain.handle("sta:payout", safe((event, payload) => wallet.payout({
+187: databasePath: requireWalletPath(), operationId: String(payload?.operationId || ""), accountId: String(payload?.accountId || ""),
+
+-- STA_Version6_Desktop/tools/test-operation.js --
+8: const dbApi = require("../src/wallet-database");
+11: function createWallet(filePath) {
+24: bank_name TEXT NOT NULL,
+44: db.prepare("INSERT INTO accounts (id,user_id,bank_name,account_number,owner_name,balance,created_at,updated_at) VALUES ('a1',1,'SD은행','111-111','테스터',1000000,?,?)").run(now, now);
+45: db.prepare("INSERT INTO accounts (id,user_id,bank_name,account_number,owner_name,balance,created_at,updated_at) VALUES ('a2',1,'SD은행','222-222','테스터',100000,?,?)").run(now, now);
+66: const databasePath = path.join(tempDir, "wallet.sqlite");
+67: createWallet(databasePath);
+69: assert.equal(dbApi.validateWalletDatabase(databasePath).ok, true);
+165: assert.ok(finalRow.next_operation_unlock_at);
+
+-- STA_Version6_Desktop/tools/check-all.js --
+13: "src/wallet-database.js",
+
+-- STA_Version6_Desktop/preload.js --
+3: const { contextBridge, ipcRenderer } = require("electron");
+6: getBootstrap: () => ipcRenderer.invoke("sta:get-bootstrap"),
+7: saveSettings: (patch) => ipcRenderer.invoke("sta:save-settings", patch),
+8: autoDetectWallet: () => ipcRenderer.invoke("wallet:auto-detect"),
+9: chooseWalletDatabase: () => ipcRenderer.invoke("wallet:choose-database"),
+10: listWalletAccounts: () => ipcRenderer.invoke("wallet:list-accounts"),
+11: getWalletAccount: (accountId) => ipcRenderer.invoke("wallet:get-account", accountId),
+12: getState: () => ipcRenderer.invoke("sta:get-state"),
+13: startOperation: (payload) => ipcRenderer.invoke("sta:start", payload),
+14: hackingConnect: (payload) => ipcRenderer.invoke("sta:hacking-connect", payload),
+15: startRaid: (payload) => ipcRenderer.invoke("sta:start-raid", payload),
+16: laserHit: (payload) => ipcRenderer.invoke("sta:laser-hit", payload),
+17: laserCheckpoint: (payload) => ipcRenderer.invoke("sta:laser-checkpoint", payload),
+18: laserPass: (payload) => ipcRenderer.invoke("sta:laser-pass", payload),
+19: vaultHit: (payload) => ipcRenderer.invoke("sta:vault-hit", payload),
+20: vaultDecay: (payload) => ipcRenderer.invoke("sta:vault-decay", payload),
+21: lootClick: (payload) => ipcRenderer.invoke("sta:loot-click", payload),
+22: finalizeLoot: (payload) => ipcRenderer.invoke("sta:finalize-loot", payload),
+23: startTransport: (payload) => ipcRenderer.invoke("sta:start-transport", payload),
+24: transportHit: (payload) => ipcRenderer.invoke("sta:transport-hit", payload),
+25: transportCheckpoint: (payload) => ipcRenderer.invoke("sta:transport-checkpoint", payload),
+26: transportArrive: (payload) => ipcRenderer.invoke("sta:transport-arrive", payload),
+27: payout: (payload) => ipcRenderer.invoke("sta:payout", payload),
+28: openCenter: () => ipcRenderer.invoke("center:open"),
