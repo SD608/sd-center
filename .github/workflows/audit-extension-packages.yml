@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/audit-extension-packages.yml'
       - 'tools/audit-extension-packages.py'
+      - 'update/extensions-catalog.json'
+      - 'downloads/extensions/**'
 
 permissions:
   contents: write
