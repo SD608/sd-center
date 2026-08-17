@@ -1,0 +1,65 @@
+name: Inspect SDOddEven v1.1.0
+
+on:
+  push:
+    branches:
+      - fix/odd-even-open-center
+    paths:
+      - '.github/workflows/inspect-odd-even-v110.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/odd-even-open-center
+          fetch-depth: 0
+
+      - name: Download and inspect SDOddEven v1.1.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/odd-even && mkdir -p /tmp/odd-even
+          gh release download 'v.2.2.1' --repo 'SD608/sd-center' --pattern 'SDOddEven_v1.1.0_Desktop.zip' --dir /tmp/odd-even
+          unzip -q /tmp/odd-even/SDOddEven_v1.1.0_Desktop.zip -d /tmp/odd-even/app
+          python - <<'PY'
+          from pathlib import Path
+          root=Path('/tmp/odd-even/app')
+          out=[]
+          out.append('FILES')
+          for p in sorted(root.rglob('*')):
+              if p.is_file(): out.append(str(p.relative_to(root)))
+          main_files=list(root.rglob('main.js'))
+          out.append('\nMAIN FILES')
+          out += [str(p.relative_to(root)) for p in main_files]
+          for p in main_files:
+              text=p.read_text(encoding='utf-8', errors='replace')
+              lines=text.splitlines()
+              out.append(f'\n=== {p.relative_to(root)} ===')
+              for i,line in enumerate(lines):
+                  if 'open-center' in line or 'openCenter' in line or 'center' in line.lower() and 'require' in line:
+                      lo=max(0,i-8); hi=min(len(lines),i+18)
+                      out.append(f'-- around line {i+1} --')
+                      for j in range(lo,hi): out.append(f'{j+1:04d}: {lines[j]}')
+          for p in root.rglob('package.json'):
+              out.append(f'\n=== {p.relative_to(root)} ===')
+              out.append(p.read_text(encoding='utf-8', errors='replace'))
+          Path('diagnostics').mkdir(exist_ok=True)
+          Path('diagnostics/odd-even-v110.txt').write_text('\n'.join(out)+'\n',encoding='utf-8')
+          PY
+
+      - name: Commit diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/odd-even-v110.txt
+          git commit -m '진단 결과: 홀짝 v1.1.0 모듈 의존성' || exit 0
+          git push origin HEAD:fix/odd-even-open-center
