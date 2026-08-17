@@ -136,18 +136,18 @@ window.SD_EXTENSION_PACKS = [
     "featured": true
   },
   {
-  "id": "sd-flea-market",
-  "name": "SD 플리마켓",
-  "stage": "PC Expansion",
-  "version": "v1.1.1",
-  "category": "파밍·습격 확장팩",
-  "icon": "assets/icons/flea-market.png?v=3",
-  "fileName": "SDFleaMarket_v1.1.1_Desktop.zip",
-  "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.1_Desktop.zip?v=111",
-  "description": "v1.1.1에서 손상된 v1.0.9 배포본의 후속 연동 기능을 정상 코드에 재구축했습니다. 실제 물류회사 등급을 최신 기준으로 반영하고 회사 등급·온라인 물품 새로고침을 추가했으며, 기존 SD Link 5초 자동 재연결과 PC·모바일 재고 동기화를 유지합니다. 금고는 A/D 키와 마우스 직접 회전을 모두 지원합니다.",
-  "requirements": "SD종합센터 v2.2.0 이상 · SD Link 로그인 · Windows 10/11",
-  "updatedAt": "2026-08-17",
-  "tags": ["회사 등급 직접연동", "온라인 물품 새로고침", "금고 A/D·마우스"],
-  "featured": true
-}
+    "id": "sd-flea-market",
+    "name": "SD 플리마켓",
+    "stage": "PC Expansion",
+    "version": "v1.1.2",
+    "category": "파밍·습격 확장팩",
+    "icon": "assets/icons/flea-market.png?v=3",
+    "fileName": "SDFleaMarket_v1.1.2_Desktop.zip",
+    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.2_Desktop.zip?v=112",
+    "description": "은행 금고를 기존처럼 현장에서 직접 따는 구조를 유지하면서, 금고 개봉 1회당 0.001%(1/100,000) 확률로 판매 불가 한정판 레드 다이아몬드가 등장하도록 추가했습니다. 기존 회사 등급·온라인 재고 동기화와 금고 A/D·마우스 조작은 그대로 유지됩니다.",
+    "requirements": "SD종합센터 v2.2.0 이상 · SD Link 로그인 · Windows 10/11",
+    "updatedAt": "2026-08-17",
+    "tags": ["레드 다이아 0.001%", "한정판 판매 불가", "금고 현장 개방"],
+    "featured": true
+  }
 ];
