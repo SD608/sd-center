@@ -1,12 +1,19 @@
 "use strict";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  if ((location.pathname || "").toLowerCase().endsWith("/achievements.html") || (location.pathname || "").toLowerCase().endsWith("achievements.html")) {
+  const currentPath = (location.pathname || "").toLowerCase();
+  const isAchievementsPage = currentPath.endsWith("/achievements.html") || currentPath.endsWith("achievements.html");
+
+  if (isAchievementsPage) {
     const removeAchievementExplanation = () => {
-      document.querySelectorAll(".achievement-placeholder").forEach((element) => {
-        if ((element.textContent || "").includes("업적 조건 94종")) element.remove();
-      });
+      // 동적 업적 목록 아래에 별도 카드처럼 보이던 보조 박스는 표시하지 않습니다.
+      document.querySelectorAll(".achievement-placeholder").forEach((element) => element.remove());
     };
+
+    const achievementScriptMatcher = /(?:^|\/)achievements-all\.js(?:\?|$)/i;
+    const achievementScripts = () => [...document.scripts].filter((script) =>
+      achievementScriptMatcher.test(String(script.src || ""))
+    );
 
     const loadAchievementSort = () => {
       if (document.querySelector('script[data-achievements-sort]')) return;
@@ -16,37 +23,58 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.head.appendChild(sortScript);
     };
 
-    if (!document.querySelector('script[data-achievements-all]')) {
+    const existingScripts = achievementScripts();
+    const existingAchievementScript = existingScripts[0] || null;
+
+    // achievements.html에서 이미 achievements-all.js를 불러오고 있으므로
+    // data 속성이 없다는 이유로 같은 스크립트를 다시 삽입하지 않습니다.
+    if (existingAchievementScript) {
+      existingAchievementScript.dataset.achievementsAll = "";
+      existingScripts.slice(1).forEach((script) => script.remove());
+      removeAchievementExplanation();
+      loadAchievementSort();
+    } else {
       const achievementScript = document.createElement("script");
-      achievementScript.src = "assets/js/achievements-all.js?v=20260817-all";
+      achievementScript.src = "assets/js/achievements-all.js?v=20260818-duplicate-fix";
       achievementScript.dataset.achievementsAll = "";
       achievementScript.addEventListener("load", () => {
         removeAchievementExplanation();
         loadAchievementSort();
       });
       document.head.appendChild(achievementScript);
-    } else {
-      removeAchievementExplanation();
-      loadAchievementSort();
     }
+
+    // achievements-all.js의 첫 렌더 및 서버 진행도 재렌더 뒤에도
+    // 보조 박스가 다시 남지 않게 제거합니다.
+    setTimeout(removeAchievementExplanation, 0);
+    window.addEventListener("sd-achievements-updated", () => setTimeout(removeAchievementExplanation, 0));
   }
 
   const nav = document.querySelector(".nav-links");
-  if (nav && !nav.querySelector('[data-achievements-link]')) {
-    const achievementLink = document.createElement("a");
-    achievementLink.href = "achievements.html";
-    achievementLink.textContent = "업적";
-    achievementLink.dataset.achievementsLink = "";
+  if (nav) {
+    const achievementLinks = [
+      ...nav.querySelectorAll('a[href="achievements.html"], a[href="./achievements.html"]')
+    ];
 
-    const rankingLink = nav.querySelector('a[href="ranking.html"]');
-    if (rankingLink) rankingLink.insertAdjacentElement("afterend", achievementLink);
-    else nav.prepend(achievementLink);
+    if (achievementLinks.length) {
+      // HTML에 이미 존재하는 업적 메뉴를 재사용하고, 혹시 남아 있는 중복은 제거합니다.
+      achievementLinks[0].dataset.achievementsLink = "";
+      achievementLinks.slice(1).forEach((link) => link.remove());
+    } else {
+      const achievementLink = document.createElement("a");
+      achievementLink.href = "achievements.html";
+      achievementLink.textContent = "업적";
+      achievementLink.dataset.achievementsLink = "";
+
+      const rankingLink = nav.querySelector('a[href="ranking.html"]');
+      if (rankingLink) rankingLink.insertAdjacentElement("afterend", achievementLink);
+      else nav.prepend(achievementLink);
+    }
   }
 
   if (!window.SD_AUTH) return;
 
   // 홈페이지 안의 로그인/회원가입 링크를 모두 게스트 전용으로 취급합니다.
-  // data-auth-guest가 빠진 푸터 링크도 로그인 후 함께 숨깁니다.
   const guestItems = Array.from(new Set([
     ...document.querySelectorAll("[data-auth-guest]"),
     ...document.querySelectorAll('a[href="login.html"], a[href="./login.html"], a[href="signup.html"], a[href="./signup.html"]')
@@ -58,11 +86,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     element.hidden = !visible;
     if (visible) {
-      // CSS에 display 값이 있어도 원래 디자인대로 다시 보이게 합니다.
       element.style.removeProperty("display");
       element.removeAttribute("aria-hidden");
     } else {
-      // style.css의 display:inline-flex 등이 hidden 속성을 덮어쓰는 경우까지 차단합니다.
       element.style.setProperty("display", "none", "important");
       element.setAttribute("aria-hidden", "true");
     }
@@ -96,7 +122,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     applySessionUI(session);
     await applyNickname(session);
 
-    // 로그인/로그아웃 상태가 같은 탭에서 바뀌는 경우에도 즉시 반영합니다.
     if (window.SD_AUTH.client?.auth?.onAuthStateChange) {
       window.SD_AUTH.client.auth.onAuthStateChange((_event, nextSession) => {
         applySessionUI(nextSession);
