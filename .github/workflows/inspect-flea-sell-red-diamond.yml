@@ -1,0 +1,64 @@
+name: Inspect Flea sell patch points
+
+on:
+  push:
+    branches:
+      - feature/flea-red-diamond
+    paths:
+      - '.github/workflows/inspect-flea-sell-red-diamond.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/flea-red-diamond
+      - name: Inspect sell and item constants
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/flea111 && mkdir -p /tmp/flea111
+          unzip -q downloads/extensions/SDFleaMarket_v1.1.1_Desktop.zip -d /tmp/flea111
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path('/tmp/flea111')
+          targets = [root/'main.js', root/'preload.js', root/'public/app.js']
+          keywords = ['const ITEMS', 'safe:', 'sell', '판매', 'currentValue', 'syncInventory', 'inventory']
+          out = []
+          for path in targets:
+              text = path.read_text(encoding='utf-8')
+              lines = text.splitlines()
+              out.append(f'===== {path.relative_to(root)} =====')
+              matches = []
+              for i, line in enumerate(lines):
+                  if any(k.lower() in line.lower() for k in keywords):
+                      matches.append(i)
+              blocks=[]
+              for i in matches:
+                  start=max(0,i-12); end=min(len(lines),i+30)
+                  if blocks and start <= blocks[-1][1]+2:
+                      blocks[-1]=(blocks[-1][0],max(blocks[-1][1],end))
+                  else:
+                      blocks.append((start,end))
+              for start,end in blocks:
+                  out.append(f'--- lines {start+1}-{end} ---')
+                  out.extend(f'{j+1:04d}: {lines[j]}' for j in range(start,end))
+                  out.append('')
+          dest=Path('diagnostics/flea-sell-red-diamond-source.txt')
+          dest.parent.mkdir(parents=True, exist_ok=True)
+          dest.write_text('\n'.join(out),encoding='utf-8')
+          PY
+      - name: Commit diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/flea-sell-red-diamond-source.txt
+          git commit -m '진단: 플리마켓 판매 처리 지점 확인'
+          git push origin HEAD:feature/flea-red-diamond
