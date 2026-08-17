@@ -32,24 +32,15 @@ jobs:
           from pathlib import Path
           root=Path('/tmp/odd-even/app')
           out=[]
-          out.append('FILES')
-          for p in sorted(root.rglob('*')):
-              if p.is_file(): out.append(str(p.relative_to(root)))
-          main_files=list(root.rglob('main.js'))
-          out.append('\nMAIN FILES')
-          out += [str(p.relative_to(root)) for p in main_files]
-          for p in main_files:
+          for p in root.rglob('main.js'):
               text=p.read_text(encoding='utf-8', errors='replace')
               lines=text.splitlines()
-              out.append(f'\n=== {p.relative_to(root)} ===')
+              out.append(f'=== {p.relative_to(root)} ===')
               for i,line in enumerate(lines):
-                  if 'open-center' in line or 'openCenter' in line or 'center' in line.lower() and 'require' in line:
-                      lo=max(0,i-8); hi=min(len(lines),i+18)
+                  if any(n in line for n in ('open-center','openCenter','openSdCenter','isSdCenterUrl')):
+                      lo=max(0,i-12); hi=min(len(lines),i+28)
                       out.append(f'-- around line {i+1} --')
                       for j in range(lo,hi): out.append(f'{j+1:04d}: {lines[j]}')
-          for p in root.rglob('package.json'):
-              out.append(f'\n=== {p.relative_to(root)} ===')
-              out.append(p.read_text(encoding='utf-8', errors='replace'))
           Path('diagnostics').mkdir(exist_ok=True)
           Path('diagnostics/odd-even-v110.txt').write_text('\n'.join(out)+'\n',encoding='utf-8')
           PY
@@ -61,5 +52,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add diagnostics/odd-even-v110.txt
-          git commit -m '진단 결과: 홀짝 v1.1.0 모듈 의존성' || exit 0
+          git commit -m '진단 결과 보강: 홀짝 open-center 호출부' || exit 0
           git push origin HEAD:fix/odd-even-open-center
