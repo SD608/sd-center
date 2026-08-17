@@ -139,15 +139,15 @@ window.SD_EXTENSION_PACKS = [
     "id": "sd-flea-market",
     "name": "SD 플리마켓",
     "stage": "PC Expansion",
-    "version": "v1.1.3",
+    "version": "v1.1.4",
     "category": "파밍·습격 확장팩",
     "icon": "assets/icons/flea-market.png?v=3",
-    "fileName": "SDFleaMarket_v1.1.3_Desktop.zip",
-    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip?v=113",
-    "description": "은행 피날레에서는 금고를 현장에서 열지 않고 금고 자체를 들고 탈출합니다. 들고 나온 금고 수가 많을수록 오토바이 추격전의 거리·장애물 빈도·대형 장애물 확률·충돌 피해가 증가합니다. 추격에 성공하면 은신처에서 금고를 개봉하며 금고 1개당 레드 다이아몬드 0.001%(1/100,000) 판정을 1회 수행합니다.",
+    "fileName": "SDFleaMarket_v1.1.4_Desktop.zip",
+    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.4_Desktop.zip?v=114",
+    "description": "물류 계정 연동을 현재 기준으로 통일해 회사 평판 7,000(S등급) 또는 물류 본부 Lv.1 이상이면 S등급 전용 지역을 이용할 수 있습니다. 은행 습격 3D 맵은 Canvas2D 컨텍스트·크기·레이어 오류를 방어해 검은 화면으로 멈추는 문제를 줄였습니다.",
     "requirements": "SD종합센터 v2.2.0 이상 · SD Link 로그인 · Windows 10/11",
-    "updatedAt": "2026-08-17",
-    "tags": ["금고 운반", "개수별 추격 난이도", "레드 다이아 0.001%"],
+    "updatedAt": "2026-08-18",
+    "tags": ["S등급·본부 연동", "은행 3D 안정화", "SD Link 계정"],
     "featured": true
   }
 ];
