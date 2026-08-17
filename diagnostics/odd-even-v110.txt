@@ -1,0 +1,70 @@
+FILES
+SDOddEven/.gitignore
+SDOddEven/README.md
+SDOddEven/forge.config.js
+SDOddEven/main.js
+SDOddEven/package.json
+SDOddEven/preload.js
+SDOddEven/public/css/style.css
+SDOddEven/public/icons/icon-192.png
+SDOddEven/public/icons/icon-512.png
+SDOddEven/public/icons/icon.ico
+SDOddEven/public/index.html
+SDOddEven/public/js/app.js
+SDOddEven/sd-app.json
+SDOddEven/src/game-engine.js
+SDOddEven/src/settings.js
+SDOddEven/src/wallet-database.js
+
+MAIN FILES
+SDOddEven/main.js
+
+=== SDOddEven/main.js ===
+-- around line 4 --
+0001: "use strict";
+0002: 
+0003: const path = require("node:path");
+0004: const { isSdCenterUrl, openSdCenter } = require("../../shared/open-center");
+0005: const {
+0006:   app,
+0007:   BrowserWindow,
+0008:   dialog,
+0009:   ipcMain,
+0010:   session,
+0011: } = require("electron");
+0012: 
+0013: const { SettingsStore } = require("./src/settings");
+0014: const {
+0015:   applyGameResult,
+0016:   autoFindWalletDatabase,
+0017:   getAccount,
+0018:   getRecentTransactions,
+0019:   listAccounts,
+0020:   validateWalletDatabase,
+0021: } = require("./src/wallet-database");
+
+=== SDOddEven/package.json ===
+{
+  "name": "sd-odd-even-desktop",
+  "productName": "SD홀짝",
+  "version": "1.1.0",
+  "private": true,
+  "description": "SD지갑 가상계좌와 연동되는 주사위 홀짝 시뮬레이션 게임",
+  "author": "SDWallet",
+  "main": "main.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "make": "electron-forge make",
+    "package": "electron-forge package",
+    "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-database.js && node --check src/game-engine.js && node --check public/js/app.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "@electron-forge/maker-squirrel": "latest",
+    "electron": "latest"
+  }
+}
+
