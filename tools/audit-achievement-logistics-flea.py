@@ -38,7 +38,11 @@ DETAIL_TARGETS = {
         "preload.js",
         "package.json",
     ],
-    "SDLink_v1.2.8_Desktop.zip": ["main.js", "preload.js", "renderer.js", "package.json", "sd-app.json"],
+    "SDLink_v1.2.8_Desktop.zip": [
+        "main.js", "preload.js", "renderer.js", "package.json", "sd-app.json",
+        "src/wallet-db.js", "src/sync-engine.js", "src/auth-service.js", "src/config-store.js",
+        "src/bitcoin-reader.js", "src/sync-state.js", "public/app.js"
+    ],
     "SDLogisticsCenter_Season0_Desktop.zip": ["main.js", "preload.js", "package.json", "sd-app.json"],
 }
 
