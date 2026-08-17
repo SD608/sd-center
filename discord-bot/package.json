@@ -1,20 +1,19 @@
 {
   "name": "sd-center-discord-bot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "SD종합센터 디스코드 봇 - 잔액/랭킹 조회 및 업데이트 공지",
+  "description": "SD종합센터 디스코드 업데이트 공지 전용 봇",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "deploy:commands": "node src/deploy-commands.js",
-    "check": "node --check src/index.js && node --check src/deploy-commands.js && node --check src/sd-data.js && node --check src/update-monitor.js"
+    "clear:commands": "node src/clear-commands.js",
+    "check": "node --check src/index.js && node --check src/clear-commands.js && node --check src/update-monitor.js"
   },
   "engines": {
     "node": ">=24.17.0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.0.0",
     "discord.js": "^14.27.0",
     "dotenv": "^16.0.0"
   }
