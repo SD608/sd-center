@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>SD Logistics Center · Season 0 Desktop v1.0.7</title>
+  <link rel="stylesheet" href="styles.css?v=105" />
+</head>
+<body>
+  <aside id="activeDeliveryDock" class="active-delivery-dock hidden">
+    <div class="active-delivery-dock-head">
+      <div>
+        <div class="eyebrow">LIVE LOGISTICS</div>
+        <strong>배송 중인 계약</strong>
+      </div>
+      <span id="activeDeliveryDockCount" class="tiny-badge">0건</span>
+    </div>
+    <div id="activeDeliveryDockList" class="active-delivery-dock-list"></div>
+  </aside>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">SD종합센터 확장팩 · DESKTOP</div>
+      <h1>SD 물류센터 · Season 0</h1>
+    </div>
+    <div class="wallet-pill">
+      <span>SD지갑 공용 가상잔액</span>
+      <strong id="walletBalance">연결 확인 중…</strong>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero panel">
+      <div>
+        <span class="badge">SD종합센터 · SD지갑 직접 연동</span>
+        <h2>SD 물류센터 · Season 0</h2>
+        <p>SD종합센터에서 실행되며 차량 구매·판매·배송 수익·기사 수익을 선택한 SD지갑 가상계좌에 직접 반영합니다.</p>
+      </div>
+      <div class="hero-actions">
+        <button id="resetBtn" class="danger ghost">물류센터 데이터 초기화</button>
+      </div>
+    </section>
+
+    <section class="panel wallet-connect-panel">
+      <div class="panel-title-row">
+        <div>
+          <div class="eyebrow">SHARED SD WALLET</div>
+          <h3>SD지갑 연결</h3>
+          <p>종합센터의 SD지갑 가상계좌를 선택하면 물류센터의 모든 가상 수익·비용이 같은 계좌에 기록됩니다.</p>
+        </div>
+        <span id="walletLinkStatus" class="wallet-status-badge">연결 확인 중</span>
+      </div>
+
+      <div class="wallet-connect-grid">
+        <label>
+          <span>SD지갑 데이터베이스</span>
+          <input id="walletDbPath" type="text" readonly placeholder="SD지갑을 자동으로 찾는 중…" />
+        </label>
+        <label>
+          <span>사용할 가상계좌</span>
+          <select id="walletAccountSelect" disabled>
+            <option value="">계좌를 먼저 연결하세요</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="wallet-connect-actions">
+        <button id="walletAutoDetectBtn">SD지갑 자동 찾기</button>
+        <button id="walletChooseDbBtn">직접 선택</button>
+        <button id="walletRefreshBtn" class="primary">잔액 새로고침</button>
+      </div>
+
+      <div class="wallet-selected-summary">
+        <span id="walletOwnerText">계좌 미연결</span>
+        <strong id="walletAccountText">-</strong>
+      </div>
+      <p class="hint">SD Link를 사용 중이면 이 앱에서 발생한 새 거래도 기존 로컬 거래 동기화 대상에 포함될 수 있습니다.</p>
+    </section>
+
+    <section class="summary-grid">
+      <article class="stat-card">
+        <span>물류 평판</span>
+        <strong id="logisticsRank">F</strong>
+        <small id="logisticsRepText">0 / 100</small>
+      </article>
+    </section>
+
+    <section id="pcView" class="view">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">PC CONTENT</div>
+          <h2>SD 물류회사</h2>
+        </div>
+        <span class="platform-label">경영 · 평판 · 장기 성장</span>
+      </div>
+
+      <div class="two-col">
+        <details id="contractsMenu" class="panel logistics-menu-collapsible" open>
+          <summary>
+            <div>
+              <h3>운송 계약</h3>
+              <p>계약을 수행해 가상잔액과 물류 평판을 얻습니다.</p>
+            </div>
+            <span class="logistics-summary-meta" id="contractsSummaryMeta">계약 목록</span>
+          </summary>
+          <div class="logistics-menu-body">
+            <div class="panel-title-row logistics-menu-toolbar">
+              <span class="muted">필요한 계약만 확인하고 접어둘 수 있습니다.</span>
+              <button id="refreshContractsBtn" class="small">계약 새로고침</button>
+            </div>
+            <div id="contracts" class="card-list"></div>
+          </div>
+        </details>
+
+        <section class="panel">
+          <h3>회사 현황</h3>
+          <div class="info-list">
+            <div><span>회사 등급</span><strong id="companyRank">F</strong></div>
+            <div><span>물류 평판</span><strong id="companyRep">0</strong></div>
+            <div><span>차량 슬롯</span><strong id="fleetSlotText">1 / 8</strong></div>
+            <div><span>운송 중</span><strong id="activeDeliveryCount">0건</strong></div>
+            <div><span>완료 계약</span><strong id="completedContracts">0건</strong></div>
+          </div>
+          <div class="auto-fit-setting">
+            <div>
+              <strong>자동 맞춤 배차</strong>
+              <p>필요 스택을 만족하는 차량 조합을 자동으로 계산합니다.</p>
+            </div>
+            <label class="switch">
+              <input id="autoFitToggle" type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <p class="hint">우선순위: 초과 스택 최소 → 차량 수 최소 → 더 빠른 조합</p>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>다음 등급까지</span><span id="rankProgressText">0%</span>
+            </div>
+            <div class="progress"><div id="rankProgressBar"></div></div>
+          </div>
+        </section>
+      </div>
+
+      <details id="fleetMenu" class="logistics-section-collapsible" open>
+        <summary class="section-heading sub logistics-section-summary">
+          <div>
+            <div class="eyebrow">LOGISTICS FLEET</div>
+            <h2>차량 관리</h2>
+          </div>
+          <div class="logistics-summary-right">
+            <span class="platform-label" id="fleetLimitLabel">최대 8대 · 구매 / 판매 / 배차</span>
+            <span class="logistics-summary-meta" id="fleetSummaryMeta">1대 보유</span>
+          </div>
+        </summary>
+
+        <div class="logistics-section-body">
+          <div class="two-col fleet-two-col">
+            <section class="panel">
+              <div class="panel-title-row">
+                <div>
+                  <h3>보유 차량</h3>
+                  <p>기본 소형 차량 1대가 지급됩니다. 운송 중인 차량은 판매할 수 없습니다.</p>
+                </div>
+                <span class="tiny-badge" id="fleetCountBadge">1 / 8</span>
+              </div>
+              <div id="fleetList" class="fleet-grid"></div>
+            </section>
+
+            <section class="panel">
+              <h3>차량 상점</h3>
+              <p class="muted">같은 종류도 여러 대 구매할 수 있습니다. 판매가는 구매가의 50%이며, 여러 차량의 적재 스택을 합쳐 한 계약에 배차할 수 있습니다.</p>
+              <div id="vehicleShop" class="vehicle-shop"></div>
+            </section>
+          </div>
+        </div>
+      </details>
+
+      <div class="section-heading sub">
+        <div>
+          <div class="eyebrow">S-RANK ENDGAME</div>
+          <h2>SD 물류 본부</h2>
+        </div>
+        <span class="platform-label">S등급 이후 장기 성장</span>
+      </div>
+
+      <section id="headquartersPanel" class="panel headquarters-panel"></section>
+
+    </section>
+
+    <section class="panel ledger-panel">
+      <div class="panel-title-row">
+        <div>
+          <h3>SD지갑 최근 거래</h3>
+          <p>선택한 가상계좌의 최근 거래입니다. 물류센터 외 SD 앱 거래도 함께 표시됩니다.</p>
+        </div>
+      </div>
+      <div id="ledger" class="ledger"></div>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card">
+      <button id="modalClose" class="modal-close">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js?v=105"></script>
+</body>
+</html>

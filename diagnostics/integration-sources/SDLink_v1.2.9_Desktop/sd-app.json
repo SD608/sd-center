@@ -1,0 +1,6 @@
+{
+  "id": "sdlink-desktop",
+  "version": "1.2.9",
+  "displayVersion": "PC Expansion · v1.2.9",
+  "improvement": "모든 PC 확장팩의 공용 지갑 DB 기록을 읽어 홈페이지 계정 업적으로 누적 동기화하는 중앙 브리지를 추가했습니다."
+}

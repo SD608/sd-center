@@ -1,0 +1,23 @@
+{
+  "name": "sdlink-desktop",
+  "productName": "SD Link",
+  "version": "1.2.9",
+  "private": true,
+  "description": "센터 버전 증명과 강제 업데이트 정책을 지원하는 PC ↔ SD608 Online 실시간 동기화 확장팩",
+  "author": "SD608",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "check": "node --check main.js && node --check preload.js && node --check forge.config.js && node --check src/config-store.js && node --check src/auth-service.js && node --check src/wallet-db.js && node --check src/sync-state.js && node --check src/sync-engine.js && node --check src/bitcoin-reader.js && node --check public/app.js && node --check src/achievement-reader.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "@electron-forge/maker-squirrel": "latest",
+    "electron": "latest"
+  }
+}
