@@ -29,7 +29,7 @@ def find_root(extracted: Path) -> Path:
             data = json.loads(package.read_text(encoding="utf-8"))
         except Exception:
             continue
-        if data.get("name") == "sd-flea-market":
+        if data.get("name") in {"sd-flea-market", "sd-flea-market-pc"}:
             return package.parent
     raise RuntimeError("flea package root not found")
 
