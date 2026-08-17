@@ -1,0 +1,107 @@
+name: Verify logistics link flea release set
+
+on:
+  push:
+    paths:
+      - ".github/workflows/verify-logistics-link-flea-release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Structural and JavaScript verification
+        run: |
+          python - <<'PY'
+          import json, pathlib, re, subprocess, tempfile, zipfile
+
+          root=pathlib.Path.cwd()
+          packages=[
+            ('logistics','downloads/extensions/SDLogisticsCenter_v1.1.0_Desktop.zip','sd-logistics-center-desktop','1.1.0'),
+            ('sdlink','downloads/extensions/SDLink_v1.3.0_Desktop.zip','sdlink-desktop','1.3.0'),
+            ('flea','downloads/extensions/SDFleaMarket_v1.1.5_Desktop.zip','sd-flea-market-pc','1.1.5'),
+          ]
+          report=[]
+          with tempfile.TemporaryDirectory() as td:
+            tmp=pathlib.Path(td)
+            for label,rel,name,version in packages:
+              src=root/rel
+              assert src.is_file() and src.stat().st_size>60000,(rel,'missing/small')
+              dest=tmp/label
+              dest.mkdir()
+              with zipfile.ZipFile(src) as z: z.extractall(dest)
+              pkg_files=[p for p in dest.rglob('package.json') if 'node_modules' not in p.parts]
+              pkg_path=next(p for p in pkg_files if json.loads(p.read_text(encoding='utf-8')).get('name')==name)
+              app_root=pkg_path.parent
+              pkg=json.loads(pkg_path.read_text(encoding='utf-8'))
+              assert pkg['version']==version,(label,pkg['version'])
+              js_files=[]
+              for p in app_root.rglob('*.js'):
+                if 'node_modules' in p.parts: continue
+                js_files.append(p)
+              for p in js_files:
+                proc=subprocess.run(['node','--check',str(p)],capture_output=True,text=True)
+                if proc.returncode:
+                  raise AssertionError(f'{label} syntax fail: {p.relative_to(app_root)}\n{proc.stderr}')
+              report.append(f'{label}: v{version} / JS syntax {len(js_files)} files PASS / {src.stat().st_size} bytes')
+
+              if label=='logistics':
+                main=(app_root/'main.js').read_text(encoding='utf-8')
+                preload=(app_root/'preload.js').read_text(encoding='utf-8')
+                renderer=(app_root/'public/app.js').read_text(encoding='utf-8')
+                assert 'SD_LOGISTICS_PROGRESS_BRIDGE_V110' in main
+                assert 'sdlogistics:publish-progress' in main
+                assert 'publishProgress' in preload
+                assert 'progressBridgePayload' in renderer
+              elif label=='sdlink':
+                reader=(app_root/'src/logistics-reader.js').read_text(encoding='utf-8')
+                engine=(app_root/'src/sync-engine.js').read_text(encoding='utf-8')
+                ach=(app_root/'src/achievement-reader.js').read_text(encoding='utf-8')
+                main=(app_root/'main.js').read_text(encoding='utf-8')
+                assert 'SDLINK_LOGISTICS_BRIDGE_V130' in reader
+                assert 'sync_sd_logistics_progress' in engine
+                assert 'integration-state.json' in engine
+                assert 'logisticsProgress' in ach
+                assert 'clearIntegrationState' in main
+              else:
+                integration=(app_root/'src/sd-integration.js').read_text(encoding='utf-8')
+                renderer=(app_root/'public/app.js').read_text(encoding='utf-8')
+                mission=(app_root/'public/mission3d.js').read_text(encoding='utf-8')
+                assert 'FLEA_SDLINK_SHARED_STATE_V115' in integration
+                assert 'readSdLinkIntegrationState' in integration
+                assert 'FLEA_LIMITED_ITEM_SCOPE_FIX_V115' in renderer
+                assert 'FLEA_MISSION3D_BLACKSCREEN_V114' in mission
+
+          catalog=json.load(open(root/'update/extensions-catalog.json',encoding='utf-8'))
+          assert catalog['apps']['sd-logistics-center-desktop']['version']=='1.1.0'
+          assert catalog['apps']['sdlink-desktop']['version']=='1.3.0'
+          assert catalog['apps']['sd-flea-market']['version']=='1.1.5'
+          policy=json.load(open(root/'update/desktop-policy.json',encoding='utf-8'))
+          assert policy['apps']['sd-logistics-center-desktop']['minVersion']=='1.1.0'
+          assert policy['apps']['sdlink-desktop']['minVersion']=='1.3.0'
+          active=(root/'extensions-data.js').read_text(encoding='utf-8')
+          assert '"id": "sd-logistics-center"' in active and '"version": "v1.1.0"' in active
+          assert '"id": "sd-link"' in active and '"version": "v1.3.0"' in active
+          assert '"id": "sd-flea-market"' in active and '"version": "v1.1.5"' in active
+
+          text='SD logistics / SD Link / flea release verification\n\n'+'\n'.join(report)+'\n\nCatalog/policy/extension data: PASS\nActive version chain: logistics 1.1.0 / SD Link 1.3.0 / flea 1.1.5\n'
+          out=root/'diagnostics/link-fix-release-verification.txt'
+          out.parent.mkdir(exist_ok=True)
+          out.write_text(text,encoding='utf-8')
+          print(text)
+          PY
+
+      - name: Commit verification report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diagnostics/link-fix-release-verification.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "test: verify logistics link flea release set"
+          git push
