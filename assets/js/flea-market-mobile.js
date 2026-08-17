@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let inventory = [];
   let market = [];
   let currentProfile = null;
+  const RED_DIAMOND_NAME = "레드 다이아몬드";
 
   const won = (value) => mobile.auth.formatWon(Math.max(0, Math.trunc(Number(value || 0))));
   const tierName = (tier) => ({ worn:"낡음", normal:"평범", fancy:"고급진", premium:"최고급", safe:"금고" }[tier] || tier || "-");
@@ -67,6 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const card = document.createElement("article");
       card.className = "flea-item-card";
       const purchased = item.acquisition_kind === "system_purchase";
+      const saleLocked = item.name === RED_DIAMOND_NAME;
       const salePrice = purchased
         ? Math.floor(Number(item.purchase_price ?? item.current_value ?? 0) * 0.5)
         : Math.floor(Number(item.current_value || 0) * 0.95);
@@ -90,7 +92,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const value = document.createElement("div");
       value.className = "flea-price";
-      value.innerHTML = `${won(item.current_value)}<small>현재 가치</small>`;
+      value.innerHTML = saleLocked ? `한정판<small>판매 불가</small>` : `${won(item.current_value)}<small>현재 가치</small>`;
       top.append(title, value);
 
       const actions = document.createElement("div");
@@ -98,13 +100,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "flea-sell-button";
-      button.textContent = `시스템에 ${won(salePrice)} 판매`;
+      button.textContent = saleLocked ? "판매 불가 · 한정판" : `시스템에 ${won(salePrice)} 판매`;
+      button.disabled = saleLocked;
       const rule = document.createElement("div");
       rule.className = "flea-resale";
-      rule.textContent = purchased ? `구매가 ${won(item.purchase_price)} → 재판매 50%` : "PC 획득품 · 판매 수수료 5%";
+      rule.textContent = saleLocked ? "금고 0.001% 한정판 · 시스템 판매 불가" : (purchased ? `구매가 ${won(item.purchase_price)} → 재판매 50%` : "PC 획득품 · 판매 수수료 5%");
       actions.append(button, rule);
 
       button.addEventListener("click", async () => {
+        if (saleLocked) return;
         const message = purchased
           ? `${item.name}을(를) 시스템에 ${won(salePrice)}에 재판매할까요?\n시스템 구매품은 구매가의 50%만 받을 수 있습니다.`
           : `${item.name}을(를) 시스템에 ${won(salePrice)}에 판매할까요?`;
@@ -249,7 +253,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (marketResult.error) throw marketResult.error;
       if (profileResult.error) throw profileResult.error;
       inventory = inventoryResult.data?.items || [];
-      market = marketResult.data?.items || [];
+      market = (marketResult.data?.items || []).filter((item) => item.name !== RED_DIAMOND_NAME);
       currentProfile = profileResult.data || null;
       renderInventory();
       renderMarket();
