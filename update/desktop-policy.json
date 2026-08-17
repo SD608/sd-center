@@ -1,6 +1,6 @@
 {
-  "policyVersion": 7,
-  "updatedAt": "2026-08-18T07:35:00+09:00",
+  "policyVersion": 8,
+  "updatedAt": "2026-08-18T08:40:00+09:00",
   "required": true,
   "apps": {
     "sd-bitcoin-miner-desktop": {
@@ -17,9 +17,9 @@
     },
     "sdlink-desktop": {
       "required": true,
-      "minVersion": "1.3.0",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.3.0_Desktop.zip?v=130",
-      "message": "물류센터 계정 연동과 플리마켓 연결 상태 공유를 위해 SD Link v1.3.0 이상이 필요합니다."
+      "minVersion": "1.3.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.3.1_Desktop.zip?v=131",
+      "message": "플리마켓 아이템 온라인 동기화 복구를 위해 SD Link v1.3.1 이상이 필요합니다."
     }
   }
 }
