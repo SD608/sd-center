@@ -10,7 +10,7 @@ on:
       - 'downloads/extensions/**'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   audit:
@@ -32,13 +32,3 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           python tools/audit-extension-packages.py
-      - name: Commit audit report
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add diagnostics/extension-package-audit.json diagnostics/extension-package-audit.md
-          if(git diff --cached --quiet){ exit 0 }
-          git commit -m '진단: 확장팩 전환 패키지 의존성 전체 점검'
-          git push origin HEAD:main
