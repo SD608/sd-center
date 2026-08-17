@@ -1,0 +1,58 @@
+name: Build Flea Market v1.1.3 Bank Carry
+
+on:
+  push:
+    branches:
+      - feature/flea-red-diamond
+    paths:
+      - '.github/workflows/build-flea-bank-carry-v113.yml'
+      - 'tools/patch-flea-bank-carry-v113.py'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/flea-red-diamond
+          fetch-depth: 0
+
+      - name: Build v1.1.3
+        shell: bash
+        run: |
+          set +e
+          mkdir -p diagnostics
+          python tools/patch-flea-bank-carry-v113.py > diagnostics/flea-v113-build.log 2>&1
+          code=$?
+          cat diagnostics/flea-v113-build.log
+          if [ "$code" -ne 0 ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add diagnostics/flea-v113-build.log
+            git commit -m '진단: 플리마켓 v1.1.3 빌드 오류 기록' || true
+            git push origin HEAD:feature/flea-red-diamond
+            exit "$code"
+          fi
+          rm -f diagnostics/flea-v113-build.log
+
+      - name: Validate JavaScript
+        shell: bash
+        run: |
+          rm -rf /tmp/flea113-validate
+          mkdir -p /tmp/flea113-validate
+          unzip -q downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip -d /tmp/flea113-validate
+          node --check /tmp/flea113-validate/main.js
+          node --check /tmp/flea113-validate/public/app.js
+          node --check /tmp/flea113-validate/public/bankchase.js
+
+      - name: Commit v1.1.3 build
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip
+          git commit -m '플리마켓 v1.1.3: 금고 운반 및 추격 난이도'
+          git push origin HEAD:feature/flea-red-diamond
