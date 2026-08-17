@@ -1,0 +1,553 @@
+=== main.js ===
+-- around line 79 --
+0061:     return (
+0062:       process.env.APPDATA ||
+0063:       path.join(os.homedir(), "AppData", "Roaming")
+0064:     );
+0065:   }
+0066: 
+0067:   if (process.platform === "darwin") {
+0068:     return path.join(os.homedir(), "Library", "Application Support");
+0069:   }
+0070: 
+0071:   return process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
+0072: }
+0073: 
+0074: const APP_DATA_ROOT = getAppDataRoot();
+0075: const CENTER_DATA_ROOT = path.join(APP_DATA_ROOT, "SD종합센터");
+0076: const REGISTRY_PATH = path.join(CENTER_DATA_ROOT, "apps.json");
+0077: const INSTALLED_APPS_ROOT = path.join(
+0078:   CENTER_DATA_ROOT,
+0079:   "installed-apps",
+0080: );
+0081: const REMOVED_APPS_ROOT = path.join(
+0082:   CENTER_DATA_ROOT,
+0083:   "removed-apps",
+0084: );
+0085: const APP_PACKAGES_ROOT = path.join(
+0086:   CENTER_DATA_ROOT,
+0087:   "app-packages",
+0088: );
+0089: 
+0090: const CENTER_SETTINGS_PATH = path.join(
+0091:   CENTER_DATA_ROOT,
+0092:   "center-settings.json",
+0093: );
+0094: 
+0095: function loadCenterSettings() {
+0096:   try {
+0097:     const parsed = JSON.parse(fs.readFileSync(CENTER_SETTINGS_PATH, "utf8"));
+0098:     const favoriteIds = Array.isArray(parsed?.favoriteIds)
+0099:       ? [...new Set(parsed.favoriteIds
+0100:           .filter((id) => typeof id === "string" && id.trim())
+0101:           .map((id) => id.trim()))]
+0102:       : [];
+0103:     return { favoriteIds };
+0104:   } catch {
+0105:     return { favoriteIds: [] };
+0106:   }
+0107: }
+0108: 
+0109: function saveCenterSettings(settings) {
+0110:   fs.mkdirSync(CENTER_DATA_ROOT, { recursive: true });
+0111:   const temporaryPath = `${CENTER_SETTINGS_PATH}.${process.pid}.tmp`;
+0112:   fs.writeFileSync(
+0113:     temporaryPath,
+-- around line 654 --
+0636:       sendBulkDownloadProgress({ completed: 0, total: entries.length, name: "준비 중" });
+0637: 
+0638:       for (let index = 0; index < entries.length; index += 1) {
+0639:         const entry = entries[index];
+0640:         let fileName = safeExtensionFileName(entry);
+0641:         if (usedNames.has(fileName.toLowerCase())) fileName = `${entry.id}_${fileName}`;
+0642:         usedNames.add(fileName.toLowerCase());
+0643:         const destination = path.join(targetDirectory, fileName);
+0644:         const temporary = `${destination}.part`;
+0645:         sendBulkDownloadProgress({ completed: index, total: entries.length, name: entry.name });
+0646: 
+0647:         try {
+0648:           fs.rmSync(temporary, { force: true });
+0649:           await downloadFile(entry.downloadUrl, temporary);
+0650:           const stat = fs.statSync(temporary);
+0651:           if (!stat.isFile() || stat.size <= 0) throw new Error("다운로드된 ZIP 파일이 비어 있습니다.");
+0652:           inspectZip(temporary);
+0653:           fs.rmSync(destination, { force: true });
+0654:           fs.renameSync(temporary, destination);
+0655:           results.push({ id: entry.id, name: entry.name, ok: true, fileName });
+0656:         } catch (error) {
+0657:           fs.rmSync(temporary, { force: true });
+0658:           results.push({ id: entry.id, name: entry.name, ok: false, error: error.message });
+0659:         }
+0660:         sendBulkDownloadProgress({ completed: index + 1, total: entries.length, name: entry.name });
+0661:       }
+0662: 
+0663:       const failed = results.filter((result) => !result.ok);
+0664:       const openError = await shell.openPath(targetDirectory);
+0665:       return {
+0666:         ok: failed.length === 0,
+0667:         count: entries.length,
+0668:         downloadedCount: results.length - failed.length,
+0669:         failedCount: failed.length,
+0670:         folder: targetDirectory,
+0671:         folderOpenError: openError || "",
+0672:         results,
+0673:       };
+0674:     } catch (error) {
+0675:       return { ok: false, error: error.message };
+0676:     }
+0677:   }
+0678: 
+0679:   function toggleFavorite(id) {
+0680:     const entry = appById.get(String(id || ""));
+0681:     if (!entry) return { ok: false, error: "등록되지 않은 앱입니다." };
+0682:     const favorite = !isFavoriteId(entry.id);
+0683:     setFavoriteId(entry.id, favorite);
+0684:     sendAppStates();
+0685:     return { ok: true, id: entry.id, favorite };
+0686:   }
+0687: 
+0688:   function extensionStoreRule(id) {
+-- around line 1064 --
+1046:       );
+1047:       const appEntry = {
+1048:         ...inspected.metadata,
+1049:         directory: destinationDirectory,
+1050:         packagePath,
+1051:         importedAt: entry.importedAt || new Date().toISOString(),
+1052:         updatedAt: new Date().toISOString(),
+1053:       };
+1054: 
+1055:       registry = upsertCustomApp(registry, appEntry);
+1056:       saveRegistry(REGISTRY_PATH, registry);
+1057:       refreshCatalogAndUi();
+1058:       return appById.get(appEntry.id);
+1059:     } finally {
+1060:       fs.rmSync(temporaryZipPath, { force: true });
+1061:     }
+1062:   }
+1063: 
+1064:   async function updateAppFromCatalog(id) {
+1065:     const entry = appById.get(id);
+1066:     if (!entry) {
+1067:       return { ok: false, error: "등록되지 않은 앱입니다." };
+1068:     }
+1069: 
+1070:     await refreshExtensionCatalog();
+1071:     const rule = catalogRuleFor(entry);
+1072:     if (!rule) {
+1073:       return {
+1074:         ok: false,
+1075:         error: "이 앱은 종합센터 자동 업데이트 목록에 없습니다.",
+1076:       };
+1077:     }
+1078: 
+1079:     const availability = updateAvailabilityFor(entry);
+1080: 
+1081:     const confirmation = await dialog.showMessageBox(mainWindow, {
+1082:       type: "question",
+1083:       title: "확장팩 업데이트",
+1084:       message: `${entry.name}을 v${availability.latestVersion}으로 업데이트할까요?`,
+1085:       detail: `현재 버전: v${rawEntryVersion(entry)}\n최신 버전: v${availability.latestVersion}\n\n${availability.updateNotes || "최신 확장팩 파일로 교체합니다."}\n\n앱 파일만 교체하며 저장 데이터는 유지합니다.`,
+1086:       buttons: ["취소", "업데이트"],
+1087:       defaultId: 1,
+1088:       cancelId: 0,
+1089:       noLink: true,
+1090:     });
+1091: 
+1092:     if (confirmation.response !== 1) {
+1093:       return { ok: false, canceled: true };
+1094:     }
+1095: 
+1096:     try {
+1097:       const updatedEntry = await installCatalogUpdate(entry, rule);
+1098:       await dialog.showMessageBox(mainWindow, {
+-- around line 1642 --
+1624: 
+1625:   function ensureManagedDirectory(directoryPath) {
+1626:     fs.mkdirSync(directoryPath, { recursive: true });
+1627:   }
+1628: 
+1629:   function isPathInside(rootDirectory, candidatePath) {
+1630:     const root = `${path.resolve(rootDirectory)}${path.sep}`;
+1631:     const candidate = path.resolve(candidatePath);
+1632:     return candidate.startsWith(root);
+1633:   }
+1634: 
+1635:   function archiveAppZip(sourceZipPath, appId) {
+1636:     ensureManagedDirectory(APP_PACKAGES_ROOT);
+1637:     const finalPath = path.join(APP_PACKAGES_ROOT, `${appId}.zip`);
+1638:     const temporaryPath = `${finalPath}.${process.pid}.tmp`;
+1639: 
+1640:     fs.copyFileSync(sourceZipPath, temporaryPath);
+1641:     fs.rmSync(finalPath, { force: true });
+1642:     fs.renameSync(temporaryPath, finalPath);
+1643:     return finalPath;
+1644:   }
+1645: 
+1646:   function moveDirectory(sourceDirectory, destinationDirectory) {
+1647:     if (!isPathInside(CENTER_DATA_ROOT, sourceDirectory)) {
+1648:       throw new Error("앱 폴더 경로가 안전하지 않습니다.");
+1649:     }
+1650: 
+1651:     if (!isPathInside(CENTER_DATA_ROOT, destinationDirectory)) {
+1652:       throw new Error("보관함 경로가 안전하지 않습니다.");
+1653:     }
+1654: 
+1655:     ensureManagedDirectory(path.dirname(destinationDirectory));
+1656:     fs.rmSync(destinationDirectory, {
+1657:       recursive: true,
+1658:       force: true,
+1659:     });
+1660:     fs.renameSync(sourceDirectory, destinationDirectory);
+1661:   }
+1662: 
+1663:   function removeFileIfManaged(filePath, rootDirectory) {
+1664:     if (!filePath || !fs.existsSync(filePath)) {
+1665:       return;
+1666:     }
+1667: 
+1668:     if (!isPathInside(rootDirectory, filePath)) {
+1669:       throw new Error("삭제 대상 경로가 안전하지 않습니다.");
+1670:     }
+1671: 
+1672:     fs.rmSync(filePath, {
+1673:       recursive: true,
+1674:       force: true,
+1675:     });
+1676:   }
+-- around line 2270 --
+2252:     ipcMain.handle("center:toggle-favorite", (event, id) => toggleFavorite(id));
+2253:     ipcMain.handle("center:get-extension-store", (event, force = false) =>
+2254:       getExtensionStoreState({ force: Boolean(force) }),
+2255:     );
+2256:     ipcMain.handle("center:install-store-app", (event, id) =>
+2257:       installStoreApp(id),
+2258:     );
+2259:     ipcMain.handle("center:list-apps", () => getAllAppStates());
+2260:     ipcMain.handle("center:list-removed-apps", () =>
+2261:       getRemovedAppStates(),
+2262:     );
+2263:     ipcMain.handle("center:launch-app", (event, id) =>
+2264:       launchApp(id),
+2265:     );
+2266:     ipcMain.handle("center:terminate-app", (event, id) =>
+2267:       terminateApp(id),
+2268:     );
+2269:     ipcMain.handle("center:add-app-zip", addAppFromZip);
+2270:     ipcMain.handle("center:check-app-updates", async () => {
+2271:       try {
+2272:         await refreshExtensionCatalog({ force: true });
+2273:         sendAppStates();
+2274:         const available = appCatalog
+2275:           .filter((entry) => updateAvailabilityFor(entry).updateAvailable)
+2276:           .map((entry) => ({
+2277:             id: entry.id,
+2278:             name: entry.name,
+2279:             currentVersion: rawEntryVersion(entry),
+2280:             latestVersion: updateAvailabilityFor(entry).latestVersion,
+2281:           }));
+2282:         return { ok: true, count: available.length, apps: available };
+2283:       } catch (error) {
+2284:         return { ok: false, error: error.message };
+2285:       }
+2286:     });
+2287:     ipcMain.handle("center:update-app", (event, id) =>
+2288:       updateAppFromCatalog(id),
+2289:     );
+2290:     ipcMain.handle("center:update-all-apps", () =>
+2291:       updateAllAvailableApps(),
+2292:     );
+2293:     ipcMain.handle("center:delete-app", (event, id) =>
+2294:       deleteApp(id),
+2295:     );
+2296:     ipcMain.handle("center:restore-app", (event, id) =>
+2297:       restoreRemovedApp(id),
+2298:     );
+2299:     ipcMain.handle(
+2300:       "center:permanently-delete-removed-app",
+2301:       (event, id) => permanentlyDeleteRemovedApp(id),
+2302:     );
+2303:     ipcMain.handle("center:launch-all", async () => {
+2304:       const results = [];
+=== preload.js ===
+-- around line 44 --
+0026:   restoreApp: (id) => invoke("center:restore-app", id),
+0027:   permanentlyDeleteRemovedApp: (id) =>
+0028:     invoke("center:permanently-delete-removed-app", id),
+0029:   launchAll: () => invoke("center:launch-all"),
+0030:   terminateAll: () => invoke("center:terminate-all"),
+0031:   show: () => invoke("center:show"),
+0032:   hide: () => invoke("center:hide"),
+0033:   quitCompletely: () => invoke("center:quit-completely"),
+0034:   openAppFolder: (id) => invoke("center:open-app-folder", id),
+0035:   getCenterInfo: () => invoke("center:get-center-info"),
+0036:   checkSelfUpdate: () => invoke("center:check-self-update"),
+0037:   installSelfUpdate: () => invoke("center:install-self-update"),
+0038:   getSelfUpdateState: () => invoke("center:get-self-update-state"),
+0039:   toggleFavorite: (id) => invoke("center:toggle-favorite", id),
+0040:   getExtensionStore: (force = false) => invoke("center:get-extension-store", force),
+0041:   installStoreApp: (id) => invoke("center:install-store-app", id),
+0042: 
+0043:   // v2.1.3: 홈페이지 확장팩 카탈로그 기반 자동 업데이트
+0044:   checkAppUpdates: () => invoke("center:check-app-updates"),
+0045:   updateApp: (id) => invoke("center:update-app", id),
+0046:   updateAllApps: () => invoke("center:update-all-apps"),
+0047: 
+0048:   onAppStates: (callback) => subscribe("center:app-states", callback),
+0049:   onRemovedAppStates: (callback) =>
+0050:     subscribe("center:removed-app-states", callback),
+0051:   onSelfUpdateState: (callback) =>
+0052:     subscribe("center:center-update-state", callback),
+0053: });
+=== src/required-updates.js ===
+-- around line 115 --
+0097: 
+0098: async function downloadFile(url, destinationPath) {
+0099:   fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
+0100:   const temporaryPath = `${destinationPath}.${process.pid}.download`;
+0101:   fs.rmSync(temporaryPath, { force: true });
+0102: 
+0103:   try {
+0104:     const response = await request(url, { timeoutMs: 15000 });
+0105:     const output = fs.createWriteStream(temporaryPath, { flags: "wx" });
+0106: 
+0107:     await new Promise((resolve, reject) => {
+0108:       response.pipe(output);
+0109:       response.on("error", reject);
+0110:       output.on("error", reject);
+0111:       output.on("finish", resolve);
+0112:     });
+0113: 
+0114:     fs.rmSync(destinationPath, { force: true });
+0115:     fs.renameSync(temporaryPath, destinationPath);
+0116:     return destinationPath;
+0117:   } catch (error) {
+0118:     fs.rmSync(temporaryPath, { force: true });
+0119:     throw error;
+0120:   }
+0121: }
+0122: 
+0123: module.exports = {
+0124:   POLICY_URL,
+0125:   compareVersions,
+0126:   downloadFile,
+0127:   fetchRequiredPolicy,
+0128: };
+=== src/app-registry.js ===
+-- around line 81 --
+0063: 
+0064: function saveRegistry(registryPath, registry) {
+0065:   ensureDirectory(path.dirname(registryPath));
+0066:   const temporaryPath = `${registryPath}.${process.pid}.tmp`;
+0067:   fs.writeFileSync(
+0068:     temporaryPath,
+0069:     `${JSON.stringify({
+0070:       version: 2,
+0071:       hiddenBuiltinIds: uniqueStrings(registry.hiddenBuiltinIds),
+0072:       customApps: Array.isArray(registry.customApps)
+0073:         ? registry.customApps
+0074:         : [],
+0075:       removedApps: Array.isArray(registry.removedApps)
+0076:         ? registry.removedApps
+0077:         : [],
+0078:     }, null, 2)}\n`,
+0079:     "utf8",
+0080:   );
+0081:   fs.renameSync(temporaryPath, registryPath);
+0082: }
+0083: 
+0084: function sanitizeAppId(value) {
+0085:   const normalized = String(value || "")
+0086:     .trim()
+0087:     .toLowerCase()
+0088:     .replace(/[^a-z0-9가-힣_-]+/g, "-")
+0089:     .replace(/^-+|-+$/g, "")
+0090:     .slice(0, 64);
+0091: 
+0092:   return normalized || `sd-app-${crypto.randomUUID().slice(0, 8)}`;
+0093: }
+0094: 
+0095: function sanitizeFolderName(value, fallback = "SD앱") {
+0096:   const sanitized = String(value || "")
+0097:     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, " ")
+0098:     .replace(/\s+/g, " ")
+0099:     .trim()
+0100:     .replace(/[. ]+$/g, "")
+0101:     .slice(0, 80);
+0102: 
+0103:   return sanitized || fallback;
+0104: }
+0105: 
+0106: function normalizeZipPath(value) {
+0107:   const normalized = String(value || "").replaceAll("\\", "/");
+0108: 
+0109:   if (
+0110:     !normalized ||
+0111:     normalized.includes("\u0000") ||
+0112:     normalized.startsWith("/") ||
+0113:     /^[a-zA-Z]:/.test(normalized)
+0114:   ) {
+0115:     throw new Error("ZIP 안에 허용되지 않는 경로가 있습니다.");
+-- around line 364 --
+0346:       if (entry.isDirectory) {
+0347:         ensureDirectory(outputPath);
+0348:         continue;
+0349:       }
+0350: 
+0351:       ensureDirectory(path.dirname(outputPath));
+0352:       fs.writeFileSync(outputPath, entry.getData());
+0353:     }
+0354: 
+0355:     const installedMainPath = path.join(
+0356:       stagingDirectory,
+0357:       inspected.metadata.entry,
+0358:     );
+0359: 
+0360:     if (!fs.existsSync(installedMainPath)) {
+0361:       throw new Error("압축 해제 후 앱 실행 파일을 찾지 못했습니다.");
+0362:     }
+0363: 
+0364:     const backupDirectory = `${destinationDirectory}.backup-${crypto.randomUUID()}`;
+0365:     const hadExistingInstall = fs.existsSync(destinationDirectory);
+0366: 
+0367:     if (hadExistingInstall) {
+0368:       fs.renameSync(destinationDirectory, backupDirectory);
+0369:     }
+0370: 
+0371:     try {
+0372:       fs.renameSync(stagingDirectory, destinationDirectory);
+0373: 
+0374:       if (hadExistingInstall) {
+0375:         fs.rmSync(backupDirectory, {
+0376:           recursive: true,
+0377:           force: true,
+0378:         });
+0379:       }
+0380:     } catch (error) {
+0381:       if (hadExistingInstall && fs.existsSync(backupDirectory)) {
+0382:         if (fs.existsSync(destinationDirectory)) {
+0383:           fs.rmSync(destinationDirectory, {
+0384:             recursive: true,
+0385:             force: true,
+0386:           });
+0387:         }
+0388: 
+0389:         fs.renameSync(backupDirectory, destinationDirectory);
+0390:       }
+0391: 
+0392:       throw error;
+0393:     }
+0394:   } catch (error) {
+0395:     fs.rmSync(stagingDirectory, {
+0396:       recursive: true,
+0397:       force: true,
+0398:     });
+=== public/js/app.js ===
+-- around line 627 --
+0609:   try {
+0610:     const result = await bridge.checkAppUpdates();
+0611:     if (!result.ok) {
+0612:       showToast(result.error || "업데이트 정보를 확인하지 못했습니다.", 4500);
+0613:       return;
+0614:     }
+0615:     showToast(
+0616:       result.count > 0
+0617:         ? `업데이트 가능한 확장팩이 ${result.count}개 있습니다.`
+0618:         : "설치된 확장팩이 모두 최신 버전입니다.",
+0619:       3800,
+0620:     );
+0621:   } finally {
+0622:     state.checkingUpdates = false;
+0623:     renderApps();
+0624:   }
+0625: }
+0626: 
+0627: async function updateApp(id) {
+0628:   const currentApp = state.apps.find((entry) => entry.id === id);
+0629:   const result = await withBusy(id, () => bridge.updateApp(id));
+0630: 
+0631:   if (result?.canceled) return;
+0632:   if (!result?.ok) {
+0633:     showToast(result?.error || "앱을 업데이트하지 못했습니다.", 4500);
+0634:     return;
+0635:   }
+0636:   if (result.alreadyLatest) {
+0637:     showToast(`${currentApp?.name || "앱"}은 이미 최신 버전입니다.`);
+0638:     return;
+0639:   }
+0640:   showToast(`${currentApp?.name || result.app?.name || "앱"} 업데이트가 완료되었습니다.`, 4000);
+0641: }
+0642: 
+0643: async function updateAllApps() {
+0644:   if (state.updatingAll || state.checkingUpdates) return;
+0645:   state.updatingAll = true;
+0646:   renderApps();
+0647: 
+0648:   try {
+0649:     const result = await bridge.updateAllApps();
+0650:     if (result?.canceled) return;
+0651:     if (!result?.ok && !result?.updatedCount) {
+0652:       showToast(result?.error || "확장팩 모두 업데이트를 완료하지 못했습니다.", 4800);
+0653:       return;
+0654:     }
+0655:     if ((result?.count || 0) === 0) {
+0656:       showToast("설치된 확장팩이 모두 최신 버전입니다.");
+0657:       return;
+0658:     }
+0659:     showToast(
+0660:       result.failedCount
+0661:         ? `${result.updatedCount}개 업데이트 완료 · ${result.failedCount}개 실패`
+-- around line 799 --
+0781: }
+0782: 
+0783: function bindEvents() {
+0784:   elements.appGrid.addEventListener("click", async (event) => {
+0785:     const card = event.target.closest(".app-card");
+0786: 
+0787:     if (!card) {
+0788:       return;
+0789:     }
+0790: 
+0791:     const id = card.dataset.id;
+0792: 
+0793:     if (event.target.closest(".favorite-button")) {
+0794:       await toggleFavorite(id);
+0795:       return;
+0796:     }
+0797: 
+0798:     if (event.target.closest(".update-button")) {
+0799:       await updateApp(id);
+0800:       return;
+0801:     }
+0802: 
+0803:     if (event.target.closest(".launch-button")) {
+0804:       await launchApp(id);
+0805:       return;
+0806:     }
+0807: 
+0808:     if (event.target.closest(".terminate-button")) {
+0809:       await terminateApp(id);
+0810:       return;
+0811:     }
+0812: 
+0813:     if (event.target.closest(".delete-button")) {
+0814:       await deleteApp(id);
+0815:       return;
+0816:     }
+0817: 
+0818:     if (event.target.closest(".folder-button")) {
+0819:       const result = await bridge.openAppFolder(id);
+0820: 
+0821:       if (!result.ok) {
+0822:         showToast(result.error || "폴더를 열지 못했습니다.");
+0823:       }
+0824:     }
+0825:   });
+0826: 
+0827:   elements.favoriteGrid?.addEventListener("click", async (event) => {
+0828:     const shortcut = event.target.closest(".favorite-shortcut");
+0829:     if (!shortcut) return;
+0830:     await launchApp(shortcut.dataset.id);
+0831:   });
+0832: 
+0833:   elements.removedAppGrid.addEventListener("click", async (event) => {
