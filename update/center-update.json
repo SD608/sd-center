@@ -1,8 +1,8 @@
 {
-  "version": "2.2.4",
-  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.4/SDCenterSetup.exe",
-  "sha256": "85c46215f27d33c72a5c6d1944e3748833a6cdaad87f55e091c0c0ac4481022d",
-  "notes": "SD Link Windows 자동 시작을 PowerShell 없이 백그라운드 전용으로 수정했습니다.",
-  "publishedAt": "2026-08-17T19:11:26+09:00",
+  "version": "2.2.5",
+  "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.5/SDCenterSetup.exe",
+  "sha256": "dfc817f595e8dc0ed523bcf3c9018131aed9cddf24d6f463e3895e6cc9a86c1c",
+  "notes": "확장팩 업데이트 시 실행 프로세스 종료와 Windows 파일 잠금 재시도를 강화했습니다.",
+  "publishedAt": "2026-08-17T19:33:15+09:00",
   "squirrelFeedUrl": "https://github.com/SD608/sd-center/releases/latest/download"
 }
