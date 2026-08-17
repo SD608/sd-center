@@ -1,0 +1,246 @@
+{
+  "catalogVersion": 21,
+  "appCount": 10,
+  "appsWithIssues": [
+    "sd-logistics-center-desktop",
+    "vault",
+    "miner"
+  ],
+  "appsWithWarnings": [
+    "bitcoin",
+    "vault",
+    "miner"
+  ],
+  "results": [
+    {
+      "id": "sdlink-desktop",
+      "name": "SD Link",
+      "version": "1.2.8",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.8_Desktop.zip?v=128",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": ".",
+          "main": "main.js",
+          "name": "sdlink-desktop",
+          "version": "1.2.8"
+        }
+      ],
+      "issues": [],
+      "warnings": [],
+      "suspiciousReferences": []
+    },
+    {
+      "id": "sd-logistics-center-desktop",
+      "name": "SD 물류센터",
+      "version": "1.0.9",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=1092",
+      "downloadOk": true,
+      "zipOk": false,
+      "packageRoots": [],
+      "issues": [
+        "ZIP 해제 실패: BadZipFile: File is not a zip file"
+      ],
+      "warnings": [],
+      "suspiciousReferences": []
+    },
+    {
+      "id": "sd-slot",
+      "name": "SD슬롯",
+      "version": "1.0.6",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_Stage7_Desktop.zip",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": "SDSlot_Stage7_Desktop",
+          "main": "main.js",
+          "name": "sd-slot-desktop",
+          "version": "1.0.6"
+        }
+      ],
+      "issues": [],
+      "warnings": [],
+      "suspiciousReferences": []
+    },
+    {
+      "id": "sd-mukjippa",
+      "name": "SD묵찌빠",
+      "version": "1.0.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDMukjippa_Version1_1_Desktop.zip",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": "SDMukjippa_Version1_1_Desktop",
+          "main": "main.js",
+          "name": "sd-mukjippa-desktop",
+          "version": "1.0.1"
+        }
+      ],
+      "issues": [],
+      "warnings": [],
+      "suspiciousReferences": []
+    },
+    {
+      "id": "sta-expansion",
+      "name": "STA",
+      "version": "1.5.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/STA_Version6_Desktop.zip?v=151",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": "STA_Version6_Desktop",
+          "main": "main.js",
+          "name": "sta-expansion-desktop",
+          "version": "1.5.1"
+        }
+      ],
+      "issues": [],
+      "warnings": [],
+      "suspiciousReferences": []
+    },
+    {
+      "id": "bitcoin",
+      "name": "SD비트코인 채굴장",
+      "version": "1.2.2",
+      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDBitcoinMiner_v1.2.2_Desktop.zip",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": "SDBitcoinMiner",
+          "main": "main.js",
+          "name": "sd-bitcoin-miner-desktop",
+          "version": "1.2.2"
+        }
+      ],
+      "issues": [],
+      "warnings": [
+        "기본 앱 시절 공용 경로 의심: SDBitcoinMiner/main.js (shared/open-center)"
+      ],
+      "suspiciousReferences": [
+        {
+          "file": "SDBitcoinMiner/main.js",
+          "marker": "shared/open-center"
+        }
+      ]
+    },
+    {
+      "id": "sd-flea-market",
+      "name": "SD 플리마켓",
+      "version": "1.1.3",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip?v=113",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": ".",
+          "main": "main.js",
+          "name": "sd-flea-market-pc",
+          "version": "1.1.3"
+        }
+      ],
+      "issues": [],
+      "warnings": [],
+      "suspiciousReferences": []
+    },
+    {
+      "id": "vault",
+      "name": "SD금고",
+      "version": "1.2.0",
+      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDVault_v1.2.0_Desktop.zip",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": "SDVault",
+          "main": "main.js",
+          "name": "sdvault-desktop",
+          "version": "1.2.0"
+        }
+      ],
+      "issues": [
+        "누락된 상대경로 모듈: SDVault/main.js -> ../../shared/open-center"
+      ],
+      "warnings": [
+        "기본 앱 시절 공용 경로 의심: SDVault/main.js (shared/open-center)",
+        "기본 앱 시절 공용 경로 의심: SDVault/main.js (../shared/)",
+        "기본 앱 시절 공용 경로 의심: SDVault/main.js (../../shared/)"
+      ],
+      "suspiciousReferences": [
+        {
+          "file": "SDVault/main.js",
+          "marker": "../../shared/"
+        },
+        {
+          "file": "SDVault/main.js",
+          "marker": "shared/open-center"
+        },
+        {
+          "file": "SDVault/main.js",
+          "marker": "../shared/"
+        }
+      ]
+    },
+    {
+      "id": "odd-even",
+      "name": "SD홀짝",
+      "version": "1.1.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.1.1_Desktop.zip?v=111",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": "SDOddEven",
+          "main": "main.js",
+          "name": "sd-odd-even-desktop",
+          "version": "1.1.1"
+        }
+      ],
+      "issues": [],
+      "warnings": [],
+      "suspiciousReferences": []
+    },
+    {
+      "id": "miner",
+      "name": "SD광부",
+      "version": "1.1.0",
+      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDMiner_v1.1.0_Desktop.zip",
+      "downloadOk": true,
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": "SDMiner",
+          "main": "main.js",
+          "name": "sdminer-desktop",
+          "version": "1.1.0"
+        }
+      ],
+      "issues": [
+        "누락된 상대경로 모듈: SDMiner/main.js -> ../../shared/open-center"
+      ],
+      "warnings": [
+        "기본 앱 시절 공용 경로 의심: SDMiner/main.js (shared/open-center)",
+        "기본 앱 시절 공용 경로 의심: SDMiner/main.js (../shared/)",
+        "기본 앱 시절 공용 경로 의심: SDMiner/main.js (../../shared/)"
+      ],
+      "suspiciousReferences": [
+        {
+          "file": "SDMiner/main.js",
+          "marker": "../../shared/"
+        },
+        {
+          "file": "SDMiner/main.js",
+          "marker": "shared/open-center"
+        },
+        {
+          "file": "SDMiner/main.js",
+          "marker": "../shared/"
+        }
+      ]
+    }
+  ]
+}
