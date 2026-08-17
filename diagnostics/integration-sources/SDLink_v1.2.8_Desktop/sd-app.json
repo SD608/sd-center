@@ -1,0 +1,6 @@
+{
+  "id": "sdlink-desktop",
+  "version": "1.2.8",
+  "displayVersion": "Stage 1 · v1.2.8",
+  "improvement": "Windows 로그인 시 SD종합센터와 함께 자동 실행되고 시작 창은 숨긴 채 백그라운드·트레이에서 동기화합니다."
+}

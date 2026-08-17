@@ -1,0 +1,29 @@
+{
+  "name": "sd-logistics-center-desktop",
+  "productName": "SD 물류센터",
+  "version": "1.0.10",
+  "private": true,
+  "description": "경제 밸런스 너프와 센터 버전 증명을 지원하는 SD지갑 연동 물류 경영 확장팩",
+  "author": "SD608",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "check": "node --check main.js && node --check preload.js && node --check forge.config.js && node --check src/config-store.js && node --check src/wallet-db.js && node --check public/app.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "@electron-forge/maker-squirrel": "latest",
+    "electron": "latest"
+  },
+  "icon": "public/icons/icon-512.png",
+  "sdCenter": {
+    "displayName": "SD 물류센터",
+    "icon": "public/icons/icon-512.png",
+    "thumbnail": "thumbnail.png"
+  }
+}
