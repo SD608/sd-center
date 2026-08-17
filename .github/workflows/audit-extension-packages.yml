@@ -1,0 +1,42 @@
+name: Audit extension packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/audit-extension-packages.yml'
+      - 'tools/audit-extension-packages.py'
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit current extension ZIPs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python tools/audit-extension-packages.py
+      - name: Commit audit report
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/extension-package-audit.json diagnostics/extension-package-audit.md
+          if(git diff --cached --quiet){ exit 0 }
+          git commit -m '진단: 확장팩 전환 패키지 의존성 전체 점검'
+          git push origin HEAD:main
