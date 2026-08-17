@@ -6,7 +6,7 @@ on:
       - feature/flea-red-diamond
     paths:
       - '.github/workflows/build-flea-red-diamond-v112.yml'
-      - 'tools/patch-flea-red-diamond-v112.py'
+      - 'tools/patch-flea-red-diamond-v112b.py'
 
 permissions:
   contents: write
@@ -25,7 +25,7 @@ jobs:
         run: |
           set +e
           mkdir -p diagnostics
-          python tools/patch-flea-red-diamond-v112.py > diagnostics/flea-v112-build.log 2>&1
+          python tools/patch-flea-red-diamond-v112b.py > diagnostics/flea-v112-build.log 2>&1
           code=$?
           cat diagnostics/flea-v112-build.log
           if [ "$code" -ne 0 ]; then
