@@ -1,5 +1,191 @@
 ===== main.js =====
---- lines 547-1088 ---
+--- lines 29-140 ---
+0029:     { type: "basket", label: "버려진 바구니", icon: "🧺" },
+0030:   ],
+0031:   abandoned_store: [
+0032:     { type: "cart", label: "쇼핑 카트", icon: "🛒" },
+0033:     { type: "cabinet", label: "매장 캐비닛", icon: "🗄️" },
+0034:     { type: "counter", label: "계산대", icon: "▤" },
+0035:     { type: "stock", label: "창고 적재물", icon: "🧰" },
+0036:   ],
+0037:   logistics: [
+0038:     { type: "cargo", label: "화물 적재물", icon: "🚚" },
+0039:     { type: "cart", label: "운송 카트", icon: "🛒" },
+0040:     { type: "case", label: "운송 케이스", icon: "🧰" },
+0041:     { type: "locker", label: "직원 보관함", icon: "🗄️" },
+0042:   ],
+0043:   bank_prep: [
+0044:     { type: "cabinet", label: "장비 캐비닛", icon: "🗄️" },
+0045:     { type: "locker", label: "직원 보관함", icon: "🗃️" },
+0046:     { type: "case", label: "장비 케이스", icon: "🧰" },
+0047:     { type: "counter", label: "보안 데스크", icon: "▤" },
+0048:   ],
+0049: };
+0050: 
+0051: const BANK_PREP_ORDER = [
+0052:   { id: "equipment", name: "침투 장비 확보", color: "#7ce7ff", required: true },
+0053:   { id: "guardWeakening", name: "경비원 무장 약화", color: "#ffd36e", required: false },
+0054: ];
+0055: const BANK_GUARD_BASE_HP = 50;
+0056: const BANK_GUARD_WEAK_HP = 25;
+0057: const BANK_GUARD_BODY_DAMAGE = 10;
+0058: const BANK_GUARD_HEAD_DAMAGE = 25;
+0059: const BANK_GUARD_ATTACK_DAMAGE = 10;
+0060: 
+0061: const ITEMS = {
+0062:   worn: [
+0063:     ["볼펜", 1000], ["클립 한 통", 2000], ["지우개", 1000], ["15cm 자", 2000],
+0064:     ["작은 수첩", 4000], ["열쇠고리", 5000], ["머그컵", 7000], ["USB 케이블", 10000],
+0065:   ],
+0066:   normal: [
+0067:     ["유선 이어폰", 25000], ["휴대폰 충전기", 30000], ["미니 선풍기", 35000],
+0068:     ["USB 메모리", 40000], ["무선 마우스", 50000], ["보조배터리", 60000], ["저가형 헤드셋", 75000],
+0069:   ],
+0070:   fancy: [
+0071:     ["게임패드", 90000], ["기계식 키보드", 120000], ["브랜드 운동화", 150000],
+0072:     ["블루투스 스피커", 180000], ["무선 이어폰", 200000], ["스마트워치", 240000],
+0073:   ],
+0074:   premium: [
+0075:     ["휴대용 게임기 세트", 250000], ["프리미엄 헤드폰", 300000], ["고급 태블릿", 350000],
+0076:     ["미러리스 카메라", 400000], ["플래그십 스마트폰", 450000], ["고성능 그래픽카드", 500000],
+0077:   ],
+0078:   safe: [
+0079:     ["금반지", 220000, 26], ["희귀 주화", 280000, 20], ["금목걸이", 350000, 18], ["금화 세트", 450000, 14],
+0080:     ["명품 시계", 600000, 10], ["보석 원석", 850000, 7], ["소형 금괴", 1200000, 4], ["대형 금괴", 2500000, 1],
+0081:   ],
+0082: };
+0083: 
+0084: const MISSION_NODE_POSITIONS = [
+0085:   [10, 16], [23, 14], [37, 24], [51, 13], [65, 23], [79, 15],
+0086:   [15, 39], [30, 47], [46, 37], [61, 48], [78, 39], [90, 50],
+0087:   [12, 68], [27, 79], [43, 66], [58, 78], [73, 67], [87, 80],
+0088: ];
+0089: const STATE_FILE_NAME = "flea-state.json";
+0090: const CUTTER_PRICE = 100000;
+0091: const STETHOSCOPE_PRICE = 100000;
+0092: const QUALITY_MANAGER_PRICE = 1500000;
+0093: const BACKPACK_PRICE = 300000;
+0094: const BANK_FINALE_COST = 500000;
+0095: const QUALITY_MANAGER_DAILY_POWER = 100000;
+0096: const ITEM_DAILY_DECAY_RATE = 0.02;
+0097: const DAY_MS = 24 * 60 * 60 * 1000;
+0098: const MAX_BOXES_PER_MISSION = 3;
+0099: const SAFE_JACKPOT_VALUE = Math.max(...ITEMS.safe.map(([, value]) => value));
+0100: const RED_DIAMOND_NAME = "레드 다이아몬드";
+0101: const RED_DIAMOND_CHANCE_DENOMINATOR = 100000;
+0102: 
+0103: let mainWindow;
+0104: let state;
+0105: let openSessions = new Map();
+0106: let integration = null;
+0107: let inventorySyncTimer = null;
+0108: let inventoryBackgroundInterval = null;
+0109: let inventorySyncRunning = false;
+0110: let lastInventorySyncAt = 0;
+0111: let lastInventorySyncError = "";
+0112: 
+0113: function statePath() {
+0114:   return path.join(app.getPath("userData"), STATE_FILE_NAME);
+0115: }
+0116: 
+0117: function newState() {
+0118:   return {
+0119:     schemaVersion: 3,
+0120:     cutterOwned: false,
+0121:     stethoscopeOwned: false,
+0122:     uvLightOwned: false,
+0123:     gunOwned: false,
+0124:     qualityManagerOwned: false,
+0125:     backpackOwned: false,
+0126:     bankPrep: { equipment: false, guardWeakening: false },
+0127:     companyGrade: "",
+0128:     lastEconomyTickAt: Date.now(),
+0129:     selectedLocationId: "alley",
+0130:     boxes: [],
+0131:     items: [],
+0132:     activeMission: null,
+0133:     history: [],
+0134:   };
+0135: }
+0136: 
+0137: function loadState() {
+0138:   try {
+0139:     const parsed = JSON.parse(fs.readFileSync(statePath(), "utf8"));
+0140:     const merged = { ...newState(), ...parsed, activeMission: null };
+
+--- lines 475-1075 ---
+0475:   const regularNodes = positions.map(([,], index) => {
+0476:     const object = randomSearchObject(location.id);
+0477:     return { id: `NODE-${index + 1}`, searched: false, objectType: object.type, objectLabel: object.label, objectIcon: object.icon, special: index === specialIndex };
+0478:   });
+0479:   const storeGateNodes = location.id === "abandoned_store"
+0480:     ? [
+0481:         { id: "STORE-BRICK", searched: false, kind: "store-brick", objectType: "brick", objectLabel: "입구 옆 벽돌", objectIcon: "🧱" },
+0482:         { id: "STORE-DOOR", searched: false, kind: "store-door", objectType: "glassdoor", objectLabel: "상가 유리문", objectIcon: "▦" },
+0483:       ]
+0484:     : [];
+0485:   return {
+0486:     id: `MISSION-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+0487:     missionType: "regular",
+0488:     name: `${location.name} 회수`,
+0489:     locationId: location.id,
+0490:     locationName: location.name,
+0491:     foundChance: location.foundChance,
+0492:     startedAt: Date.now(),
+0493:     foundCount: 0,
+0494:     searchCount: 0,
+0495:     missStreak: 0,
+0496:     exhausted: false,
+0497:     storeBrickOwned: false,
+0498:     storeDoorBroken: location.id !== "abandoned_store",
+0499:     maxBoxes: Number(location.maxBoxes || MAX_BOXES_PER_MISSION) + (state.backpackOwned ? 3 : 0),
+0500:     nodes: [...storeGateNodes, ...regularNodes],
+0501:     safe: location.id === "abandoned_store" && randomInt(100) < 5 ? {
+0502:       id: `SAFE-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+0503:       spawnIndex: randomInt(3),
+0504:       opened: false,
+0505:       discovered: false,
+0506:     } : null,
+0507:   };
+0508: }
+0509: 
+0510: function buildBankPrepMission(step) {
+0511:   const positions = [...MISSION_NODE_POSITIONS].sort(() => Math.random() - 0.5).slice(0, 6);
+0512:   const targetIndexes = step.id === "equipment"
+0513:     ? [...Array(positions.length).keys()].sort(() => Math.random() - 0.5).slice(0, 3)
+0514:     : [randomInt(positions.length)];
+0515:   const equipmentTargets = [
+0516:     { id: "stethoscope", label: "청진기 보관함", icon: "🩺" },
+0517:     { id: "uvLight", label: "UV 라이트 케이스", icon: "🔦" },
+0518:     { id: "gun", label: "권총 보관 케이스", icon: "🔫" },
+0519:   ];
+0520:   const prepNodes = positions.map(([,], index) => {
+0521:     const object = randomSearchObject("bank_prep");
+0522:     const targetOrder = targetIndexes.indexOf(index);
+0523:     if (step.id === "equipment" && targetOrder >= 0) {
+0524:       const target = equipmentTargets[targetOrder];
+0525:       return { id: `PREP-${index + 1}`, searched: false, objectType: target.id === "stethoscope" ? "cabinet" : "case", objectLabel: target.label, objectIcon: target.icon, kind: "prep-target", prepTargetId: target.id };
+0526:     }
+0527:     if (step.id === "guardWeakening" && targetOrder >= 0) {
+0528:       return { id: `PREP-${index + 1}`, searched: false, objectType: "counter", objectLabel: "경비 장비 제어 단말기", objectIcon: "⌨️", kind: "prep-target", prepTargetId: "guardWeakening" };
+0529:     }
+0530:     return { id: `PREP-${index + 1}`, searched: false, objectType: object.type, objectLabel: object.label, objectIcon: object.icon, kind: "prep-empty" };
+0531:   });
+0532:   const guardNodes = step.id === "guardWeakening"
+0533:     ? [
+0534:         bankGuardNode(1, 9.4, 11.2, -Math.PI / 2, false),
+0535:         bankGuardNode(2, 14.0, 9.4, -Math.PI / 2, false),
+0536:         bankGuardNode(3, 18.6, 11.2, -Math.PI / 2, false),
+0537:       ]
+0538:     : [];
+0539:   return {
+0540:     id: `MISSION-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+0541:     missionType: "bank-prep",
+0542:     name: `준비작업 · ${step.name}`,
+0543:     locationId: "bank_prep",
+0544:     locationName: step.required ? "준비작업 1/2" : "준비작업 2/2 · 선택",
+0545:     startedAt: Date.now(),
+0546:     exhausted: false,
 0547:     prepId: step.id,
 0548:     prepName: step.name,
 0549:     prepColor: step.color,
@@ -529,27 +715,8 @@
 1073:   state.items.unshift(item);
 1074:   state.history.unshift({ type: "item", at: Date.now(), text: `${item.name} 획득` });
 1075:   openSessions.delete(box.id);
-1076:   saveState();
-1077:   return item;
-1078: }
-1079: 
-1080: function startBoxOpen(boxId) {
-1081:   const box = boxById(boxId);
-1082:   if (!box) return { ok: false, error: "상자를 찾지 못했습니다." };
-1083:   if (box.tier === "safe") {
-1084:     if (!state.stethoscopeOwned) return { ok: false, error: "청진기가 없습니다. 침투 장비 확보 준비작업에서 먼저 확보해 주세요." };
-1085:     const existing = openSessions.get(box.id);
-1086:     if (!existing || existing.type !== "safe") {
-1087:       const pendingItem = rollItem(box.tier, box.id);
-1088:       openSessions.set(box.id, {
 
---- lines 1234-1294 ---
-1234:       };
-1235:     }
-1236:   });
-1237:   ipcMain.handle("flea:refresh-inventory", async () => {
-1238:     try {
-1239:       await integration.refreshCompany(true);
+--- lines 1240-1294 ---
 1240:       const sync = await syncInventoryNow(true);
 1241:       const nextState = publicState();
 1242:       if (!sync?.ok && !sync?.skipped) {
@@ -606,8 +773,227 @@
 1293:   if (process.platform !== "darwin") app.quit();
 1294: });
 
+===== preload.js =====
+--- lines 1-30 ---
+0001: "use strict";
+0002: 
+0003: const { contextBridge, ipcRenderer } = require("electron");
+0004: 
+0005: contextBridge.exposeInMainWorld("flea", {
+0006:   getState: () => ipcRenderer.invoke("flea:get-state"),
+0007:   refreshCompany: () => ipcRenderer.invoke("flea:refresh-company"),
+0008:   refreshInventory: () => ipcRenderer.invoke("flea:refresh-inventory"),
+0009:   startMission: (locationId, bankMode = "") => ipcRenderer.invoke("flea:start-mission", locationId, bankMode),
+0010:   searchMissionNode: (nodeId) => ipcRenderer.invoke("flea:search-node", nodeId),
+0011:   triggerBankGuardAlert: () => ipcRenderer.invoke("flea:bank-guard-alert"),
+0012:   shootBankGuard: (nodeId, hitZone) => ipcRenderer.invoke("flea:shoot-bank-guard", nodeId, hitZone),
+0013:   bankGuardHitPlayer: () => ipcRenderer.invoke("flea:bank-guard-hit-player"),
+0014:   unlockBankDoor: (code) => ipcRenderer.invoke("flea:unlock-bank-door", code),
+0015:   finishMission: () => ipcRenderer.invoke("flea:finish-mission"),
+0016:   finishBankChase: (success) => ipcRenderer.invoke("flea:finish-bank-chase", Boolean(success)),
+0017:   startMissionSafe: (safeId) => ipcRenderer.invoke("flea:start-mission-safe", safeId),
+0018:   missionSafeListen: (safeId, dialNumber) => ipcRenderer.invoke("flea:mission-safe-listen", safeId, dialNumber),
+0019:   missionSafeAttempt: (safeId, dialNumber) => ipcRenderer.invoke("flea:mission-safe-attempt", safeId, dialNumber),
+0020:   setFullscreen: (enabled) => ipcRenderer.invoke("flea:set-fullscreen", Boolean(enabled)),
+0021:   buyCutter: () => ipcRenderer.invoke("flea:buy-cutter"),
+0022:   buyStethoscope: () => ipcRenderer.invoke("flea:buy-stethoscope"),
+0023:   buyQualityManager: () => ipcRenderer.invoke("flea:buy-quality-manager"),
+0024:   buyCart: () => ipcRenderer.invoke("flea:buy-cart"),
+0025:   startBoxOpen: (boxId) => ipcRenderer.invoke("flea:start-box-open", boxId),
+0026:   completeCut: (boxId, step) => ipcRenderer.invoke("flea:complete-cut", boxId, step),
+0027:   safeListen: (boxId, dialNumber) => ipcRenderer.invoke("flea:safe-listen", boxId, dialNumber),
+0028:   safeAttempt: (boxId, dialNumber) => ipcRenderer.invoke("flea:safe-attempt", boxId, dialNumber),
+0029:   devReset: () => ipcRenderer.invoke("flea:dev-reset"),
+0030: });
+
 ===== public/app.js =====
---- lines 484-1080 ---
+--- lines 37-148 ---
+0037:       { type: "basket", label: "버려진 바구니", icon: "🧺" },
+0038:     ],
+0039:     abandoned_store: [
+0040:       { type: "cart", label: "쇼핑 카트", icon: "🛒" },
+0041:       { type: "cabinet", label: "매장 캐비닛", icon: "🗄️" },
+0042:       { type: "counter", label: "계산대", icon: "▤" },
+0043:       { type: "stock", label: "창고 적재물", icon: "🧰" },
+0044:     ],
+0045:     logistics: [
+0046:       { type: "cargo", label: "화물 적재물", icon: "🚚" },
+0047:       { type: "cart", label: "운송 카트", icon: "🛒" },
+0048:       { type: "case", label: "운송 케이스", icon: "🧰" },
+0049:       { type: "locker", label: "직원 보관함", icon: "🗄️" },
+0050:     ],
+0051:     bank_prep: [
+0052:       { type: "cabinet", label: "장비 캐비닛", icon: "🗄️" },
+0053:       { type: "locker", label: "직원 보관함", icon: "🗃️" },
+0054:       { type: "case", label: "장비 케이스", icon: "🧰" },
+0055:       { type: "counter", label: "보안 데스크", icon: "▤" },
+0056:     ],
+0057:   };
+0058: 
+0059:   const BANK_PREP_ORDER = [
+0060:     { id: "equipment", name: "침투 장비 확보", color: "#7ce7ff", required: true },
+0061:     { id: "guardWeakening", name: "경비원 무장 약화", color: "#ffd36e", required: false },
+0062:   ];
+0063:   const BANK_GUARD_BASE_HP = 50;
+0064:   const BANK_GUARD_WEAK_HP = 25;
+0065:   const BANK_GUARD_BODY_DAMAGE = 10;
+0066:   const BANK_GUARD_HEAD_DAMAGE = 25;
+0067:   const BANK_GUARD_ATTACK_DAMAGE = 10;
+0068: 
+0069:   const ITEMS = {
+0070:     worn: [
+0071:       ["볼펜", 1000], ["클립 한 통", 2000], ["지우개", 1000], ["15cm 자", 2000],
+0072:       ["작은 수첩", 4000], ["열쇠고리", 5000], ["머그컵", 7000], ["USB 케이블", 10000],
+0073:     ],
+0074:     normal: [
+0075:       ["유선 이어폰", 25000], ["휴대폰 충전기", 30000], ["미니 선풍기", 35000],
+0076:       ["USB 메모리", 40000], ["무선 마우스", 50000], ["보조배터리", 60000], ["저가형 헤드셋", 75000],
+0077:     ],
+0078:     fancy: [
+0079:       ["게임패드", 90000], ["기계식 키보드", 120000], ["브랜드 운동화", 150000],
+0080:       ["블루투스 스피커", 180000], ["무선 이어폰", 200000], ["스마트워치", 240000],
+0081:     ],
+0082:     premium: [
+0083:       ["휴대용 게임기 세트", 250000], ["프리미엄 헤드폰", 300000], ["고급 태블릿", 350000],
+0084:       ["미러리스 카메라", 400000], ["플래그십 스마트폰", 450000], ["고성능 그래픽카드", 500000],
+0085:     ],
+0086:     safe: [
+0087:       ["금반지", 220000, 26], ["희귀 주화", 280000, 20], ["금목걸이", 350000, 18], ["금화 세트", 450000, 14],
+0088:       ["명품 시계", 600000, 10], ["보석 원석", 850000, 7], ["소형 금괴", 1200000, 4], ["대형 금괴", 2500000, 1],
+0089:     ],
+0090:   };
+0091: 
+0092:   const MISSION_NODE_POSITIONS = [
+0093:     [10, 16], [23, 14], [37, 24], [51, 13], [65, 23], [79, 15],
+0094:     [15, 39], [30, 47], [46, 37], [61, 48], [78, 39], [90, 50],
+0095:     [12, 68], [27, 79], [43, 66], [58, 78], [73, 67], [87, 80],
+0096:   ];
+0097: 
+0098:   const SAFE_JACKPOT_VALUE = Math.max(...ITEMS.safe.map(([, value]) => value));
+0099:   const RED_DIAMOND_NAME = "레드 다이아몬드";
+0100:   const RED_DIAMOND_CHANCE_DENOMINATOR = 100000;
+0101:   const openSessions = new Map();
+0102: 
+0103:   function newState() {
+0104:     return {
+0105:       schemaVersion: 3,
+0106:       walletBalance: 0,
+0107:       cutterOwned: false,
+0108:       stethoscopeOwned: false,
+0109:       uvLightOwned: false,
+0110:       gunOwned: false,
+0111:       qualityManagerOwned: false,
+0112:       backpackOwned: false,
+0113:       bankPrep: { equipment: false, guardWeakening: false },
+0114:       companyGrade: "F",
+0115:       lastEconomyTickAt: Date.now(),
+0116:       selectedLocationId: "alley",
+0117:       boxes: [],
+0118:       items: [],
+0119:       activeMission: null,
+0120:       history: [],
+0121:     };
+0122:   }
+0123: 
+0124:   function loadState() {
+0125:     try {
+0126:       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+0127:       const merged = saved ? { ...newState(), ...saved } : newState();
+0128:       if (saved?.cartOwned && !merged.backpackOwned) merged.backpackOwned = true;
+0129:       merged.gunOwned = Boolean(saved?.gunOwned || saved?.bankPrep?.equipment);
+0130:       const legacyPrep = saved?.bankPrep || {};
+0131:       merged.bankPrep = {
+0132:         equipment: Boolean(legacyPrep.equipment || (legacyPrep.stethoscope && legacyPrep.uvLight)),
+0133:         guardWeakening: Boolean(legacyPrep.guardWeakening),
+0134:       };
+0135:       return merged;
+0136:     } catch {
+0137:       return newState();
+0138:     }
+0139:   }
+0140: 
+0141:   let localState = loadState();
+0142:   saveState();
+0143: 
+0144:   function saveState() {
+0145:     try {
+0146:       localStorage.setItem(STORAGE_KEY, JSON.stringify(localState));
+0147:     } catch {
+0148:       // localStorage가 차단된 환경에서도 현재 세션은 계속 동작하도록 둡니다.
+
+--- lines 412-1067 ---
+0412:         objectIcon: object.icon,
+0413:         special: index === specialIndex,
+0414:       };
+0415:     });
+0416:     const storeGateNodes = location.id === "abandoned_store"
+0417:       ? [
+0418:           { id: "STORE-BRICK", searched: false, kind: "store-brick", objectType: "brick", objectLabel: "입구 옆 벽돌", objectIcon: "🧱" },
+0419:           { id: "STORE-DOOR", searched: false, kind: "store-door", objectType: "glassdoor", objectLabel: "상가 유리문", objectIcon: "▦" },
+0420:         ]
+0421:       : [];
+0422:     return {
+0423:       id: uid("MISSION"),
+0424:       missionType: "regular",
+0425:       name: `${location.name} 회수`,
+0426:       locationId: location.id,
+0427:       locationName: location.name,
+0428:       foundChance: location.foundChance,
+0429:       startedAt: Date.now(),
+0430:       foundCount: 0,
+0431:       searchCount: 0,
+0432:       missStreak: 0,
+0433:       exhausted: false,
+0434:       storeBrickOwned: false,
+0435:       storeDoorBroken: location.id !== "abandoned_store",
+0436:       maxBoxes: Number(location.maxBoxes || MAX_BOXES_PER_MISSION) + (localState.backpackOwned ? 3 : 0),
+0437:       nodes: [...storeGateNodes, ...regularNodes],
+0438:       safe: location.id === "abandoned_store" && randomInt(100) < 5 ? {
+0439:         id: uid("SAFE"),
+0440:         spawnIndex: randomInt(3),
+0441:         opened: false,
+0442:         discovered: false,
+0443:       } : null,
+0444:     };
+0445:   }
+0446: 
+0447:   function buildBankPrepMission(step) {
+0448:     const positions = [...MISSION_NODE_POSITIONS].sort(() => Math.random() - 0.5).slice(0, 6);
+0449:     const targetIndexes = step.id === "equipment"
+0450:       ? [...Array(positions.length).keys()].sort(() => Math.random() - 0.5).slice(0, 3)
+0451:       : [randomInt(positions.length)];
+0452:     const equipmentTargets = [
+0453:       { id: "stethoscope", label: "청진기 보관함", icon: "🩺" },
+0454:       { id: "uvLight", label: "UV 라이트 케이스", icon: "🔦" },
+0455:       { id: "gun", label: "권총 보관 케이스", icon: "🔫" },
+0456:     ];
+0457:     const prepNodes = positions.map(([,], index) => {
+0458:       const object = randomSearchObject("bank_prep");
+0459:       const targetOrder = targetIndexes.indexOf(index);
+0460:       if (step.id === "equipment" && targetOrder >= 0) {
+0461:         const target = equipmentTargets[targetOrder];
+0462:         return { id: `PREP-${index + 1}`, searched: false, objectType: target.id === "stethoscope" ? "cabinet" : "case", objectLabel: target.label, objectIcon: target.icon, kind: "prep-target", prepTargetId: target.id };
+0463:       }
+0464:       if (step.id === "guardWeakening" && targetOrder >= 0) {
+0465:         return { id: `PREP-${index + 1}`, searched: false, objectType: "counter", objectLabel: "경비 장비 제어 단말기", objectIcon: "⌨️", kind: "prep-target", prepTargetId: "guardWeakening" };
+0466:       }
+0467:       return { id: `PREP-${index + 1}`, searched: false, objectType: object.type, objectLabel: object.label, objectIcon: object.icon, kind: "prep-empty" };
+0468:     });
+0469:     const guardNodes = step.id === "guardWeakening"
+0470:       ? [
+0471:           bankGuardNode(1, 9.4, 11.2, -Math.PI / 2, false),
+0472:           bankGuardNode(2, 14.0, 9.4, -Math.PI / 2, false),
+0473:           bankGuardNode(3, 18.6, 11.2, -Math.PI / 2, false),
+0474:         ]
+0475:       : [];
+0476:     return {
+0477:       id: uid("MISSION"),
+0478:       missionType: "bank-prep",
+0479:       name: `준비작업 · ${step.name}`,
+0480:       locationId: "bank_prep",
+0481:       locationName: step.required ? "준비작업 1/2" : "준비작업 2/2 · 선택",
+0482:       startedAt: Date.now(),
+0483:       exhausted: false,
 0484:       prepId: step.id,
 0485:       prepName: step.name,
 0486:       prepColor: step.color,
@@ -1192,21 +1578,307 @@
 1065:           stage: session.stage,
 1066:           totalLocks: session.combination.length,
 1067:           previewGlow: session.previewGlow,
-1068:         };
-1069:       }
-1070:       if (!localState.cutterOwned) return { ok: false, error: "커터칼이 없습니다. 상점에서 먼저 구매해 주세요." };
-1071:       const pendingItem = rollItem(box.tier, box.id);
-1072:       openSessions.set(box.id, {
-1073:         type: "box",
-1074:         cutStep: 0,
-1075:         lastCutAt: 0,
-1076:         pendingItem,
-1077:         previewGlow: previewGlowForRegularItem(pendingItem),
-1078:       });
-1079:       const session = openSessions.get(box.id);
-1080:       return { ok: true, type: "box", cutStep: 0, previewGlow: session.previewGlow };
 
---- lines 1906-2035 ---
+--- lines 1571-1728 ---
+1571:     return;
+1572:   }
+1573: 
+1574:   const overlay = $("#missionEntry");
+1575:   const backdrop = $("#entryBackdrop");
+1576:   const caption = $("#entryCaption");
+1577:   backdrop.className = `entry-backdrop entry-${locationId}`;
+1578:   caption.textContent = locationName;
+1579:   overlay.classList.remove("hidden");
+1580:   requestAnimationFrame(() => backdrop.classList.add("playing"));
+1581:   if (locationId === "bank" || locationId === "bank_prep") playLogisticsDoorEntrySound();
+1582:   await sleep(2100);
+1583:   overlay.classList.add("hidden");
+1584:   backdrop.classList.remove("playing");
+1585: }
+1586: 
+1587: const GLOW_THEMES = {
+1588:   low: { color: "#f0f3f7", soft: "rgba(240,243,247,.88)", deep: "rgba(240,243,247,.42)" },
+1589:   normal: { color: "#55b6ff", soft: "rgba(85,182,255,.90)", deep: "rgba(85,182,255,.46)" },
+1590:   high: { color: "#c06cff", soft: "rgba(192,108,255,.92)", deep: "rgba(192,108,255,.50)" },
+1591:   safe: { color: "#ffd966", soft: "rgba(255,217,102,.94)", deep: "rgba(255,217,102,.52)" },
+1592:   ruby: { color: "#ff174d", soft: "rgba(255,23,77,.96)", deep: "rgba(255,23,77,.58)" },
+1593: };
+1594: 
+1595: let state = null;
+1596: let player = { x: 50, y: 48, speed: 0.065 };
+1597: let keys = new Set();
+1598: let lastFrame = performance.now();
+1599: let missionSearchBusy = false;
+1600: let toastTimer;
+1601: let activeBox = null;
+1602: let activeMissionSafe = null;
+1603: let activePreviewGlow = "normal";
+1604: let cutStep = 0;
+1605: let cutBusy = false;
+1606: let safeDialPosition = 0;
+1607: let safeDialStage = 0;
+1608: let safeDialTotal = 1;
+1609: let safeHoldStartedAt = { a: 0, d: 0 };
+1610: let safeLastDialInteger = null;
+1611: let safeContactLatched = false;
+1612: let safeLastContactStage = -1;
+1613: let safeLastContactValue = null;
+1614: let safeRattleAt = 0;
+1615: let safeDialDrag = null;
+1616: let selectedRegularBoxes = new Set();
+1617: let bulkOpenBusy = false;
+1618: let bulkQueue = [];
+1619: let bulkQueueIndex = 0;
+1620: let bulkOpenedItems = [];
+1621: let bulkFailedCount = 0;
+1622: let bulkRequestedCount = 0;
+1623: let selectedFarmLocationId = "alley";
+1624: let currentPhoneApp = null;
+1625: let travelBusy = false;
+1626: let currentMissionLoot = [];
+1627: let revealGateBusy = false;
+1628: let modalSpaceAction = null;
+1629: let skipBusy = false;
+1630: let lastMissionWarningSecond = -1;
+1631: let missionTimeoutHandled = false;
+1632: let missionResultVisible = false;
+1633: let missionResultContext = null;
+1634: let mission3D = null;
+1635: let mission3DMissionId = null;
+1636: let lastExitNear = false;
+1637: let lastSafeNear = false;
+1638: let bankUvActive = false;
+1639: let bankUvX = 0.5;
+1640: let bankUvCode = "";
+1641: let bankUvRevealed = [false, false, false, false];
+1642: let bankChaseActive = false;
+1643: let bankChaseGame = null;
+1644: let bankChaseImpactTimer = null;
+1645: let bankChaseLootValue = 0;
+1646: let bankGuardAlertBusy = false;
+1647: let bankGuardHitBusy = false;
+1648: const BANK_UV_TRACE_X = [0.18, 0.38, 0.62, 0.82];
+1649: const BANK_UV_TRACE_Y = [0.34, 0.68, 0.42, 0.72];
+1650: 
+1651: function toast(message) {
+1652:   const text = String(message || "");
+1653:   // 구버전의 "준비작업 n/n 도착 · ... EXIT..." 도착 토스트만 숨긴다.
+1654:   // 실시간 임무 목표 HUD(#missionHint)는 그대로 유지한다.
+1655:   if (/^은행 준비작업\s*\d+\/\d+\s*도착\s*·/.test(text)) return;
+1656:   clearTimeout(toastTimer);
+1657:   const el = $("#toast");
+1658:   el.textContent = text;
+1659:   el.classList.add("show");
+1660:   toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
+1661: }
+1662: 
+1663: function glowTheme(kind) {
+1664:   return GLOW_THEMES[kind] || GLOW_THEMES.normal;
+1665: }
+1666: 
+1667: async function setMissionFullscreen(enabled) {
+1668:   document.body.classList.toggle("mission-immersive", Boolean(enabled));
+1669:   try {
+1670:     if (typeof api.setFullscreen === "function") await api.setFullscreen(Boolean(enabled));
+1671:     else if (enabled && !document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+1672:     else if (!enabled && document.fullscreenElement) await document.exitFullscreen?.();
+1673:   } catch {
+1674:     // 브라우저가 전체화면 요청을 거부해도 CSS 임무 화면은 계속 전체 뷰포트를 사용합니다.
+1675:   }
+1676:   requestAnimationFrame(() => mission3D?.resize?.());
+1677: }
+1678: 
+1679: async function refresh() {
+1680:   state = await api.getState();
+1681:   render();
+1682: }
+1683: 
+1684: async function refreshCompanyNow() {
+1685:   const button = $("#refreshCompany");
+1686:   if (button?.disabled) return;
+1687:   const oldLabel = button?.textContent || "새로고침";
+1688:   if (button) {
+1689:     button.disabled = true;
+1690:     button.textContent = "확인 중...";
+1691:   }
+1692:   try {
+1693:     const result = await api.refreshCompany?.();
+1694:     state = result?.state || await api.getState();
+1695:     render();
+1696:     if (!result?.ok) {
+1697:       toast(result?.error || "회사 등급을 새로고침하지 못했습니다.");
+1698:       return;
+1699:     }
+1700:     toast(`회사 등급 ${state.companyGrade || "-"} · 평판 ${Number(state.companyRep || 0).toLocaleString("ko-KR")} 새로고침 완료`);
+1701:   } catch (error) {
+1702:     toast(error?.message || "회사 등급 새로고침에 실패했습니다.");
+1703:   } finally {
+1704:     if (button) {
+1705:       button.disabled = false;
+1706:       button.textContent = oldLabel;
+1707:     }
+1708:   }
+1709: }
+1710: 
+1711: async function refreshOnlineInventoryNow() {
+1712:   const button = $("#refreshInventory");
+1713:   if (button?.disabled) return;
+1714:   const oldLabel = button?.textContent || "온라인 물품 새로고침";
+1715:   if (button) {
+1716:     button.disabled = true;
+1717:     button.textContent = "동기화 중...";
+1718:   }
+1719:   try {
+1720:     const result = await api.refreshInventory?.();
+1721:     state = result?.state || await api.getState();
+1722:     render();
+1723:     if (!result?.ok) {
+1724:       toast(result?.error || state.onlineInventorySync?.lastError || "온라인 물품 새로고침에 실패했습니다.");
+1725:       return;
+1726:     }
+1727:     const removed = Number(result?.sync?.removed || 0);
+1728:     toast(removed > 0 ? `온라인 물품 새로고침 완료 · 모바일 판매 ${removed}개 반영` : "온라인 물품 새로고침 완료");
+
+--- lines 1767-3554 ---
+1767:   $("#buyQualityManager").textContent = state.qualityManagerOwned ? "보유 중" : "구매";
+1768:   $("#buyQualityManager").disabled = state.qualityManagerOwned;
+1769:   $("#qualityManagerState").textContent = state.qualityManagerOwned
+1770:     ? `작동 중 · 하루 ${money(state.qualityManagerDailyPower)} 전기세`
+1771:     : `미보유 · 보관 물품 가치 하루 ${Math.round((state.itemDailyDecayRate || 0) * 100)}% 하락`;
+1772:   $("#qualityManagerCard").classList.toggle("owned", Boolean(state.qualityManagerOwned));
+1773:   $("#buyCart").textContent = state.backpackOwned ? "보유 중" : "구매";
+1774:   $("#buyCart").disabled = state.backpackOwned;
+1775:   $("#cartState").textContent = state.backpackOwned ? "보유 중 · 모든 파밍 최대 회수 +3" : "미보유";
+1776:   $("#cartCard").classList.toggle("owned", Boolean(state.backpackOwned));
+1777:   $("#devReset").classList.toggle("hidden", !state.devMode);
+1778:   renderMission();
+1779:   renderBoxes();
+1780:   renderItems();
+1781: }
+1782: 
+1783: function selectTab(name) {
+1784:   const titles = { mission: "이동하기", boxes: "상자 보관함", shop: "상점", items: "물건 보관함" };
+1785:   currentPhoneApp = name;
+1786:   $("#phoneHome").classList.add("hidden");
+1787:   $("#appWorkspace").classList.remove("hidden");
+1788:   $$(".panel").forEach((panel) => panel.classList.remove("active"));
+1789:   $(`#${name}Panel`)?.classList.add("active");
+1790:   $("#currentAppTitle").textContent = titles[name] || "플리마켓";
+1791: }
+1792: 
+1793: function goPhoneHome() {
+1794:   if (missionResultVisible) return;
+1795:   if (travelBusy) {
+1796:     toast("이동 중에는 화면을 나갈 수 없습니다.");
+1797:     return;
+1798:   }
+1799:   if (state?.mission) {
+1800:     toast("임무 중에는 초록색 EXIT 지점으로 돌아가야 합니다.");
+1801:     return;
+1802:   }
+1803:   currentPhoneApp = null;
+1804:   $("#appWorkspace").classList.add("hidden");
+1805:   $("#phoneHome").classList.remove("hidden");
+1806:   $$(".panel").forEach((panel) => panel.classList.remove("active"));
+1807: }
+1808: 
+1809: 
+1810: async function handleBankGuardAlert() {
+1811:   const mission = state?.mission;
+1812:   const combatMission = mission?.missionType === "bank-finale" || (mission?.missionType === "bank-prep" && mission?.prepId === "guardWeakening");
+1813:   if (bankGuardAlertBusy || !combatMission || mission.guardAlarmTriggered) return;
+1814:   bankGuardAlertBusy = true;
+1815:   try {
+1816:     const result = await api.triggerBankGuardAlert?.();
+1817:     if (!result?.ok) return;
+1818:     state = result.state;
+1819:     playTone(880, .09, "square", .04, 0);
+1820:     playTone(660, .11, "square", .035, .08);
+1821:     toast(result.spawned ? "경비원에게 발각되었습니다. 증원 경비원 3명이 출동합니다." : "경비원에게 발각되었습니다. 경비가 사격을 시작합니다.");
+1822:     render();
+1823:   } finally {
+1824:     bankGuardAlertBusy = false;
+1825:   }
+1826: }
+1827: 
+1828: async function handleBankGuardAttack() {
+1829:   const mission = state?.mission;
+1830:   const combatMission = mission?.missionType === "bank-finale" || (mission?.missionType === "bank-prep" && mission?.prepId === "guardWeakening");
+1831:   if (bankGuardHitBusy || !combatMission) return;
+1832:   bankGuardHitBusy = true;
+1833:   try {
+1834:     playGuardGunshotSound();
+1835:     mission3D?.playerHitFx?.();
+1836:     const result = await api.bankGuardHitPlayer?.();
+1837:     if (!result?.ok) return;
+1838:     state = result.state;
+1839:     if (result.failed) {
+1840:       render();
+1841:       if (result.prepFailed) showMissionResult([], "경비원 무장 약화", "경비원 총격으로 제압되어 준비작업에 실패했습니다.");
+1842:       else showMissionResult([], "은행 피날래", "경비원 총격으로 제압되었습니다. 습격 획득품을 잃었습니다.");
+1843:       return;
+1844:     }
+1845:     render();
+1846:   } finally {
+1847:     bankGuardHitBusy = false;
+1848:   }
+1849: }
+1850: 
+1851: function ensureMission3D() {
+1852:   if (mission3D || !window.Mission3D) return mission3D;
+1853:   const container = $("#warehouse");
+1854:   const canvas = $("#mission3DCanvas");
+1855:   if (!container || !canvas) return null;
+1856:   mission3D = window.Mission3D.create({
+1857:     container,
+1858:     canvas,
+1859:     onNearestChange: () => updateMissionHint(),
+1860:     onExitChange: (info) => {
+1861:       const near = Boolean(info?.near);
+1862:       if (near !== lastExitNear) {
+1863:         lastExitNear = near;
+1864:         updateMissionHint();
+1865:       }
+1866:     },
+1867:     onSafeChange: (info) => {
+1868:       const near = Boolean(info?.near);
+1869:       if (near !== lastSafeNear) {
+1870:         lastSafeNear = near;
+1871:         updateMissionHint();
+1872:       }
+1873:     },
+1874:     onStep: (sprinting) => play3DFootstep(sprinting),
+1875:     onPrimaryAction: () => handleMissionPrimaryAction(),
+1876:     onGuardAlert: () => handleBankGuardAlert(),
+1877:     onGuardAttack: () => handleBankGuardAttack(),
+1878:     onPointerLockChange: (locked) => {
+1879:       const hint = $("#mission3DPointer");
+1880:       if (hint) hint.textContent = locked
+1881:         ? ""
+1882:         : "화면을 클릭하면 마우스 시점이 고정됩니다.";
+1883:     },
+1884:   });
+1885:   return mission3D;
+1886: }
+1887: 
+1888: function syncMission3D(mission) {
+1889:   const engine = ensureMission3D();
+1890:   if (!engine) return;
+1891:   if (!mission) {
+1892:     if (engine.isActive()) engine.unmount();
+1893:     mission3DMissionId = null;
+1894:     lastExitNear = false;
+1895:     lastSafeNear = false;
+1896:     return;
+1897:   }
+1898:   if (!engine.isActive() || mission3DMissionId !== mission.id) {
+1899:     mission3DMissionId = mission.id;
+1900:     engine.mount(mission.locationId || "alley", mission.nodes || [], mission.safe || null, true);
+1901:     engine.syncMissionState?.(mission);
+1902:   } else {
+1903:     engine.syncNodes(mission.nodes || []);
+1904:     engine.syncSafe?.(mission.safe || null);
+1905:     engine.syncMissionState?.(mission);
 1906:   }
 1907: }
 1908: 
@@ -1337,8 +2009,25 @@
 2033:   warehouse.className = `warehouse map-${locationId}`;
 2034:   if (keepThreeD) warehouse.classList.add("three-d-active");
 2035:   if (keepPointer) warehouse.classList.add("pointer-locked");
-
---- lines 2055-2189 ---
+2036:   $("#mapScene").innerHTML = mapSceneMarkup(locationId);
+2037: }
+2038: 
+2039: function renderMission() {
+2040:   const mission = state.mission;
+2041:   if (!mission) {
+2042:     selectedFarmLocationId = selectedFarmLocationId || state.selectedLocationId || "alley";
+2043:     if (selectedFarmLocationId === "bank_prep") selectedFarmLocationId = "bank";
+2044:   } else {
+2045:     selectedFarmLocationId = mission.locationId === "bank_prep" ? "bank" : (mission.locationId || "alley");
+2046:   }
+2047: 
+2048:   renderFarmLocations();
+2049:   const location = state.farmLocations.find((entry) => entry.id === (selectedFarmLocationId === "bank_prep" ? "bank" : selectedFarmLocationId)) || state.farmLocations[0];
+2050:   const selectView = $("#travelSelectView");
+2051:   const activeView = $("#activeMissionView");
+2052:   const warehouse = $("#warehouse");
+2053: 
+2054:   if (!mission) {
 2055:     syncMission3D(null);
 2056:     selectView.classList.remove("hidden");
 2057:     activeView.classList.add("hidden");
@@ -1474,8 +2163,65 @@
 2187:   const missionLocked = Boolean(state.mission) || travelBusy;
 2188:   $("#farmLocations").innerHTML = state.farmLocations.map((location) => {
 2189:     const selected = location.id === selectedFarmLocationId;
-
---- lines 2249-2382 ---
+2190:     const unlocked = isLocationUnlocked(location);
+2191:     const rates = formatLocationRates(location);
+2192:     const requirement = location.requiredCompanyGrade
+2193:       ? `<span class="farm-card-lock ${unlocked ? "ok" : "locked"}">${unlocked ? `회사 ${state.companyGrade}등급 · 출입 가능` : `🔒 회사 ${location.requiredCompanyGrade}등급 이상 필요`}</span>`
+2194:       : "";
+2195:     return `<button class="farm-card ${selected ? "selected" : ""} ${unlocked ? "" : "locked"}" data-location-id="${location.id}" ${(missionLocked || !unlocked) ? "disabled" : ""}>
+2196:       <span class="farm-card-top"><strong>${location.name}</strong><small>${location.subtitle}</small></span>
+2197:       <span class="farm-card-desc">${location.description}</span>
+2198:       <span class="farm-card-rates">${rates}</span>
+2199:       <span class="farm-card-points">${location.id === "bank" ? `필수 준비작업 1개 · 선택 준비작업 1개 · 시작 비용 ${money(state.prices.bankFinale)}` : `탐색 ${Number(location.nodeCount || 10)}개 · 최대 회수 ${effectiveLocationMax(location)}개${state.backpackOwned ? " · 백팩 적용" : ""}`}</span>
+2200:       ${requirement}
+2201:     </button>`;
+2202:   }).join("");
+2203: }
+2204: 
+2205: 
+2206: function selectFarmLocation(locationId) {
+2207:   if (state.mission) return;
+2208:   const location = state.farmLocations.find((entry) => entry.id === locationId);
+2209:   if (!location || !isLocationUnlocked(location)) return;
+2210:   if (selectedFarmLocationId !== locationId) currentMissionLoot = [];
+2211:   selectedFarmLocationId = locationId;
+2212:   renderMission();
+2213: }
+2214: 
+2215: function nearestNode() {
+2216:   if (!state?.mission) return null;
+2217:   const engine = ensureMission3D();
+2218:   if (engine?.isActive()) return engine.nearestNode();
+2219:   let best = null;
+2220:   let bestDistance = Infinity;
+2221:   for (const node of state.mission.nodes) {
+2222:     if (node.searched) continue;
+2223:     const dx = node.x - player.x;
+2224:     const dy = node.y - player.y;
+2225:     const dist = Math.hypot(dx, dy);
+2226:     if (dist < bestDistance) {
+2227:       best = node;
+2228:       bestDistance = dist;
+2229:     }
+2230:   }
+2231:   return bestDistance <= 7 ? best : null;
+2232: }
+2233: 
+2234: function updateMissionHint() {
+2235:   $$(".search-node").forEach((el) => el.classList.remove("near"));
+2236:   if (!state?.mission) return;
+2237: 
+2238:   const safeInfo = mission3D?.isActive() ? mission3D.safeInfo?.() : null;
+2239:   if (safeInfo?.near && state.mission.safe && !state.mission.safe.opened) {
+2240:     $("#missionHint").innerHTML = state.stethoscopeOwned
+2241:       ? `<span class="safe-hint">금고 · <kbd>E</kbd> 청진기로 해제</span>`
+2242:       : `<span class="safe-hint">금고 · 청진기 필요</span>`;
+2243:     return;
+2244:   }
+2245: 
+2246:   const exit = mission3D?.isActive() ? mission3D.exitInfo?.() : null;
+2247:   if (exit?.near) {
+2248:     $("#missionHint").innerHTML = `<span class="exit-hint">EXIT · <kbd>E</kbd> 탈출</span>`;
 2249:     return;
 2250:   }
 2251: 
@@ -1610,8 +2356,226 @@
 2380: function toggleTierSelection(tierId) {
 2381:   if (bulkOpenBusy) return;
 2382:   const boxes = state.boxes.filter((box) => box.tier === tierId && box.tier !== "safe");
-
---- lines 2603-2925 ---
+2383:   if (!boxes.length) return;
+2384:   const allSelected = boxes.every((box) => selectedRegularBoxes.has(box.id));
+2385:   for (const box of boxes) {
+2386:     if (allSelected) selectedRegularBoxes.delete(box.id);
+2387:     else selectedRegularBoxes.add(box.id);
+2388:   }
+2389:   renderBoxes();
+2390: }
+2391: 
+2392: function selectAllRegularBoxes() {
+2393:   if (bulkOpenBusy) return;
+2394:   selectedRegularBoxes = new Set(state.boxes.filter((box) => box.tier !== "safe").map((box) => box.id));
+2395:   renderBoxes();
+2396: }
+2397: 
+2398: function clearRegularBoxSelection() {
+2399:   if (bulkOpenBusy) return;
+2400:   selectedRegularBoxes.clear();
+2401:   renderBoxes();
+2402: }
+2403: 
+2404: function renderStepRow(step) {
+2405:   const labels = ["앞면", "옆면", "상단"];
+2406:   return labels.map((label, index) => `<div class="open-step ${index < step ? "done" : index === step ? "active" : ""}"><span>${index < step ? "✓" : index + 1}</span><b>${label}</b></div>`).join("");
+2407: }
+2408: 
+2409: function renderQueueDots(total, activeIndex) {
+2410:   return Array.from({ length: total }, (_, index) => {
+2411:     const stateClass = index < activeIndex ? "done" : index === activeIndex ? "active" : "pending";
+2412:     return `<span class="queue-dot ${stateClass}"></span>`;
+2413:   }).join("");
+2414: }
+2415: 
+2416: function quickBoxMarkup(step, glowKind, icon = "📦", extraClass = "", stepLabel = `${step + 1} / 3`) {
+2417:   const theme = glowTheme(glowKind);
+2418:   return `
+2419:     <button id="quickBox" class="quick-box ${extraClass} step-${Math.min(step, 2)}" type="button" style="--leak-color:${theme.color};--leak-soft:${theme.soft};--leak-deep:${theme.deep};" aria-label="현재 단계 절단">
+2420:       <div class="quick-box-aura"></div>
+2421:       <div class="quick-box-lid"></div>
+2422:       <div class="quick-box-seam seam-v"></div>
+2423:       <div class="quick-box-seam seam-h"></div>
+2424:       <div class="quick-box-tape ${step === 2 ? "top" : "vertical"}"><span></span></div>
+2425:       <div class="quick-box-icon">${icon}</div>
+2426:       <div class="quick-box-step">${stepLabel}</div>
+2427:     </button>`;
+2428: }
+2429: 
+2430: function bulkEventTitle(total) {
+2431:   if (total === 10) return "10연 개봉";
+2432:   if (total === 1) return "1회 개봉";
+2433:   return `${total}연 개봉`;
+2434: }
+2435: 
+2436: async function startBulkQueueItem() {
+2437:   if (!bulkOpenBusy) return;
+2438:   while (bulkQueueIndex < bulkQueue.length) {
+2439:     const queued = bulkQueue[bulkQueueIndex];
+2440:     const box = state.boxes.find((entry) => entry.id === queued.id && entry.tier !== "safe");
+2441:     if (!box) {
+2442:       bulkQueueIndex += 1;
+2443:       continue;
+2444:     }
+2445: 
+2446:     const startResult = await api.startBoxOpen(box.id);
+2447:     if (!startResult.ok || startResult.type === "safe") {
+2448:       bulkFailedCount += 1;
+2449:       bulkQueueIndex += 1;
+2450:       continue;
+2451:     }
+2452: 
+2453:     activeBox = box;
+2454:     activePreviewGlow = startResult.previewGlow || "normal";
+2455:     cutStep = 0;
+2456:     renderRegularOpen();
+2457:     return;
+2458:   }
+2459: 
+2460:   await finishBulkQueue();
+2461: }
+2462: 
+2463: function revealBulkReward(item, nextState) {
+2464:   state = nextState;
+2465:   playItemPickupSound(item?.originalValue || item?.currentValue || 0, "item");
+2466:   bulkOpenedItems.push(item);
+2467:   activeBox = null;
+2468:   render();
+2469: 
+2470:   const isLast = bulkQueueIndex >= bulkQueue.length - 1;
+2471:   const total = bulkRequestedCount || bulkQueue.length;
+2472:   const nextText = isLast ? "전체 결과 보기" : "다음 상자 직접 개봉";
+2473:   $("#openStage").innerHTML = `
+2474:     <div class="reward-card bulk-moment-card">
+2475:       <div class="reward-icon">🎁</div>
+2476:       <p class="eyebrow">REVEAL</p>
+2477:       <h2>${item.name}</h2>
+2478:       <div class="reward-value">${itemValueDisplay(item)}</div>
+2479:       <div class="bulk-moment-meta">${Math.min(bulkQueueIndex + 1, total)} / ${total}</div>
+2480:       <p class="meta">다음 상자도 자동으로 열리지 않습니다. 버튼 클릭 또는 SPACE로 진행하세요.</p>
+2481:       <button id="bulkNextBox" class="primary">${nextText}</button>
+2482:       <div class="keyboard-hint">SPACE 키로도 진행할 수 있습니다.</div>
+2483:     </div>`;
+2484: 
+2485:   let moving = false;
+2486:   const next = async () => {
+2487:     if (moving) return;
+2488:     moving = true;
+2489:     modalSpaceAction = null;
+2490:     bulkQueueIndex += 1;
+2491:     if (bulkQueueIndex >= bulkQueue.length) await finishBulkQueue();
+2492:     else await startBulkQueueItem();
+2493:   };
+2494:   modalSpaceAction = next;
+2495:   $("#bulkNextBox").addEventListener("click", next);
+2496: }
+2497: 
+2498: async function finishBulkQueue() {
+2499:   const items = [...bulkOpenedItems];
+2500:   const failed = bulkFailedCount;
+2501:   const requested = bulkRequestedCount || bulkQueue.length;
+2502: 
+2503:   bulkOpenBusy = false;
+2504:   revealGateBusy = false;
+2505:   modalSpaceAction = null;
+2506:   activeBox = null;
+2507:   cutBusy = false;
+2508:   selectedRegularBoxes.clear();
+2509:   bulkQueue = [];
+2510:   bulkQueueIndex = 0;
+2511:   bulkOpenedItems = [];
+2512:   bulkFailedCount = 0;
+2513:   bulkRequestedCount = 0;
+2514:   state = await api.getState();
+2515:   render();
+2516:   showBulkRewards(items, failed, requested);
+2517: }
+2518: 
+2519: function cancelBulkQueue() {
+2520:   if (!bulkOpenBusy) return;
+2521:   bulkOpenBusy = false;
+2522:   revealGateBusy = false;
+2523:   modalSpaceAction = null;
+2524:   activeBox = null;
+2525:   cutBusy = false;
+2526:   bulkQueue = [];
+2527:   bulkQueueIndex = 0;
+2528:   bulkOpenedItems = [];
+2529:   bulkFailedCount = 0;
+2530:   bulkRequestedCount = 0;
+2531:   $("#openModal").classList.add("hidden");
+2532:   render();
+2533:   toast("연속 개봉을 중단했습니다. 아직 열지 않은 상자는 그대로 보관됩니다.");
+2534: }
+2535: 
+2536: async function bulkOpenSelectedBoxes() {
+2537:   if (bulkOpenBusy) return;
+2538:   const selected = state.boxes.filter((box) => box.tier !== "safe" && selectedRegularBoxes.has(box.id));
+2539:   if (!selected.length) return toast("연속 개봉할 일반 상자를 선택해 주세요.");
+2540:   if (!state.cutterOwned) {
+2541:     toast("연속 개봉에는 커터칼이 필요합니다. 장비 상점으로 이동했습니다.");
+2542:     selectTab("shop");
+2543:     $("#buyCutter")?.focus();
+2544:     return;
+2545:   }
+2546: 
+2547:   bulkOpenBusy = true;
+2548:   bulkQueue = [...selected];
+2549:   bulkQueueIndex = 0;
+2550:   bulkOpenedItems = [];
+2551:   bulkFailedCount = 0;
+2552:   bulkRequestedCount = selected.length;
+2553:   $("#openModal").classList.remove("hidden");
+2554:   renderBoxes();
+2555:   await startBulkQueueItem();
+2556: }
+2557: 
+2558: function showBulkRewards(items, failedCount = 0, requestedCount = items.length + failedCount) {
+2559:   activeBox = null;
+2560:   modalSpaceAction = null;
+2561:   const sortedItems = [...items].sort((a, b) => Number(b.originalValue || 0) - Number(a.originalValue || 0));
+2562:   const totalValue = sortedItems.reduce((sum, item) => sum + Number(item.originalValue || 0), 0);
+2563:   const title = requestedCount === 10 ? "10연 개봉 완료" : requestedCount === 1 ? "1회 개봉 완료" : `${requestedCount}연 개봉 완료`;
+2564:   $("#openModal").classList.remove("hidden");
+2565:   $("#openStage").innerHTML = `
+2566:     <div class="bulk-reward-card">
+2567:       <div class="reward-icon">🎁</div>
+2568:       <p class="eyebrow">OPEN RESULT</p>
+2569:       <h2>${title}</h2>
+2570:       <div class="bulk-reward-summary"><strong>총 원본 가치 ${money(totalValue)}</strong><span>높은 가치 순으로 정렬</span>${failedCount ? `<span>${failedCount}개는 개봉하지 못했습니다.</span>` : ""}</div>
+2571:       <div class="bulk-reward-list">${sortedItems.map((item, index) => `<div><span><b class="result-rank">#${index + 1}</b> ${item.name}</span><strong>${money(item.originalValue)}</strong></div>`).join("")}</div>
+2572:       <div class="bulk-reward-actions"><button id="bulkRewardClose" class="ghost">닫기</button><button id="bulkRewardItems" class="primary">아이템 보관함 보기</button></div>
+2573:     </div>`;
+2574:   const goItems = () => {
+2575:     modalSpaceAction = null;
+2576:     closeModal();
+2577:     selectTab("items");
+2578:     render();
+2579:   };
+2580:   modalSpaceAction = goItems;
+2581:   $("#bulkRewardClose").addEventListener("click", closeModal);
+2582:   $("#bulkRewardItems").addEventListener("click", goItems);
+2583: }
+2584: 
+2585: function renderItems() {
+2586:   $("#itemList").innerHTML = state.items.map((item) => {
+2587:     const currentValue = Number(item.currentValue ?? item.originalValue ?? 0);
+2588:     const dropped = currentValue < Number(item.originalValue || 0);
+2589:     return `
+2590:       <article class="item-card"><div class="box-art">🎁</div><h3>${item.name}</h3>
+2591:       <div class="item-current-value ${dropped && !isLimitedItem(item) ? "degraded" : ""}">${isLimitedItem(item) ? "<strong>한정판 · 판매 불가</strong>" : `현재 가치 <strong>${money(currentValue)}</strong>`}</div>
+2592:       <div class="meta">${itemValueDisplay(item)}<br>상태 ${item.conditionPercent}%<br>${item.id}</div></article>`;
+2593:   }).join("");
+2594:   $("#itemEmpty").classList.toggle("hidden", state.items.length > 0);
+2595:   $("#itemProtectionStatus").textContent = state.qualityManagerOwned
+2596:     ? `품질 자동 관리기 작동 중 · 가치 하락 방지 · 전기세 하루 ${money(state.qualityManagerDailyPower)}`
+2597:     : `자동 관리기 미보유 · 보관 물품은 하루 ${Math.round((state.itemDailyDecayRate || 0) * 100)}%씩 가치가 하락합니다.`;
+2598:   $("#itemProtectionStatus").classList.toggle("protected", Boolean(state.qualityManagerOwned));
+2599: }
+2600: 
+2601: function bankChaseDifficultyLabel(value) {
+2602:   const amount = Math.max(0, Number(value || 0));
 2603:   if (amount < 500000) return "낮음";
 2604:   if (amount < 1000000) return "보통";
 2605:   if (amount < 1500000) return "높음";
@@ -1935,8 +2899,39 @@
 2923:   playTone(160, .045, "square", .05, 0);
 2924:   playTone(870, .08, "sawtooth", .045, .018);
 2925:   if (!guard) return;
-
---- lines 2959-3128 ---
+2926:   missionSearchBusy = true;
+2927:   engine?.setSearching(true);
+2928:   await sleep(110);
+2929:   const result = await api.shootBankGuard?.(guard.id, guard.hitZone || "body");
+2930:   missionSearchBusy = false;
+2931:   engine?.setSearching(false);
+2932:   if (!result?.ok) return toast(result?.error || "권총 사격 처리에 실패했습니다.");
+2933:   state = result.state;
+2934:   if (result.killed) {
+2935:     playTone(410, .08, "square", .06, 0);
+2936:     playTone(210, .13, "triangle", .055, .04);
+2937:   }
+2938:   render();
+2939:   const zoneName = result.hitZone === "head" ? "헤드샷" : "몸통";
+2940:   const status = result.killed ? "제압" : `HP ${result.guardHp}/${result.guardMaxHp}`;
+2941:   toast(`${zoneName} ${result.damage} 피해 · ${status} · 경비원 ${result.guardsNeutralized}/${result.guardTotal}`);
+2942: }
+2943: 
+2944: function beginMissionSearchPopup(label = "수색 대상") {
+2945:   const popup = $("#searchPopup");
+2946:   if (!popup) return;
+2947:   popup.className = "mission-search-popup loading";
+2948:   $("#searchPopupIcon").textContent = "⌕";
+2949:   // 파밍지 이름 대신 지금 직접 뒤지고 있는 오브젝트 이름을 중앙 팝업의 제목으로 표시합니다.
+2950:   $("#searchPopupTitle").textContent = label;
+2951:   $("#searchPopupDetail").textContent = "탐색 중...";
+2952:   const bar = $("#searchPopupBar");
+2953:   if (bar) {
+2954:     bar.style.animation = "none";
+2955:     void bar.offsetWidth;
+2956:     bar.style.animation = "";
+2957:   }
+2958: }
 2959: 
 2960: function missionSearchResultText(result, node) {
 2961:   const objectName = result?.searchedObject || node?.objectLabel || "수색 대상";
@@ -2107,8 +3102,211 @@
 3126:     toast("청진기가 필요합니다. 장비 상점으로 이동했습니다.");
 3127:     selectTab("shop");
 3128:     $("#buyStethoscope")?.focus();
-
---- lines 3334-3480 ---
+3129:     return;
+3130:   }
+3131: 
+3132:   const result = await api.startBoxOpen(boxId);
+3133:   if (!result.ok) return toast(result.error);
+3134:   revealGateBusy = false;
+3135:   activeBox = box;
+3136:   activePreviewGlow = result.previewGlow || (box.tier === "safe" ? "safe" : "normal");
+3137:   $("#openModal").classList.remove("hidden");
+3138:   if (box.tier === "safe") renderSafe(result);
+3139:   else {
+3140:     cutStep = 0;
+3141:     renderRegularOpen();
+3142:   }
+3143: }
+3144: 
+3145: function regularInstruction() {
+3146:   const messages = [
+3147:     "1단계 · 앞면 테이프를 자릅니다.",
+3148:     "2단계 · 반대편 옆면 테이프를 자릅니다.",
+3149:     "3단계 · 상단 테이프를 자르면 상자가 열립니다.",
+3150:   ];
+3151:   return messages[Math.min(cutStep, 2)];
+3152: }
+3153: 
+3154: function renderRegularOpen() {
+3155:   cutBusy = false;
+3156:   skipBusy = false;
+3157:   const step = Math.min(cutStep, 2);
+3158:   const buttonLabels = [
+3159:     "🔪 1단계 테이프 자르기",
+3160:     "🔪 2단계 테이프 자르기",
+3161:     "📦 마지막 테이프 개방하기",
+3162:   ];
+3163:   const progress = [0, 33, 66][step];
+3164:   const queueTitle = bulkOpenBusy ? `${bulkEventTitle(bulkRequestedCount)} · ${bulkQueueIndex + 1} / ${bulkRequestedCount}` : activeBox.tierName;
+3165:   const queueSub = bulkOpenBusy
+3166:     ? `${activeBox.tierName} · 선택했더라도 이 상자는 직접 진행합니다.`
+3167:     : "3단계를 직접 진행하세요. 빛은 마지막 테이프를 개방하는 순간에만 나타납니다.";
+3168:   const queueDots = bulkOpenBusy ? `<div class="queue-dots">${renderQueueDots(bulkRequestedCount, bulkQueueIndex)}</div>` : "";
+3169: 
+3170:   $("#openStage").innerHTML = `
+3171:     <div class="opening-title intuitive-title">
+3172:       <div class="opening-title-row"><div><p class="eyebrow">OPEN EVENT</p><h2>${queueTitle}</h2></div><button id="skipCurrentBox" class="ghost open-skip-button" type="button">${bulkOpenBusy ? "⏭ 남은 연출 스킵" : "⏭ 스킵"}</button></div>
+3173:       <p>${queueSub}</p>
+3174:     </div>
+3175:     <div class="quick-open-wrap">
+3176:       ${quickBoxMarkup(step, activePreviewGlow)}
+3177:       <div class="step-row">${renderStepRow(step)}</div>
+3178:       <div class="open-progress"><span style="width:${progress}%"></span></div>
+3179:       <div id="openInstruction" class="open-instruction"><strong>${regularInstruction()}</strong><br><span>상자 그림, 큰 버튼 또는 SPACE로 직접 진행하세요.</span></div>
+3180:       <button id="cutButton" class="primary quick-cut-button" type="button">${buttonLabels[step]}</button>
+3181:       <div class="keyboard-hint">SPACE · 진행 &nbsp; | &nbsp; ${bulkOpenBusy ? "스킵 · 남은 상자 연출 전체 생략" : "스킵 · 현재 상자 연출 생략"}</div>
+3182:       ${queueDots}
+3183:     </div>`;
+3184:   modalSpaceAction = performQuickCut;
+3185:   $("#cutButton").addEventListener("click", performQuickCut);
+3186:   $("#quickBox").addEventListener("click", performQuickCut);
+3187:   $("#skipCurrentBox").addEventListener("click", skipCurrentBoxOpen);
+3188: }
+3189: 
+3190: function showRegularRevealGate(item, nextState) {
+3191:   state = nextState;
+3192:   activeBox = null;
+3193:   cutBusy = false;
+3194:   revealGateBusy = true;
+3195:   render();
+3196: 
+3197:   const total = bulkRequestedCount || bulkQueue.length;
+3198:   const queueTitle = bulkOpenBusy
+3199:     ? `${bulkEventTitle(total)} · ${bulkQueueIndex + 1} / ${total}`
+3200:     : "상자 개봉 완료";
+3201:   const queueDots = bulkOpenBusy ? `<div class="queue-dots">${renderQueueDots(total, bulkQueueIndex)}</div>` : "";
+3202: 
+3203:   $("#openStage").innerHTML = `
+3204:     <div class="opening-title intuitive-title final-gate-title">
+3205:       <p class="eyebrow">OPEN COMPLETE</p>
+3206:       <h2>${queueTitle}</h2>
+3207:       <p>빛을 확인한 뒤 클릭하거나 SPACE를 눌러 결과를 확인하세요.</p>
+3208:     </div>
+3209:     <div class="quick-open-wrap final-gate-wrap">
+3210:       ${quickBoxMarkup(2, activePreviewGlow, "📦", "final-reveal reveal-hold", "OPEN")}
+3211:       <button id="finalRevealContinue" class="primary reveal-continue-button" type="button">결과 확인 (SPACE)</button>
+3212:       ${queueDots}
+3213:     </div>`;
+3214: 
+3215:   let handled = false;
+3216:   const proceed = () => {
+3217:     if (handled) return;
+3218:     handled = true;
+3219:     modalSpaceAction = null;
+3220:     revealGateBusy = false;
+3221:     if (bulkOpenBusy) revealBulkReward(item, nextState);
+3222:     else revealReward(item, nextState);
+3223:   };
+3224:   modalSpaceAction = proceed;
+3225:   $("#finalRevealContinue").addEventListener("click", proceed);
+3226:   $("#quickBox").addEventListener("click", proceed);
+3227: }
+3228: 
+3229: async function performQuickCut() {
+3230:   if (!activeBox || cutBusy || revealGateBusy || skipBusy) return;
+3231:   getAudioContext();
+3232:   cutBusy = true;
+3233:   modalSpaceAction = null;
+3234:   const boxId = activeBox.id;
+3235:   const currentStep = cutStep;
+3236:   const cutButton = $("#cutButton");
+3237:   const quickBox = $("#quickBox");
+3238:   if (cutButton) {
+3239:     cutButton.disabled = true;
+3240:     cutButton.textContent = currentStep >= 2 ? "마지막 테이프 개방 중..." : "테이프 자르는 중...";
+3241:   }
+3242:   quickBox?.classList.add("cutting");
+3243: 
+3244:   if (currentStep >= 2) {
+3245:     playBoxOpeningSound();
+3246:     await sleep(260);
+3247:     quickBox?.classList.add("final-reveal");
+3248:     playGlowSound(activePreviewGlow);
+3249:     await sleep(520);
+3250:   } else {
+3251:     playNoiseBurst(0.12, 0.026, 0);
+3252:     await sleep(340);
+3253:   }
+3254: 
+3255:   if (!activeBox || activeBox.id !== boxId) {
+3256:     cutBusy = false;
+3257:     return;
+3258:   }
+3259: 
+3260:   const result = await api.completeCut(boxId, currentStep);
+3261:   if (!result.ok) {
+3262:     cutBusy = false;
+3263:     toast(result.error);
+3264:     return renderRegularOpen();
+3265:   }
+3266:   if (result.opened) {
+3267:     return showRegularRevealGate(result.item, result.state);
+3268:   }
+3269:   cutStep = result.cutStep;
+3270:   renderRegularOpen();
+3271: }
+3272: 
+3273: async function skipCurrentBoxOpen() {
+3274:   if (!activeBox || activeBox.tier === "safe" || cutBusy || revealGateBusy || skipBusy) return;
+3275:   skipBusy = true;
+3276:   cutBusy = true;
+3277:   modalSpaceAction = null;
+3278:   const currentBoxId = activeBox.id;
+3279:   const skipButton = $("#skipCurrentBox");
+3280:   if (skipButton) {
+3281:     skipButton.disabled = true;
+3282:     skipButton.textContent = bulkOpenBusy ? "남은 상자 정리 중..." : "스킵 중...";
+3283:   }
+3284: 
+3285:   const finishStartedBoxSilently = async (boxId, startStep) => {
+3286:     let finalResult = null;
+3287:     for (let step = startStep; step < 3; step += 1) {
+3288:       finalResult = await api.completeCut(boxId, step);
+3289:       if (!finalResult.ok) break;
+3290:     }
+3291:     return finalResult;
+3292:   };
+3293: 
+3294:   let result = await finishStartedBoxSilently(currentBoxId, cutStep);
+3295:   if (!result?.ok) {
+3296:     cutBusy = false;
+3297:     skipBusy = false;
+3298:     toast(result?.error || "개봉 스킵에 실패했습니다.");
+3299:     return refresh();
+3300:   }
+3301: 
+3302:   if (!bulkOpenBusy) {
+3303:     cutBusy = false;
+3304:     skipBusy = false;
+3305:     if (result.opened) revealReward(result.item, result.state);
+3306:     else refresh();
+3307:     return;
+3308:   }
+3309: 
+3310:   if (result.opened) {
+3311:     bulkOpenedItems.push(result.item);
+3312:     state = result.state;
+3313:   } else {
+3314:     bulkFailedCount += 1;
+3315:   }
+3316:   bulkQueueIndex += 1;
+3317: 
+3318:   while (bulkQueueIndex < bulkQueue.length) {
+3319:     const queued = bulkQueue[bulkQueueIndex];
+3320:     const box = state.boxes.find((entry) => entry.id === queued.id && entry.tier !== "safe");
+3321:     if (!box) {
+3322:       bulkQueueIndex += 1;
+3323:       continue;
+3324:     }
+3325:     const startResult = await api.startBoxOpen(box.id);
+3326:     if (!startResult.ok || startResult.type === "safe") {
+3327:       bulkFailedCount += 1;
+3328:       bulkQueueIndex += 1;
+3329:       continue;
+3330:     }
+3331:     result = await finishStartedBoxSilently(box.id, 0);
+3332:     if (result?.ok && result.opened) {
+3333:       bulkOpenedItems.push(result.item);
 3334:       state = result.state;
 3335:     } else {
 3336:       bulkFailedCount += 1;
@@ -2256,8 +3454,355 @@
 3478:       : await api.safeListen(targetId, dialNumber);
 3479:     const currentTarget = currentSafeTarget();
 3480:     if (!result?.ok || !currentTarget || currentTarget.id !== targetId || result.stage !== safeDialStage) return;
+3481:     if (result.hit) {
+3482:       if (!safeContactLatched || safeLastContactStage !== result.stage || safeLastContactValue !== dialNumber) {
+3483:         safeContactLatched = true;
+3484:         safeLastContactStage = result.stage;
+3485:         safeLastContactValue = dialNumber;
+3486:         playSafeContactSound();
+3487:         const wheel = $("#safeDialAssembly");
+3488:         wheel?.classList.remove("contact-hit");
+3489:         void wheel?.offsetWidth;
+3490:         wheel?.classList.add("contact-hit");
+3491:       }
+3492:     } else if (dialNumber === currentSafeDialInteger()) {
+3493:       safeContactLatched = false;
+3494:     }
+3495:   } catch {
+3496:     // 청음 피드백 실패는 다이얼 조작 자체를 막지 않습니다.
+3497:   }
+3498: }
+3499: 
+3500: function setSafeDialPosition(value, listen = true) {
+3501:   safeDialPosition = Number(value) || 0;
+3502:   updateSafeDialDom();
+3503:   const current = currentSafeDialInteger();
+3504:   if (listen && current !== safeLastDialInteger) {
+3505:     safeLastDialInteger = current;
+3506:     checkSafeDialContact(current);
+3507:   }
+3508: }
+3509: 
+3510: function safeDialKeyDown(key) {
+3511:   if (!safeMinigameActive()) return;
+3512:   if (key !== "a" && key !== "d") return;
+3513:   getAudioContext();
+3514:   if (!safeHoldStartedAt[key]) safeHoldStartedAt[key] = performance.now();
+3515:   const direction = key === "a" ? -1 : 1;
+3516:   setSafeDialPosition(safeDialPosition + direction, true);
+3517:   playSafeDialRattle();
+3518:   safeRattleAt = performance.now();
+3519: }
+3520: 
+3521: function safeDialKeyUp(key) {
+3522:   if (key === "a" || key === "d") safeHoldStartedAt[key] = 0;
+3523: }
+3524: 
+3525: function updateSafeDial(dt, now) {
+3526:   if (!safeMinigameActive()) return;
+3527:   const aHeld = keys.has("a") && safeHoldStartedAt.a > 0;
+3528:   const dHeld = keys.has("d") && safeHoldStartedAt.d > 0;
+3529:   if (aHeld === dHeld) return;
+3530: 
+3531:   const key = aHeld ? "a" : "d";
+3532:   const direction = aHeld ? -1 : 1;
+3533:   const heldFor = now - safeHoldStartedAt[key];
+3534:   if (heldFor < 180) return;
+3535: 
+3536:   const speed = heldFor < 450 ? 7 : 20;
+3537:   setSafeDialPosition(safeDialPosition + direction * speed * (dt / 1000), true);
+3538:   if (now - safeRattleAt >= 72) {
+3539:     playSafeDialRattle();
+3540:     safeRattleAt = now;
+3541:   }
+3542: }
+3543: 
+3544: // SD_SAFE_MOUSE_DIAL_V1
+3545: function safeDialPointerAngle(event, element) {
+3546:   const rect = element.getBoundingClientRect();
+3547:   const centerX = rect.left + rect.width / 2;
+3548:   const centerY = rect.top + rect.height / 2;
+3549:   return Math.atan2(event.clientY - centerY, event.clientX - centerX);
+3550: }
+3551: 
+3552: function startSafeDialDrag(event) {
+3553:   if (!safeMinigameActive()) return;
+3554:   if (event.pointerType === "mouse" && event.button !== 0) return;
 
---- lines 3916-3960 ---
+--- lines 3643-3960 ---
+3643:         <div class="safe-dial-pointer"></div>
+3644:         <div class="safe-dial-shell">
+3645:           <div id="safeDialWheel" class="safe-dial-wheel">
+3646:             ${Array.from({ length: 10 }, (_, index) => `<span class="safe-dial-label" style="--i:${index}">${index * 10}</span>`).join("")}
+3647:           </div>
+3648:           <div class="safe-dial-hub"><span>🩺</span><strong id="safeDialNumber">00</strong></div>
+3649:         </div>
+3650:       </div>
+3651:       <div class="safe-help safe-dial-help">
+3652:         <div class="safe-lock-header"><h3>소리를 듣고 찾으세요</h3><b id="safeLockProgress">1 / ${safeDialTotal}</b></div>
+3653:         <p>다이얼을 돌리면 금속 마찰음이 이어집니다. 정확한 위치를 지날 때만 짧게 <strong>탁</strong> 하고 걸립니다. 자동 성공은 아니며, 그 번호에 맞춘 뒤 직접 SPACE를 눌러야 합니다.</p>
+3654:         <div id="safeLockPins" class="safe-lock-pins"></div>
+3655:         <div class="safe-control-grid"><span><kbd>A</kbd> 왼쪽</span><span><kbd>D</kbd> 오른쪽</span><span><kbd>🖱</kbd> 잡고 회전</span><span><kbd>SPACE</kbd> 확정</span></div>
+3656:         <p class="safe-no-limit">A/D를 짧게 누르면 1칸, 꾹 누르면 연속 회전합니다. 마우스는 다이얼을 잡은 채 원을 그리듯 돌리면 됩니다. 확정 횟수 제한은 없습니다.</p>
+3657:         <div id="safeDialStatus" class="safe-dial-status">청진기에 집중해서 걸림 위치를 찾으세요.</div>
+3658:         <button id="safeConfirmButton" class="torque-button">현재 위치 확정 (SPACE)</button>
+3659:       </div>
+3660:     </div>`;
+3661:   updateSafeDialDom();
+3662:   renderSafePins();
+3663:   bindSafeDialPointerControls();
+3664:   $("#safeConfirmButton").addEventListener("click", confirmSafeDial);
+3665: }
+3666: 
+3667: function showSafeRevealGate(item, nextState, options = {}) {
+3668:   const missionSafe = Boolean(options.missionSafe);
+3669:   state = nextState;
+3670:   activeBox = null;
+3671:   revealGateBusy = true;
+3672:   safeHoldStartedAt = { a: 0, d: 0 };
+3673:   keys.delete("a");
+3674:   keys.delete("d");
+3675:   render();
+3676:   const theme = glowTheme(activePreviewGlow || "safe");
+3677:   $("#openStage").innerHTML = `
+3678:     <div class="opening-title final-gate-title"><p class="eyebrow">SAFE OPEN</p><h2>금고 개방 완료</h2><p>빛을 확인한 뒤 클릭하거나 SPACE를 눌러 결과를 확인하세요.</p></div>
+3679:     <div class="safe-stage safe-preview revealing reveal-hold" style="--safe-glow:${theme.color};--safe-soft:${theme.soft};--safe-deep:${theme.deep};">
+3680:       <button id="safeRevealDoor" class="safe-door preview-glow safe-reveal-door" type="button" aria-label="결과 확인"><div class="lock-cylinder opened-cylinder"></div></button>
+3681:       <div class="safe-help safe-finish-help"><h3>개방 완료</h3><p>빛을 확인한 뒤 진행하세요.</p><button id="safeRevealContinue" class="primary reveal-continue-button" type="button">결과 확인 (SPACE)</button></div>
+3682:     </div>`;
+3683: 
+3684:   let handled = false;
+3685:   const proceed = () => {
+3686:     if (handled) return;
+3687:     handled = true;
+3688:     modalSpaceAction = null;
+3689:     revealGateBusy = false;
+3690:     if (missionSafe) showMissionSafeReward(item, nextState);
+3691:     else revealReward(item, nextState);
+3692:   };
+3693:   modalSpaceAction = proceed;
+3694:   $("#safeRevealContinue").addEventListener("click", proceed);
+3695:   $("#safeRevealDoor").addEventListener("click", proceed);
+3696: }
+3697: 
+3698: async function confirmSafeDial() {
+3699:   const target = currentSafeTarget();
+3700:   if (!target || revealGateBusy) return;
+3701:   getAudioContext();
+3702:   const button = $("#safeConfirmButton");
+3703:   if (button) button.disabled = true;
+3704:   const result = target.mission
+3705:     ? await api.missionSafeAttempt(target.id, currentSafeDialInteger())
+3706:     : await api.safeAttempt(target.id, currentSafeDialInteger());
+3707:   if (button) button.disabled = false;
+3708:   if (!result.ok) return toast(result.error);
+3709: 
+3710:   const status = $("#safeDialStatus");
+3711:   if (!result.correct) {
+3712:     playSafeRejectSound();
+3713:     status && (status.textContent = "잠금이 걸리지 않았습니다. 계속 돌려서 걸림음을 다시 찾으세요.");
+3714:     const assembly = $("#safeDialAssembly");
+3715:     assembly?.classList.remove("wrong-confirm");
+3716:     void assembly?.offsetWidth;
+3717:     assembly?.classList.add("wrong-confirm");
+3718:     return;
+3719:   }
+3720: 
+3721:   playSafeLatchSound();
+3722:   safeDialStage = Number(result.stage || 0);
+3723:   safeContactLatched = false;
+3724:   safeLastContactStage = -1;
+3725:   safeLastContactValue = null;
+3726:   safeLastDialInteger = currentSafeDialInteger();
+3727:   renderSafePins();
+3728: 
+3729:   if (result.opened) {
+3730:     modalSpaceAction = null;
+3731:     safeHoldStartedAt = { a: 0, d: 0 };
+3732:     keys.delete("a");
+3733:     keys.delete("d");
+3734:     const confirmButton = $("#safeConfirmButton");
+3735:     if (confirmButton) {
+3736:       confirmButton.disabled = true;
+3737:       confirmButton.textContent = "금고 잠금 해제";
+3738:     }
+3739:     status && (status.textContent = "잠금이 풀렸습니다. 금고 문이 열립니다.");
+3740:     playSafeOpeningSound();
+3741:     const safeStage = document.querySelector(".safe-preview");
+3742:     await sleep(180);
+3743:     safeStage?.classList.add("revealing");
+3744:     playGlowSound(activePreviewGlow);
+3745:     await sleep(520);
+3746:     if (target.mission) return showMissionSafeReward(result.item || null, result.state);
+3747:     return showSafeRevealGate(result.item, result.state, { missionSafe: false });
+3748:   }
+3749: 
+3750:   status && (status.textContent = `철컥. 다음 걸림 위치를 찾으세요. (${safeDialStage + 1}/${safeDialTotal})`);
+3751: }
+3752: 
+3753: function revealReward(item, nextState) {
+3754:   revealGateBusy = false;
+3755:   modalSpaceAction = null;
+3756:   state = nextState;
+3757:   playItemPickupSound(item?.originalValue || item?.currentValue || 0, "item");
+3758:   activeBox = null;
+3759:   render();
+3760:   $("#openStage").innerHTML = `<div class="reward-card"><div class="reward-icon">🎁</div><p class="eyebrow">ITEM FOUND</p><h2>${item.name}</h2><div class="reward-value">${itemValueDisplay(item)}</div><p class="meta">아이템은 이미 보관함에 저장됐고, 개봉한 상자는 즉시 상자 보관함에서 제거됩니다.</p><button id="rewardClose" class="primary">아이템 보관함 보기</button></div>`;
+3761:   const goItems = () => {
+3762:     modalSpaceAction = null;
+3763:     closeModal();
+3764:     selectTab("items");
+3765:     render();
+3766:   };
+3767:   modalSpaceAction = goItems;
+3768:   $("#rewardClose").addEventListener("click", goItems);
+3769: }
+3770: 
+3771: function closeModal() {
+3772:   if (activeMissionSafe) {
+3773:     resumeMissionAfterSafe();
+3774:     return;
+3775:   }
+3776:   revealGateBusy = false;
+3777:   modalSpaceAction = null;
+3778:   skipBusy = false;
+3779:   safeHoldStartedAt = { a: 0, d: 0 };
+3780:   keys.delete("a");
+3781:   keys.delete("d");
+3782:   if (bulkOpenBusy) {
+3783:     cancelBulkQueue();
+3784:     return;
+3785:   }
+3786:   cutBusy = false;
+3787:   $("#openModal").classList.add("hidden");
+3788:   activeBox = null;
+3789:   render();
+3790: }
+3791: 
+3792: function bindEvents() {
+3793:   $$(".phone-app").forEach((btn) => btn.addEventListener("click", () => selectTab(btn.dataset.app)));
+3794:   $("#homeButton").addEventListener("click", goPhoneHome);
+3795:   $("#refreshCompany")?.addEventListener("click", refreshCompanyNow);
+3796:   $("#refreshInventory")?.addEventListener("click", refreshOnlineInventoryNow);
+3797:   $("#missionButton").addEventListener("click", () => toggleMission(""));
+3798:   $("#bankMissionButton").addEventListener("click", () => {
+3799:     const prep = state?.bankPrep || {};
+3800:     toggleMission(prep.equipment ? "guardWeakening" : "equipment");
+3801:   });
+3802:   $("#bankFinaleButton").addEventListener("click", () => toggleMission("finale"));
+3803:   $("#missionReturnButton").addEventListener("click", () => toast("초록색 EXIT 웨이포인트로 돌아가 E를 눌러 탈출하세요."));
+3804:   $("#missionResult").addEventListener("click", (event) => {
+3805:     if (event.target.closest("#missionResultContinuePrep")) return;
+3806:     finishMissionResult();
+3807:   });
+3808:   $("#missionResultReturn").addEventListener("click", () => finishMissionResult("phone"));
+3809:   $("#missionResultContinuePrep").addEventListener("click", (event) => {
+3810:     event.stopPropagation();
+3811:     finishMissionResult("prep");
+3812:   });
+3813:   $("#buyCutter").addEventListener("click", buyCutter);
+3814:   $("#buyStethoscope").addEventListener("click", buyStethoscope);
+3815:   $("#buyQualityManager").addEventListener("click", buyQualityManager);
+3816:   $("#buyCart").addEventListener("click", buyCart);
+3817:   $("#farmLocations").addEventListener("click", (event) => {
+3818:     const card = event.target.closest("[data-location-id]");
+3819:     if (card) selectFarmLocation(card.dataset.locationId);
+3820:   });
+3821:   $("#boxList").addEventListener("click", (event) => {
+3822:     const checkbox = event.target.closest(".box-select-input");
+3823:     if (checkbox) {
+3824:       toggleRegularBoxSelection(checkbox.dataset.id, checkbox.checked);
+3825:       return;
+3826:     }
+3827:     const btn = event.target.closest(".open-box");
+3828:     if (btn) openBox(btn.dataset.id);
+3829:   });
+3830:   $("#tierSelectButtons").addEventListener("click", (event) => {
+3831:     const button = event.target.closest("[data-tier-select]");
+3832:     if (button) toggleTierSelection(button.dataset.tierSelect);
+3833:   });
+3834:   $("#selectAllRegular").addEventListener("click", selectAllRegularBoxes);
+3835:   $("#clearBoxSelection").addEventListener("click", clearRegularBoxSelection);
+3836:   $("#bulkOpenBoxes").addEventListener("click", bulkOpenSelectedBoxes);
+3837:   $("#closeModal").addEventListener("click", closeModal);
+3838:   $("#openModal").addEventListener("click", (event) => {
+3839:     if (event.target.id === "openModal") closeModal();
+3840:   });
+3841:   $("#bankUvClose").addEventListener("click", () => closeBankUvPuzzle());
+3842:   $("#bankUvSurface").addEventListener("mousemove", (event) => {
+3843:     if (!bankUvActive) return;
+3844:     const rect = event.currentTarget.getBoundingClientRect();
+3845:     setBankUvPosition((event.clientX - rect.left) / Math.max(1, rect.width));
+3846:   });
+3847:   $("#bankUvCodeInput").addEventListener("input", (event) => {
+3848:     event.target.value = String(event.target.value || "").replace(/\D/g, "").slice(0, 4);
+3849:     updateBankUvUi();
+3850:   });
+3851:   $("#bankUvConfirm").addEventListener("click", confirmBankUvCode);
+3852:   $("#bankChaseReturn").addEventListener("click", closeBankChaseResult);
+3853: 
+3854:   $("#devReset").addEventListener("click", async () => {
+3855:     const result = await api.devReset();
+3856:     if (result.ok) {
+3857:       state = result.state;
+3858:       currentMissionLoot = [];
+3859:       revealGateBusy = false;
+3860:       render();
+3861:       toast("개발 데이터를 초기화했습니다.");
+3862:     }
+3863:   });
+3864:   window.addEventListener("keydown", (event) => {
+3865:     const key = event.key.toLowerCase();
+3866:     if (bankChaseActive) {
+3867:       const handled = bankChaseGame?.handleKey?.(event);
+3868:       if (handled) event.preventDefault();
+3869:       return;
+3870:     }
+3871:     if (bankUvActive) {
+3872:       event.preventDefault();
+3873:       if (event.key === "Escape") return closeBankUvPuzzle();
+3874:       if (key === "a") return setBankUvPosition(bankUvX - (event.repeat ? 0.025 : 0.04));
+3875:       if (key === "d") return setBankUvPosition(bankUvX + (event.repeat ? 0.025 : 0.04));
+3876:       const uvInput = $("#bankUvCodeInput");
+3877:       const uvComplete = bankUvRevealed.every(Boolean);
+3878:       if (uvComplete && /^\d$/.test(event.key) && !event.repeat) {
+3879:         uvInput.value = `${uvInput.value || ""}${event.key}`.slice(0, 4);
+3880:         return updateBankUvUi();
+3881:       }
+3882:       if (uvComplete && event.key === "Backspace" && !event.repeat) {
+3883:         uvInput.value = String(uvInput.value || "").slice(0, -1);
+3884:         return updateBankUvUi();
+3885:       }
+3886:       if (uvComplete && event.key === "Enter" && !event.repeat) return confirmBankUvCode();
+3887:       return;
+3888:     }
+3889:     keys.add(key);
+3890:     const modalOpen = !$("#openModal").classList.contains("hidden");
+3891:     if (mission3D?.isActive() && ["w", "a", "s", "d", "shift", "arrowup", "arrowdown", "arrowleft", "arrowright", "e"].includes(key)) {
+3892:       event.preventDefault();
+3893:       getAudioContext();
+3894:     }
+3895: 
+3896:     if (missionResultVisible) {
+3897:       event.preventDefault();
+3898:       if (event.code === "Space" && !event.repeat) finishMissionResult();
+3899:       return;
+3900:     }
+3901: 
+3902:     if (event.key === "Escape") {
+3903:       event.preventDefault();
+3904:       if (modalOpen) closeModal();
+3905:       else if (state?.mission) toast("임무 중에는 초록색 EXIT 웨이포인트로 돌아가야 합니다.");
+3906:       else if (currentPhoneApp) goPhoneHome();
+3907:       return;
+3908:     }
+3909: 
+3910:     if (event.code === "Space" && state?.mission && !modalOpen) {
+3911:       event.preventDefault();
+3912:       return;
+3913:     }
+3914:     const safeActive = modalOpen && Boolean(currentSafeTarget()) && !revealGateBusy;
+3915: 
 3916:     if ((key === "a" || key === "d") && safeActive) {
 3917:       event.preventDefault();
 3918:       if (!event.repeat) safeDialKeyDown(key);
@@ -2303,3 +3848,1105 @@
 3958:   setInterval(updatePhoneClock, 30000);
 3959:   requestAnimationFrame(animationLoop);
 3960: })().catch((error) => toast(error.message));
+
+===== public/bankchase.js =====
+--- lines 1-120 ---
+0001: "use strict";
+0002: 
+0003: (() => {
+0004:   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+0005:   const lerp = (a, b, t) => a + (b - a) * t;
+0006: 
+0007:   function create(options = {}) {
+0008:     const canvas = options.canvas;
+0009:     if (!canvas) throw new Error("BankChaseGame requires a canvas");
+0010:     const ctx = canvas.getContext("2d", { alpha: false });
+0011:     const lootValue = Math.max(0, Number(options.lootValue || 0));
+0012:     const risk = clamp(lootValue / 2500000, 0, 1.6);
+0013:     const chaseTuning = {
+0014:       targetDistance: Math.round(850 + risk * 400),
+0015:       spawnMin: Math.max(0.62, 1.45 - risk * 0.48),
+0016:       spawnRange: Math.max(0.34, 0.66 - risk * 0.16),
+0017:       busChance: clamp(0.06 + risk * 0.10, 0.06, 0.22),
+0018:       rockChance: clamp(0.20 + risk * 0.035, 0.20, 0.255),
+0019:       damageMultiplier: 1 + risk * 0.35,
+0020:     };
+0021:     const targetDistance = Number(options.targetDistance || chaseTuning.targetDistance);
+0022:     const cruiseSpeedKmh = 100;
+0023:     const maxSpeedKmh = 150;
+0024:     const accelerationKmhPerSec = 18;
+0025:     const decelerationKmhPerSec = 22;
+0026: 
+0027:     let active = false;
+0028:     let finished = false;
+0029:     let lastFrame = 0;
+0030:     let raf = 0;
+0031:     let width = 0;
+0032:     let height = 0;
+0033:     let dpr = 1;
+0034:     let lane = 1;
+0035:     let visualLane = 1;
+0036:     let steering = 0;
+0037:     let durability = 100;
+0038:     let distance = 0;
+0039:     let spawnTimer = 0.8;
+0040:     let roadScroll = 0;
+0041:     let shake = 0;
+0042:     let flash = 0;
+0043:     let obstacles = [];
+0044:     let obstacleSerial = 0;
+0045:     let revPulse = 0;
+0046:     let throttleHeld = false;
+0047:     let speedKmh = cruiseSpeedKmh;
+0048: 
+0049:     let audioCtx = options.audioContext || null;
+0050:     let engineOsc = null;
+0051:     let engineHarmonic = null;
+0052:     let engineFilter = null;
+0053:     let engineGain = null;
+0054:     let roadSource = null;
+0055:     let roadFilter = null;
+0056:     let roadGain = null;
+0057:     let audioRunning = false;
+0058: 
+0059:     const laneCenters = [-1, 0, 1];
+0060: 
+0061: 
+0062:     function ensureAudioContext() {
+0063:       if (audioCtx) {
+0064:         if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+0065:         return audioCtx;
+0066:       }
+0067:       const AudioCtor = window.AudioContext || window.webkitAudioContext;
+0068:       if (!AudioCtor) return null;
+0069:       audioCtx = new AudioCtor();
+0070:       if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+0071:       return audioCtx;
+0072:     }
+0073: 
+0074:     function startVehicleAudio() {
+0075:       const ctxAudio = ensureAudioContext();
+0076:       if (!ctxAudio || audioRunning) return;
+0077:       audioRunning = true;
+0078: 
+0079:       const master = ctxAudio.createGain();
+0080:       master.gain.value = 0.92;
+0081:       master.connect(ctxAudio.destination);
+0082: 
+0083:       engineGain = ctxAudio.createGain();
+0084:       engineGain.gain.setValueAtTime(0.0001, ctxAudio.currentTime);
+0085:       engineGain.gain.exponentialRampToValueAtTime(0.046, ctxAudio.currentTime + 0.18);
+0086:       engineFilter = ctxAudio.createBiquadFilter();
+0087:       engineFilter.type = "lowpass";
+0088:       engineFilter.frequency.value = 520;
+0089:       engineFilter.Q.value = 0.8;
+0090:       engineFilter.connect(engineGain).connect(master);
+0091: 
+0092:       engineOsc = ctxAudio.createOscillator();
+0093:       engineOsc.type = "sawtooth";
+0094:       engineOsc.frequency.value = 79;
+0095:       engineOsc.connect(engineFilter);
+0096:       engineOsc.start();
+0097: 
+0098:       engineHarmonic = ctxAudio.createOscillator();
+0099:       engineHarmonic.type = "triangle";
+0100:       engineHarmonic.frequency.value = 158;
+0101:       const harmonicGain = ctxAudio.createGain();
+0102:       harmonicGain.gain.value = 0.33;
+0103:       engineHarmonic.connect(harmonicGain).connect(engineFilter);
+0104:       engineHarmonic.start();
+0105: 
+0106:       const seconds = 2.2;
+0107:       const length = Math.max(1, Math.floor(ctxAudio.sampleRate * seconds));
+0108:       const buffer = ctxAudio.createBuffer(1, length, ctxAudio.sampleRate);
+0109:       const data = buffer.getChannelData(0);
+0110:       let last = 0;
+0111:       for (let i = 0; i < length; i += 1) {
+0112:         const white = Math.random() * 2 - 1;
+0113:         last = last * 0.86 + white * 0.14;
+0114:         data[i] = last * 0.9 + white * 0.1;
+0115:       }
+0116:       roadSource = ctxAudio.createBufferSource();
+0117:       roadSource.buffer = buffer;
+0118:       roadSource.loop = true;
+0119:       roadFilter = ctxAudio.createBiquadFilter();
+0120:       roadFilter.type = "bandpass";
+
+--- lines 175-684 ---
+0175:       const rect = canvas.getBoundingClientRect();
+0176:       dpr = Math.min(2, window.devicePixelRatio || 1);
+0177:       width = Math.max(1, rect.width);
+0178:       height = Math.max(1, rect.height);
+0179:       canvas.width = Math.round(width * dpr);
+0180:       canvas.height = Math.round(height * dpr);
+0181:       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+0182:     }
+0183: 
+0184:     function laneToX(laneValue, yProgress = 1) {
+0185:       const roadHalfNear = width * 0.46;
+0186:       const roadHalfFar = width * 0.08;
+0187:       const roadHalf = lerp(roadHalfFar, roadHalfNear, yProgress);
+0188:       return width / 2 + laneCenters[0] * 0 + laneValue * (roadHalf / 1.55);
+0189:     }
+0190: 
+0191:     function playerScreenX() {
+0192:       // 1인칭이지만 차선 변경이 눈에 보이도록 보닛/대시보드도 실제 차선 중심을 따라 이동시킨다.
+0193:       // 완전히 차선 중심까지 보내면 화면 밖으로 너무 많이 빠지므로 약 78%만 반영한다.
+0194:       const laneX = laneToX(visualLane - 1, 1);
+0195:       return lerp(width / 2, laneX, 0.78);
+0196:     }
+0197: 
+0198:     function obstacleHitPlayer(obstacle) {
+0199:       const playerLane = clamp(Math.round(visualLane), 0, 2);
+0200:       return playerLane >= obstacle.laneStart && playerLane < obstacle.laneStart + obstacle.span;
+0201:     }
+0202: 
+0203:     function spawnObstacle() {
+0204:       const roll = Math.random();
+0205:       let type = "police";
+0206:       let span = 1;
+0207:       let laneStart = Math.floor(Math.random() * 3);
+0208:       let baseDamage = 20;
+0209:       if (roll < chaseTuning.busChance) {
+0210:         type = "bus";
+0211:         span = 2;
+0212:         laneStart = Math.random() < 0.5 ? 0 : 1;
+0213:         baseDamage = 35;
+0214:       } else if (roll < chaseTuning.busChance + chaseTuning.rockChance) {
+0215:         type = "rock";
+0216:         baseDamage = 18;
+0217:       }
+0218:       const damage = Math.round(baseDamage * chaseTuning.damageMultiplier);
+0219:       obstacles.push({
+0220:         id: ++obstacleSerial,
+0221:         type,
+0222:         laneStart,
+0223:         span,
+0224:         damage,
+0225:         depth: 1.04,
+0226:         hit: false,
+0227:       });
+0228:     }
+0229: 
+0230:     function moveLane(direction) {
+0231:       if (!active || finished) return;
+0232:       const next = clamp(lane + direction, 0, 2);
+0233:       if (next === lane) return;
+0234:       lane = next;
+0235:       steering = direction * 1.15;
+0236:       revPulse = Math.max(revPulse, 0.88);
+0237:       ensureAudioContext();
+0238:       options.onLaneChange?.(lane);
+0239:     }
+0240: 
+0241:     function handleKey(event) {
+0242:       if (!active || finished) return false;
+0243:       const key = String(event.key || "").toLowerCase();
+0244:       if ((key === "a" || key === "arrowleft") && !event.repeat) {
+0245:         moveLane(-1);
+0246:         return true;
+0247:       }
+0248:       if ((key === "d" || key === "arrowright") && !event.repeat) {
+0249:         moveLane(1);
+0250:         return true;
+0251:       }
+0252:       if (key === "w" || key === "arrowup") {
+0253:         throttleHeld = true;
+0254:         revPulse = 1;
+0255:         ensureAudioContext();
+0256:         return true;
+0257:       }
+0258:       return ["a", "d", "arrowleft", "arrowright", "s", "arrowdown", "shift", " "].includes(key);
+0259:     }
+0260: 
+0261:     function handleKeyUp(event) {
+0262:       if (!active || finished) return false;
+0263:       const key = String(event.key || "").toLowerCase();
+0264:       if (key === "w" || key === "arrowup") {
+0265:         throttleHeld = false;
+0266:         return true;
+0267:       }
+0268:       return false;
+0269:     }
+0270: 
+0271:     function update(dt) {
+0272:       if (!active || finished) return;
+0273: 
+0274:       const targetSpeed = throttleHeld ? maxSpeedKmh : cruiseSpeedKmh;
+0275:       if (speedKmh < targetSpeed) speedKmh = Math.min(targetSpeed, speedKmh + accelerationKmhPerSec * dt);
+0276:       else if (speedKmh > targetSpeed) speedKmh = Math.max(targetSpeed, speedKmh - decelerationKmhPerSec * dt);
+0277: 
+0278:       const speedMps = speedKmh / 3.6;
+0279:       const speedFactor = speedKmh / 120;
+0280:       distance += speedMps * dt;
+0281:       roadScroll = (roadScroll + dt * 1.45 * speedFactor) % 1;
+0282:       visualLane = lerp(visualLane, lane, 1 - Math.exp(-dt * 7.5));
+0283:       steering = lerp(steering, 0, 1 - Math.exp(-dt * 5));
+0284:       shake = Math.max(0, shake - dt * 2.6);
+0285:       flash = Math.max(0, flash - dt * 3.1);
+0286:       updateVehicleAudio(dt);
+0287: 
+0288:       spawnTimer -= dt;
+0289:       if (spawnTimer <= 0 && distance < targetDistance - 85) {
+0290:         spawnObstacle();
+0291:         // 확보 가치가 높을수록 경찰 대응이 강해져 장애물 간격이 짧아진다.
+0292:         spawnTimer = chaseTuning.spawnMin + Math.random() * chaseTuning.spawnRange;
+0293:       }
+0294: 
+0295:       for (const obstacle of obstacles) {
+0296:         obstacle.depth -= dt * 0.34 * (speedKmh / 120);
+0297:         if (!obstacle.hit && obstacle.depth <= 0.09) {
+0298:           obstacle.hit = true;
+0299:           if (obstacleHitPlayer(obstacle)) {
+0300:             durability = Math.max(0, durability - obstacle.damage);
+0301:             shake = 1;
+0302:             flash = 1;
+0303:             options.onImpact?.({ type: obstacle.type, damage: obstacle.damage, durability });
+0304:             options.onDurability?.(durability);
+0305:             if (durability <= 0) {
+0306:               finish(false);
+0307:               return;
+0308:             }
+0309:           }
+0310:         }
+0311:       }
+0312:       obstacles = obstacles.filter((obstacle) => obstacle.depth > -0.13);
+0313:       options.onDistance?.(distance, targetDistance);
+0314:       if (distance >= targetDistance) finish(true);
+0315:     }
+0316: 
+0317:     function drawBackground() {
+0318:       const sky = ctx.createLinearGradient(0, 0, 0, height * 0.58);
+0319:       sky.addColorStop(0, "#07101b");
+0320:       sky.addColorStop(0.55, "#1c3349");
+0321:       sky.addColorStop(1, "#8d7c70");
+0322:       ctx.fillStyle = sky;
+0323:       ctx.fillRect(0, 0, width, height);
+0324: 
+0325:       const horizon = height * 0.27;
+0326:       ctx.fillStyle = "#101720";
+0327:       for (let i = 0; i < 18; i += 1) {
+0328:         const bw = width / 18 + 6;
+0329:         const bx = i * width / 18 - 4;
+0330:         const bh = 22 + ((i * 47) % 70);
+0331:         ctx.fillRect(bx, horizon - bh, bw, bh);
+0332:         ctx.fillStyle = i % 3 === 0 ? "#d4c37b" : "#344a5d";
+0333:         for (let wy = horizon - bh + 9; wy < horizon - 6; wy += 13) {
+0334:           for (let wx = bx + 7; wx < bx + bw - 5; wx += 12) ctx.fillRect(wx, wy, 3, 4);
+0335:         }
+0336:         ctx.fillStyle = "#101720";
+0337:       }
+0338: 
+0339:       const roadLeftNear = width * 0.04;
+0340:       const roadRightNear = width * 0.96;
+0341:       const roadLeftFar = width * 0.44;
+0342:       const roadRightFar = width * 0.56;
+0343:       ctx.beginPath();
+0344:       ctx.moveTo(roadLeftFar, horizon);
+0345:       ctx.lineTo(roadRightFar, horizon);
+0346:       ctx.lineTo(roadRightNear, height);
+0347:       ctx.lineTo(roadLeftNear, height);
+0348:       ctx.closePath();
+0349:       const road = ctx.createLinearGradient(0, horizon, 0, height);
+0350:       road.addColorStop(0, "#30343a");
+0351:       road.addColorStop(1, "#171a1f");
+0352:       ctx.fillStyle = road;
+0353:       ctx.fill();
+0354: 
+0355:       ctx.strokeStyle = "rgba(236,240,244,.82)";
+0356:       ctx.lineWidth = 2;
+0357:       ctx.beginPath();
+0358:       ctx.moveTo(roadLeftFar, horizon);
+0359:       ctx.lineTo(roadLeftNear, height);
+0360:       ctx.moveTo(roadRightFar, horizon);
+0361:       ctx.lineTo(roadRightNear, height);
+0362:       ctx.stroke();
+0363: 
+0364:       for (const laneDivider of [-0.5, 0.5]) {
+0365:         for (let i = 0; i < 11; i += 1) {
+0366:           const t0 = ((i / 11 + roadScroll) % 1);
+0367:           const t1 = Math.min(1, t0 + 0.055 + t0 * 0.045);
+0368:           if (t0 > 0.92) continue;
+0369:           const y0 = horizon + Math.pow(t0, 1.7) * (height - horizon);
+0370:           const y1 = horizon + Math.pow(t1, 1.7) * (height - horizon);
+0371:           const x0 = laneToX(laneDivider, t0);
+0372:           const x1 = laneToX(laneDivider, t1);
+0373:           ctx.strokeStyle = "rgba(238,238,226,.78)";
+0374:           ctx.lineWidth = 1 + t0 * 5;
+0375:           ctx.beginPath();
+0376:           ctx.moveTo(x0, y0);
+0377:           ctx.lineTo(x1, y1);
+0378:           ctx.stroke();
+0379:         }
+0380:       }
+0381: 
+0382:       ctx.fillStyle = "#20252b";
+0383:       ctx.beginPath();
+0384:       ctx.moveTo(0, horizon + 20);
+0385:       ctx.lineTo(roadLeftFar, horizon);
+0386:       ctx.lineTo(roadLeftNear, height);
+0387:       ctx.lineTo(0, height);
+0388:       ctx.closePath();
+0389:       ctx.fill();
+0390:       ctx.beginPath();
+0391:       ctx.moveTo(width, horizon + 20);
+0392:       ctx.lineTo(roadRightFar, horizon);
+0393:       ctx.lineTo(roadRightNear, height);
+0394:       ctx.lineTo(width, height);
+0395:       ctx.closePath();
+0396:       ctx.fill();
+0397:     }
+0398: 
+0399:     function obstacleGeometry(obstacle) {
+0400:       const p = clamp(1 - obstacle.depth, 0, 1.08);
+0401:       const y = height * 0.27 + Math.pow(p, 1.72) * (height * 0.7);
+0402:       const centerLane = obstacle.laneStart + (obstacle.span - 1) / 2 - 1;
+0403:       const x = laneToX(centerLane, p);
+0404:       const laneWidth = lerp(width * 0.04, width * 0.29, p);
+0405:       const w = laneWidth * obstacle.span * (obstacle.type === "bus" ? 0.92 : 0.62);
+0406:       const h = w * (obstacle.type === "bus" ? 1.02 : obstacle.type === "rock" ? 0.55 : 0.68);
+0407:       return { p, x, y, w, h };
+0408:     }
+0409: 
+0410:     function drawPolice(obstacle, g) {
+0411:       const { x, y, w, h, p } = g;
+0412:       ctx.save();
+0413:       ctx.translate(x, y);
+0414:       ctx.globalAlpha = clamp(0.25 + p * 1.1, 0, 1);
+0415:       ctx.fillStyle = "rgba(0,0,0,.36)";
+0416:       ctx.beginPath();
+0417:       ctx.ellipse(0, h * 0.08, w * 0.58, h * 0.16, 0, 0, Math.PI * 2);
+0418:       ctx.fill();
+0419:       ctx.fillStyle = "#e8edf1";
+0420:       ctx.fillRect(-w * 0.46, -h * 0.55, w * 0.92, h * 0.55);
+0421:       ctx.fillStyle = "#172433";
+0422:       ctx.fillRect(-w * 0.34, -h * 0.75, w * 0.68, h * 0.28);
+0423:       ctx.fillStyle = "#2b6ca3";
+0424:       ctx.fillRect(-w * 0.46, -h * 0.2, w * 0.92, h * 0.16);
+0425:       ctx.fillStyle = "#f33750";
+0426:       ctx.fillRect(-w * 0.23, -h * 0.87, w * 0.18, h * 0.08);
+0427:       ctx.fillStyle = "#3a8fff";
+0428:       ctx.fillRect(w * 0.05, -h * 0.87, w * 0.18, h * 0.08);
+0429:       ctx.fillStyle = "#14191e";
+0430:       ctx.fillRect(-w * 0.38, -h * 0.04, w * 0.18, h * 0.13);
+0431:       ctx.fillRect(w * 0.20, -h * 0.04, w * 0.18, h * 0.13);
+0432:       ctx.restore();
+0433:     }
+0434: 
+0435:     function drawRock(obstacle, g) {
+0436:       const { x, y, w, h, p } = g;
+0437:       ctx.save();
+0438:       ctx.translate(x, y);
+0439:       ctx.globalAlpha = clamp(0.28 + p * 1.08, 0, 1);
+0440:       ctx.fillStyle = "rgba(0,0,0,.38)";
+0441:       ctx.beginPath();
+0442:       ctx.ellipse(0, h * 0.08, w * 0.58, h * 0.18, 0, 0, Math.PI * 2);
+0443:       ctx.fill();
+0444:       ctx.fillStyle = "#6f645a";
+0445:       ctx.strokeStyle = "#3b3632";
+0446:       ctx.lineWidth = Math.max(1, w * 0.035);
+0447:       ctx.beginPath();
+0448:       ctx.moveTo(-w * 0.5, 0);
+0449:       ctx.lineTo(-w * 0.34, -h * 0.62);
+0450:       ctx.lineTo(-w * 0.08, -h * 0.92);
+0451:       ctx.lineTo(w * 0.24, -h * 0.76);
+0452:       ctx.lineTo(w * 0.48, -h * 0.32);
+0453:       ctx.lineTo(w * 0.42, 0);
+0454:       ctx.closePath();
+0455:       ctx.fill();
+0456:       ctx.stroke();
+0457:       ctx.restore();
+0458:     }
+0459: 
+0460:     function drawBus(obstacle, g) {
+0461:       const { x, y, w, h, p } = g;
+0462:       ctx.save();
+0463:       ctx.translate(x, y);
+0464:       ctx.globalAlpha = clamp(0.22 + p * 1.12, 0, 1);
+0465:       ctx.fillStyle = "rgba(0,0,0,.4)";
+0466:       ctx.beginPath();
+0467:       ctx.ellipse(0, h * 0.05, w * 0.55, h * 0.12, 0, 0, Math.PI * 2);
+0468:       ctx.fill();
+0469:       const grad = ctx.createLinearGradient(0, -h, 0, 0);
+0470:       grad.addColorStop(0, "#d8d2c6");
+0471:       grad.addColorStop(1, "#8e9293");
+0472:       ctx.fillStyle = grad;
+0473:       ctx.fillRect(-w * 0.49, -h * 0.94, w * 0.98, h * 0.94);
+0474:       ctx.fillStyle = "#172733";
+0475:       ctx.fillRect(-w * 0.42, -h * 0.82, w * 0.84, h * 0.3);
+0476:       ctx.fillStyle = "#b9343f";
+0477:       ctx.fillRect(-w * 0.49, -h * 0.22, w * 0.98, h * 0.12);
+0478:       ctx.fillStyle = "#101418";
+0479:       ctx.fillRect(-w * 0.40, -h * 0.08, w * 0.2, h * 0.11);
+0480:       ctx.fillRect(w * 0.20, -h * 0.08, w * 0.2, h * 0.11);
+0481:       ctx.restore();
+0482:     }
+0483: 
+0484:     function drawObstacles() {
+0485:       const ordered = [...obstacles].sort((a, b) => b.depth - a.depth);
+0486:       for (const obstacle of ordered) {
+0487:         const g = obstacleGeometry(obstacle);
+0488:         if (obstacle.type === "police") drawPolice(obstacle, g);
+0489:         else if (obstacle.type === "rock") drawRock(obstacle, g);
+0490:         else drawBus(obstacle, g);
+0491:       }
+0492:     }
+0493: 
+0494:     function drawCockpit() {
+0495:       const bikeCenterX = playerScreenX();
+0496:       const laneDelta = visualLane - lane;
+0497:       const bodyLean = clamp(laneDelta * 0.065, -0.06, 0.06);
+0498:       const forkTopY = height * 0.79;
+0499:       const forkBottomY = height * 0.99;
+0500:       const barY = height * 0.885;
+0501:       const barHalf = width * 0.17;
+0502:       const handleTurn = steering * 0.45;
+0503: 
+0504:       ctx.save();
+0505:       ctx.translate(bikeCenterX, 0);
+0506:       ctx.rotate(bodyLean);
+0507: 
+0508:       ctx.strokeStyle = "#858f99";
+0509:       ctx.lineWidth = Math.max(3, width * 0.004);
+0510:       ctx.beginPath();
+0511:       ctx.moveTo(-width * 0.018, forkTopY);
+0512:       ctx.lineTo(-width * 0.02, forkBottomY);
+0513:       ctx.moveTo(width * 0.018, forkTopY);
+0514:       ctx.lineTo(width * 0.02, forkBottomY);
+0515:       ctx.stroke();
+0516: 
+0517:       ctx.save();
+0518:       ctx.translate(0, barY);
+0519:       ctx.rotate(handleTurn);
+0520:       ctx.strokeStyle = "#14181d";
+0521:       ctx.lineWidth = Math.max(6, width * 0.0068);
+0522:       ctx.lineCap = "round";
+0523:       ctx.beginPath();
+0524:       ctx.moveTo(-barHalf, 0);
+0525:       ctx.quadraticCurveTo(0, -height * 0.02, barHalf, 0);
+0526:       ctx.stroke();
+0527:       ctx.fillStyle = "#090c0f";
+0528:       ctx.fillRect(-barHalf - width * 0.017, -height * 0.012, width * 0.034, height * 0.052);
+0529:       ctx.fillRect(barHalf - width * 0.017, -height * 0.012, width * 0.034, height * 0.052);
+0530:       ctx.strokeStyle = "#8794a1";
+0531:       ctx.lineWidth = Math.max(2, width * 0.0027);
+0532:       ctx.beginPath();
+0533:       ctx.moveTo(-barHalf * 0.8, -5); ctx.lineTo(-barHalf * 1.05, -height * 0.065);
+0534:       ctx.moveTo(barHalf * 0.8, -5); ctx.lineTo(barHalf * 1.05, -height * 0.065);
+0535:       ctx.stroke();
+0536:       ctx.fillStyle = "rgba(196,226,244,.13)";
+0537:       ctx.beginPath();
+0538:       ctx.ellipse(-barHalf * 1.08, -height * 0.071, width * 0.029, height * 0.024, -0.18, 0, Math.PI * 2);
+0539:       ctx.ellipse(barHalf * 1.08, -height * 0.071, width * 0.029, height * 0.024, 0.18, 0, Math.PI * 2);
+0540:       ctx.fill();
+0541:       ctx.restore();
+0542: 
+0543:       // 원형 디지털 계기판 — 사용자가 보여준 계기판의 구성감을 반영하되 게임용으로 단순화.
+0544:       const gaugeX = 0;
+0545:       const gaugeY = height * 0.815;
+0546:       const gaugeR = Math.min(width, height) * 0.105;
+0547:       ctx.save();
+0548:       ctx.translate(gaugeX, gaugeY);
+0549:       ctx.fillStyle = "#05080b";
+0550:       ctx.beginPath(); ctx.arc(0, 0, gaugeR * 1.12, 0, Math.PI * 2); ctx.fill();
+0551:       ctx.strokeStyle = "#252c32";
+0552:       ctx.lineWidth = gaugeR * 0.11;
+0553:       ctx.stroke();
+0554:       const glass = ctx.createRadialGradient(-gaugeR*.2,-gaugeR*.35,gaugeR*.08,0,0,gaugeR);
+0555:       glass.addColorStop(0,"#142229"); glass.addColorStop(.55,"#071015"); glass.addColorStop(1,"#020507");
+0556:       ctx.fillStyle = glass;
+0557:       ctx.beginPath(); ctx.arc(0,0,gaugeR*.94,0,Math.PI*2); ctx.fill();
+0558: 
+0559:       const arcStart = Math.PI * 0.84;
+0560:       const arcEnd = Math.PI * 2.16;
+0561:       const segments = 16;
+0562:       for (let i=0;i<segments;i+=1) {
+0563:         const t=i/(segments-1);
+0564:         const a=lerp(arcStart,arcEnd,t);
+0565:         ctx.strokeStyle = i < 12 ? "#8ff7f5" : "#f13b43";
+0566:         ctx.lineWidth = gaugeR * .075;
+0567:         ctx.beginPath();
+0568:         ctx.arc(0,0,gaugeR*.76,a,a+(arcEnd-arcStart)/segments*.62);
+0569:         ctx.stroke();
+0570:       }
+0571: 
+0572:       ctx.textAlign="center";
+0573:       ctx.fillStyle="#cbd8de";
+0574:       ctx.font=`800 ${Math.max(8,gaugeR*.12)}px Segoe UI, sans-serif`;
+0575:       ctx.fillText("남은 거리",0,-gaugeR*.46);
+0576:       ctx.fillStyle="#f4fbff";
+0577:       ctx.font=`900 ${Math.max(11,gaugeR*.17)}px Consolas, monospace`;
+0578:       const remainingMeters = Math.max(0, Math.ceil(targetDistance - distance));
+0579:       ctx.fillText(`${remainingMeters.toLocaleString("ko-KR")} m`,0,-gaugeR*.27);
+0580:       ctx.strokeStyle="#7ef2ef";
+0581:       ctx.lineWidth=Math.max(1,gaugeR*.015);
+0582:       ctx.beginPath();ctx.moveTo(-gaugeR*.62,-gaugeR*.12);ctx.lineTo(gaugeR*.62,-gaugeR*.12);ctx.stroke();
+0583: 
+0584:       ctx.fillStyle="#f4f7ff";
+0585:       ctx.font=`900 ${Math.max(24,gaugeR*.48)}px Consolas, monospace`;
+0586:       ctx.fillText(String(Math.round(speedKmh)),0,gaugeR*.28);
+0587:       ctx.fillStyle="#d5e6eb";
+0588:       ctx.font=`800 ${Math.max(9,gaugeR*.13)}px Segoe UI, sans-serif`;
+0589:       ctx.fillText("km/h",gaugeR*.44,gaugeR*.35);
+0590:       ctx.strokeStyle="#7ef2ef";
+0591:       ctx.beginPath();ctx.moveTo(-gaugeR*.62,gaugeR*.43);ctx.lineTo(gaugeR*.62,gaugeR*.43);ctx.stroke();
+0592: 
+0593:       ctx.fillStyle=throttleHeld?"#ffbd55":"#75f28c";
+0594:       ctx.font=`900 ${Math.max(8,gaugeR*.11)}px Segoe UI, sans-serif`;
+0595:       ctx.textAlign="left";ctx.fillText(throttleHeld?"BOOST":"RUN",-gaugeR*.56,gaugeR*.66);
+0596:       ctx.fillStyle="#bdcbd1";ctx.textAlign="center";ctx.fillText("6",0,gaugeR*.66);
+0597:       ctx.fillStyle="#ff5962";ctx.textAlign="right";ctx.fillText("ABS",gaugeR*.56,gaugeR*.66);
+0598:       ctx.restore();
+0599: 
+0600:       ctx.strokeStyle = "rgba(122,221,255,.2)";
+0601:       ctx.lineWidth = Math.max(1, width * 0.0015);
+0602:       ctx.beginPath(); ctx.moveTo(0, forkTopY + 5); ctx.lineTo(0, height); ctx.stroke();
+0603:       ctx.restore();
+0604:     }
+0605: 
+0606:     function draw() {
+0607:       ctx.save();
+0608:       if (shake > 0) ctx.translate((Math.random() - 0.5) * shake * 18, (Math.random() - 0.5) * shake * 10);
+0609:       drawBackground();
+0610:       drawObstacles();
+0611:       drawCockpit();
+0612:       ctx.restore();
+0613:       if (flash > 0) {
+0614:         ctx.fillStyle = `rgba(255,65,72,${flash * 0.24})`;
+0615:         ctx.fillRect(0, 0, width, height);
+0616:       }
+0617:     }
+0618: 
+0619:     function frame(now) {
+0620:       if (!active) return;
+0621:       if (!lastFrame) lastFrame = now;
+0622:       const dt = Math.min(0.05, Math.max(0, (now - lastFrame) / 1000));
+0623:       lastFrame = now;
+0624:       update(dt);
+0625:       draw();
+0626:       if (active) raf = requestAnimationFrame(frame);
+0627:     }
+0628: 
+0629:     function finish(success) {
+0630:       if (finished) return;
+0631:       finished = true;
+0632:       active = false;
+0633:       cancelAnimationFrame(raf);
+0634:       stopVehicleAudio();
+0635:       options.onFinish?.({ success: Boolean(success), durability, distance: Math.min(distance, targetDistance), targetDistance });
+0636:     }
+0637: 
+0638:     function start() {
+0639:       cancelAnimationFrame(raf);
+0640:       active = true;
+0641:       finished = false;
+0642:       lastFrame = 0;
+0643:       lane = 1;
+0644:       visualLane = 1;
+0645:       steering = 0;
+0646:       durability = 100;
+0647:       distance = 0;
+0648:       spawnTimer = chaseTuning.spawnMin + 0.2;
+0649:       roadScroll = 0;
+0650:       shake = 0;
+0651:       flash = 0;
+0652:       obstacles = [];
+0653:       revPulse = 0;
+0654:       throttleHeld = false;
+0655:       speedKmh = cruiseSpeedKmh;
+0656:       resize();
+0657:       startVehicleAudio();
+0658:       options.onDurability?.(durability);
+0659:       options.onDistance?.(distance, targetDistance);
+0660:       raf = requestAnimationFrame(frame);
+0661:     }
+0662: 
+0663:     function stop() {
+0664:       active = false;
+0665:       throttleHeld = false;
+0666:       cancelAnimationFrame(raf);
+0667:       stopVehicleAudio();
+0668:     }
+0669: 
+0670:     return {
+0671:       start,
+0672:       stop,
+0673:       resize,
+0674:       handleKey,
+0675:       handleKeyUp,
+0676:       moveLeft: () => moveLane(-1),
+0677:       moveRight: () => moveLane(1),
+0678:       isActive: () => active,
+0679:       getState: () => ({ durability, distance, targetDistance, lane, speedKmh, cruiseSpeedKmh, maxSpeedKmh, throttleHeld, lootValue, risk, chaseTuning: { ...chaseTuning } }),
+0680:     };
+0681:   }
+0682: 
+0683:   window.BankChaseGame = { create };
+0684: })();
+
+===== public/index.html =====
+--- lines 142-250 ---
+0142:           <article id="cartCard" class="shop-card cart-card"><div class="gear-icon">🎒</div><div><h2>백팩</h2><p>파밍지에서 상자를 더 많이 운반할 수 있습니다. 보유 시 모든 일반 임무의 최대 회수량이 3칸 증가합니다.</p><strong>₩300,000 · 추가 슬롯 +3</strong><span id="cartState" class="gear-state">미보유</span></div><button id="buyCart" class="primary">구매</button></article>
+0143:           <article id="qualityManagerCard" class="shop-card quality-manager-card"><div class="gear-icon">⚙️</div><div><h2>품질 자동 관리기</h2><p>보유 중에는 물건 가치가 하락하지 않습니다. 대신 매일 전기세가 자동으로 발생합니다.</p><strong>구매가 ₩1,500,000 · 전기세 하루 ₩100,000</strong><span id="qualityManagerState" class="gear-state">미보유</span></div><button id="buyQualityManager" class="primary">구매</button></article>
+0144:         </div>
+0145:         <p class="prototype-note">SD 플리마켓 PC 확장팩은 공식 배포 기준 SD 물류회사 S등급에서 해금됩니다.</p>
+0146:         <button id="devReset" class="ghost hidden">개발 데이터 초기화</button>
+0147:       </section>
+0148: 
+0149:       <section id="itemsPanel" class="panel">
+0150:         <div class="panel-heading item-vault-heading"><div><p class="eyebrow">ITEM VAULT</p><h1>물건 보관함</h1><p>보관 시간이 지나면 물건의 현재 가치가 떨어집니다. 품질 자동 관리기를 보유하면 가치 하락을 막을 수 있습니다.</p><div id="itemProtectionStatus" class="protection-status">자동 관리기 상태 확인 중...</div></div><div class="online-sync-box"><button id="refreshInventory" class="ghost sync-refresh-button" type="button">온라인 물품 새로고침</button><small id="onlineInventoryStatus">SD Link 동기화 상태 확인 중...</small></div></div>
+0151:         <div id="itemList" class="card-grid"></div>
+0152:         <div id="itemEmpty" class="empty">아직 획득한 물건이 없습니다.</div>
+0153:       </section>
+0154:     </main>
+0155:   </section>
+0156: 
+0157:   <div id="travelLoading" class="travel-loading hidden" aria-live="polite">
+0158:     <div class="travel-loading-card"><div class="loading-ring"></div><strong id="travelLoadingTitle">이동 중</strong><span id="travelLoadingSub">목적지 정보를 불러오는 중...</span></div>
+0159:   </div>
+0160: 
+0161:   <div id="missionEntry" class="mission-entry hidden" aria-hidden="true">
+0162:     <div id="entryBackdrop" class="entry-backdrop">
+0163:       <div class="entry-door entry-door-left"></div><div class="entry-door entry-door-right"></div>
+0164:       <div id="entryCaption" class="entry-caption"></div>
+0165:     </div>
+0166:   </div>
+0167: 
+0168: 
+0169:   <div id="bankChase" class="bank-chase hidden" aria-live="polite">
+0170:     <canvas id="bankChaseCanvas" class="bank-chase-canvas" aria-label="은행 오토바이 추격전"></canvas>
+0171:     <div class="bank-chase-top">
+0172:       <div class="bank-chase-badge"><span>오토바이 추격전</span><strong>100 → W → 150 KM/H</strong></div>
+0173:       <div class="bank-chase-status">
+0174:         <span>오토바이 내구도</span>
+0175:         <div class="bank-chase-durability"><i id="bankChaseDurabilityBar"></i></div>
+0176:         <strong id="bankChaseDurability">100%</strong>
+0177:       </div>
+0178:       <div class="bank-chase-distance"><span>도주 거리</span><strong id="bankChaseDistance">0 / 1,000m</strong></div>
+0179:     </div>
+0180:     <div class="bank-chase-bottom">
+0181:       <div class="bank-chase-loot"><span>현재 습격 확보 가치</span><strong id="bankChaseLootValue">₩0</strong><small id="bankChaseDifficulty">추격 강도 · 보통</small><small>오토바이 내구도가 0이 되면 이번 은행 습격 물품을 전부 잃습니다.</small></div>
+0182:       <div class="bank-chase-guide"><b>A / ←</b><span>왼쪽 차선</span><b>W / ↑</b><span>가속 · 최대 150</span><b>D / →</b><span>오른쪽 차선</span></div>
+0183:     </div>
+0184:     <div id="bankChaseImpact" class="bank-chase-impact hidden">충돌!</div>
+0185:     <div id="bankChaseResult" class="bank-chase-result hidden">
+0186:       <div class="bank-chase-result-card">
+0187:         <p class="eyebrow">ESCAPE RESULT</p>
+0188:         <h2 id="bankChaseResultTitle">도주 성공</h2>
+0189:         <p id="bankChaseResultText">추격을 따돌렸습니다.</p>
+0190:         <strong id="bankChaseResultValue">₩0</strong>
+0191:         <button id="bankChaseReturn" class="primary">휴대폰으로 복귀</button>
+0192:       </div>
+0193:     </div>
+0194:   </div>
+0195: 
+0196:   <div id="missionResult" class="mission-result hidden" role="dialog" aria-modal="true" aria-live="polite">
+0197:     <div class="mission-result-card">
+0198:       <div class="mission-result-head">
+0199:         <p class="eyebrow">MISSION COMPLETE</p>
+0200:         <h2 id="missionResultTitle">파밍 완료</h2>
+0201:         <p id="missionResultSub">이번 임무에서 획득한 상자입니다.</p>
+0202:       </div>
+0203:       <div id="missionResultLoot" class="mission-result-loot"></div>
+0204:       <div class="mission-result-footer">
+0205:         <div class="mission-result-actions">
+0206:           <button id="missionResultReturn" class="primary mission-result-return">휴대폰으로 복귀</button>
+0207:           <button id="missionResultContinuePrep" class="ghost hidden">준비작업 창으로</button>
+0208:         </div>
+0209:         <span id="missionResultHint">SPACE 또는 화면 클릭</span>
+0210:       </div>
+0211:     </div>
+0212:   </div>
+0213: 
+0214:   <div id="bankUvModal" class="bank-uv-modal hidden" role="dialog" aria-modal="true">
+0215:     <div class="bank-uv-card">
+0216:       <div class="bank-uv-head">
+0217:         <div><p class="eyebrow">UV ACCESS</p><h2>은행 출입문 비밀번호 확인</h2><p>UV 라이트를 움직여 문에 남은 숫자 흔적 4개를 직접 찾으세요.</p></div>
+0218:         <button id="bankUvClose" class="modal-close" type="button">×</button>
+0219:       </div>
+0220:       <div id="bankUvSurface" class="bank-uv-surface">
+0221:         <div class="bank-door-seam"></div>
+0222:         <div class="bank-keypad"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+0223:         <div id="bankUvBeam" class="bank-uv-beam"></div>
+0224:         <div id="bankUvTraces" class="bank-uv-traces"></div>
+0225:       </div>
+0226:       <div class="bank-uv-code-row">
+0227:         <span>발견한 비밀번호</span>
+0228:         <div id="bankUvDigits" class="bank-uv-digits"><b>?</b><b>?</b><b>?</b><b>?</b></div>
+0229:       </div>
+0230:       <div class="bank-uv-controls">
+0231:         <span><kbd>A</kbd>/<kbd>D</kbd> 또는 마우스로 UV 이동</span>
+0232:         <input id="bankUvCodeInput" type="text" inputmode="numeric" maxlength="4" placeholder="4자리 입력" autocomplete="off">
+0233:         <button id="bankUvConfirm" class="primary" type="button" disabled>비밀번호 입력 · 문 열기</button>
+0234:       </div>
+0235:       <div id="bankUvStatus" class="bank-uv-status">UV 빛으로 문 표면을 천천히 훑어보세요.</div>
+0236:     </div>
+0237:   </div>
+0238: 
+0239:   <div id="openModal" class="modal hidden" role="dialog" aria-modal="true">
+0240:     <div class="modal-card">
+0241:       <button id="closeModal" class="modal-close">×</button>
+0242:       <div id="openStage"></div>
+0243:     </div>
+0244:   </div>
+0245:   <div id="toast" class="toast"></div>
+0246:   <script src="./mission3d.js?v=0.5.9" defer></script>
+0247:   <script src="./bankchase.js?v=0.5.9" defer></script>
+0248:   <script src="./app.js?v=0.5.9" defer></script>
+0249: </body>
+0250: </html>
+
+===== public/mission3d.js =====
+--- lines 9-360 ---
+0009:     let angle = value % TAU;
+0010:     if (angle < -Math.PI) angle += TAU;
+0011:     if (angle > Math.PI) angle -= TAU;
+0012:     return angle;
+0013:   }
+0014:   function makeGrid(width, height) {
+0015:     const grid = Array.from({ length: height }, () => Array(width).fill(0));
+0016:     for (let x = 0; x < width; x += 1) { grid[0][x] = 1; grid[height - 1][x] = 1; }
+0017:     for (let y = 0; y < height; y += 1) { grid[y][0] = 1; grid[y][width - 1] = 1; }
+0018:     return grid;
+0019:   }
+0020:   function rect(grid, x, y, w, h, value) {
+0021:     for (let yy = y; yy < y + h; yy += 1) {
+0022:       for (let xx = x; xx < x + w; xx += 1) {
+0023:         if (grid[yy] && typeof grid[yy][xx] !== "undefined") grid[yy][xx] = value;
+0024:       }
+0025:     }
+0026:   }
+0027: 
+0028:   function buildAlley() {
+0029:     const grid = makeGrid(15, 36);
+0030:     rect(grid, 1, 1, 4, 34, 1);
+0031:     rect(grid, 10, 1, 4, 34, 1);
+0032:     grid[35][7] = 9;
+0033:     return {
+0034:       grid,
+0035:       start: { x: 7.5, y: 33.4, angle: -Math.PI / 2 },
+0036:       exit: { x: 7.5, y: 34.45 },
+0037:       safeSpawns: [],
+0038:       spawns: [
+0039:         [5.35, 30.0], [9.65, 26.0], [5.35, 22.0], [9.65, 18.0],
+0040:         [5.35, 14.0], [9.65, 10.0], [5.35, 6.0], [9.65, 3.4],
+0041:       ],
+0042:       props: [],
+0043:       theme: {
+0044:         skyTop: "#070a10", skyBottom: "#17212c", floorTop: "#34383d", floorBottom: "#202327",
+0045:         wall: ["#262c33", "#333b43", "#315363", "#584050"], fog: "#080b0f", accent: "#4bdcff",
+0046:         floorType: "asphalt", label: "STRAIGHT STREET"
+0047:       }
+0048:     };
+0049:   }
+0050: 
+0051:   function buildStore() {
+0052:     const grid = makeGrid(30, 22);
+0053:     rect(grid, 3, 3, 6, 2, 2); rect(grid, 3, 8, 6, 2, 2);
+0054:     rect(grid, 21, 3, 6, 2, 2); rect(grid, 21, 8, 6, 2, 2);
+0055:     rect(grid, 11, 4, 3, 2, 3); rect(grid, 16, 4, 3, 2, 3);
+0056:     rect(grid, 11, 10, 3, 2, 3); rect(grid, 16, 10, 3, 2, 3);
+0057:     rect(grid, 1, 14, 28, 2, 3);
+0058:     grid[14][14] = 7; grid[14][15] = 7; grid[15][14] = 7; grid[15][15] = 7;
+0059:     grid[21][14] = 9; grid[21][15] = 9;
+0060:     return {
+0061:       grid,
+0062:       start: { x: 15, y: 18.7, angle: -Math.PI / 2 },
+0063:       exit: { x: 15, y: 20.35 },
+0064:       storeDoorCells: [[14,14],[15,14],[14,15],[15,15]],
+0065:       storeDoorPoint: { x: 15, y: 16.35 },
+0066:       safeSpawns: [[10.0, 11.9], [20.0, 11.9], [15.0, 2.7]],
+0067:       spawns: [
+0068:         [11.75, 17.35], [15.0, 16.45],
+0069:         [9.65, 12.75], [20.35, 12.75], [9.65, 9.95], [20.35, 9.95],
+0070:         [9.65, 6.55], [20.35, 6.55], [10.35, 2.65], [19.65, 2.65],
+0071:       ],
+0072:       props: [
+0073:         { x: 8.7, y: 17.9, type: "plant", scale: .72 },
+0074:         { x: 21.3, y: 17.9, type: "plant", scale: .72 },
+0075:       ],
+0076:       theme: {
+0077:         skyTop: "#24231e", skyBottom: "#4a483e", floorTop: "#b0aca2", floorBottom: "#77746e",
+0078:         wall: ["#6d6659", "#7a705f", "#556367", "#806d4e"], fog: "#1a1813", accent: "#f1cc78",
+0079:         floorType: "concrete", label: "COMMERCIAL ARCADE"
+0080:       }
+0081:     };
+0082:   }
+0083: 
+0084:   function buildLogistics() {
+0085:     const grid = makeGrid(30, 20);
+0086:     rect(grid, 3, 3, 3, 6, 2); rect(grid, 3, 12, 3, 5, 2);
+0087:     rect(grid, 10, 3, 3, 6, 2); rect(grid, 10, 12, 3, 5, 2);
+0088:     rect(grid, 17, 3, 3, 6, 3); rect(grid, 17, 12, 3, 5, 3);
+0089:     rect(grid, 24, 3, 3, 6, 3); rect(grid, 24, 12, 3, 5, 3);
+0090:     grid[19][14] = 9; grid[19][15] = 9;
+0091:     return {
+0092:       grid,
+0093:       start: { x: 15, y: 17, angle: -Math.PI / 2 },
+0094:       exit: { x: 15, y: 18.4 },
+0095:       safeSpawns: [],
+0096:       spawns: [
+0097:         [2.2, 4.6], [2.2, 14.5], [9.2, 4.6], [9.2, 14.5],
+0098:         [16.2, 4.6], [16.2, 14.5], [23.2, 4.6], [23.2, 14.5],
+0099:         [5.9, 9.6], [12.9, 9.6], [19.9, 9.6], [26.8, 9.6],
+0100:       ],
+0101:       props: [],
+0102:       theme: {
+0103:         skyTop: "#141c1f", skyBottom: "#334247", floorTop: "#5b6466", floorBottom: "#363e40",
+0104:         wall: ["#4e5d61", "#697a7e", "#776548", "#456e76"], fog: "#0c1113", accent: "#7ce6ff",
+0105:         floorType: "warehouse", label: "LOGISTICS HUB"
+0106:       }
+0107:     };
+0108:   }
+0109: 
+0110:   function buildBankPrep() {
+0111:     const grid = makeGrid(28, 19);
+0112:     rect(grid, 3, 3, 5, 4, 2); rect(grid, 3, 12, 5, 4, 2);
+0113:     rect(grid, 20, 3, 5, 4, 2); rect(grid, 20, 12, 5, 4, 2);
+0114:     rect(grid, 11, 3, 6, 2, 3); rect(grid, 11, 14, 6, 2, 3);
+0115:     grid[18][13] = 9; grid[18][14] = 9;
+0116:     return {
+0117:       grid,
+0118:       start: { x: 14, y: 16.65, angle: -Math.PI / 2 },
+0119:       exit: { x: 14, y: 17.45 },
+0120:       safeSpawns: [],
+0121:       spawns: [
+0122:         [8.65, 6.6], [8.65, 12.35], [19.35, 6.6], [19.35, 12.35], [10.35, 5.45], [17.65, 13.55],
+0123:       ],
+0124:       props: [
+0125:         { x: 8.9, y: 6.8, type: "chair", scale: .82 }, { x: 8.9, y: 12.1, type: "chair", scale: .82 },
+0126:         { x: 19.1, y: 6.8, type: "chair", scale: .82 }, { x: 19.1, y: 12.1, type: "chair", scale: .82 },
+0127:         { x: 10.0, y: 4.6, type: "table", scale: .95 }, { x: 18.0, y: 4.6, type: "table", scale: .95 },
+0128:         { x: 7.0, y: 9.5, type: "plant", scale: .9 }, { x: 21.0, y: 9.5, type: "plant", scale: .9 },
+0129:         { x: 14.0, y: 2.65, type: "sign", scale: .85 },
+0130:       ],
+0131:       theme: {
+0132:         skyTop: "#171b20", skyBottom: "#323948", floorTop: "#b8bec5", floorBottom: "#7d8790",
+0133:         wall: ["#8b9299", "#c5c9ce", "#69707a", "#bbb299"], fog: "#0f1316", accent: "#9ad8ff",
+0134:         floorType: "concrete", label: "BANK PREP OFFICE"
+0135:       }
+0136:     };
+0137:   }
+0138: 
+0139:   function buildBank() {
+0140:     const grid = makeGrid(30, 20);
+0141:     rect(grid, 2, 3, 6, 4, 2); rect(grid, 22, 3, 6, 4, 2);
+0142:     rect(grid, 2, 11, 6, 5, 2); rect(grid, 22, 11, 6, 5, 2);
+0143:     rect(grid, 11, 3, 8, 2, 3); rect(grid, 1, 14, 28, 2, 3);
+0144:     grid[14][14] = 8; grid[14][15] = 8; grid[15][14] = 8; grid[15][15] = 8;
+0145:     grid[19][14] = 9; grid[19][15] = 9;
+0146:     return {
+0147:       grid,
+0148:       start: { x: 15, y: 17.9, angle: -Math.PI / 2 },
+0149:       exit: { x: 15, y: 18.35 },
+0150:       bankDoorCells: [[14,14],[15,14],[14,15],[15,15]],
+0151:       bankDoorPoint: { x: 15, y: 16.2 },
+0152:       safeSpawns: [],
+0153:       spawns: [
+0154:         [15.0, 16.35],
+0155:         [9.8, 12.25], [15.0, 11.15], [20.2, 12.25],
+0156:         [8.65, 7.7], [21.35, 7.7], [8.65, 10.0], [21.35, 10.0], [10.15, 5.55], [19.85, 5.55],
+0157:       ],
+0158:       props: [
+0159:         { x: 10.7, y: 15.4, type: "barrier", scale: .72 }, { x: 19.3, y: 15.4, type: "barrier", scale: .72 },
+0160:         { x: 8.7, y: 14.1, type: "bench", scale: .9 }, { x: 21.3, y: 14.1, type: "bench", scale: .9 },
+0161:         { x: 5.0, y: 10.2, type: "plant", scale: 1.0 }, { x: 25.0, y: 10.2, type: "plant", scale: 1.0 },
+0162:         { x: 4.2, y: 6.2, type: "kiosk", scale: .9 }, { x: 25.8, y: 6.2, type: "kiosk", scale: .9 },
+0163:         { x: 10.2, y: 6.4, type: "table", scale: 1.05 }, { x: 19.8, y: 6.4, type: "table", scale: 1.05 },
+0164:         { x: 15.0, y: 2.6, type: "sign", scale: 1.0 },
+0165:       ],
+0166:       theme: {
+0167:         skyTop: "#11161a", skyBottom: "#29313a", floorTop: "#c6c2b8", floorBottom: "#8d877d",
+0168:         wall: ["#ddd6c8", "#f1ece1", "#7a7468", "#b29c63"], fog: "#0d1015", accent: "#8fd8ff",
+0169:         floorType: "concrete", label: "BANK LOBBY / VAULT"
+0170:       }
+0171:     };
+0172:   }
+0173: 
+0174:   const MAPS = { alley: buildAlley(), abandoned_store: buildStore(), logistics: buildLogistics(), bank_prep: buildBankPrep(), bank: buildBank() };
+0175: 
+0176:   function create(options = {}) {
+0177:     const container = options.container;
+0178:     const canvas = options.canvas;
+0179:     if (!container || !canvas) throw new Error("Mission3D requires container and canvas");
+0180:     const ctx = canvas.getContext("2d", { alpha: false });
+0181: 
+0182:     let active = false;
+0183:     let mapId = "alley";
+0184:     let map = MAPS.alley;
+0185:     let nodes = [];
+0186:     let nodePositions = new Map();
+0187:     let safeState = null;
+0188:     let safePosition = null;
+0189:     let width = 960;
+0190:     let height = 540;
+0191:     let player = { x: map.start.x, y: map.start.y, angle: map.start.angle, pitch: 0 };
+0192:     let bob = 0;
+0193:     let stepDistance = 0;
+0194:     let lastNearestId = null;
+0195:     let lastSafeNear = false;
+0196:     let searching = false;
+0197:     let pointerLocked = false;
+0198:     let mouseSensitivity = 0.0022;
+0199:     let depthBuffer = [];
+0200:     let autoLockPending = false;
+0201:     let missionState = null;
+0202:     let gunFlashUntil = 0;
+0203:     let gunFlashHit = false;
+0204:     let brickThrowUntil = 0;
+0205:     let brickThrowHit = false;
+0206:     let guardAttackCooldown = 0;
+0207:     let guardAlertPending = false;
+0208:     let guardPatrolStartedAt = performance.now();
+0209:     let playerHitUntil = 0;
+0210: 
+0211:     const FOV = Math.PI / 3;
+0212:     const MAX_DEPTH = 30;
+0213:     const INTERACT_DISTANCE = 2.0;
+0214:     const SAFE_INTERACT_DISTANCE = 2.25;
+0215:     const EXIT_INTERACT_DISTANCE = 1.10;
+0216: 
+0217:     function resize() {
+0218:       const box = container.getBoundingClientRect();
+0219:       width = Math.max(320, Math.floor(box.width));
+0220:       height = Math.max(240, Math.floor(box.height));
+0221:       const dpr = Math.min(1.5, window.devicePixelRatio || 1);
+0222:       canvas.width = Math.floor(width * dpr);
+0223:       canvas.height = Math.floor(height * dpr);
+0224:       canvas.style.width = `${box.width}px`;
+0225:       canvas.style.height = `${box.height}px`;
+0226:       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+0227:     }
+0228: 
+0229:     function cellAt(x, y) {
+0230:       const gx = Math.floor(x), gy = Math.floor(y);
+0231:       if (!map.grid[gy] || typeof map.grid[gy][gx] === "undefined") return 1;
+0232:       return map.grid[gy][gx];
+0233:     }
+0234:     function walkable(x, y) {
+0235:       const r = 0.22;
+0236:       return cellAt(x-r,y-r)===0 && cellAt(x+r,y-r)===0 && cellAt(x-r,y+r)===0 && cellAt(x+r,y+r)===0;
+0237:     }
+0238:     function movePlayer(dx, dy) {
+0239:       const nx = player.x + dx, ny = player.y + dy;
+0240:       if (walkable(nx, player.y)) player.x = nx;
+0241:       if (walkable(player.x, ny)) player.y = ny;
+0242:     }
+0243: 
+0244:     function snapSpawnToWalkable(x, y) {
+0245:       if (walkable(x, y)) return { x, y };
+0246:       const offsets = [
+0247:         [0.45,0],[-0.45,0],[0,0.45],[0,-0.45],
+0248:         [0.8,0],[-0.8,0],[0,0.8],[0,-0.8],
+0249:         [0.55,0.55],[-0.55,0.55],[0.55,-0.55],[-0.55,-0.55],
+0250:         [1.15,0],[-1.15,0],[0,1.15],[0,-1.15],
+0251:       ];
+0252:       for (const [ox,oy] of offsets) {
+0253:         const nx=x+ox, ny=y+oy;
+0254:         if (walkable(nx,ny)) return { x:nx, y:ny };
+0255:       }
+0256:       return { x: map.start.x, y: map.start.y };
+0257:     }
+0258: 
+0259:     function syncNodes(nextNodes = []) {
+0260:       nodes = nextNodes.map((node) => ({ ...node }));
+0261:       const assigned = new Map();
+0262:       nodes.forEach((node, index) => {
+0263:         const explicit = Number.isFinite(Number(node.worldX)) && Number.isFinite(Number(node.worldY))
+0264:           ? [Number(node.worldX), Number(node.worldY)]
+0265:           : null;
+0266:         const spawn = explicit || map.spawns[index % map.spawns.length] || [map.start.x, map.start.y];
+0267:         const snapped = snapSpawnToWalkable(spawn[0], spawn[1]);
+0268:         assigned.set(node.id, snapped);
+0269:       });
+0270:       nodePositions = assigned;
+0271:     }
+0272: 
+0273:     function syncSafe(nextSafe = null) {
+0274:       safeState = nextSafe ? { ...nextSafe } : null;
+0275:       if (!safeState || safeState.opened) { safePosition = null; return; }
+0276:       const list = map.safeSpawns || [];
+0277:       const idx = Math.max(0, Number(safeState.spawnIndex || 0)) % Math.max(1, list.length);
+0278:       const spawn = list[idx] || [map.start.x + 2, map.start.y - 4];
+0279:       safePosition = { x: spawn[0], y: spawn[1] };
+0280:     }
+0281: 
+0282: 
+0283:     function setBankDoorOpen(open) {
+0284:       if (mapId !== "bank" || !Array.isArray(map.bankDoorCells)) return;
+0285:       for (const [x,y] of map.bankDoorCells) {
+0286:         if (map.grid[y] && typeof map.grid[y][x] !== "undefined") map.grid[y][x] = open ? 0 : 8;
+0287:       }
+0288:     }
+0289: 
+0290:     function setStoreDoorOpen(open) {
+0291:       if (mapId !== "abandoned_store" || !Array.isArray(map.storeDoorCells)) return;
+0292:       for (const [x,y] of map.storeDoorCells) {
+0293:         if (map.grid[y] && typeof map.grid[y][x] !== "undefined") map.grid[y][x] = open ? 0 : 7;
+0294:       }
+0295:     }
+0296: 
+0297:     function syncMissionState(nextMission = null) {
+0298:       missionState = nextMission ? { ...nextMission } : null;
+0299:       if (mapId === "bank") {
+0300:         setBankDoorOpen(Boolean(missionState?.bankDoorUnlocked));
+0301:         if (missionState?.guardAlarmTriggered) guardAlertPending = false;
+0302:       }
+0303:       if (mapId === "abandoned_store") setStoreDoorOpen(Boolean(missionState?.storeDoorBroken));
+0304:     }
+0305: 
+0306:     function mount(nextMapId, nextNodes = [], nextSafe = null, autoLock = true) {
+0307:       mapId = MAPS[nextMapId] ? nextMapId : "alley";
+0308:       map = MAPS[mapId];
+0309:       missionState = null;
+0310:       if (mapId === "bank") setBankDoorOpen(false);
+0311:       if (mapId === "abandoned_store") setStoreDoorOpen(false);
+0312:       player = { x: map.start.x, y: map.start.y, angle: map.start.angle, pitch: 0 };
+0313:       bob = 0; stepDistance = 0; active = true; searching = false; lastNearestId = null; lastSafeNear = false; guardAttackCooldown = 0; guardAlertPending = false; guardPatrolStartedAt = performance.now();
+0314:       syncNodes(nextNodes); syncSafe(nextSafe);
+0315:       container.classList.add("three-d-active");
+0316:       resize(); render(performance.now());
+0317:       autoLockPending = Boolean(autoLock);
+0318:       if (autoLockPending) requestPointer();
+0319:     }
+0320: 
+0321:     function unmount() {
+0322:       active = false; searching = false; nodePositions.clear(); nodes = []; safeState = null; safePosition = null; missionState = null;
+0323:       lastNearestId = null; lastSafeNear = false; autoLockPending = false;
+0324:       container.classList.remove("three-d-active");
+0325:       if (document.pointerLockElement === canvas) document.exitPointerLock?.();
+0326:     }
+0327: 
+0328:     function nearestNode() {
+0329:       if (!active) return null;
+0330:       let best = null, bestDistance = Infinity;
+0331:       for (const node of nodes) {
+0332:         if (node.searched) continue;
+0333:         const pos = nodePositions.get(node.id); if (!pos) continue;
+0334:         const dx = pos.x-player.x, dy = pos.y-player.y, distance = Math.hypot(dx,dy);
+0335:         if (distance > INTERACT_DISTANCE) continue;
+0336:         const delta = Math.abs(normAngle(Math.atan2(dy,dx)-player.angle));
+0337:         if (delta > 0.72) continue;
+0338:         if (distance < bestDistance) { best=node; bestDistance=distance; }
+0339:       }
+0340:       return best;
+0341:     }
+0342: 
+0343:     function lineClear(x0,y0,x1,y1) {
+0344:       const distance = Math.hypot(x1-x0,y1-y0);
+0345:       const steps = Math.max(2, Math.ceil(distance / .14));
+0346:       for (let i=1;i<steps;i+=1) {
+0347:         const t=i/steps;
+0348:         const cell=cellAt(x0+(x1-x0)*t,y0+(y1-y0)*t);
+0349:         if (cell !== 0) return false;
+0350:       }
+0351:       return true;
+0352:     }
+0353: 
+0354:     function guardCombatActive() {
+0355:       if (!active || !missionState) return false;
+0356:       if (mapId === "bank") return Boolean(missionState.bankDoorUnlocked);
+0357:       return mapId === "bank_prep" && missionState.missionType === "bank-prep" && missionState.prepId === "guardWeakening";
+0358:     }
+0359: 
+0360:     function guardFacing(node, now = performance.now()) {
