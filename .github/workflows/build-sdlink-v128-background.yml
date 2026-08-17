@@ -1,0 +1,116 @@
+name: Build SD Link v1.2.8 Background Auto Start
+
+on:
+  push:
+    branches:
+      - feature/sdlink-background-v128
+    paths:
+      - '.github/workflows/build-sdlink-v128-background.yml'
+      - 'tools/patch-sdlink-v128-autostart.py'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/sdlink-background-v128
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build SD Link v1.2.8
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/patch-sdlink-v128-autostart.py \
+            downloads/extensions/SDLink_v1.2.7_Desktop.zip \
+            downloads/extensions/SDLink_v1.2.8_Desktop.zip
+
+      - name: Validate SD Link v1.2.8
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/sdlink128 && mkdir -p /tmp/sdlink128
+          unzip -q downloads/extensions/SDLink_v1.2.8_Desktop.zip -d /tmp/sdlink128
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('/tmp/sdlink128')
+          packages=[p for p in root.rglob('package.json') if 'node_modules' not in [x.lower() for x in p.parts]]
+          if not packages:
+              raise SystemExit('package.json missing')
+          pkg_path=sorted(packages,key=lambda p:len(p.relative_to(root).parts))[0]
+          pkg=json.loads(pkg_path.read_text(encoding='utf-8'))
+          if pkg.get('version')!='1.2.8':
+              raise SystemExit(f"version mismatch: {pkg.get('version')}")
+          app_root=pkg_path.parent
+          main=app_root / str(pkg.get('main') or 'main.js')
+          text=main.read_text(encoding='utf-8')
+          for marker in ['SD_LINK_BACKGROUND_AUTOSTART_V128','--sd-link-auto-start','browser-window-created']:
+              if marker not in text:
+                  raise SystemExit(f'missing marker: {marker}')
+          print(main)
+          PY
+          MAIN_FILE=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('/tmp/sdlink128')
+          packages=[p for p in root.rglob('package.json') if 'node_modules' not in [x.lower() for x in p.parts]]
+          p=sorted(packages,key=lambda x:len(x.relative_to(root).parts))[0]
+          pkg=json.loads(p.read_text(encoding='utf-8'))
+          print(p.parent / str(pkg.get('main') or 'main.js'))
+          PY
+          )
+          node --check "$MAIN_FILE"
+
+      - name: Update SD Link catalog metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone, timedelta
+          from pathlib import Path
+
+          now=datetime.now(timezone(timedelta(hours=9))).isoformat(timespec='seconds')
+          catalog_path=Path('update/extensions-catalog.json')
+          catalog=json.loads(catalog_path.read_text(encoding='utf-8'))
+          catalog['catalogVersion']=int(catalog.get('catalogVersion') or 0)+1
+          catalog['updatedAt']=now
+          app=catalog['apps']['sdlink-desktop']
+          app['version']='1.2.8'
+          app['downloadUrl']='https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.8_Desktop.zip?v=128'
+          app['notes']='Windows 로그인 자동 시작에서는 화면을 띄우지 않고 트레이·백그라운드에서만 실행되어 PC↔온라인↔모바일 동기화를 유지합니다.'
+          catalog_path.write_text(json.dumps(catalog,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          for rel in ['assets/js/extensions-data.js','extensions-data.js']:
+              p=Path(rel)
+              text=p.read_text(encoding='utf-8')
+              text=text.replace('"version": "v1.2.7"','"version": "v1.2.8"',1)
+              text=text.replace('"fileName": "SDLink_v1.2.7_Desktop.zip"','"fileName": "SDLink_v1.2.8_Desktop.zip"',1)
+              text=text.replace('"downloadUrl": "downloads/extensions/SDLink_v1.2.7_Desktop.zip?v=127"','"downloadUrl": "downloads/extensions/SDLink_v1.2.8_Desktop.zip?v=128"',1)
+              old='SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. SD종합센터 v2.2.2부터 Windows 로그인 시 자동으로 백그라운드 실행되며, 트레이에서 PC와 모바일의 같은 계정 데이터를 계속 동기화합니다.'
+              new='SD Online 계정과 PC 앱을 연결하는 핵심 연동 확장팩입니다. Windows 로그인 자동 시작에서는 화면을 띄우지 않고 트레이·백그라운드에서만 실행되어 PC와 모바일의 같은 계정 데이터를 계속 동기화합니다.'
+              text=text.replace(old,new,1)
+              p.write_text(text,encoding='utf-8')
+          PY
+
+      - name: Commit SD Link v1.2.8
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add downloads/extensions/SDLink_v1.2.8_Desktop.zip update/extensions-catalog.json assets/js/extensions-data.js extensions-data.js
+          git commit -m 'SD Link v1.2.8: 부팅 시 백그라운드 전용 실행'
+          git push origin HEAD:feature/sdlink-background-v128
