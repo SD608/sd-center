@@ -1,0 +1,230 @@
+name: Build and publish SDCenter v2.2.4 SD Link Background Fix
+
+on:
+  push:
+    branches: [feature/sdlink-background-v128]
+    paths:
+      - '.github/workflows/build-v224-sdlink-background-fix.yml'
+      - 'tools/patch-v224-sdlink-background.js'
+      - 'tools/build-v224-installer.js'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/sdlink-background-v128
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified v2.2.3 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.3.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.3/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140104704){ throw "Unexpected v2.2.3 size: $size" }
+          if($hash -ne 'd781bca47d8c68ac1fc6a78f709236a61f47a81459b5d5d44e8fae9dabc6d924'){ throw "v2.2.3 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.2.3 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.3'
+          if(-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))){ throw 'v2.2.3 install missing' }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$appDir\resources\app" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch SDCenter v2.2.4 background autostart
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/patch-v224-sdlink-background.js "$env:APP_ROOT"
+
+      - name: Validate patched source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\preload.js"
+          node --check "$env:APP_ROOT\public\js\app.js"
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.4'){ throw "Center version mismatch: $($pkg.version)" }
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          foreach($m in @('--sd-center-auto-link','--sd-link-auto-start','configureSdLinkWindowsAutoStart','launchSdLinkForWindowsLogin','autoUpdater','quitAndInstall')) {
+            if(-not $main.Contains($m)){ throw "v2.2.4 preserved marker missing: $m" }
+          }
+          foreach($bad in @('powershell.exe','powershellScript','hideAutoStartedChildWindow','ShowWindowAsync')) {
+            if($main.Contains($bad)){ throw "v2.2.4 forbidden PowerShell marker remains: $bad" }
+          }
+
+      - name: Install Squirrel builder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder=Join-Path $env:RUNNER_TEMP 'squirrel-builder-v224'
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Push-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          Pop-Location
+          "NODE_PATH=$builder\node_modules" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          $output=Join-Path $env:RUNNER_TEMP 'squirrel-v224'
+          "BUILD_OUTPUT=$output" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build SDCenter v2.2.4
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/build-v224-installer.js
+          $setup=Join-Path $env:BUILD_OUTPUT 'SDCenterSetup.exe'
+          $releases=Join-Path $env:BUILD_OUTPUT 'RELEASES'
+          $nupkg=Get-ChildItem $env:BUILD_OUTPUT -Filter '*-full.nupkg' | Select-Object -First 1
+          if(-not (Test-Path $setup)){ throw 'v2.2.4 installer missing' }
+          if(-not (Test-Path $releases)){ throw 'Squirrel RELEASES missing' }
+          if(-not $nupkg){ throw 'Squirrel full nupkg missing' }
+          $size=(Get-Item $setup).Length
+          if($size -lt 100MB){ throw "Installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_RELEASES=$releases" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_NUPKG=$($nupkg.FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_NUPKG_NAME=$($nupkg.Name)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install and smoke test v2.2.4
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $dir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.4'
+          $exe=Join-Path $dir 'SDCenter.exe'
+          if(-not (Test-Path $exe)){ throw 'v2.2.4 in-place install failed' }
+          $pkg=Get-Content (Join-Path $dir 'resources\app\package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.4'){ throw 'Installed Center version mismatch' }
+          $installedMain=Get-Content (Join-Path $dir 'resources\app\main.js') -Raw
+          if($installedMain.Contains('powershell.exe')){ throw 'Installed center still references powershell.exe' }
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "Center exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Prepare release files
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:GITHUB_WORKSPACE 'release-v2.2.4'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP (Join-Path $dir 'SDCenterSetup.exe') -Force
+          Copy-Item $env:BUILT_RELEASES (Join-Path $dir 'RELEASES') -Force
+          Copy-Item $env:BUILT_NUPKG (Join-Path $dir $env:BUILT_NUPKG_NAME) -Force
+          Copy-Item 'downloads/extensions/SDLink_v1.2.8_Desktop.zip' (Join-Path $dir 'SDLink_v1.2.8_Desktop.zip') -Force
+          gh release download 'v.2.2.3' --repo 'SD608/sd-center' --pattern 'SDCenter-Mobile.apk' --dir $dir
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $dir 'SHA256.txt') -Encoding ascii
+          $info=@(
+            'SD종합센터 v2.2.4',
+            '- Windows 로그인 시 센터 화면 숨김 유지',
+            '- SD Link는 --sd-link-auto-start로 백그라운드/트레이 전용 실행',
+            '- PowerShell 기반 창 숨김 코드 완전 제거',
+            '- spawn powershell.exe ENOENT 부팅 오류 제거',
+            '- SD Link v1.2.8 정상 ZIP 동봉',
+            '- 기존 종합센터 앱내 자동 업데이트 유지',
+            "Installer bytes: $env:BUILT_SIZE",
+            "SHA256: $env:BUILT_HASH"
+          )
+          $info | Set-Content (Join-Path $dir 'BUILD_INFO.txt') -Encoding utf8
+          "RELEASE_DIR=$dir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Publish v2.2.4 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.2.4' `
+            "$env:RELEASE_DIR/SDCenterSetup.exe" `
+            "$env:RELEASE_DIR/SDCenter-Mobile.apk" `
+            "$env:RELEASE_DIR/RELEASES" `
+            "$env:RELEASE_DIR/$env:BUILT_NUPKG_NAME" `
+            "$env:RELEASE_DIR/SDLink_v1.2.8_Desktop.zip" `
+            "$env:RELEASE_DIR/SHA256.txt" `
+            "$env:RELEASE_DIR/BUILD_INFO.txt" `
+            --repo 'SD608/sd-center' `
+            --target 'feature/sdlink-background-v128' `
+            --title 'SD종합센터 v2.2.4' `
+            --notes 'Windows 로그인 자동 시작에서 PowerShell을 사용하지 않습니다. SD Link v1.2.8은 화면을 띄우지 않고 트레이·백그라운드에서 동기화하며, spawn powershell.exe ENOENT 오류를 제거했습니다.'
+
+      - name: Update website and update metadata
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          @'
+          import json
+          import os
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          root = Path('.')
+          now = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec='seconds')
+          manifest = {
+              'version': '2.2.4',
+              'downloadUrl': 'https://github.com/SD608/sd-center/releases/download/v.2.2.4/SDCenterSetup.exe',
+              'sha256': os.environ['BUILT_HASH'],
+              'notes': 'SD Link Windows 자동 시작을 PowerShell 없이 백그라운드 전용으로 수정했습니다.',
+              'publishedAt': now,
+              'squirrelFeedUrl': 'https://github.com/SD608/sd-center/releases/latest/download'
+          }
+          (root / 'update/center-update.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          site = root / 'site-config.js'
+          text = site.read_text(encoding='utf-8')
+          text = text.replace('v2.2.3 In-App Self Update', 'v2.2.4 SD Link Background Fix')
+          text = text.replace('version: "2.2.3"', 'version: "2.2.4"')
+          text = text.replace('releases/download/v.2.2.3/SDCenterSetup.exe', 'releases/download/v.2.2.4/SDCenterSetup.exe')
+          text = text.replace('releases/tag/v.2.2.3', 'releases/tag/v.2.2.4')
+          site.write_text(text, encoding='utf-8')
+          '@ | Set-Content "$env:RUNNER_TEMP\update-v224-site.py" -Encoding utf8
+          python "$env:RUNNER_TEMP\update-v224-site.py"
+
+      - name: Validate published metadata
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $manifest=Get-Content 'update/center-update.json' -Raw | ConvertFrom-Json
+          if($manifest.version -ne '2.2.4'){ throw 'center update metadata version mismatch' }
+          if($manifest.sha256 -ne $env:BUILT_HASH){ throw 'center update metadata hash mismatch' }
+          $site=Get-Content 'site-config.js' -Raw
+          if(-not $site.Contains('version: "2.2.4"')){ throw 'site config v2.2.4 missing' }
+          $catalog=Get-Content 'update/extensions-catalog.json' -Raw | ConvertFrom-Json
+          if($catalog.apps.'sdlink-desktop'.version -ne '1.2.8'){ throw 'SD Link catalog v1.2.8 missing' }
+
+      - name: Commit v2.2.4 metadata
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add update/center-update.json site-config.js
+          if(git diff --cached --quiet){ exit 0 }
+          git commit -m '센터 v2.2.4 SD Link 백그라운드 수정 배포 반영'
+          git push origin HEAD:feature/sdlink-background-v128
