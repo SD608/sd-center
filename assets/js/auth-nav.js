@@ -8,14 +8,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     };
 
+    const loadAchievementSort = () => {
+      if (document.querySelector('script[data-achievements-sort]')) return;
+      const sortScript = document.createElement("script");
+      sortScript.src = "assets/js/achievements-sort.js?v=20260817-easy-order";
+      sortScript.dataset.achievementsSort = "";
+      document.head.appendChild(sortScript);
+    };
+
     if (!document.querySelector('script[data-achievements-all]')) {
       const achievementScript = document.createElement("script");
       achievementScript.src = "assets/js/achievements-all.js?v=20260817-all";
       achievementScript.dataset.achievementsAll = "";
-      achievementScript.addEventListener("load", removeAchievementExplanation);
+      achievementScript.addEventListener("load", () => {
+        removeAchievementExplanation();
+        loadAchievementSort();
+      });
       document.head.appendChild(achievementScript);
     } else {
       removeAchievementExplanation();
+      loadAchievementSort();
     }
   }
 
