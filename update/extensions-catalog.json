@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 20,
-  "updatedAt": "2026-08-17T19:06:56+09:00",
+  "catalogVersion": 21,
+  "updatedAt": "2026-08-17T19:21:37+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -55,9 +55,9 @@
     },
     "odd-even": {
       "name": "SD홀짝",
-      "version": "1.1.0",
-      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDOddEven_v1.1.0_Desktop.zip",
-      "notes": "보안 난수 주사위의 홀·짝을 맞히며 SD지갑 가상 잔액으로 즐기는 빠른 미니게임 확장팩입니다."
+      "version": "1.1.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.1.1_Desktop.zip?v=111",
+      "notes": "종합센터 v2.2.4에서 실행 시 발생하던 ../../shared/open-center 모듈 누락 오류를 수정했습니다. 홀짝 ZIP 내부에 종합센터 열기 호환 모듈을 자체 포함합니다."
     },
     "miner": {
       "name": "SD광부",
