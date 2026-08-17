@@ -1,0 +1,112 @@
+name: Build flea v1.1.6 + SD Link v1.3.1 item bridge
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build-flea-item-bridge-v116-v131.yml"
+      - "tools/patch-flea-item-bridge-v116-v131.py"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build patched packages
+        run: python tools/patch-flea-item-bridge-v116-v131.py
+
+      - name: Verify packages and JS syntax
+        run: |
+          python - <<'PY'
+          import json, subprocess, tempfile, zipfile
+          from pathlib import Path
+
+          cases = [
+              {
+                  "path": Path("downloads/extensions/SDFleaMarket_v1.1.6_Desktop.zip"),
+                  "version": "1.1.6",
+                  "package_names": {"sd-flea-market", "sd-flea-market-pc"},
+                  "checks": [
+                      ("src/sd-integration.js", "FLEA_ITEM_SHARED_BRIDGE_V116"),
+                      ("src/sd-integration.js", "flea-inventory.json"),
+                      ("src/sd-integration.js", "flea-inventory-result.json"),
+                      ("public/mission3d.js", "FLEA_MISSION3D_BLACKSCREEN_V114"),
+                      ("public/app.js", "FLEA_LIMITED_ITEM_SCOPE_FIX_V115"),
+                  ],
+              },
+              {
+                  "path": Path("downloads/extensions/SDLink_v1.3.1_Desktop.zip"),
+                  "version": "1.3.1",
+                  "package_names": {"sdlink-desktop"},
+                  "checks": [
+                      ("src/flea-inventory-reader.js", "SDLINK_FLEA_ITEM_BRIDGE_V131"),
+                      ("src/sync-engine.js", "syncFleaInventoryBridge"),
+                      ("src/sync-engine.js", "sync_sd_flea_pc_inventory"),
+                      ("src/sync-engine.js", "플리마켓 아이템"),
+                      ("src/logistics-reader.js", "SDLINK_LOGISTICS_BRIDGE_V130"),
+                  ],
+              },
+          ]
+
+          for case in cases:
+              p = case["path"]
+              assert p.is_file() and p.stat().st_size > 60000, (p, p.stat().st_size if p.exists() else "missing")
+              with tempfile.TemporaryDirectory() as tmp:
+                  root_extract = Path(tmp)
+                  with zipfile.ZipFile(p) as z:
+                      z.extractall(root_extract)
+                  package_files = [
+                      x for x in root_extract.rglob("package.json")
+                      if "node_modules" not in {part.lower() for part in x.parts}
+                  ]
+                  package = None
+                  root = None
+                  for package_file in package_files:
+                      data = json.loads(package_file.read_text(encoding="utf-8"))
+                      if data.get("name") in case["package_names"]:
+                          package = data
+                          root = package_file.parent
+                          break
+                  assert package and root, p
+                  assert package["version"] == case["version"], (p, package.get("version"))
+                  for relative, marker in case["checks"]:
+                      text = (root / relative).read_text(encoding="utf-8")
+                      assert marker in text, (p, relative, marker)
+                  js_files = [
+                      x for x in root.rglob("*.js")
+                      if "node_modules" not in {part.lower() for part in x.parts}
+                  ]
+                  for js in js_files:
+                      subprocess.run(["node", "--check", str(js)], check=True, stdout=subprocess.DEVNULL)
+                  print("verified", p, "JS", len(js_files), "size", p.stat().st_size)
+
+          catalog = json.load(open("update/extensions-catalog.json", encoding="utf-8"))
+          assert catalog["apps"]["sd-flea-market"]["version"] == "1.1.6"
+          assert catalog["apps"]["sdlink-desktop"]["version"] == "1.3.1"
+          policy = json.load(open("update/desktop-policy.json", encoding="utf-8"))
+          assert policy["apps"]["sdlink-desktop"]["minVersion"] == "1.3.1"
+          print("catalog/policy verification OK")
+          PY
+
+      - name: Commit build and catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            downloads/extensions/SDFleaMarket_v1.1.6_Desktop.zip \
+            downloads/extensions/SDLink_v1.3.1_Desktop.zip \
+            update/extensions-catalog.json \
+            update/desktop-policy.json \
+            extensions-data.js \
+            assets/js/extensions-data.js
+          if git diff --cached --quiet; then
+            echo "No build changes"
+            exit 0
+          fi
+          git commit -m "build: publish flea item sync bridge"
+          git push
