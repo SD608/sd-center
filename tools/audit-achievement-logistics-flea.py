@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path.cwd()
 OUT = ROOT / "diagnostics" / "achievement-logistics-flea-audit.txt"
+DETAIL_DIR = ROOT / "diagnostics" / "integration-sources"
 PACKAGES = [
     ROOT / "downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip",
     ROOT / "downloads/extensions/SDLink_v1.2.8_Desktop.zip",
@@ -29,6 +30,18 @@ PATTERNS = [
 RX = re.compile("|".join(f"(?:{p})" for p in PATTERNS), re.I)
 TEXT_EXT = {".js", ".mjs", ".cjs", ".html", ".json", ".css", ".txt", ".md"}
 
+DETAIL_TARGETS = {
+    "SDFleaMarket_v1.1.3_Desktop.zip": [
+        "src/sd-integration.js",
+        "public/mission3d.js",
+        "main.js",
+        "preload.js",
+        "package.json",
+    ],
+    "SDLink_v1.2.8_Desktop.zip": ["main.js", "preload.js", "renderer.js", "package.json", "sd-app.json"],
+    "SDLogisticsCenter_Season0_Desktop.zip": ["main.js", "preload.js", "package.json", "sd-app.json"],
+}
+
 
 def decode(data: bytes) -> str | None:
     for enc in ("utf-8", "utf-8-sig", "cp949"):
@@ -44,12 +57,32 @@ def compact(line: str, limit: int = 320) -> str:
     return line if len(line) <= limit else line[:limit] + "…"
 
 
+def save_details(path: Path, z: zipfile.ZipFile) -> None:
+    wanted = DETAIL_TARGETS.get(path.name, [])
+    if not wanted:
+        return
+    names = z.namelist()
+    base = DETAIL_DIR / path.stem
+    base.mkdir(parents=True, exist_ok=True)
+    for target in wanted:
+        candidates = [n for n in names if n == target or n.endswith("/" + target)]
+        if not candidates:
+            continue
+        chosen = sorted(candidates, key=len)[0]
+        text = decode(z.read(chosen))
+        if text is None:
+            continue
+        out = base / target.replace("/", "__")
+        out.write_text(text, encoding="utf-8")
+
+
 def audit_zip(path: Path) -> list[str]:
     rows = [f"\n===== {path.name} ====="]
     if not path.is_file():
         rows.append("MISSING")
         return rows
     with zipfile.ZipFile(path) as z:
+        save_details(path, z)
         names = z.namelist()
         rows.append(f"files={len(names)} bytes={path.stat().st_size}")
         for name in names:
@@ -80,6 +113,7 @@ def main() -> None:
         "SD integration audit",
         "Purpose: achievements + logistics→flea unlock + flea bank 3D black-screen diagnostics",
     ]
+    DETAIL_DIR.mkdir(parents=True, exist_ok=True)
     for package in PACKAGES:
         lines.extend(audit_zip(package))
     OUT.parent.mkdir(parents=True, exist_ok=True)
