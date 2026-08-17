@@ -2,11 +2,20 @@
 
 document.addEventListener("DOMContentLoaded", async () => {
   if ((location.pathname || "").toLowerCase().endsWith("/achievements.html") || (location.pathname || "").toLowerCase().endsWith("achievements.html")) {
+    const removeAchievementExplanation = () => {
+      document.querySelectorAll(".achievement-placeholder").forEach((element) => {
+        if ((element.textContent || "").includes("업적 조건 94종")) element.remove();
+      });
+    };
+
     if (!document.querySelector('script[data-achievements-all]')) {
       const achievementScript = document.createElement("script");
       achievementScript.src = "assets/js/achievements-all.js?v=20260817-all";
       achievementScript.dataset.achievementsAll = "";
+      achievementScript.addEventListener("load", removeAchievementExplanation);
       document.head.appendChild(achievementScript);
+    } else {
+      removeAchievementExplanation();
     }
   }
 
