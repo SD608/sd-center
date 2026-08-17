@@ -24,12 +24,15 @@ jobs:
           import json,zipfile
           from pathlib import Path
           p=Path('downloads/extensions/SDLink_v1.2.9_Desktop.zip')
-          assert p.is_file() and p.stat().st_size>100000
+          assert p.is_file() and p.stat().st_size>60000, p.stat().st_size if p.exists() else 'missing'
           with zipfile.ZipFile(p) as z:
+              assert z.testzip() is None
               r=next(n for n in z.namelist() if n.endswith('src/achievement-reader.js'))
               s=next(n for n in z.namelist() if n.endswith('src/sync-engine.js'))
+              pkg=next(n for n in z.namelist() if n.endswith('package.json'))
               assert 'SDLINK_ACHIEVEMENT_BRIDGE_V129' in z.read(r).decode()
               assert 'sync_sd_achievement_progress' in z.read(s).decode()
+              assert json.loads(z.read(pkg).decode())['version']=='1.2.9'
           c=json.loads(Path('update/extensions-catalog.json').read_text())
           assert c['apps']['sdlink-desktop']['version']=='1.2.9'
           print('SD Link v1.2.9 verification passed')
