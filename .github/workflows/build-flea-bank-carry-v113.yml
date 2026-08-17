@@ -53,11 +53,38 @@ jobs:
           node --check /tmp/flea113-validate/public/app.js
           node --check /tmp/flea113-validate/public/bankchase.js
 
+      - name: Update extension catalog
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          catalog_path = Path('update/extensions-catalog.json')
+          catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
+          catalog['catalogVersion'] = max(19, int(catalog.get('catalogVersion', 0)) + 1)
+          catalog['updatedAt'] = '2026-08-17T16:10:00+09:00'
+          flea = catalog['apps']['sd-flea-market']
+          flea['version'] = '1.1.3'
+          flea['downloadUrl'] = 'https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip?v=113'
+          flea['notes'] = "은행 피날레에서는 금고를 현장에서 열지 않고 금고 자체를 들고 탈출합니다. 운반 금고 수가 많을수록 추격 거리·장애물 빈도·대형 장애물 확률·충돌 피해가 증가합니다. 추격 성공 후 금고를 개봉하며 금고 1개당 레드 다이아몬드 0.001%(1/100,000) 판정을 1회 수행하고, 레드 다이아몬드는 판매 불가 한정판으로 유지됩니다."
+          catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          for path in [Path('assets/js/extensions-data.js'), Path('extensions-data.js')]:
+              text = path.read_text(encoding='utf-8')
+              text = text.replace('"version": "v1.1.2",\n    "category": "파밍·습격 확장팩",', '"version": "v1.1.3",\n    "category": "파밍·습격 확장팩",', 1)
+              text = text.replace('"fileName": "SDFleaMarket_v1.1.2_Desktop.zip",', '"fileName": "SDFleaMarket_v1.1.3_Desktop.zip",', 1)
+              text = text.replace('"downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.2_Desktop.zip?v=112",', '"downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip?v=113",', 1)
+              text = text.replace('"description": "은행 금고를 기존처럼 현장에서 직접 따는 구조를 유지하면서, 금고 개봉 1회당 0.001%(1/100,000) 확률로 판매 불가 한정판 레드 다이아몬드가 등장하도록 추가했습니다. 기존 회사 등급·온라인 재고 동기화와 금고 A/D·마우스 조작은 그대로 유지됩니다.",', '"description": "은행 피날레에서는 금고를 현장에서 열지 않고 금고 자체를 들고 탈출합니다. 들고 나온 금고 수가 많을수록 오토바이 추격전의 거리·장애물 빈도·대형 장애물 확률·충돌 피해가 증가합니다. 추격에 성공하면 은신처에서 금고를 개봉하며 금고 1개당 레드 다이아몬드 0.001%(1/100,000) 판정을 1회 수행합니다.",', 1)
+              text = text.replace('"tags": ["레드 다이아 0.001%", "한정판 판매 불가", "금고 현장 개방"],', '"tags": ["금고 운반", "개수별 추격 난이도", "레드 다이아 0.001%"],', 1)
+              path.write_text(text, encoding='utf-8')
+          PY
+
       - name: Commit v1.1.3 build
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip
-          git commit -m '플리마켓 v1.1.3: 금고 운반 및 추격 난이도'
+          git add downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip update/extensions-catalog.json assets/js/extensions-data.js extensions-data.js
+          git diff --cached --quiet || git commit -m '플리마켓 v1.1.3: 금고 운반 및 추격 난이도'
           git push origin HEAD:feature/flea-red-diamond
