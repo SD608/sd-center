@@ -1,15 +1,9 @@
 {
-  "catalogVersion": 21,
+  "catalogVersion": 22,
   "appCount": 10,
-  "appsWithIssues": [
-    "sd-logistics-center-desktop",
-    "vault",
-    "miner"
-  ],
+  "appsWithIssues": [],
   "appsWithWarnings": [
-    "bitcoin",
-    "vault",
-    "miner"
+    "bitcoin"
   ],
   "results": [
     {
@@ -34,14 +28,19 @@
     {
       "id": "sd-logistics-center-desktop",
       "name": "SD 물류센터",
-      "version": "1.0.9",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=1092",
+      "version": "1.0.10",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_Season0_Desktop.zip?v=1010",
       "downloadOk": true,
-      "zipOk": false,
-      "packageRoots": [],
-      "issues": [
-        "ZIP 해제 실패: BadZipFile: File is not a zip file"
+      "zipOk": true,
+      "packageRoots": [
+        {
+          "root": "SDLogisticsCenter",
+          "main": "main.js",
+          "name": "sd-logistics-center-desktop",
+          "version": "1.0.10"
+        }
       ],
+      "issues": [],
       "warnings": [],
       "suspiciousReferences": []
     },
@@ -150,8 +149,8 @@
     {
       "id": "vault",
       "name": "SD금고",
-      "version": "1.2.0",
-      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDVault_v1.2.0_Desktop.zip",
+      "version": "1.2.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDVault_v1.2.1_Desktop.zip?v=121",
       "downloadOk": true,
       "zipOk": true,
       "packageRoots": [
@@ -159,31 +158,12 @@
           "root": "SDVault",
           "main": "main.js",
           "name": "sdvault-desktop",
-          "version": "1.2.0"
+          "version": "1.2.1"
         }
       ],
-      "issues": [
-        "누락된 상대경로 모듈: SDVault/main.js -> ../../shared/open-center"
-      ],
-      "warnings": [
-        "기본 앱 시절 공용 경로 의심: SDVault/main.js (shared/open-center)",
-        "기본 앱 시절 공용 경로 의심: SDVault/main.js (../shared/)",
-        "기본 앱 시절 공용 경로 의심: SDVault/main.js (../../shared/)"
-      ],
-      "suspiciousReferences": [
-        {
-          "file": "SDVault/main.js",
-          "marker": "../../shared/"
-        },
-        {
-          "file": "SDVault/main.js",
-          "marker": "shared/open-center"
-        },
-        {
-          "file": "SDVault/main.js",
-          "marker": "../shared/"
-        }
-      ]
+      "issues": [],
+      "warnings": [],
+      "suspiciousReferences": []
     },
     {
       "id": "odd-even",
@@ -207,8 +187,8 @@
     {
       "id": "miner",
       "name": "SD광부",
-      "version": "1.1.0",
-      "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDMiner_v1.1.0_Desktop.zip",
+      "version": "1.1.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDMiner_v1.1.1_Desktop.zip?v=111",
       "downloadOk": true,
       "zipOk": true,
       "packageRoots": [
@@ -216,31 +196,12 @@
           "root": "SDMiner",
           "main": "main.js",
           "name": "sdminer-desktop",
-          "version": "1.1.0"
+          "version": "1.1.1"
         }
       ],
-      "issues": [
-        "누락된 상대경로 모듈: SDMiner/main.js -> ../../shared/open-center"
-      ],
-      "warnings": [
-        "기본 앱 시절 공용 경로 의심: SDMiner/main.js (shared/open-center)",
-        "기본 앱 시절 공용 경로 의심: SDMiner/main.js (../shared/)",
-        "기본 앱 시절 공용 경로 의심: SDMiner/main.js (../../shared/)"
-      ],
-      "suspiciousReferences": [
-        {
-          "file": "SDMiner/main.js",
-          "marker": "../../shared/"
-        },
-        {
-          "file": "SDMiner/main.js",
-          "marker": "shared/open-center"
-        },
-        {
-          "file": "SDMiner/main.js",
-          "marker": "../shared/"
-        }
-      ]
+      "issues": [],
+      "warnings": [],
+      "suspiciousReferences": []
     }
   ]
 }
