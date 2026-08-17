@@ -139,15 +139,15 @@ window.SD_EXTENSION_PACKS = [
     "id": "sd-flea-market",
     "name": "SD 플리마켓",
     "stage": "PC Expansion",
-    "version": "v1.1.2",
+    "version": "v1.1.3",
     "category": "파밍·습격 확장팩",
     "icon": "assets/icons/flea-market.png?v=3",
-    "fileName": "SDFleaMarket_v1.1.2_Desktop.zip",
-    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.2_Desktop.zip?v=112",
-    "description": "은행 금고를 기존처럼 현장에서 직접 따는 구조를 유지하면서, 금고 개봉 1회당 0.001%(1/100,000) 확률로 판매 불가 한정판 레드 다이아몬드가 등장하도록 추가했습니다. 기존 회사 등급·온라인 재고 동기화와 금고 A/D·마우스 조작은 그대로 유지됩니다.",
+    "fileName": "SDFleaMarket_v1.1.3_Desktop.zip",
+    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip?v=113",
+    "description": "은행 피날레에서는 금고를 현장에서 열지 않고 금고 자체를 들고 탈출합니다. 들고 나온 금고 수가 많을수록 오토바이 추격전의 거리·장애물 빈도·대형 장애물 확률·충돌 피해가 증가합니다. 추격에 성공하면 은신처에서 금고를 개봉하며 금고 1개당 레드 다이아몬드 0.001%(1/100,000) 판정을 1회 수행합니다.",
     "requirements": "SD종합센터 v2.2.0 이상 · SD Link 로그인 · Windows 10/11",
     "updatedAt": "2026-08-17",
-    "tags": ["레드 다이아 0.001%", "한정판 판매 불가", "금고 현장 개방"],
+    "tags": ["금고 운반", "개수별 추격 난이도", "레드 다이아 0.001%"],
     "featured": true
   }
 ];
