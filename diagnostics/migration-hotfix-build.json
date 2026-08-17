@@ -1,0 +1,14 @@
+{
+  "logistics": {
+    "root": "SDLogisticsCenter",
+    "openCenterLocalized": false
+  },
+  "vault": {
+    "root": "SDVault",
+    "openCenterLocalized": true
+  },
+  "miner": {
+    "root": "SDMiner",
+    "openCenterLocalized": true
+  }
+}
