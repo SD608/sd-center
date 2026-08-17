@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/workflows/build-flea-bank-carry-v113.yml'
       - 'tools/patch-flea-bank-carry-v113.py'
+      - 'tools/normalize-flea-v112-for-v113.py'
 
 permissions:
   contents: write
@@ -25,8 +26,12 @@ jobs:
         run: |
           set +e
           mkdir -p diagnostics
-          python tools/patch-flea-bank-carry-v113.py > diagnostics/flea-v113-build.log 2>&1
+          python tools/normalize-flea-v112-for-v113.py > diagnostics/flea-v113-build.log 2>&1
           code=$?
+          if [ "$code" -eq 0 ]; then
+            python tools/patch-flea-bank-carry-v113.py /tmp/SDFleaMarket_v1.1.2_normalized.zip downloads/extensions/SDFleaMarket_v1.1.3_Desktop.zip >> diagnostics/flea-v113-build.log 2>&1
+            code=$?
+          fi
           cat diagnostics/flea-v113-build.log
           if [ "$code" -ne 0 ]; then
             git config user.name 'github-actions[bot]'
