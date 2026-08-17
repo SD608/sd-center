@@ -13,6 +13,7 @@ declare
   v_user_id uuid := auth.uid();
   v_state jsonb := coalesce(p_state, '{}'::jsonb);
   v_updated_at timestamptz := now();
+  v_merged jsonb;
 begin
   if v_user_id is null then
     raise exception 'AUTH_REQUIRED' using errcode='28000';
@@ -24,14 +25,15 @@ begin
   insert into public.sd_logistics_progress as p (user_id, state, updated_at)
   values (v_user_id, v_state, v_updated_at)
   on conflict (user_id) do update
-    set state = excluded.state,
-        updated_at = excluded.updated_at;
+    set state = coalesce(p.state, '{}'::jsonb) || excluded.state,
+        updated_at = excluded.updated_at
+  returning state into v_merged;
 
   return jsonb_build_object(
     'ok', true,
     'user_id', v_user_id,
-    'logistics_rep', greatest(0, coalesce((v_state->>'logisticsRep')::numeric, (v_state->>'logistics_rep')::numeric, 0)),
-    'headquarters_level', greatest(0, coalesce((v_state->>'headquartersLevel')::int, (v_state->>'headquarters_level')::int, 0)),
+    'logistics_rep', greatest(0, coalesce(nullif(v_merged->>'logisticsRep','')::numeric, nullif(v_merged->>'logistics_rep','')::numeric, 0)),
+    'headquarters_level', greatest(0, coalesce(nullif(v_merged->>'headquartersLevel','')::int, nullif(v_merged->>'headquarters_level','')::int, 0)),
     'updated_at', v_updated_at
   );
 exception
