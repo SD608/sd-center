@@ -1,12 +1,12 @@
 {
-  "catalogVersion": 19,
-  "updatedAt": "2026-08-17T16:10:00+09:00",
+  "catalogVersion": 20,
+  "updatedAt": "2026-08-17T19:06:56+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
-      "version": "1.2.7",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.7_Desktop.zip?v=127",
-      "notes": "SD종합센터 v2.2.2부터 Windows 로그인 시 자동으로 백그라운드 실행되며, 트레이에서 PC↔온라인↔모바일 동기화를 계속하는 연결 허브입니다."
+      "version": "1.2.8",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.8_Desktop.zip?v=128",
+      "notes": "Windows 로그인 자동 시작에서는 화면을 띄우지 않고 트레이·백그라운드에서만 실행되어 PC↔온라인↔모바일 동기화를 유지합니다."
     },
     "sd-logistics-center-desktop": {
       "name": "SD 물류센터",
