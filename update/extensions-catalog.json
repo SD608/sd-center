@@ -1,12 +1,12 @@
 {
-  "catalogVersion": 23,
-  "updatedAt": "2026-08-18T00:45:00+09:00",
+  "catalogVersion": 24,
+  "updatedAt": "2026-08-18T00:55:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
-      "version": "1.2.8",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.8_Desktop.zip?v=128",
-      "notes": "Windows 로그인 자동 시작에서는 화면을 띄우지 않고 트레이·백그라운드에서만 실행되어 PC↔온라인↔모바일 동기화를 유지합니다."
+      "version": "1.2.9",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.2.9_Desktop.zip?v=129",
+      "notes": "PC 확장팩의 공용 sdwallet.sqlite 상태·거래 기록을 읽어 SD Online 계정의 업적 진행도로 누적 동기화합니다. 업적 서버가 일시적으로 없어도 기존 지갑 동기화는 계속 동작합니다."
     },
     "sd-logistics-center-desktop": {
       "name": "SD 물류센터",
