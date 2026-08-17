@@ -1,0 +1,119 @@
+name: Build SDOddEven v1.1.1 Hotfix
+
+on:
+  push:
+    branches:
+      - fix/odd-even-open-center
+    paths:
+      - '.github/workflows/build-odd-even-v111.yml'
+      - 'tools/patch-odd-even-v111.py'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/odd-even-open-center
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download v1.1.0 base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/odd111 && mkdir -p /tmp/odd111
+          gh release download 'v.2.2.1' --repo 'SD608/sd-center' --pattern 'SDOddEven_v1.1.0_Desktop.zip' --dir /tmp/odd111
+          unzip -q /tmp/odd111/SDOddEven_v1.1.0_Desktop.zip -d /tmp/odd111/src
+          APP_ROOT=$(find /tmp/odd111/src -name package.json -not -path '*/node_modules/*' -printf '%h\n' | head -n1)
+          test -n "$APP_ROOT"
+          echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
+
+      - name: Patch v1.1.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/patch-odd-even-v111.py "$APP_ROOT"
+
+      - name: Validate hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check "$APP_ROOT/main.js"
+          node --check "$APP_ROOT/src/open-center.js"
+          node --check "$APP_ROOT/preload.js"
+          node --check "$APP_ROOT/src/settings.js"
+          node --check "$APP_ROOT/src/wallet-database.js"
+          node --check "$APP_ROOT/src/game-engine.js"
+          node --check "$APP_ROOT/public/js/app.js"
+          grep -q 'require("./src/open-center")' "$APP_ROOT/main.js"
+          ! grep -q '../../shared/open-center' "$APP_ROOT/main.js"
+          test "$(node -p "require('$APP_ROOT/package.json').version")" = '1.1.1'
+          node - <<'NODE'
+          const mod = require(process.env.APP_ROOT + '/src/open-center.js');
+          if (!mod.isSdCenterUrl('sd-center://open')) throw new Error('sd-center protocol not recognized');
+          if (!mod.isSdCenterUrl('sdcenter://open')) throw new Error('sdcenter protocol not recognized');
+          if (mod.isSdCenterUrl('https://example.com')) throw new Error('false positive URL');
+          NODE
+
+      - name: Pack v1.1.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p downloads/extensions
+          ROOT_NAME=$(basename "$APP_ROOT")
+          PARENT=$(dirname "$APP_ROOT")
+          (cd "$PARENT" && zip -qr "$GITHUB_WORKSPACE/downloads/extensions/SDOddEven_v1.1.1_Desktop.zip" "$ROOT_NAME")
+          unzip -t downloads/extensions/SDOddEven_v1.1.1_Desktop.zip >/dev/null
+
+      - name: Update extension metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone, timedelta
+          from pathlib import Path
+
+          now = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec='seconds')
+          cat_path = Path('update/extensions-catalog.json')
+          cat = json.loads(cat_path.read_text(encoding='utf-8'))
+          cat['catalogVersion'] = int(cat.get('catalogVersion') or 0) + 1
+          cat['updatedAt'] = now
+          odd = cat['apps']['odd-even']
+          odd['version'] = '1.1.1'
+          odd['downloadUrl'] = 'https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.1.1_Desktop.zip?v=111'
+          odd['notes'] = '종합센터 v2.2.4에서 실행 시 발생하던 ../../shared/open-center 모듈 누락 오류를 수정했습니다. 홀짝 ZIP 내부에 종합센터 열기 호환 모듈을 자체 포함합니다.'
+          cat_path.write_text(json.dumps(cat, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          for rel in ['assets/js/extensions-data.js', 'extensions-data.js']:
+              p = Path(rel)
+              text = p.read_text(encoding='utf-8')
+              text = text.replace('"version": "v1.1.0"', '"version": "v1.1.1"', 1)
+              text = text.replace('"fileName": "SDOddEven_v1.1.0_Desktop.zip"', '"fileName": "SDOddEven_v1.1.1_Desktop.zip"', 1)
+              text = text.replace('"downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDOddEven_v1.1.0_Desktop.zip"', '"downloadUrl": "downloads/extensions/SDOddEven_v1.1.1_Desktop.zip?v=111"', 1)
+              text = text.replace('"updatedAt": "2026-08-16"', '"updatedAt": "2026-08-17"', 1)
+              p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add downloads/extensions/SDOddEven_v1.1.1_Desktop.zip update/extensions-catalog.json assets/js/extensions-data.js extensions-data.js
+          git commit -m 'SD홀짝 v1.1.1: open-center 모듈 누락 수정'
+          git push origin HEAD:fix/odd-even-open-center
