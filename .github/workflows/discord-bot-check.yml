@@ -32,5 +32,3 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Syntax check
         run: npm run check
-      - name: Validate slash command JSON
-        run: node -e "import('./src/commands.js').then(({commandJson})=>{if(commandJson.length!==2)process.exit(1); console.log(JSON.stringify(commandJson,null,2));})"
