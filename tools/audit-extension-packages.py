@@ -37,8 +37,23 @@ def clean_url(url: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
 
 
+def local_page_file(url: str) -> Path | None:
+    parts = urlsplit(url)
+    if parts.netloc.lower() != "sd608.github.io":
+        return None
+    prefix = "/sd-center/"
+    if not parts.path.startswith(prefix):
+        return None
+    candidate = ROOT / parts.path[len(prefix):]
+    return candidate if candidate.is_file() else None
+
+
 def download(url: str, dest: Path) -> None:
-    req = urllib.request.Request(clean_url(url), headers={"User-Agent": "SDCenter-extension-audit/1.0"})
+    local = local_page_file(url)
+    if local:
+        shutil.copy2(local, dest)
+        return
+    req = urllib.request.Request(clean_url(url), headers={"User-Agent": "SDCenter-extension-audit/1.1"})
     with urllib.request.urlopen(req, timeout=90) as r, dest.open("wb") as f:
         shutil.copyfileobj(r, f)
 
@@ -180,7 +195,6 @@ def audit_app(app_id: str, meta: dict, work: Path) -> dict:
         if "shared" in item["marker"]:
             result["warnings"].append(f"기본 앱 시절 공용 경로 의심: {item['file']} ({item['marker']})")
 
-    # 중복 제거
     result["warnings"] = list(dict.fromkeys(result["warnings"]))
     result["suspiciousReferences"] = [dict(t) for t in {tuple(sorted(x.items())) for x in result["suspiciousReferences"]}]
     return result
@@ -228,6 +242,8 @@ def main():
     OUT_MD.write_text("\n".join(lines), encoding="utf-8")
 
     print(json.dumps({"appsWithIssues": summary["appsWithIssues"], "appsWithWarnings": summary["appsWithWarnings"]}, ensure_ascii=False))
+    if summary["appsWithIssues"]:
+        raise SystemExit(f"Extension package audit failed: {summary['appsWithIssues']}")
 
 
 if __name__ == "__main__":
