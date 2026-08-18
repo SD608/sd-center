@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'tools/flea-v120-items-sprite.webp.b64'
+      - 'tools/flea-v120-items-sprite.part*.b64'
       - 'tools/flea-v120-items-manifest.txt'
       - '.github/workflows/rebuild-flea-v121-icons.yml'
   issues:
@@ -40,6 +41,33 @@ jobs:
 
       - name: Install Pillow
         run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Reassemble item sprite
+        shell: bash
+        run: |
+          cat \
+            tools/flea-v120-items-sprite.part00.b64 \
+            tools/flea-v120-items-sprite.part01.b64 \
+            tools/flea-v120-items-sprite.part02.b64 \
+            tools/flea-v120-items-sprite.part03a.b64 \
+            tools/flea-v120-items-sprite.part03b.b64 \
+            tools/flea-v120-items-sprite.part04a.b64 \
+            tools/flea-v120-items-sprite.part04b.b64 \
+            > tools/flea-v120-items-sprite.webp.b64
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          p = Path('tools/flea-v120-items-sprite.webp.b64')
+          text = ''.join(p.read_text(encoding='ascii').split())
+          if len(text) != 36720:
+              raise SystemExit(f'bad sprite base64 length: {len(text)}')
+          raw = base64.b64decode(text, validate=True)
+          if len(raw) != 27538:
+              raise SystemExit(f'bad sprite byte length: {len(raw)}')
+          if raw[:4] != b'RIFF' or raw[8:12] != b'WEBP':
+              raise SystemExit('sprite is not a WEBP RIFF file')
+          print('sprite verified:', len(text), 'base64 chars,', len(raw), 'bytes')
+          PY
 
       - name: Build v1.2.0 with refreshed artwork
         shell: bash
@@ -122,6 +150,7 @@ jobs:
           git config user.name 'SD Build Bot'
           git config user.email 'actions@users.noreply.github.com'
           git add \
+            tools/flea-v120-items-sprite.webp.b64 \
             downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip \
             downloads/extensions/SDFleaMarket_v1.2.0_Desktop.sha256 \
             downloads/extensions/SDFleaMarket_v1.2.1_Desktop.zip \
