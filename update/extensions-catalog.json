@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 35,
-  "updatedAt": "2026-08-18T21:45:00+09:00",
+  "catalogVersion": 36,
+  "updatedAt": "2026-08-19T01:10:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -42,11 +42,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.1.9",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.9_Desktop.zip?v=119",
+      "version": "1.2.0",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip?v=120",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "은행 도주 성공 시 확보한 금고를 즉시 개봉하지 않고 상자 보관함에 저장합니다. 현장 금고 명칭은 번호 없이 '금고'로 표시하며 v1.1.8의 금고 8개·꽝 0개·추격전 보통 고정 규칙을 유지합니다.",
+      "notes": "36종 아이템 고유 이미지와 아이템 사전을 추가했습니다. 상자별 카테고리, 획득 여부, 최초 획득 날짜, 누적 획득 개수, 가격 오름차·내림차 정렬을 지원합니다.",
       "requiredCenterVersion": "2.2.0"
     },
     "vault": {
