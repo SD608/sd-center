@@ -8,4 +8,9 @@
 .profile-showcase-picker-option>input{width:18px;height:18px;flex:0 0 auto;accent-color:#38bdf8}
 #editorShowcasePicker.profile-editor-option-list{max-height:none;overflow:visible;grid-auto-rows:max-content;align-content:start}
 #editorShowcasePicker .profile-editor-option{min-height:44px}
-@media(max-width:640px){.profile-flea-showcase-grid{grid-template-columns:1fr}.profile-showcase-item{padding:9px 10px}}
+.profile-showcase-inline-section{display:grid;gap:10px;margin:12px 0 16px;padding:14px;border:1px solid rgba(96,165,250,.24);border-radius:16px;background:rgba(59,130,246,.055)}
+.profile-showcase-inline-section>header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.profile-showcase-inline-section h4{margin:0;color:#e7f0fb;font-size:.84rem}
+.profile-showcase-picker-count{display:inline-flex;align-items:center;min-height:28px;padding:5px 9px;border:1px solid rgba(129,158,198,.18);border-radius:999px;color:#a9bdd8;font-size:.65rem;font-weight:900;white-space:nowrap}
+.profile-showcase-layout-summary{display:block!important;margin-top:3px;color:#89a5c8!important;font-size:.63rem!important;font-weight:800}
+@media(max-width:640px){.profile-flea-showcase-grid{grid-template-columns:1fr}.profile-showcase-item{padding:9px 10px}.profile-showcase-inline-section>header{align-items:flex-start;flex-direction:column}}
