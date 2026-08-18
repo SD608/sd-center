@@ -139,15 +139,15 @@ window.SD_EXTENSION_PACKS = [
     "id": "sd-flea-market",
     "name": "SD 플리마켓",
     "stage": "PC Expansion",
-    "version": "v1.2.0",
+    "version": "v1.2.1",
     "category": "파밍·습격 확장팩",
     "icon": "assets/icons/flea-market.png?v=3",
-    "fileName": "SDFleaMarket_v1.2.0_Desktop.zip",
-    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip?v=120",
-    "description": "36종 아이템 고유 이미지와 아이템 사전을 추가한 플리마켓 확장팩입니다. 은행 습격 금고는 상자 보관함에서 직접 개봉합니다.",
+    "fileName": "SDFleaMarket_v1.2.1_Desktop.zip",
+    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.2.1_Desktop.zip?v=121",
+    "description": "실제 플리마켓 36종 아이템 이미지를 새 아이콘으로 교체하고 아이템 사전과 물건 보관함에 동일하게 적용한 버전입니다. 기존 획득 기록과 보관함 데이터는 유지됩니다.",
     "requirements": "SD종합센터 v2.2.0 이상 · SD Link 로그인 · Windows 10/11",
     "updatedAt": "2026-08-19",
-    "tags": ["S등급·본부 연동", "은행 3D 안정화", "SD Link 계정"],
+    "tags": ["36종 아이템 이미지", "아이템 사전", "물건 보관함"],
     "featured": true
   }
 ];
