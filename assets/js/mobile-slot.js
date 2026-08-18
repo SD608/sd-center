@@ -64,9 +64,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function playReelStopSound(index) {
-    const base = [310, 390, 490][index] || 390;
-    tone(base, 0, 0.075, "square", 0.045);
-    tone(base * 2, 0.028, 0.055, "triangle", 0.026);
+    const base = [620, 780, 980][index] || 780;
+    tone(base, 0, 0.065, "square", 0.045);
+    tone(base * 2.15, 0.022, 0.045, "triangle", 0.03);
   }
 
   function playWinSound(multiplier, jackpot = false) {
