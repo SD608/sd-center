@@ -1,0 +1,120 @@
+name: Rebuild Flea Market v1.2.1 Icons
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/flea-v120-items-sprite.webp.b64'
+      - 'tools/flea-v120-items-manifest.txt'
+      - '.github/workflows/rebuild-flea-v121-icons.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Build v1.2.0 with refreshed artwork
+        shell: bash
+        run: |
+          cat tools/build-flea-v120.part0.py tools/build-flea-v120.part1.py tools/build-flea-v120.part2.py > /tmp/build-flea-v120.py
+          python /tmp/build-flea-v120.py
+
+      - name: Promote refreshed package to v1.2.1
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, shutil, tempfile, zipfile
+
+          src = Path('downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip')
+          out = Path('downloads/extensions/SDFleaMarket_v1.2.1_Desktop.zip')
+          sha = Path('downloads/extensions/SDFleaMarket_v1.2.1_Desktop.sha256')
+
+          with tempfile.TemporaryDirectory() as td:
+              root = Path(td)
+              with zipfile.ZipFile(src) as z:
+                  z.extractall(root)
+              pkg = root / 'sd-flea-market'
+              if not pkg.is_dir():
+                  raise RuntimeError('sd-flea-market package root missing')
+
+              package_json = pkg / 'package.json'
+              data = json.loads(package_json.read_text(encoding='utf-8'))
+              data['version'] = '1.2.1'
+              package_json.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+              app_json = pkg / 'sd-app.json'
+              data = json.loads(app_json.read_text(encoding='utf-8'))
+              data['version'] = '1.2.1'
+              data['displayVersion'] = 'PC Expansion · v1.2.1'
+              app_json.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+              (pkg / 'RELEASE_NOTES.txt').write_text(
+                  'SD 플리마켓 v1.2.1\n\n'
+                  '- 아이템 사전과 물건 보관함의 36종 아이템 이미지를 새 아이콘으로 교체\n'
+                  '- 아이템 이름과 이미지 좌표를 정확히 다시 매핑\n'
+                  '- 기존 아이템 사전, 보관함, 획득 기록, 가격 및 게임 진행도 유지\n',
+                  encoding='utf-8'
+              )
+
+              if out.exists():
+                  out.unlink()
+              with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+                  for path in sorted(pkg.rglob('*')):
+                      if path.is_file():
+                          z.write(path, Path('sd-flea-market') / path.relative_to(pkg))
+
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          sha.write_text(f'{digest}  {out.name}\n', encoding='utf-8')
+          print(out, out.stat().st_size, digest)
+          PY
+
+      - name: Validate item artwork count
+        shell: bash
+        run: |
+          python - <<'PY'
+          import zipfile
+          from pathlib import Path
+          for filename in ['SDFleaMarket_v1.2.0_Desktop.zip', 'SDFleaMarket_v1.2.1_Desktop.zip']:
+              path = Path('downloads/extensions') / filename
+              with zipfile.ZipFile(path) as z:
+                  names = [n for n in z.namelist() if n.startswith('sd-flea-market/public/assets/items/') and n.endswith('.png')]
+                  if len(names) != 36:
+                      raise SystemExit(f'{filename}: expected 36 item images, got {len(names)}')
+                  app = z.read('sd-flea-market/public/app.js').decode('utf-8')
+                  for token in ['dictionary-product-image', 'inventory-item-image', 'itemImageHtml']:
+                      if token not in app:
+                          raise SystemExit(f'{filename}: missing {token}')
+              print(filename, 'OK')
+          PY
+
+      - name: Commit rebuilt packages
+        shell: bash
+        run: |
+          git config user.name 'SD Build Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip \
+            downloads/extensions/SDFleaMarket_v1.2.0_Desktop.sha256 \
+            downloads/extensions/SDFleaMarket_v1.2.1_Desktop.zip \
+            downloads/extensions/SDFleaMarket_v1.2.1_Desktop.sha256
+          if git diff --cached --quiet; then
+            echo 'No package changes to commit.'
+          else
+            git commit -m 'Rebuild flea market item artwork'
+            git push
+          fi
