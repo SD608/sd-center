@@ -6,4 +6,6 @@
 .profile-showcase-empty{font-size:.85rem;color:#94a3b8}
 .profile-showcase-picker-option{cursor:pointer}
 .profile-showcase-picker-option>input{width:18px;height:18px;flex:0 0 auto;accent-color:#38bdf8}
+#editorShowcasePicker.profile-editor-option-list{max-height:none;overflow:visible;grid-auto-rows:max-content;align-content:start}
+#editorShowcasePicker .profile-editor-option{min-height:44px}
 @media(max-width:640px){.profile-flea-showcase-grid{grid-template-columns:1fr}.profile-showcase-item{padding:9px 10px}}
