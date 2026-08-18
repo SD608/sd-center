@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v20-profile-edit-tab";
+const CACHE_NAME = "sd608-mobile-v21-profile-coins-gold";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -12,7 +12,7 @@ const APP_SHELL = [
   "./flea-market-mobile.html",
   "./profile.html",
   "./profile-card-edit.html",
-  "./profile-card-edit.html?embed=1",
+  "./profile-card-edit.html?embed=1&v=2",
   "./profile-shop.html",
   "./login.html",
   "./signup.html",
@@ -30,6 +30,7 @@ const APP_SHELL = [
   "./assets/css/profile-card-layout.css?v=1",
   "./assets/css/profile-card-edit.css?v=2-embed",
   "./assets/css/profile-tabs.css?v=1",
+  "./assets/css/profile-assets-v2.css?v=1",
   "./assets/js/supabase-config.js?v=2",
   "./assets/js/auth-common.js?v=2",
   "./assets/js/mobile-common.js?v=2",
@@ -40,8 +41,8 @@ const APP_SHELL = [
   "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
   "./assets/js/flea-market-mobile.js?v=1",
-  "./assets/js/profile-page.js?v=5-card-layout",
-  "./assets/js/profile-card-edit.js?v=1",
+  "./assets/js/profile-page-v2.js?v=1",
+  "./assets/js/profile-card-edit-v2.js?v=1",
   "./assets/js/profile-card-edit-embed.js?v=1",
   "./assets/js/profile-tabs.js?v=1",
   "./assets/js/profile-shop.js?v=3-achievement-filters",
@@ -90,7 +91,6 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // HTML 이동은 항상 네트워크 우선.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(async () => (await caches.match(request)) || caches.match("./offline.html"))
@@ -98,7 +98,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // JS/CSS/JSON은 네트워크 우선으로 유지해 오래된 코드가 남지 않게 합니다.
   const networkFirst = request.destination === "script"
     || request.destination === "style"
     || url.pathname.endsWith(".json");
@@ -110,7 +109,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 이미지 등 정적 자산은 캐시 우선.
   event.respondWith(
     caches.match(request).then((cached) => cached || fetchAndRefreshCache(request))
   );

@@ -12,11 +12,12 @@
 <link rel="stylesheet" href="assets/css/profile-page.css?v=1" />
 <link rel="stylesheet" href="assets/css/profile-card-layout.css?v=1" />
 <link rel="stylesheet" href="assets/css/profile-tabs.css?v=1" />
+<link rel="stylesheet" href="assets/css/profile-assets-v2.css?v=1" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="assets/js/supabase-config.js?v=2" defer></script>
 <script src="assets/js/auth-common.js?v=2" defer></script>
 <script src="assets/js/achievements-all.js?v=20260818-profile" defer></script>
-<script src="assets/js/profile-page.js?v=5-card-layout" defer></script>
+<script src="assets/js/profile-page-v2.js?v=1" defer></script>
 <script src="assets/js/profile-achievements.js?v=20260818" defer></script>
 <script src="assets/js/profile-tabs.js?v=1" defer></script>
 </head>
@@ -77,7 +78,13 @@
           <section class="profile-card-module" data-card-block="gold">
             <span class="profile-card-module-label">GOLD</span>
             <strong id="profileGold" class="profile-card-value">-</strong>
-            <p class="profile-card-module-note">SD금고 보유 금 기준</p>
+            <p id="profileGoldModeNote" class="profile-card-module-note">수량 기준</p>
+          </section>
+
+          <section class="profile-card-module" data-card-block="coins">
+            <span class="profile-card-module-label">SD COIN HOLDINGS</span>
+            <div id="profileCoins" class="profile-coin-holdings"><span class="profile-coin-empty">불러오는 중...</span></div>
+            <p class="profile-card-module-note">6종 코인 보유 수량</p>
           </section>
 
           <section class="profile-card-module" data-card-block="slot_best">
@@ -118,7 +125,7 @@
         <div><span class="section-kicker">LIVE CARD EDITOR</span><h2>프로필 카드 실시간 편집</h2><p>왼쪽 카드와 오른쪽 설정을 한 화면에서 보면서 수정할 수 있습니다.</p></div>
         <span class="profile-edit-tab-hint">저장 전 변경은 미리보기만 적용</span>
       </div>
-      <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 카드 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1"></iframe>
+      <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 카드 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1&amp;v=2"></iframe>
     </section>
   </section>
 </main>
