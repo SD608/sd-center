@@ -13,10 +13,11 @@
 <link rel="stylesheet" href="assets/css/profile-card-layout.css?v=3-clean" />
 <link rel="stylesheet" href="assets/css/profile-tabs.css?v=1" />
 <link rel="stylesheet" href="assets/css/profile-assets-v3.css?v=1" />
+<link rel="stylesheet" href="assets/css/profile-showcase-card.css?v=1" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="assets/js/supabase-config.js?v=2" defer></script>
 <script src="assets/js/auth-common.js?v=2" defer></script>
-<script src="assets/js/profile-page-v7.js?v=1" defer></script>
+<script src="assets/js/profile-page-v8.js?v=1" defer></script>
 <script src="assets/js/profile-tabs-v2.js?v=1" defer></script>
 </head>
 <body class="auth-body profile-body">
@@ -81,6 +82,11 @@
             <span class="profile-card-module-label">SD코인 보유량</span>
             <div id="profileCoins" class="profile-coin-holdings"><span class="profile-coin-empty">불러오는 중...</span></div>
           </section>
+
+          <section class="profile-card-module profile-card-showcase-module" data-card-block="flea_showcase">
+            <span class="profile-card-module-label">플리마켓 자랑 아이템</span>
+            <div id="profileFleaShowcase" class="profile-flea-showcase-grid"><span class="profile-showcase-empty">등록된 아이템 없음</span></div>
+          </section>
         </div>
 
         <div id="profileCardEmpty" class="profile-card-empty" hidden>공개 항목 없음</div>
@@ -91,7 +97,7 @@
       <div class="profile-edit-tab-heading">
         <div><span class="section-kicker">실시간 프로필 편집</span><h2>프로필 실시간 편집</h2></div>
       </div>
-      <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1&amp;v=8"></iframe>
+      <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1&amp;v=9"></iframe>
     </section>
   </section>
 </main>

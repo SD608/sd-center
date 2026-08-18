@@ -1,0 +1,58 @@
+name: Build Flea Market v1.1.7 Bank Escape Fix
+
+on:
+  push:
+    branches: [feat/profile-showcase-center-icons-20260818]
+    paths:
+      - 'tools/patch-flea-v117-bank-escape.py'
+      - '.github/workflows/build-flea-v117-bank-escape.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/profile-showcase-center-icons-20260818
+          fetch-depth: 0
+      - name: Build v1.1.7
+        run: python tools/patch-flea-v117-bank-escape.py
+      - name: Validate package
+        shell: bash
+        run: |
+          test -s downloads/extensions/SDFleaMarket_v1.1.7_Desktop.zip
+          python - <<'PY'
+          import json, zipfile
+          from pathlib import Path
+          z = Path('downloads/extensions/SDFleaMarket_v1.1.7_Desktop.zip')
+          with zipfile.ZipFile(z) as a:
+              names = a.namelist()
+              pkg_name = next(n for n in names if n.endswith('package.json') and 'node_modules/' not in n)
+              root = pkg_name[:-len('package.json')]
+              pkg = json.loads(a.read(pkg_name))
+              assert pkg['version'] == '1.1.7'
+              for rel in ['main.js', 'public/app.js']:
+                  name = root + rel
+                  if name not in names:
+                      continue
+                  text = a.read(name).decode('utf-8')
+                  assert 'Number(mission.safeOpened || 0) < 1' not in text
+                  assert '은행 금고를 최소 1개는 턴 뒤에 탈출할 수 있습니다.' not in text
+                  assert 'safeCarried' in text
+          print('v1.1.7 package validation passed')
+          PY
+          grep -q '"version": "v1.1.7"' extensions-data.js
+          grep -q 'SDFleaMarket_v1.1.7_Desktop.zip' update/extensions-catalog.json
+      - name: Commit package and catalog
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add downloads/extensions/SDFleaMarket_v1.1.7_Desktop.zip extensions-data.js assets/js/extensions-data.js update/extensions-catalog.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m '플리마켓 v1.1.7 은행 금고 탈출 판정 수정'
+          git push origin HEAD:feat/profile-showcase-center-icons-20260818

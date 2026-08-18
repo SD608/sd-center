@@ -1,0 +1,240 @@
+name: Build and publish SDCenter v2.2.7 App Icon Fix
+
+on:
+  push:
+    branches: [feat/profile-showcase-center-icons-20260818]
+    paths:
+      - 'tools/patch-v227-app-icons.js'
+      - 'tools/build-v227-installer.js'
+      - '.github/workflows/build-v227-app-icons.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/profile-showcase-center-icons-20260818
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified v2.2.6 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.6.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.6/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '3e32c94bbacb5c0dc0d4de45a8b1973c3c0f2a97c344cc137763d5928b13dbfb'){ throw "v2.2.6 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.2.6 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.6'
+          if(-not (Test-Path (Join-Path $appDir 'SDCenter.exe'))){ throw 'v2.2.6 install missing' }
+          "APP_DIR=$appDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$appDir\resources\app" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch SDCenter v2.2.7 app icons
+        shell: pwsh
+        run: node tools/patch-v227-app-icons.js "$env:APP_ROOT"
+
+      - name: Validate patched source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\src\app-registry.js"
+          node --check "$env:APP_ROOT\public\js\app.js"
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.7'){ throw "Center version mismatch: $($pkg.version)" }
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          $registry=Get-Content "$env:APP_ROOT\src\app-registry.js" -Raw
+          foreach($m in @('installedAppIconPath','public/icons/icon.png','assets/icons/icon-512.png','pathToFileURL(iconPath).href')) {
+            if(-not $main.Contains($m)){ throw "icon recovery marker missing: $m" }
+          }
+          foreach($m in @('iconCandidates','public/icon-512.png','assets/icon-512.png')) {
+            if(-not $registry.Contains($m)){ throw "ZIP icon discovery marker missing: $m" }
+          }
+          foreach($m in @('installInspectedZipWithRetry','forceKillChildTree','taskkill.exe','--sd-link-auto-start','autoUpdater')) {
+            if(-not $main.Contains($m)){ throw "v2.2.6 safety marker missing: $m" }
+          }
+
+      - name: Test ZIP icon discovery
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $fixture=Join-Path $env:RUNNER_TEMP 'icon-fixture'
+          New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'assets') | Out-Null
+          '{"name":"icon-fixture","version":"1.0.0","main":"main.js"}' | Set-Content (Join-Path $fixture 'package.json') -Encoding utf8
+          'console.log("fixture")' | Set-Content (Join-Path $fixture 'main.js') -Encoding utf8
+          [IO.File]::WriteAllBytes((Join-Path $fixture 'assets\icon-512.png'), [byte[]](137,80,78,71,13,10,26,10))
+          $zip=Join-Path $env:RUNNER_TEMP 'icon-fixture.zip'
+          Compress-Archive -Path (Join-Path $fixture '*') -DestinationPath $zip -Force
+          $env:ICON_FIXTURE_ZIP=$zip
+          $test=Join-Path $env:RUNNER_TEMP 'test-icon-discovery.js'
+          @'
+          const path = require("node:path");
+          const registry = require(path.join(process.env.APP_ROOT, "src", "app-registry.js"));
+          const result = registry.inspectZip(process.env.ICON_FIXTURE_ZIP);
+          if (result.metadata.icon !== "assets/icon-512.png") {
+            throw new Error("icon discovery failed: " + result.metadata.icon);
+          }
+          console.log(result.metadata.icon);
+          '@ | Set-Content $test -Encoding utf8
+          Push-Location $env:APP_ROOT
+          node $test
+          Pop-Location
+
+      - name: Install Squirrel builder
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $builder=Join-Path $env:RUNNER_TEMP 'squirrel-builder-v227'
+          New-Item -ItemType Directory -Force -Path $builder | Out-Null
+          Push-Location $builder
+          npm init -y | Out-Null
+          npm install electron-winstaller@latest --no-audit --no-fund
+          Pop-Location
+          "NODE_PATH=$builder\node_modules" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          $output=Join-Path $env:RUNNER_TEMP 'squirrel-v227'
+          "BUILD_OUTPUT=$output" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build SDCenter v2.2.7
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/build-v227-installer.js
+          $setup=Join-Path $env:BUILD_OUTPUT 'SDCenterSetup.exe'
+          $releases=Join-Path $env:BUILD_OUTPUT 'RELEASES'
+          $nupkg=Get-ChildItem $env:BUILD_OUTPUT -Filter '*-full.nupkg' | Select-Object -First 1
+          if(-not (Test-Path $setup)){ throw 'v2.2.7 installer missing' }
+          if(-not (Test-Path $releases)){ throw 'Squirrel RELEASES missing' }
+          if(-not $nupkg){ throw 'Squirrel full nupkg missing' }
+          $size=(Get-Item $setup).Length
+          if($size -lt 100MB){ throw "Installer too small: $size" }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_RELEASES=$releases" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_NUPKG=$($nupkg.FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_NUPKG_NAME=$($nupkg.Name)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install and smoke test v2.2.7
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Start-Process -FilePath $env:BUILT_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 6
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $dir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7'
+          $exe=Join-Path $dir 'SDCenter.exe'
+          if(-not (Test-Path $exe)){ throw 'v2.2.7 in-place install failed' }
+          $pkg=Get-Content (Join-Path $dir 'resources\app\package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.7'){ throw 'Installed Center version mismatch' }
+          $installedMain=Get-Content (Join-Path $dir 'resources\app\main.js') -Raw
+          if(-not $installedMain.Contains('installedAppIconPath')){ throw 'installed icon recovery missing' }
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "Center exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Prepare release files
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          $dir=Join-Path $env:GITHUB_WORKSPACE 'release-v2.2.7'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item $env:BUILT_SETUP (Join-Path $dir 'SDCenterSetup.exe') -Force
+          Copy-Item $env:BUILT_RELEASES (Join-Path $dir 'RELEASES') -Force
+          Copy-Item $env:BUILT_NUPKG (Join-Path $dir $env:BUILT_NUPKG_NAME) -Force
+          gh release download 'v.2.2.6' --repo 'SD608/sd-center' --pattern 'SDCenter-Mobile.apk' --dir $dir
+          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $dir 'SHA256.txt') -Encoding ascii
+          @(
+            'SD종합센터 v2.2.7',
+            '- 등록 앱 아이콘이 종합센터 기본 아이콘으로 보이던 문제 수정',
+            '- 새 ZIP 앱 설치 시 실제 아이콘 자동 탐색',
+            '- 기존 등록 앱도 앱 폴더에서 아이콘 자동 복구',
+            '- v2.2.6 설치/업데이트 잠금 및 재시도 수정 유지',
+            '- 기존 앱 저장 데이터 유지',
+            "Installer bytes: $env:BUILT_SIZE",
+            "SHA256: $env:BUILT_HASH"
+          ) | Set-Content (Join-Path $dir 'BUILD_INFO.txt') -Encoding utf8
+          "RELEASE_DIR=$dir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Publish v2.2.7 release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference='Stop'
+          gh release create 'v.2.2.7' `
+            "$env:RELEASE_DIR/SDCenterSetup.exe" `
+            "$env:RELEASE_DIR/SDCenter-Mobile.apk" `
+            "$env:RELEASE_DIR/RELEASES" `
+            "$env:RELEASE_DIR/$env:BUILT_NUPKG_NAME" `
+            "$env:RELEASE_DIR/SHA256.txt" `
+            "$env:RELEASE_DIR/BUILD_INFO.txt" `
+            --repo 'SD608/sd-center' `
+            --target 'feat/profile-showcase-center-icons-20260818' `
+            --title 'SD종합센터 v2.2.7' `
+            --notes '등록된 앱이 종합센터 기본 아이콘으로 표시되던 문제를 수정했습니다. 새 앱은 ZIP 내부 아이콘을 자동 탐색하고, 기존 등록 앱도 앱 폴더에서 아이콘을 다시 찾아 복구합니다.'
+
+      - name: Update website and update metadata
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          @'
+          import json
+          import os
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          root = Path('.')
+          now = datetime.now(timezone(timedelta(hours=9))).isoformat(timespec='seconds')
+          manifest = {
+              'version': '2.2.7',
+              'downloadUrl': 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe',
+              'sha256': os.environ['BUILT_HASH'],
+              'notes': '등록 앱 아이콘 자동 탐색과 기존 앱 아이콘 복구 기능을 추가했습니다.',
+              'publishedAt': now,
+              'squirrelFeedUrl': 'https://github.com/SD608/sd-center/releases/latest/download'
+          }
+          (root / 'update/center-update.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          site = root / 'site-config.js'
+          text = site.read_text(encoding='utf-8')
+          text = text.replace('v2.2.6 Stack Overflow Hotfix', 'v2.2.7 App Icon Fix')
+          text = text.replace('version: "2.2.6"', 'version: "2.2.7"')
+          text = text.replace('releases/download/v.2.2.6/SDCenterSetup.exe', 'releases/download/v.2.2.7/SDCenterSetup.exe')
+          text = text.replace('releases/tag/v.2.2.6', 'releases/tag/v.2.2.7')
+          site.write_text(text, encoding='utf-8')
+          '@ | Set-Content "$env:RUNNER_TEMP\update-v227-site.py" -Encoding utf8
+          python "$env:RUNNER_TEMP\update-v227-site.py"
+
+      - name: Commit v2.2.7 metadata
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add update/center-update.json site-config.js
+          if(git diff --cached --quiet){ exit 0 }
+          git commit -m '센터 v2.2.7 등록 앱 아이콘 복구 배포 반영'
+          git push origin HEAD:feat/profile-showcase-center-icons-20260818
