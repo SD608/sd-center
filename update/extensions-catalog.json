@@ -1,12 +1,12 @@
 {
-  "catalogVersion": 30,
-  "updatedAt": "2026-08-18T08:40:00+09:00",
+  "catalogVersion": 31,
+  "updatedAt": "2026-08-18T10:05:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
-      "version": "1.3.1",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.3.1_Desktop.zip?v=131",
-      "notes": "플리마켓 v1.1.6 아이템 스냅샷을 로그인 세션으로 서버에 업로드하고 실제 서버 보유 목록을 PC에 다시 전달합니다. 기존 업적·물류 동기화 기능을 유지합니다."
+      "version": "1.4.0",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.0_Desktop.zip?v=140",
+      "notes": "PC 슬롯·홀짝이 SD Link의 localhost 인증 브리지를 통해 모바일과 동일한 SD Online 게임 서버를 사용합니다. 로그인 토큰은 SD Link 내부에만 보관됩니다."
     },
     "sd-logistics-center-desktop": {
       "name": "SD 물류센터",
@@ -16,9 +16,9 @@
     },
     "sd-slot": {
       "name": "SD슬롯",
-      "version": "1.0.6",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_Stage7_Desktop.zip",
-      "notes": "SD지갑과 연동되는 3릴 슬롯머신 시뮬레이션입니다. 다양한 배수의 보상과 낮은 확률의 고배율 결과, 잭팟을 노릴 수 있습니다."
+      "version": "1.1.0",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_v1.1.0_Desktop.zip?v=110",
+      "notes": "PC 슬롯의 잔액·확률·결과·게임 기록을 모바일과 동일한 play_sd_slot 서버 RPC로 통합했습니다. SD Link v1.4.0 로그인이 필요합니다."
     },
     "sd-mukjippa": {
       "name": "SD묵찌빠",
@@ -55,9 +55,9 @@
     },
     "odd-even": {
       "name": "SD홀짝",
-      "version": "1.1.1",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.1.1_Desktop.zip?v=111",
-      "notes": "종합센터 v2.2.4에서 실행 시 발생하던 ../../shared/open-center 모듈 누락 오류를 수정했습니다. 홀짝 ZIP 내부에 종합센터 열기 호환 모듈을 자체 포함합니다."
+      "version": "1.2.0",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.2.0_Desktop.zip?v=120",
+      "notes": "PC 홀짝의 베팅·주사위·정산을 모바일과 동일한 서버 RPC로 통합했습니다. PC와 모바일 게임 기록과 업적이 같은 계정으로 합쳐집니다."
     },
     "miner": {
       "name": "SD광부",
