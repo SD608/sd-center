@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>SD슬롯</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="fireworks" class="fireworks" aria-hidden="true"></div>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon"><span>777</span></div>
+        <div>
+          <h1>SD슬롯</h1>
+          <p>SD지갑 가상잔액 전용 · 실제 금전 사용 불가</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="soundButton" class="ghost-button" type="button">🔊 소리 켬</button>
+        <button id="centerButton" class="ghost-button" type="button">종합센터</button>
+      </div>
+    </header>
+
+    <section class="notice">
+      <strong>게임 규칙</strong>
+      <span>베팅금은 회전 전에 먼저 차감되며, 3개 릴이 모두 일치한 경우에만 배당금이 가상계좌로 입금됩니다.</span>
+    </section>
+
+    <div class="layout">
+      <section class="machine-panel">
+        <div class="machine">
+          <div class="machine-top">
+            <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
+            <div class="machine-title">SD JACKPOT</div>
+            <span class="bulb"></span><span class="bulb"></span><span class="bulb"></span>
+          </div>
+
+          <div class="reel-window">
+            <div class="payline"></div>
+            <div class="reel" data-reel="0"><div class="symbol symbol-stone" aria-label="돌"><span class="symbol-art" aria-hidden="true">◆</span></div></div>
+            <div class="reel" data-reel="1"><div class="symbol symbol-coal" aria-label="석탄"><span class="symbol-art" aria-hidden="true">●</span></div></div>
+            <div class="reel" data-reel="2"><div class="symbol symbol-copper" aria-label="구리"><span class="symbol-art" aria-hidden="true">⬢</span></div></div>
+          </div>
+
+          <div class="result-board" id="resultBoard">
+            <span class="result-label">READY</span>
+            <strong id="resultText">베팅금을 선택하고 레버를 당기세요</strong>
+            <span id="payoutText">3개가 일치하면 당첨</span>
+          </div>
+
+          <div class="machine-controls">
+            <div class="bet-control">
+              <label for="betInput">베팅금</label>
+              <div class="bet-input-wrap">
+                <input id="betInput" type="text" inputmode="numeric" value="1,000" autocomplete="off">
+                <span>원</span>
+              </div>
+              <div class="preset-row" id="presetRow">
+                <button type="button" data-bet="1000">+1,000</button>
+                <button type="button" data-bet="5000">+5,000</button>
+                <button type="button" data-bet="10000">+10,000</button>
+                <button type="button" data-bet="100000">+100,000</button>
+                <button type="button" data-bet="1000000" class="max-bet-button">+1,000,000</button>
+                <button type="button" data-action="reset" class="reset-bet-button">초기화</button>
+              </div>
+            </div>
+            <button id="spinButton" class="spin-button" type="button">
+              <span>SPIN</span><small>선결제 후 회전</small>
+            </button>
+          </div>
+
+          <button id="lever" class="lever" type="button" aria-label="슬롯 레버">
+            <span class="lever-arm" aria-hidden="true">
+              <span class="lever-ball"></span>
+              <span class="lever-stick"></span>
+            </span>
+            <span class="lever-base" aria-hidden="true"></span>
+          </button>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="card wallet-card">
+          <div class="card-heading">
+            <div><span class="eyebrow">연결 계좌</span><h2>SD지갑</h2></div>
+            <button id="refreshButton" class="icon-button" type="button" title="계좌 새로고침 (F5)">↻</button>
+          </div>
+          <select id="accountSelect" aria-label="계좌 선택"><option value="">계좌를 연결하세요</option></select>
+          <div class="wallet-status">
+            <span>현재 잔액</span>
+            <strong id="balanceText">-</strong>
+          </div>
+          <div class="wallet-actions">
+            <button id="autoDetectButton" type="button">자동 연결</button>
+            <button id="chooseDbButton" type="button">직접 선택</button>
+          </div>
+          <p id="walletMessage" class="small-message">SD지갑을 한 번 실행한 뒤 자동 연결을 누르세요. 계좌 변경 후 F5를 누르면 새로고침됩니다.</p>
+        </section>
+
+        <section class="card probability-card">
+          <div class="card-heading"><div><span class="eyebrow">배당표</span><h2>당첨 확률</h2></div><span class="rtp">RTP 75%</span></div>
+          <div id="paytable" class="paytable"></div>
+        </section>
+
+        <section class="card history-card">
+          <div class="card-heading"><div><span class="eyebrow">최근 기록</span><h2>가상 거래</h2></div></div>
+          <div id="transactionList" class="transaction-list"><p class="empty">계좌를 선택하세요.</p></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>

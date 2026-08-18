@@ -1,0 +1,13 @@
+{
+  "productName": "SD홀짝",
+  "id": "odd-even",
+  "userDataFolder": "SD홀짝",
+  "icon": "public/icons/icon-512.png",
+  "improvement": "간단한 홀·짝 선택으로 빠르게 즐기는 SD지갑 연동 미니게임입니다.",
+  "description": "보안 난수 주사위로 진행하는 가상 잔액 홀짝 게임입니다.",
+  "entry": "main.js",
+  "version": "1.1.1",
+  "name": "SD홀짝",
+  "displayVersion": "Stage 4 · v1.1.0",
+  "accent": "purple"
+}
