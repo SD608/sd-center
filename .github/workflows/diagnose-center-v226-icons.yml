@@ -39,6 +39,7 @@ jobs:
           Copy-Item (Join-Path $env:APP_ROOT 'main.js') (Join-Path $out 'main.js') -Force
           Copy-Item (Join-Path $env:APP_ROOT 'preload.js') (Join-Path $out 'preload.js') -Force
           Copy-Item (Join-Path $env:APP_ROOT 'public\js\app.js') (Join-Path $out 'public__app.js') -Force
+          Copy-Item (Join-Path $env:APP_ROOT 'src\app-registry.js') (Join-Path $out 'app-registry.js') -Force
           Copy-Item (Join-Path $env:APP_ROOT 'package.json') (Join-Path $out 'package.json') -Force
       - name: Commit diagnostics
         shell: pwsh
@@ -48,5 +49,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add diagnostics/center-v226-source
           if(git diff --cached --quiet){ exit 0 }
-          git commit -m '센터 v2.2.6 앱 아이콘 처리 소스 진단'
+          git commit -m '센터 v2.2.6 앱 레지스트리 아이콘 소스 진단'
           git push origin HEAD:feat/profile-showcase-center-icons-20260818
