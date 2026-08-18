@@ -1,0 +1,170 @@
+ 250000], ["프리미엄 헤드폰", 300000], ["고급 태블릿", 350000],
++    ["미러리스 카메라", 400000], ["플래그십 스마트폰", 450000], ["고성능 그래픽카드", 500000]
++  ].map(([name, price]) => ({ name, price, tier: "premium", tierName: "최고급 상자", dropChance: 100 / 6 })),
++  { name: "레드 다이아몬드", price: null, tier: "safe", tierName: "금고", dropChance: 0.001, limitedEdition: true },
++  ...[
++    ["금반지", 220000, 26], ["희귀 주화", 280000, 20], ["금목걸이", 350000, 18], ["금화 세트", 450000, 14],
++    ["명품 시계", 600000, 10], ["보석 원석", 850000, 7], ["소형 금괴", 1200000, 4], ["대형 금괴", 2500000, 1]
++  ].map(([name, price, weight]) => ({ name, price, tier: "safe", tierName: "금고", dropChance: 0.99999 * weight }))
++]);
++
++function buildItemDictionarySnapshot(rawState) {
++  const stats = new Map(ITEM_DICTIONARY_CATALOG.map((entry) => [entry.name, { historyCount: 0, currentCount: 0, firstAt: 0 }]));
++  const histories = Array.isArray(rawState?.history) ? rawState.history : [];
++  for (const record of histories) {
++    const text = String(record?.text || "");
++    if (!text.includes("획득")) continue;
++    const at = Number(record?.at || 0);
++    for (const entry of ITEM_DICTIONARY_CATALOG) {
++      if (!text.includes(`${entry.name} 획득`)) continue;
++      const stat = stats.get(entry.name);
++      stat.historyCount += 1;
++      if (at > 0 && (!stat.firstAt || at < stat.firstAt)) stat.firstAt = at;
++      break;
++    }
++  }
++  for (const item of Array.isArray(rawState?.items) ? rawState.items : []) {
++    const stat = stats.get(String(item?.name || ""));
++    if (!stat) continue;
++    stat.currentCount += 1;
++    const at = Date.parse(item?.acquiredAt || "");
++    if (Number.isFinite(at) && at > 0 && (!stat.firstAt || at < stat.firstAt)) stat.firstAt = at;
++  }
++  return ITEM_DICTIONARY_CATALOG.map((entry) => {
++    const stat = stats.get(entry.name);
++    const totalAcquired = Math.max(Number(stat?.historyCount || 0), Number(stat?.currentCount || 0));
++    return {
++      ...entry,
++      acquired: totalAcquired > 0,
++      firstAcquiredAt: stat?.firstAt ? new Date(stat.firstAt).toISOString() : null,
++      totalAcquired,
++    };
++  });
++}
++
++function itemImagePath(itemOrName) {
++  const name = typeof itemOrName === "string" ? itemOrName : String(itemOrName?.name || "");
++  return ITEM_IMAGE_PATHS[name] || "";
++}
++
++function itemImageHtml(itemOrName, className = "item-image") {
++  const name = typeof itemOrName === "string" ? itemOrName : String(itemOrName?.name || "아이템");
++  const src = itemImagePath(name);
++  if (!src) return '<span class="item-image-fallback">🎁</span>';
++  return `<img class="${className}" src="${src}" alt="${name}" loading="lazy" draggable="false">`;
++}
++
+ function createBrowserFallbackApi() {
+   const STORAGE_KEY = "sd-flea-market-browser-state-v1";
+   const CUTTER_PRICE = 100000;
+@@ -117,7 +227,7 @@
+ 
+   function newState() {
+     return {
+-      schemaVersion: 3,
++      schemaVersion: 4,
+       walletBalance: 0,
+       cutterOwned: false,
+       stethoscopeOwned: false,
+@@ -362,6 +472,7 @@
+       prices: { cutter: CUTTER_PRICE, stethoscope: STETHOSCOPE_PRICE, qualityManager: QUALITY_MANAGER_PRICE, backpack: BACKPACK_PRICE, bankFinale: BANK_FINALE_COST },
+       boxTiers: BOX_TIERS,
+       farmLocations: FARM_LOCATIONS,
++      itemDictionary: buildItemDictionarySnapshot(localState),
+     };
+   }
+ 
+@@ -1780,6 +1891,60 @@
+   }
+ }
+ 
++
++let dictionaryCategory = "all";
++let dictionarySort = "price-asc";
++
++function formatDictionaryDate(value) {
++  if (!value) return "-";
++  const date = new Date(value);
++  if (Number.isNaN(date.getTime())) return "-";
++  return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
++}
++
++function dictionaryPriceText(entry) {
++  return entry?.price == null ? "판매 불가" : money(entry.price);
++}
++
++function renderDictionary() {
++  const root = $("#dictionaryList");
++  if (!root) return;
++  const all = Array.isArray(state?.itemDictionary) ? state.itemDictionary : [];
++  const acquiredCount = all.filter((entry) => entry.acquired).length;
++  const progress = $("#dictionaryProgress");
++  if (progress) progress.textContent = `${acquiredCount} / ${all.length}`;
++  const phoneCount = $("#phoneDictionaryCount");
++  if (phoneCount) phoneCount.textContent = `${acquiredCount}/${all.length}`;
++
++  let entries = dictionaryCategory === "all" ? [...all] : all.filter((entry) => entry.tier === dictionaryCategory);
++  entries.sort((a, b) => {
++    const ap = a.price == null ? Number.POSITIVE_INFINITY : Number(a.price || 0);
++    const bp = b.price == null ? Number.POSITIVE_INFINITY : Number(b.price || 0);
++    if (a.price == null && b.price == null) return a.name.localeCompare(b.name, "ko");
++    if (a.price == null) return 1;
++    if (b.price == null) return -1;
++    return dictionarySort === "price-desc" ? bp - ap : ap - bp;
++  });
++
++  $$("[data-dictionary-tier]").forEach((button) => button.classList.toggle("active", button.dataset.dictionaryTier === dictionaryCategory));
++  const sort = $("#dictionarySort");
++  if (sort && sort.value !== dictionarySort) sort.value = dictionarySort;
++
++  root.innerHTML = entries.map((entry) => `
++    <article class="dictionary-card ${entry.acquired ? "acquired" : "unacquired"}">
++      <div class="dictionary-item-image">${itemImageHtml(entry.name, "dictionary-product-image")}</div>
++      <div class="dictionary-item-main">
++        <div class="dictionary-item-title"><strong>${entry.name}</strong><span class="dictionary-tier tier-${entry.tier}">${entry.tierName}</span></div>
++        <div class="dictionary-price">${dictionaryPriceText(entry)}</div>
++        <div class="dictionary-acquisition ${entry.acquired ? "owned" : "missing"}">${entry.acquired ? "획득 완료" : "미획득"}</div>
++        <dl>
++          <div><dt>최초 획득</dt><dd>${formatDictionaryDate(entry.firstAcquiredAt)}</dd></div>
++          <div><dt>누적 획득</dt><dd>${Number(entry.totalAcquired || 0).toLocaleString("ko-KR")}개</dd></div>
++        </dl>
++      </div>
++    </article>`).join("");
++}
++
+ function render() {
+   $("#balance").textContent = money(state.balance);
+   $("#phoneBoxCount").textContent = state.boxes.length;
+@@ -1822,10 +1987,11 @@
+   renderMission();
+   renderBoxes();
+   renderItems();
++  renderDictionary();
+ }
+ 
+ function selectTab(name) {
+-  const titles = { mission: "이동하기", boxes: "상자 보관함", shop: "상점", items: "물건 보관함" };
++  const titles = { mission: "이동하기", boxes: "상자 보관함", shop: "상점", items: "물건 보관함", dictionary: "아이템 사전" };
+   currentPhoneApp = name;
+   $("#phoneHome").classList.add("hidden");
+   $("#appWorkspace").classList.remove("hidden");
+@@ -2516,7 +2682,7 @@
+   const nextText = isLast ? "전체 결과 보기" : "다음 상자 직접 개봉";
+   $("#openStage").innerHTML = `
+     <div class="reward-card bulk-moment-card">
+-      <div class="reward-icon">🎁</div>
++      <div class="reward-icon reward-item-image">${itemImageHtml(item, "reward-product-image")}</div>
+       <p class="eyebrow">REVEAL</p>
+       <h2>${item.name}</h2>
+       <div class="reward-value">${itemValueDisplay(item)}</div>
+@@ -2608,11 +2774,11 @@
+   $("#openModal").classList.remove("hidden");
+   $("#openStage").innerHTML = `
+     <div class="bulk-reward-card">
+-      <div class="reward-icon">🎁</div>
++      <div class="bulk-result-icon-strip">${sortedItems.slice(0, 5).map((item) => itemImageHtml(item, "bulk-result-preview-image")).join("")}</div>
+       <p class="eyebrow">OPEN RESULT</p>
+       <h2>${title}</h2>
+       <div class="bulk-reward-summary"><strong>총 원본 가치 ${money(totalValue)}</strong><span>높은 가치 순으로 정렬</span>${failedCount ? `<span>${failedCount}개는 개봉하지 못했습니다.</span>` : ""}</div>
+-      <div class="bulk-reward-list">${sortedItems.map((item, index) => `<div><span><b class="result-rank">#${index + 1}</b> ${item.name}</span><strong>${money(item.originalValue)}</strong></div>`).join("")}</div>
++      <div class="bulk-reward-list">${sortedItems.map((item, index) => `<div><span class="bulk-result-item-main">${itemImageHtml(item, "bulk-result-item-image")}<span><b class="result-rank">#${index + 1}</b> ${item.name}</span></span><strong>${money(item.originalValue)}</strong></div>`).join("")}</div>
