@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SD Link</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="glow one"></div><div class="glow two"></div>
+  <header class="topbar">
+    <div class="brand"><img src="icons/icon-192.png" alt="" /><div><small>SD608 ONLINE</small><strong>SD Link</strong></div></div>
+    <div class="top-actions"><button id="websiteButton" class="ghost">홈페이지</button><button id="accountButton" class="ghost">내 계정</button></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div><span class="kicker">LOCAL ↔ WEB ↔ MOBILE</span><h1>로컬 SD지갑을<br><em>홈페이지 계정과 연결</em></h1><p>기존 PC 계좌를 유지하면서 홈페이지와 Android 모바일에서 같은 온라인 가상잔액을 사용합니다.</p></div>
+      <div class="hero-state"><span id="overallDot" class="dot"></span><div><small>현재 상태</small><strong id="overallState">확인 중</strong></div></div>
+    </section>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <section class="steps">
+      <article class="card" id="localCard">
+        <div class="card-head"><span class="step">1</span><div><h2>로컬 지갑 선택</h2><p>현재 사용 중인 sdwallet.sqlite를 연결합니다.</p></div><span id="localBadge" class="badge">미선택</span></div>
+        <div id="localInfo" class="info-box muted">데이터베이스를 선택하세요.</div>
+        <div class="row"><button id="autoDetectButton" class="secondary">자동 찾기</button><button id="chooseDbButton" class="secondary">직접 선택</button></div>
+        <div id="accountChooser" class="account-chooser" hidden></div>
+      </article>
+
+      <article class="card" id="loginCard">
+        <div class="card-head"><span class="step">2</span><div><h2>홈페이지 계정 로그인</h2><p>SD608 Online에 가입한 이메일 계정을 사용합니다.</p></div><span id="loginBadge" class="badge">로그아웃</span></div>
+        <form id="loginForm" class="login-form">
+          <label>이메일<input id="email" type="email" autocomplete="username" required /></label>
+          <label>비밀번호<input id="password" type="password" autocomplete="current-password" required /></label>
+          <label class="remember"><input id="remember" type="checkbox" checked /> 이 PC에서 로그인 유지</label>
+          <button class="primary" type="submit">홈페이지 계정 연결</button>
+        </form>
+        <div id="loggedInInfo" class="info-box" hidden></div>
+        <button id="logoutButton" class="danger-text" hidden>로그아웃</button>
+      </article>
+
+      <article class="card wide" id="linkCard">
+        <div class="card-head"><span class="step">3</span><div><h2>기기 등록 및 기존 잔액 이전</h2><p>로컬 계좌는 한 홈페이지 계정에만 1회 연결할 수 있습니다.</p></div><span id="migrationBadge" class="badge">대기</span></div>
+        <div class="link-grid">
+          <div class="flow"><b>PC 로컬 앱</b><i>→</i><b>SD Link</b><i>→</i><b>홈페이지 계정</b><i>↔</i><b>모바일</b></div>
+          <div id="migrationInfo" class="info-box muted">1번과 2번을 먼저 완료하세요.</div>
+        </div>
+        <div class="row"><button id="registerButton" class="secondary">이 PC 등록</button><button id="migrationButton" class="primary">기존 잔액 이전 신청</button></div>
+      </article>
+
+      <article class="card wide sync-card">
+        <div class="card-head"><span class="step">4</span><div><h2>자동 동기화</h2><p>승인 후 비트코인 판매·전기세·게임 수익을 5초 간격으로 모바일에 양방향 반영합니다.</p></div><span id="syncBadge" class="badge">정지</span></div>
+        <div class="sync-dashboard">
+          <div><small>온라인 잔액</small><strong id="onlineBalance">-</strong></div>
+          <div><small>마지막 동기화</small><strong id="lastSync">-</strong></div>
+          <div><small>동기화 결과</small><strong id="syncMessage">-</strong></div>
+        </div>
+        <div id="bitcoinSourceInfo" class="info-box muted">선택한 SD지갑 계좌의 실제 판매 가능 BTC를 자동으로 읽습니다. (bitcoin_account_stats.btc_balance)</div>
+        <div class="row"><button id="chooseBitcoinButton" class="secondary">구형 BTC 원본 선택</button></div>
+        <div class="row space"><label class="toggle"><input id="autoSync" type="checkbox" checked /><span></span>자동 동기화</label><div><button id="mobileButton" class="secondary">모바일 APK</button><button id="syncButton" class="primary">지금 동기화</button></div></div>
+      </article>
+    </section>
+
+    <footer><button id="resetButton" class="danger-text">연결 초기화</button><p>창을 닫아도 알림 영역에서 동기화가 계속됩니다. 표시 금액은 SD 게임 시뮬레이션용 가상 데이터입니다.</p></footer>
+  </main>
+</body>
+</html>

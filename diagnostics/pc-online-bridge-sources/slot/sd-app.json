@@ -1,0 +1,11 @@
+{
+  "id": "sd-slot",
+  "name": "SD슬롯",
+  "displayVersion": "Stage 7 · v1.0.6",
+  "description": "SD지갑 가상계좌와 연동되는 3릴 슬롯머신 시뮬레이션입니다.",
+  "improvement": "릴 정지 간격을 0.8초로 늘리고, 릴 회전 속도와 흐림·흔들림 효과를 Stage 5의 기존 빠른 설정으로 복구했습니다.",
+  "entry": "main.js",
+  "icon": "public/icons/icon-512.png",
+  "accent": "red",
+  "userDataFolder": "SD슬롯"
+}

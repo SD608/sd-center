@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <meta
+    name="description"
+    content="SD지갑 가상계좌와 연동되는 주사위 홀짝 시뮬레이션 게임"
+  />
+
+  <title>SD홀짝</title>
+
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div class="ambient ambient-blue"></div>
+  <div class="ambient ambient-red"></div>
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">SD GAME · VIRTUAL MONEY ONLY</p>
+      <h1>SD홀짝</h1>
+      <p class="subtitle">
+        주사위 두 개의 합이 홀수인지 짝수인지 맞혀보세요.
+      </p>
+    </div>
+
+    <button
+      id="settingsButton"
+      class="button button-ghost"
+      type="button"
+    >
+      설정
+    </button>
+  </header>
+
+  <div class="simulation-banner">
+    실제 화폐·입출금·환전 기능이 없는 가상계좌 시뮬레이션 게임입니다.
+  </div>
+
+  <main class="app-layout">
+    <section class="game-panel">
+      <div class="game-topline">
+        <div>
+          <span class="label">현재 게임</span>
+          <strong>주사위 홀짝 · 합계 2~12</strong>
+        </div>
+
+        <div id="roundStatus" class="round-status ready">
+          준비
+        </div>
+      </div>
+
+      <div id="gameStage" class="game-stage state-ready">
+        <div class="table-backlight"></div>
+
+        <div id="cupAssembly" class="cup-assembly">
+          <div class="cup">
+            <div class="cup-cap"></div>
+            <div class="cup-rim"></div>
+            <div class="cup-highlight"></div>
+          </div>
+        </div>
+
+        <div class="dice-area" aria-label="주사위 두 개">
+          <div id="dieOne" class="die" aria-label="첫 번째 주사위">
+            <span class="pip p1"></span>
+            <span class="pip p2"></span>
+            <span class="pip p3"></span>
+            <span class="pip p4"></span>
+            <span class="pip p5"></span>
+            <span class="pip p6"></span>
+            <span class="pip p7"></span>
+            <span class="pip p8"></span>
+            <span class="pip p9"></span>
+          </div>
+
+          <div id="dieTwo" class="die" aria-label="두 번째 주사위">
+            <span class="pip p1"></span>
+            <span class="pip p2"></span>
+            <span class="pip p3"></span>
+            <span class="pip p4"></span>
+            <span class="pip p5"></span>
+            <span class="pip p6"></span>
+            <span class="pip p7"></span>
+            <span class="pip p8"></span>
+            <span class="pip p9"></span>
+          </div>
+        </div>
+
+        <div class="table-shadow"></div>
+
+        <div id="resultOverlay" class="result-overlay hidden">
+          <p id="resultBadge" class="result-badge">결과</p>
+          <strong id="resultText">-</strong>
+          <span id="resultAmount">-</span>
+        </div>
+      </div>
+
+      <section class="bet-section">
+        <div class="bet-header">
+          <div>
+            <p class="section-kicker">BET SETTINGS</p>
+            <h2>배팅금 · 배수</h2>
+          </div>
+
+          <div class="stake-summary">
+            <span>이번 배팅</span>
+            <strong id="stakeAmount">₩1,000</strong>
+          </div>
+        </div>
+
+        <div id="betAmountSelector" class="bet-amount-selector">
+          <button type="button" data-bet-amount="1000" class="active">
+            ₩1,000
+          </button>
+          <button type="button" data-bet-amount="10000">
+            ₩10,000
+          </button>
+          <button type="button" data-bet-amount="100000">
+            ₩100,000
+          </button>
+          <button type="button" data-bet-mode="all-in" class="all-in-button">
+            올인
+          </button>
+        </div>
+
+        <div class="custom-bet-row">
+          <label for="customBetInput">직접 입력</label>
+          <div class="custom-bet-control">
+            <span>₩</span>
+            <input
+              id="customBetInput"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              value="1,000"
+              aria-label="직접 배팅금 입력"
+            />
+            <button id="applyCustomBetButton" type="button">적용</button>
+          </div>
+        </div>
+
+        <div class="multiplier-heading">
+          <span>배팅 배수</span>
+          <small id="multiplierHelp">선택 금액 × 배수</small>
+        </div>
+
+        <div id="multiplierSelector" class="multiplier-selector">
+          <button type="button" data-multiplier="1" class="active">×1</button>
+          <button type="button" data-multiplier="10">×10</button>
+          <button type="button" data-multiplier="50">×50</button>
+          <button type="button" data-multiplier="100">×100</button>
+        </div>
+      </section>
+
+      <div id="primaryControls" class="primary-controls">
+        <button
+          id="mainActionButton"
+          class="main-action start"
+          type="button"
+        >
+          시작
+          <span>SPACE</span>
+        </button>
+      </div>
+
+      <div id="choiceControls" class="choice-controls hidden">
+        <button
+          id="oddButton"
+          class="choice-button odd"
+          type="button"
+        >
+          홀
+          <span>키보드 1 · 홀수 합계</span>
+        </button>
+
+        <button
+          id="evenButton"
+          class="choice-button even"
+          type="button"
+        >
+          짝
+          <span>키보드 2 · 짝수 합계</span>
+        </button>
+      </div>
+
+      <p id="gameMessage" class="game-message" aria-live="polite">
+        시작 버튼이나 스페이스바를 누르세요.
+      </p>
+    </section>
+
+    <aside class="side-panel">
+      <section class="panel-card">
+        <p class="section-kicker">CONNECTED WALLET</p>
+        <h2>게임 계좌</h2>
+
+        <div id="walletEmpty" class="wallet-empty">
+          <p>연결된 SD지갑 계좌가 없습니다.</p>
+          <button
+            id="connectWalletButton"
+            class="button button-primary full-width"
+            type="button"
+          >
+            SD지갑 연결
+          </button>
+        </div>
+
+        <div id="walletConnected" class="hidden">
+          <div class="account-chip">
+            <div>
+              <strong id="accountBank">-</strong>
+              <span id="accountNumber">-</span>
+            </div>
+            <span id="accountOwner">-</span>
+          </div>
+
+          <p class="metric-label">현재 가상 잔액</p>
+          <p id="accountBalance" class="balance-value">₩0</p>
+          <p id="accountUpdatedAt" class="metric-footnote">-</p>
+
+          <button
+            id="changeAccountButton"
+            class="button button-ghost full-width"
+            type="button"
+          >
+            연결 계좌 변경
+          </button>
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="history-heading">
+          <div>
+            <p class="section-kicker">TRANSACTIONS</p>
+            <h2>최근 입출금</h2>
+          </div>
+
+          <button
+            id="refreshAccountButton"
+            class="small-button"
+            type="button"
+          >
+            새로고침
+          </button>
+        </div>
+
+        <div id="transactionList" class="transaction-list">
+          <p class="empty-history">거래내역이 없습니다.</p>
+        </div>
+      </section>
+
+      <section class="panel-card rules-card">
+        <p class="section-kicker">GAME RULE</p>
+        <h2>게임 규칙</h2>
+
+        <div class="rule-list">
+          <p><strong>숫자 범위</strong><span>2~12</span></p>
+          <p><strong>주사위</strong><span>6면체 2개</span></p>
+          <p><strong>적중</strong><span>배팅금 입금</span></p>
+          <p><strong>실패</strong><span>배팅금 출금</span></p>
+          <p><strong>메모</strong><span>홀짝 게임</span></p>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <section class="modal">
+      <div class="modal-header">
+        <div>
+          <p class="section-kicker">GAME SETTINGS</p>
+          <h2>SD홀짝 설정</h2>
+        </div>
+
+        <button
+          id="closeSettingsButton"
+          class="modal-close"
+          type="button"
+          aria-label="설정 닫기"
+        >
+          ×
+        </button>
+      </div>
+
+      <section class="settings-section">
+        <h3>SD지갑 연동</h3>
+        <p class="settings-help">
+          기존 SD지갑의 SQLite DB를 연결합니다. 게임 결과는
+          해당 계좌 잔액과 입출금 내역에 직접 반영됩니다.
+        </p>
+
+        <div class="button-row">
+          <button
+            id="autoDetectWalletButton"
+            class="button button-primary"
+            type="button"
+          >
+            자동 찾기
+          </button>
+
+          <button
+            id="chooseWalletDatabaseButton"
+            class="button button-ghost"
+            type="button"
+          >
+            DB 직접 선택
+          </button>
+        </div>
+
+        <p id="walletPathText" class="path-text">
+          연결된 DB 없음
+        </p>
+
+        <label class="field">
+          <span>게임에 사용할 계좌</span>
+          <select id="accountSelect">
+            <option value="">계좌를 먼저 불러오세요</option>
+          </select>
+        </label>
+      </section>
+
+
+      <button
+        id="saveSettingsButton"
+        class="button button-primary full-width"
+        type="button"
+      >
+        설정 저장
+      </button>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="./js/app.js"></script>
+
+  <a class="sd-center-quick-link" href="sdcenter://open" title="SD종합센터 열기">
+    <span>SD</span> 종합센터
+  </a>
+</body>
+</html>
