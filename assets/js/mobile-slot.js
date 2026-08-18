@@ -197,12 +197,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         const slotLabel = data.jackpot ? "황금색 777 JACKPOT" : `${data.result_name || "당첨"} x${Number(data.multiplier || 0)}`;
         const slotIcon = data.jackpot ? "✨7" : "🎰";
         const slotScore = data.jackpot ? 1000000 : Number(data.multiplier || 0);
-        void mobile.auth.client.rpc("record_sd_flea_slot_result", {
-          p_score: slotScore,
-          p_label: slotLabel,
-          p_icon: slotIcon,
-          p_jackpot: Boolean(data.jackpot)
-        }).catch(() => {});
+        try {
+          const rankingResult = await mobile.auth.client.rpc("record_sd_flea_slot_result", {
+            p_score: slotScore,
+            p_label: slotLabel,
+            p_icon: slotIcon,
+            p_jackpot: Boolean(data.jackpot)
+          });
+          if (rankingResult?.error) console.warn("slot ranking record failed", rankingResult.error);
+        } catch (rankingError) {
+          console.warn("slot ranking record failed", rankingError);
+        }
       }
     } catch (error) {
       abortSpinAnimation();
