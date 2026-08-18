@@ -9,11 +9,16 @@
   <link rel="icon" href="assets/icons/slot.png">
   <link rel="stylesheet" href="assets/css/mobile-app.css?v=3">
   <link rel="stylesheet" href="assets/css/mobile-v107.css?v=1">
+  <style>
+    .slot-reel.stopping{animation:mobileReelStop .28s cubic-bezier(.2,.8,.2,1)}
+    .result-card-mobile.spinning-result{border-color:rgba(255,204,88,.3);background:rgba(255,204,88,.06)}
+    @keyframes mobileReelStop{0%{transform:translateY(-12px) scale(.96);filter:blur(2px)}65%{transform:translateY(5px) scale(1.045);filter:blur(0)}100%{transform:translateY(0) scale(1)}}
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="assets/js/supabase-config.js?v=2" defer></script>
   <script src="assets/js/auth-common.js?v=2" defer></script>
   <script src="assets/js/mobile-common.js?v=2" defer></script>
-  <script src="assets/js/mobile-slot.js?v=7" defer></script>
+  <script src="assets/js/mobile-slot.js?v=8-stage7" defer></script>
 </head>
 <body class="mobile-body">
   <header class="mobile-topbar">
@@ -21,7 +26,7 @@
     <div class="sync-pill" data-mobile-balance>-</div>
   </header>
   <main class="mobile-main"><section class="app-panel">
-    <div class="page-heading"><img src="assets/icons/slot.png" alt=""><div><span class="eyebrow-mobile">ONLINE SLOT</span><h1>SD슬롯</h1><p>PC Stage 7과 같은 확률·배당을 서버에서 계산합니다.</p></div></div>
+    <div class="page-heading"><img src="assets/icons/slot.png" alt=""><div><span class="eyebrow-mobile">ONLINE SLOT</span><h1>SD슬롯</h1><p>PC Stage 7과 같은 확률·배당으로 계산하고, 릴도 왼쪽부터 하나씩 멈춥니다.</p></div></div>
     <div id="slotStatus" class="status-mobile" hidden></div>
     <div class="slot-stage"><div class="slot-reel">7</div><div class="slot-reel">💎</div><div class="slot-reel">🟨</div></div>
     <div id="slotResult" class="result-card-mobile"><strong id="slotResultTitle">회전 준비 완료</strong><span id="slotResultDetail">3개가 같으면 가상 당첨</span></div>
