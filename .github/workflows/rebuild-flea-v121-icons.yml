@@ -8,12 +8,15 @@ on:
       - 'tools/flea-v120-items-sprite.webp.b64'
       - 'tools/flea-v120-items-manifest.txt'
       - '.github/workflows/rebuild-flea-v121-icons.yml'
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
 
 jobs:
   build:
+    if: github.event_name != 'issues' || github.event.issue.title == '[build] flea v1.2.1 icons'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,7 +41,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import hashlib, json, shutil, tempfile, zipfile
+          import hashlib, json, tempfile, zipfile
 
           src = Path('downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip')
           out = Path('downloads/extensions/SDFleaMarket_v1.2.1_Desktop.zip')
