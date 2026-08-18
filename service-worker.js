@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v28-profile-flea-showcase";
+const CACHE_NAME = "sd608-mobile-v29-profile-showcase-picker-list";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
