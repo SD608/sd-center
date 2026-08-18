@@ -19,3 +19,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: gh workflow run rebuild-flea-v122-icons.yml --repo "$REPO" --ref main
+
+# retrigger: 2026-08-19 icon mapping hotfix
