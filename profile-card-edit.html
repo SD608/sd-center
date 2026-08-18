@@ -30,7 +30,7 @@
 
 <main class="profile-card-edit-main section-shell">
   <section class="profile-hero profile-card-edit-hero">
-    <div><span class="section-kicker">프로필 카드 편집</span><h1>프로필 카드 편집</h1><p>왼쪽 미리보기를 보면서 공개 항목과 카드 순서를 바로 수정할 수 있습니다.</p></div>
+    <div><span class="section-kicker">프로필 카드 편집</span><h1>프로필 카드 편집</h1></div>
     <div class="profile-hero-actions"><a class="secondary-button" href="profile.html">내 프로필로 돌아가기</a></div>
   </section>
 
@@ -39,7 +39,6 @@
   <section id="profileCardEditMissing" class="profile-missing" hidden>
     <span>프로필 미생성</span>
     <h2>먼저 공개 프로필을 만들어야 합니다.</h2>
-    <p>내 프로필에서 공개 프로필을 만든 뒤 카드 편집을 사용할 수 있습니다.</p>
     <a class="primary-button" href="profile.html">내 프로필로 이동</a>
   </section>
 
@@ -63,7 +62,6 @@
           <section class="profile-card-module profile-card-nickname-module" data-card-block="nickname">
             <span class="profile-card-module-label">닉네임</span>
             <h2 id="profileNickname">회원</h2>
-            <p class="profile-card-module-note">SD608 온라인 공개 닉네임</p>
           </section>
 
           <section class="profile-card-module profile-card-title-module" data-card-block="title">
@@ -74,26 +72,21 @@
           <section class="profile-card-module" data-card-block="assets">
             <span class="profile-card-module-label">공개 자산</span>
             <strong id="profileAssetTotal" class="profile-card-value">-</strong>
-            <p class="profile-card-module-note">계좌·코인 자산 제외</p>
           </section>
 
           <section class="profile-card-module" data-card-block="gold">
             <span class="profile-card-module-label">보유 금</span>
             <strong id="profileGold" class="profile-card-value">-</strong>
-            <p id="profileGoldModeNote" class="profile-card-module-note">수량 기준</p>
           </section>
 
           <section class="profile-card-module" data-card-block="coins">
             <span class="profile-card-module-label">SD코인 보유량</span>
             <div id="profileCoins" class="profile-coin-holdings"><span class="profile-coin-empty">불러오는 중...</span></div>
-            <p class="profile-card-module-note">선택한 코인 보유 수량</p>
           </section>
         </div>
 
-        <div id="profileCardEmpty" class="profile-card-empty" hidden>공개할 카드 항목이 없습니다.</div>
-        <footer class="id-card-footer"><span>사용자 지정 공개 카드</span><span>SD 게임 데이터 전용</span></footer>
+        <div id="profileCardEmpty" class="profile-card-empty" hidden>공개 항목 없음</div>
       </article>
-      <p class="profile-card-preview-note">오른쪽에서 닉네임·칭호를 각각 공개하거나 숨기고, 카드 순서와 금 단위·코인·사진을 바꾸면 왼쪽에서 바로 확인할 수 있습니다.</p>
     </div>
 
     <aside class="profile-card-editor-panel" aria-label="프로필 편집 패널">
@@ -101,7 +94,6 @@
         <div><span class="section-kicker">카드 설정</span><h2>카드 구성</h2></div>
         <span id="profileCardSaveState" class="profile-card-save-state is-saved">저장됨</span>
       </div>
-      <p class="profile-card-editor-help">⋮⋮ 손잡이로 카드 순서를 바꾸고 공개 항목을 선택하세요. 닉네임과 칭호도 각각 따로 배치하고 공개할 수 있습니다. 금은 g / kg / 수량 중 하나를 고르고, 코인은 공개할 종목을 직접 선택할 수 있습니다. 계좌 잔액은 공개되지 않습니다.</p>
 
       <div id="profileCardLayoutEditor" class="profile-card-layout-editor"></div>
 
@@ -110,18 +102,17 @@
         <button id="cancelProfileCardLayout" class="secondary-button" type="button">변경 취소</button>
         <button id="saveProfileCardLayout" class="primary-button" type="button">카드 설정 저장</button>
       </div>
-      <p class="profile-card-editor-footnote">카드 구성 변경은 저장 버튼을 눌러야 공개 프로필에 반영됩니다.</p>
 
       <div class="profile-editor-content-settings">
-        <div class="profile-editor-content-heading"><h3>프로필 내용</h3><small>한곳에서 수정</small></div>
+        <div class="profile-editor-content-heading"><h3>프로필 내용</h3></div>
 
         <section class="profile-editor-content-section">
-          <header><div><h4>프로필 사진</h4><p>구매한 프로필 사진 중 하나를 바로 적용합니다.</p></div><a class="profile-editor-shop-link" href="profile-shop.html" target="_top">치장품 상점</a></header>
+          <header><div><h4>프로필 사진</h4></div><a class="profile-editor-shop-link" href="profile-shop.html" target="_top">치장품 상점</a></header>
           <div id="editorAvatarPicker" class="profile-editor-option-list"><div class="profile-editor-empty">불러오는 중...</div></div>
         </section>
 
         <section class="profile-editor-content-section">
-          <header><div><h4>칭호</h4><p>달성한 업적 칭호 중 하나를 장착합니다.</p></div></header>
+          <header><div><h4>칭호</h4></div></header>
           <div id="editorTitlePicker" class="profile-editor-option-list"><div class="profile-editor-empty">불러오는 중...</div></div>
         </section>
       </div>
