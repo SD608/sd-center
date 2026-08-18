@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - tools/flea-v120-text.part*.txt
+      - tools/build-flea-v120.part*.py
       - tools/flea-v120-items-manifest.txt
       - tools/flea-v120-items-sprite.webp.b64
       - .github/workflows/build-flea-v120-item-dictionary.yml
@@ -13,7 +13,7 @@ on:
     branches:
       - feat/flea-v120-item-dictionary-20260819
     paths:
-      - tools/flea-v120-text.part*.txt
+      - tools/build-flea-v120.part*.py
       - tools/flea-v120-items-manifest.txt
       - tools/flea-v120-items-sprite.webp.b64
       - .github/workflows/build-flea-v120-item-dictionary.yml
@@ -34,47 +34,34 @@ jobs:
           python-version: '3.12'
       - name: Prepare tools
         run: python -m pip install --quiet pillow
-      - name: Build SD Flea Market v1.2.0
+      - name: Build and verify SD Flea Market v1.2.0
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /tmp/flea-v120
-          mkdir -p /tmp/flea-v120
-          unzip -q downloads/extensions/SDFleaMarket_v1.1.9_Desktop.zip -d /tmp/flea-v120
-          cd /tmp/flea-v120
-          cat "$GITHUB_WORKSPACE"/tools/flea-v120-text.part*.txt > /tmp/flea-v120.patch
-          patch -p1 < /tmp/flea-v120.patch
-          base64 -d "$GITHUB_WORKSPACE/tools/flea-v120-items-sprite.webp.b64" > /tmp/flea-items-v120.webp
-          python - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-          import os
-          root = Path('/tmp/flea-v120/sd-flea-market/public/assets/items')
-          root.mkdir(parents=True, exist_ok=True)
-          sprite = Image.open('/tmp/flea-items-v120.webp').convert('RGB')
-          manifest = (Path(os.environ['GITHUB_WORKSPACE']) / 'tools/flea-v120-items-manifest.txt').read_text(encoding='utf-8').splitlines()
-          for line in manifest:
-              name, x, y = line.split('\t')
-              x, y = int(x), int(y)
-              crop = sprite.crop((x * 64, y * 48, (x + 1) * 64, (y + 1) * 48)).resize((128, 96), Image.Resampling.LANCZOS)
-              crop.save(root / name, 'PNG', optimize=True)
-          PY
-          cd /tmp/flea-v120/sd-flea-market
+          cat tools/build-flea-v120.part*.py > /tmp/build-flea-v120.py
+          python -m py_compile /tmp/build-flea-v120.py
+          python /tmp/build-flea-v120.py
+          rm -rf /tmp/flea-v120-check
+          mkdir -p /tmp/flea-v120-check
+          unzip -q downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip -d /tmp/flea-v120-check
+          cd /tmp/flea-v120-check/sd-flea-market
           npm run check
           test "$(find public/assets/items -maxdepth 1 -name '*.png' | wc -l)" -eq 36
           node - <<'NODE'
           const fs = require('fs');
           const app = fs.readFileSync('public/app.js', 'utf8');
-          const required = ['아이템 사전','dictionarySort','firstAcquiredAt','totalAcquired','ITEM_IMAGE_PATHS'];
-          for (const token of required) if (!app.includes(token)) throw new Error(`missing ${token}`);
+          const html = fs.readFileSync('public/index.html', 'utf8');
           const manifest = JSON.parse(fs.readFileSync('sd-app.json','utf8'));
-          if (manifest.description || manifest.improvement) throw new Error('launch descriptions must be absent');
+          for (const token of ['ITEM_IMAGE_PATHS','ITEM_DICTIONARY_CATALOG','renderDictionary','dictionarySort','firstAcquiredAt','totalAcquired']) {
+            if (!app.includes(token)) throw new Error(`missing ${token}`);
+          }
+          for (const token of ['dictionaryPanel','phoneDictionaryCount','data-dictionary-tier="safe"']) {
+            if (!html.includes(token)) throw new Error(`missing ${token}`);
+          }
+          if ('description' in manifest || 'improvement' in manifest) throw new Error('launch descriptions must be absent');
           if (manifest.version !== '1.2.0') throw new Error('wrong manifest version');
           NODE
-          cd /tmp/flea-v120
-          zip -qr "$GITHUB_WORKSPACE/downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip" sd-flea-market
           cd "$GITHUB_WORKSPACE"
-          sha256sum downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip > downloads/extensions/SDFleaMarket_v1.2.0_Desktop.sha256
           unzip -t downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip | tail -2
       - name: Commit package
         shell: bash
