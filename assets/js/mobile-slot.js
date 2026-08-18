@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const visualKeys = Object.keys(symbols);
   const SPIN_FRAME_MS = 72;
   const FIRST_REEL_MIN_MS = 900;
-  const REEL_STOP_GAP_MS = 390;
+  const REEL_STOP_GAP_MS = 600;
 
   let balance = 0;
   let audioContext = null;
@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await wait(Math.max(0, FIRST_REEL_MIN_MS - elapsed));
     for (let index = 0; index < reels.length; index += 1) {
       stopReel(index, finalKeys[index]);
-      if (index < reels.length - 1) await wait(REEL_STOP_GAP_MS + index * 40);
+      if (index < reels.length - 1) await wait(REEL_STOP_GAP_MS);
     }
     reelTimers = [];
   }
