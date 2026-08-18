@@ -2,10 +2,16 @@
 
 (() => {
   const TABLE = "sd_achievement_progress";
+  const LIVE_POLL_MS = 5000;
   const progress = window.SD_ACHIEVEMENT_PROGRESS = window.SD_ACHIEVEMENT_PROGRESS || {};
   const unlocked = window.SD_ACHIEVEMENT_UNLOCKED = window.SD_ACHIEVEMENT_UNLOCKED || {};
   let rows = [];
   let pending = null;
+  let liveChannel = null;
+  let liveUserId = "";
+  let pollTimer = null;
+  let reloadTimer = null;
+  let authSubscription = null;
 
   const auth = () => window.SD_AUTH || null;
   const emit = (detail = {}) => window.dispatchEvent(new CustomEvent("sd-achievements-updated", { detail }));
@@ -128,7 +134,121 @@
     return pending;
   }
 
-  window.SD_ACHIEVEMENT_SYNC = { refresh, readRows, record, deriveAccountState, getRows:()=>rows.slice(), getProgress:()=>({...progress}), getUnlocked:()=>({...unlocked}) };
-  const boot = () => refresh().catch(()=>{});
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once:true }); else boot();
+  function scheduleRead(reason = "live") {
+    window.clearTimeout(reloadTimer);
+    reloadTimer = window.setTimeout(() => {
+      readRows().then((next) => {
+        emit({ rows: next, synced: true, reason });
+      }).catch((error) => {
+        console.warn("[SD Achievement] live refresh failed", error?.message || error);
+      });
+    }, 120);
+  }
+
+  function stopPolling() {
+    if (pollTimer) window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  function startPolling() {
+    stopPolling();
+    pollTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible") scheduleRead("poll");
+    }, LIVE_POLL_MS);
+  }
+
+  async function stopLive() {
+    stopPolling();
+    window.clearTimeout(reloadTimer);
+    reloadTimer = null;
+    const a = auth();
+    const channel = liveChannel;
+    liveChannel = null;
+    liveUserId = "";
+    if (channel && a?.client?.removeChannel) {
+      try { await a.client.removeChannel(channel); } catch {}
+    }
+  }
+
+  async function startLive() {
+    const a = auth();
+    if (!a?.client) return false;
+    let currentSession = null;
+    try { currentSession = await session(); }
+    catch { currentSession = null; }
+    const userId = String(currentSession?.user?.id || "");
+    if (!userId) {
+      await stopLive();
+      return false;
+    }
+
+    if (liveChannel && liveUserId === userId) {
+      startPolling();
+      return true;
+    }
+
+    await stopLive();
+    liveUserId = userId;
+    liveChannel = a.client
+      .channel(`sd-achievements-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: TABLE,
+          filter: `user_id=eq.${userId}`,
+        },
+        () => scheduleRead("realtime"),
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") scheduleRead("subscribed");
+      });
+
+    startPolling();
+    return true;
+  }
+
+  function refreshOnReturn() {
+    if (document.visibilityState === "visible") scheduleRead("foreground");
+  }
+
+  window.SD_ACHIEVEMENT_SYNC = {
+    refresh,
+    readRows,
+    record,
+    deriveAccountState,
+    startLive,
+    stopLive,
+    getRows:()=>rows.slice(),
+    getProgress:()=>({...progress}),
+    getUnlocked:()=>({...unlocked})
+  };
+
+  const boot = async () => {
+    await refresh().catch(()=>{});
+    await startLive().catch(()=>{});
+    const a = auth();
+    if (!authSubscription && a?.client?.auth?.onAuthStateChange) {
+      const result = a.client.auth.onAuthStateChange(() => {
+        void (async () => {
+          await stopLive();
+          await refresh({ derive:false });
+          await startLive();
+        })();
+      });
+      authSubscription = result?.data?.subscription || null;
+    }
+  };
+
+  document.addEventListener("visibilitychange", refreshOnReturn);
+  window.addEventListener("focus", refreshOnReturn);
+  window.addEventListener("beforeunload", () => {
+    stopPolling();
+    window.clearTimeout(reloadTimer);
+    try { authSubscription?.unsubscribe?.(); } catch {}
+    try { if (liveChannel) auth()?.client?.removeChannel?.(liveChannel); } catch {}
+  });
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, { once:true }); else void boot();
 })();
