@@ -139,15 +139,15 @@ window.SD_EXTENSION_PACKS = [
     "id": "sd-flea-market",
     "name": "SD 플리마켓",
     "stage": "PC Expansion",
-    "version": "v1.2.1",
+    "version": "v1.2.2",
     "category": "파밍·습격 확장팩",
     "icon": "assets/icons/flea-market.png?v=3",
-    "fileName": "SDFleaMarket_v1.2.1_Desktop.zip",
-    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.2.1_Desktop.zip?v=121",
-    "description": "실제 플리마켓 36종 아이템 이미지를 새 아이콘으로 교체하고 아이템 사전과 물건 보관함에 동일하게 적용한 버전입니다. 기존 획득 기록과 보관함 데이터는 유지됩니다.",
+    "fileName": "SDFleaMarket_v1.2.2_Desktop.zip",
+    "downloadUrl": "downloads/extensions/SDFleaMarket_v1.2.2_Desktop.zip?v=122",
+    "description": "아이템 이름과 아이콘이 서로 어긋나던 오류를 수정하고 원래 6x6 스프라이트 좌표를 복원한 버전입니다. 아이템 사전과 물건 보관함 모두 같은 올바른 이미지를 표시하며 기존 데이터는 유지됩니다.",
     "requirements": "SD종합센터 v2.2.0 이상 · SD Link 로그인 · Windows 10/11",
     "updatedAt": "2026-08-19",
-    "tags": ["36종 아이템 이미지", "아이템 사전", "물건 보관함"],
+    "tags": ["36종 아이템 이미지", "아이콘 매핑 수정", "아이템 사전·보관함"],
     "featured": true
   }
 ];
