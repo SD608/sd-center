@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 31,
-  "updatedAt": "2026-08-18T10:05:00+09:00",
+  "catalogVersion": 32,
+  "updatedAt": "2026-08-18T12:30:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -40,11 +40,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.1.6",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.6_Desktop.zip?v=116",
+      "version": "1.1.7",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.7_Desktop.zip?v=117",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "아이템을 SD Link 공용 스냅샷으로 전달해 온라인 보관함 동기화를 복구했습니다. 모바일에서 판매된 아이템도 SD Link 결과를 통해 PC 보관함에서 제거됩니다.",
+      "notes": "은행 습격 탈출 조건을 현장 금고 개봉 수가 아니라 실제 운반 중인 금고 수 기준으로 수정했습니다. 금고를 들고 있으면 정상적으로 탈출 및 오토바이 추격전으로 진행됩니다.",
       "requiredCenterVersion": "2.2.0"
     },
     "vault": {
