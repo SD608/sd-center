@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v29-profile-showcase-picker-list";
+const CACHE_NAME = "sd608-mobile-v30-profile-showcase-inline-picker";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -32,7 +32,7 @@ const APP_SHELL = [
   "./assets/css/profile-tabs.css?v=1",
   "./assets/css/profile-assets-v3.css?v=1",
   "./assets/css/profile-editor-content.css?v=1",
-  "./assets/css/profile-showcase-card.css?v=1",
+  "./assets/css/profile-showcase-card.css?v=3-inline-picker",
   "./assets/js/supabase-config.js?v=2",
   "./assets/js/auth-common.js?v=2",
   "./assets/js/mobile-common.js?v=2",
@@ -45,6 +45,7 @@ const APP_SHELL = [
   "./assets/js/flea-market-mobile.js?v=1",
   "./assets/js/profile-page-v8.js?v=1",
   "./assets/js/profile-card-edit-v7.js?v=1",
+  "./assets/js/profile-showcase-picker-inline.js?v=1",
   "./assets/js/profile-card-edit-embed-v2.js?v=1",
   "./assets/js/profile-tabs-v2.js?v=1",
   "./assets/js/profile-shop.js?v=3-achievement-filters",
