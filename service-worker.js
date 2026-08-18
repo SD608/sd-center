@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v26-profile-korean-ui";
+const CACHE_NAME = "sd608-mobile-v27-profile-split-identity";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -12,7 +12,7 @@ const APP_SHELL = [
   "./flea-market-mobile.html",
   "./profile.html",
   "./profile-card-edit.html",
-  "./profile-card-edit.html?embed=1&v=7",
+  "./profile-card-edit.html?embed=1&v=8",
   "./profile-shop.html",
   "./login.html",
   "./signup.html",
@@ -27,7 +27,7 @@ const APP_SHELL = [
   "./assets/css/sdcoin-home-card.css?v=3",
   "./assets/css/flea-market-mobile.css?v=1",
   "./assets/css/profile-page.css?v=1",
-  "./assets/css/profile-card-layout.css?v=1",
+  "./assets/css/profile-card-layout.css?v=2-split-identity",
   "./assets/css/profile-card-edit.css?v=2-embed",
   "./assets/css/profile-tabs.css?v=1",
   "./assets/css/profile-assets-v3.css?v=1",
@@ -42,8 +42,8 @@ const APP_SHELL = [
   "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
   "./assets/js/flea-market-mobile.js?v=1",
-  "./assets/js/profile-page-v6.js?v=1",
-  "./assets/js/profile-card-edit-v5.js?v=2-card-only",
+  "./assets/js/profile-page-v7.js?v=1",
+  "./assets/js/profile-card-edit-v6.js?v=1",
   "./assets/js/profile-card-edit-embed-v2.js?v=1",
   "./assets/js/profile-tabs-v2.js?v=1",
   "./assets/js/profile-shop.js?v=3-achievement-filters",
