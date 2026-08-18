@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v17-slot-highstop";
+const CACHE_NAME = "sd608-mobile-v18-slot-ding";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -30,7 +30,7 @@ const APP_SHELL = [
   "./assets/js/mobile-common.js?v=2",
   "./assets/js/mobile-native-update.js?v=1",
   "./assets/js/mobile-vault.js?v=9",
-  "./assets/js/mobile-slot.js?v=12-stage7-highstop",
+  "./assets/js/mobile-slot.js?v=13-stage7-ding",
   "./assets/js/npc-vault-mobile.js?v=1",
   "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
