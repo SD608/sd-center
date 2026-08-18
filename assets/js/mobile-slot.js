@@ -63,10 +63,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     tone(190, 0.055, 0.09, "sawtooth", 0.022);
   }
 
-  function playReelStopSound(index) {
-    const base = [620, 780, 980][index] || 780;
-    tone(base, 0, 0.065, "square", 0.045);
-    tone(base * 2.15, 0.022, 0.045, "triangle", 0.03);
+  function playReelStopSound() {
+    // 세 릴 모두 같은 맑은 '띵' 소리.
+    tone(880, 0, 0.16, "sine", 0.055);
+    tone(1760, 0.008, 0.085, "sine", 0.018);
   }
 
   function playWinSound(multiplier, jackpot = false) {
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     reel.textContent = symbols[key] || key || "?";
     reel.classList.remove("spinning", "slowing");
     reel.classList.add("stopping");
-    playReelStopSound(index);
+    playReelStopSound();
     window.setTimeout(() => reel.classList.remove("stopping"), 280);
   }
 
