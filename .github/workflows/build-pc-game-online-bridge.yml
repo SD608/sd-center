@@ -1,0 +1,243 @@
+name: Build PC game online bridge
+
+on:
+  push:
+    branches:
+      - feat/pc-game-online-bridge-20260818
+    paths:
+      - '.github/workflows/build-pc-game-online-bridge.yml'
+      - 'tools/patch-pc-game-online-bridge.py'
+      - 'tools/pc-game-online-bridge/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/pc-game-online-bridge-20260818
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build online bridge packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/patch-pc-game-online-bridge.py
+          unzip -t downloads/extensions/SDLink_v1.4.0_Desktop.zip >/dev/null
+          unzip -t downloads/extensions/SDSlot_v1.1.0_Desktop.zip >/dev/null
+          unzip -t downloads/extensions/SDOddEven_v1.2.0_Desktop.zip >/dev/null
+
+      - name: Extract built packages for validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/validate-online
+          mkdir -p /tmp/validate-online/{link,slot,odd}
+          unzip -q downloads/extensions/SDLink_v1.4.0_Desktop.zip -d /tmp/validate-online/link
+          unzip -q downloads/extensions/SDSlot_v1.1.0_Desktop.zip -d /tmp/validate-online/slot
+          unzip -q downloads/extensions/SDOddEven_v1.2.0_Desktop.zip -d /tmp/validate-online/odd
+          echo "LINK_ROOT=$(find /tmp/validate-online/link -name package.json -not -path '*/node_modules/*' -printf '%h\n' | head -n1)" >> "$GITHUB_ENV"
+          echo "SLOT_ROOT=$(find /tmp/validate-online/slot -name package.json -not -path '*/node_modules/*' -printf '%h\n' | head -n1)" >> "$GITHUB_ENV"
+          echo "ODD_ROOT=$(find /tmp/validate-online/odd -name package.json -not -path '*/node_modules/*' -printf '%h\n' | head -n1)" >> "$GITHUB_ENV"
+
+      - name: Validate JavaScript and versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check "$LINK_ROOT/main.js"
+          node --check "$LINK_ROOT/src/game-bridge-server.js"
+          node --check "$LINK_ROOT/src/auth-service.js"
+          node --check "$LINK_ROOT/src/sync-engine.js"
+          node --check "$SLOT_ROOT/main.js"
+          node --check "$SLOT_ROOT/preload.js"
+          node --check "$SLOT_ROOT/src/sdlink-game-client.js"
+          node --check "$SLOT_ROOT/public/js/app.js"
+          node --check "$ODD_ROOT/main.js"
+          node --check "$ODD_ROOT/preload.js"
+          node --check "$ODD_ROOT/src/sdlink-game-client.js"
+          node --check "$ODD_ROOT/src/game-engine.js"
+          node --check "$ODD_ROOT/public/js/app.js"
+          test "$(node -p "require('$LINK_ROOT/package.json').version")" = '1.4.0'
+          test "$(node -p "require('$SLOT_ROOT/package.json').version")" = '1.1.0'
+          test "$(node -p "require('$ODD_ROOT/package.json').version")" = '1.2.0'
+          grep -q 'play_sd_slot' "$SLOT_ROOT/main.js"
+          grep -q 'start_sd_odd_even' "$ODD_ROOT/main.js"
+          grep -q 'finish_sd_odd_even' "$ODD_ROOT/main.js"
+          grep -q 'GameBridgeServer' "$LINK_ROOT/main.js"
+
+      - name: Test localhost bridge protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          TMPBRIDGE=$(mktemp -d)
+          APPDATA="$TMPBRIDGE/appdata" LOCALAPPDATA="$TMPBRIDGE/localapp" LINK_ROOT="$LINK_ROOT" SLOT_ROOT="$SLOT_ROOT" node <<'NODE'
+          const assert = require('node:assert/strict');
+          const { GameBridgeServer } = require(process.env.LINK_ROOT + '/src/game-bridge-server.js');
+          const { SdLinkGameClient } = require(process.env.SLOT_ROOT + '/src/sdlink-game-client.js');
+
+          const calls = [];
+          const authService = {
+            publicSession() {
+              return { authenticated: true, user: { id: '00000000-0000-0000-0000-000000000001', email: 'pc@test.local' } };
+            },
+            async rpc(name, body) {
+              calls.push([name, body]);
+              if (name === 'get_sd_online_game_state') {
+                return { connected: true, account_number: '100-TEST', balance: 123456, updated_at: new Date().toISOString(), transactions: [] };
+              }
+              if (name === 'play_sd_slot') {
+                return { round_id: '11111111-1111-1111-1111-111111111111', wager: 1000, balance_before: 123456, balance_after: 122456, reels: ['stone','coal','iron'], won: false, multiplier: 0, payout: 0 };
+              }
+              throw new Error('unexpected rpc ' + name);
+            },
+          };
+
+          (async () => {
+            const server = new GameBridgeServer({ authService });
+            await server.start();
+            const client = new SdLinkGameClient();
+            const state = await client.state();
+            assert.equal(state.account.id, 'sd-online');
+            assert.equal(state.account.balance, 123456);
+            const slot = await client.rpc('play_sd_slot', { p_wager: 1000, p_request_id: client.uuid(), p_platform: 'windows' });
+            assert.equal(slot.wager, 1000);
+            assert.equal(calls[1][0], 'play_sd_slot');
+            assert.equal(calls[1][1].p_platform, 'windows');
+            await server.stop();
+            console.log('localhost game bridge test OK');
+          })().catch((error) => { console.error(error); process.exit(1); });
+          NODE
+
+      - name: Update extension metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+
+          now = '2026-08-18T10:05:00+09:00'
+          catalog_path = Path('update/extensions-catalog.json')
+          catalog = json.loads(catalog_path.read_text(encoding='utf-8'))
+          catalog['catalogVersion'] = max(31, int(catalog.get('catalogVersion') or 0) + 1)
+          catalog['updatedAt'] = now
+
+          link = catalog['apps']['sdlink-desktop']
+          link.update({
+              'version': '1.4.0',
+              'downloadUrl': 'https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.0_Desktop.zip?v=140',
+              'notes': 'PC 슬롯·홀짝이 SD Link의 localhost 인증 브리지를 통해 모바일과 동일한 SD Online 게임 서버를 사용합니다. 로그인 토큰은 SD Link 내부에만 보관됩니다.'
+          })
+          slot = catalog['apps']['sd-slot']
+          slot.update({
+              'version': '1.1.0',
+              'downloadUrl': 'https://sd608.github.io/sd-center/downloads/extensions/SDSlot_v1.1.0_Desktop.zip?v=110',
+              'notes': 'PC 슬롯의 잔액·확률·결과·게임 기록을 모바일과 동일한 play_sd_slot 서버 RPC로 통합했습니다. SD Link v1.4.0 로그인이 필요합니다.'
+          })
+          odd = catalog['apps']['odd-even']
+          odd.update({
+              'version': '1.2.0',
+              'downloadUrl': 'https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.2.0_Desktop.zip?v=120',
+              'notes': 'PC 홀짝의 베팅·주사위·정산을 모바일과 동일한 서버 RPC로 통합했습니다. PC와 모바일 게임 기록과 업적이 같은 계정으로 합쳐집니다.'
+          })
+          catalog_path.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          policy_path = Path('update/desktop-policy.json')
+          policy = json.loads(policy_path.read_text(encoding='utf-8'))
+          policy['policyVersion'] = max(10, int(policy.get('policyVersion') or 0) + 1)
+          policy['updatedAt'] = now
+          policy['apps']['sdlink-desktop'] = {
+              'required': True,
+              'minVersion': '1.4.0',
+              'downloadUrl': 'https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.0_Desktop.zip?v=140',
+              'message': 'PC 슬롯·홀짝의 SD Online 서버 통합을 위해 SD Link v1.4.0 이상이 필요합니다.'
+          }
+          policy['apps']['sd-slot-desktop'] = {
+              'required': True,
+              'minVersion': '1.1.0',
+              'downloadUrl': 'https://sd608.github.io/sd-center/downloads/extensions/SDSlot_v1.1.0_Desktop.zip?v=110',
+              'message': 'PC·모바일 슬롯을 같은 서버 게임으로 사용하려면 SD슬롯 v1.1.0 이상이 필요합니다.'
+          }
+          policy['apps']['sd-odd-even-desktop'] = {
+              'required': True,
+              'minVersion': '1.2.0',
+              'downloadUrl': 'https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.2.0_Desktop.zip?v=120',
+              'message': 'PC·모바일 홀짝을 같은 서버 게임으로 사용하려면 SD홀짝 v1.2.0 이상이 필요합니다.'
+          }
+          policy_path.write_text(json.dumps(policy, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          def update_extension_data(path: Path):
+              text = path.read_text(encoding='utf-8')
+              text = text.replace('"version": "v1.3.1"', '"version": "v1.4.0"', 1)
+              text = text.replace('"fileName": "SDLink_v1.3.1_Desktop.zip"', '"fileName": "SDLink_v1.4.0_Desktop.zip"', 1)
+              text = text.replace('"downloadUrl": "downloads/extensions/SDLink_v1.3.1_Desktop.zip?v=131"', '"downloadUrl": "downloads/extensions/SDLink_v1.4.0_Desktop.zip?v=140"', 1)
+
+              odd_start = text.index('"id": "odd-even"')
+              odd_end = text.index('\n  },', odd_start)
+              odd_block = text[odd_start:odd_end]
+              odd_block = odd_block.replace('"version": "v1.1.1"', '"version": "v1.2.0"')
+              odd_block = odd_block.replace('"fileName": "SDOddEven_v1.1.1_Desktop.zip"', '"fileName": "SDOddEven_v1.2.0_Desktop.zip"')
+              odd_block = odd_block.replace('"downloadUrl": "downloads/extensions/SDOddEven_v1.1.1_Desktop.zip?v=111"', '"downloadUrl": "downloads/extensions/SDOddEven_v1.2.0_Desktop.zip?v=120"')
+              odd_block = re.sub(r'"description": ".*?"', '"description": "SD Link를 통해 모바일과 동일한 SD Online 서버에서 베팅·주사위·정산을 처리하는 홀짝 게임입니다. PC와 모바일 기록·잔액·업적이 하나로 합쳐집니다."', odd_block, count=1)
+              odd_block = re.sub(r'"requirements": ".*?"', '"requirements": "SD종합센터 v2.2.1 이상 · SD Link v1.4.0 로그인 · Windows 10/11"', odd_block, count=1)
+              odd_block = odd_block.replace('"updatedAt": "2026-08-16"', '"updatedAt": "2026-08-18"')
+              text = text[:odd_start] + odd_block + text[odd_end:]
+
+              slot_start = text.index('"id": "sd-slot"')
+              slot_end = text.index('\n  },', slot_start)
+              slot_block = text[slot_start:slot_end]
+              slot_block = slot_block.replace('"version": "v1.0.6"', '"version": "v1.1.0"')
+              slot_block = slot_block.replace('"fileName": "SDSlot_Stage7_Desktop.zip"', '"fileName": "SDSlot_v1.1.0_Desktop.zip"')
+              slot_block = slot_block.replace('"downloadUrl": "downloads/extensions/SDSlot_Stage7_Desktop.zip"', '"downloadUrl": "downloads/extensions/SDSlot_v1.1.0_Desktop.zip?v=110"')
+              slot_block = re.sub(r'"description": ".*?"', '"description": "SD Link를 통해 모바일과 동일한 SD Online 서버의 확률·결과·잔액을 사용하는 3릴 슬롯입니다. PC와 모바일 게임 기록·업적이 하나로 합쳐집니다."', slot_block, count=1)
+              slot_block = re.sub(r'"requirements": ".*?"', '"requirements": "SD종합센터 v2.1.1 이상 · SD Link v1.4.0 로그인 · Windows 10/11"', slot_block, count=1)
+              slot_block = slot_block.replace('"updatedAt": "2026-07-31"', '"updatedAt": "2026-08-18"')
+              text = text[:slot_start] + slot_block + text[slot_end:]
+              path.write_text(text, encoding='utf-8')
+
+          update_extension_data(Path('extensions-data.js'))
+          update_extension_data(Path('assets/js/extensions-data.js'))
+          PY
+
+      - name: Validate catalog and policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const catalog = JSON.parse(fs.readFileSync('update/extensions-catalog.json', 'utf8'));
+          const policy = JSON.parse(fs.readFileSync('update/desktop-policy.json', 'utf8'));
+          if (catalog.apps['sdlink-desktop'].version !== '1.4.0') throw new Error('bad SD Link version');
+          if (catalog.apps['sd-slot'].version !== '1.1.0') throw new Error('bad slot version');
+          if (catalog.apps['odd-even'].version !== '1.2.0') throw new Error('bad odd-even version');
+          if (policy.apps['sdlink-desktop'].minVersion !== '1.4.0') throw new Error('bad link policy');
+          if (policy.apps['sd-slot-desktop'].minVersion !== '1.1.0') throw new Error('bad slot policy');
+          if (policy.apps['sd-odd-even-desktop'].minVersion !== '1.2.0') throw new Error('bad odd policy');
+          NODE
+
+      - name: Commit built releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add downloads/extensions/SDLink_v1.4.0_Desktop.zip \
+                  downloads/extensions/SDSlot_v1.1.0_Desktop.zip \
+                  downloads/extensions/SDOddEven_v1.2.0_Desktop.zip \
+                  update/extensions-catalog.json update/desktop-policy.json \
+                  extensions-data.js assets/js/extensions-data.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'build: publish PC slot and odd-even online bridge'
+          git push origin HEAD:feat/pc-game-online-bridge-20260818
