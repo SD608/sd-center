@@ -14,7 +14,7 @@
 <script src="assets/js/supabase-config.js?v=2" defer></script>
 <script src="assets/js/auth-common.js?v=2" defer></script>
 <script src="assets/js/achievements-all.js?v=20260818-profile" defer></script>
-<script src="assets/js/profile-page.js?v=2" defer></script>
+<script src="assets/js/profile-page.js?v=3-hide-wallet" defer></script>
 <script src="assets/js/profile-achievements.js?v=20260818" defer></script>
 </head>
 <body class="auth-body profile-body">
@@ -27,7 +27,7 @@
 
 <main class="profile-main section-shell">
   <section class="profile-hero">
-    <div><span class="section-kicker">SD PUBLIC PROFILE</span><h1 id="profileHeading">회원 프로필</h1><p>SD608 계정의 게임 자산과 플리마켓 수집품을 공개 카드로 보여줍니다.</p></div>
+    <div><span class="section-kicker">SD PUBLIC PROFILE</span><h1 id="profileHeading">회원 프로필</h1><p>SD608 계정의 공개 게임 자산과 플리마켓 수집품을 공개 카드로 보여줍니다.</p></div>
     <div class="profile-hero-actions"><a class="secondary-button" href="ranking.html">랭킹으로 돌아가기</a><button id="refreshProfile" class="secondary-button" type="button">새로고침</button></div>
   </section>
   <div id="profileStatus" class="form-status account-status" hidden aria-live="polite"></div>
@@ -48,13 +48,13 @@
         <div class="id-fields">
           <div class="id-name-row"><span id="profileTitleBadge" class="id-title" hidden></span><h2 id="profileNickname">회원</h2></div>
           <dl>
-            <div><dt>보유 자산</dt><dd id="profileAssetTotal">-</dd></div>
-            <div><dt>계좌 잔액</dt><dd id="profileWalletBalance">-</dd></div>
+            <div><dt>공개 자산</dt><dd id="profileAssetTotal">-</dd></div>
+            <div hidden aria-hidden="true"><dt>계좌 잔액</dt><dd id="profileWalletBalance">-</dd></div>
             <div><dt>보유 금</dt><dd id="profileGold">-</dd></div>
           </dl>
         </div>
       </div>
-      <footer class="id-card-footer"><span>코인 자산 제외</span><span>SD GAME DATA ONLY</span></footer>
+      <footer class="id-card-footer"><span>계좌·코인 자산 제외</span><span>SD GAME DATA ONLY</span></footer>
     </article>
 
     <section class="profile-section-card">
