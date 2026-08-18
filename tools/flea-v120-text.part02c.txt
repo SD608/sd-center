@@ -1,0 +1,10 @@
+round:#f5f7f9;overflow:hidden;font-size:0}
++.inventory-item-image{width:100%;height:100%;object-fit:contain;display:block}
++.reward-item-image{width:min(300px,72vw);height:190px;margin:0 auto 12px;display:grid;place-items:center;border:1px solid #304057;border-radius:18px;background:#f6f7f8;overflow:hidden;font-size:0;filter:none!important}
++.reward-product-image{width:100%;height:100%;object-fit:contain;display:block}
++.item-image-fallback{font-size:64px;line-height:1}
++.bulk-result-icon-strip{display:flex;align-items:center;justify-content:center;gap:7px;min-height:82px;margin:0 auto 10px}
++.bulk-result-preview-image{width:72px;height:58px;object-fit:contain;border:1px solid #314359;border-radius:10px;background:#f6f7f8}
++.bulk-result-item-main{display:flex!important;align-items:center;gap:10px;min-width:0}
++.bulk-result-item-image{width:52px;height:40px;flex:0 0 auto;object-fit:contain;border:1px solid #314359;border-radius:8px;background:#f6f7f8}
++.bulk-result-item-main>span{overfl
