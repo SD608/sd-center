@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v18-slot-ding";
+const CACHE_NAME = "sd608-mobile-v19-profile-card-editor";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -11,6 +11,7 @@ const APP_SHELL = [
   "./sdcoin-mobile.html",
   "./flea-market-mobile.html",
   "./profile.html",
+  "./profile-card-edit.html",
   "./profile-shop.html",
   "./login.html",
   "./signup.html",
@@ -25,6 +26,8 @@ const APP_SHELL = [
   "./assets/css/sdcoin-home-card.css?v=3",
   "./assets/css/flea-market-mobile.css?v=1",
   "./assets/css/profile-page.css?v=1",
+  "./assets/css/profile-card-layout.css?v=1",
+  "./assets/css/profile-card-edit.css?v=1",
   "./assets/js/supabase-config.js?v=2",
   "./assets/js/auth-common.js?v=2",
   "./assets/js/mobile-common.js?v=2",
@@ -35,8 +38,9 @@ const APP_SHELL = [
   "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
   "./assets/js/flea-market-mobile.js?v=1",
-  "./assets/js/profile-page.js?v=2",
-  "./assets/js/profile-shop.js?v=1",
+  "./assets/js/profile-page.js?v=5-card-layout",
+  "./assets/js/profile-card-edit.js?v=1",
+  "./assets/js/profile-shop.js?v=3-achievement-filters",
   "./assets/icons/center.png",
   "./assets/icons/wallet.png",
   "./assets/icons/vault.png",
