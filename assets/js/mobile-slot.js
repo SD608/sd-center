@@ -13,9 +13,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     emerald:"💚", diamond:"💎", seven:"7", "red-seven":"🔴7", "gold-seven":"✨7"
   };
   const visualKeys = Object.keys(symbols);
-  const SPIN_FRAME_MS = 72;
-  const FIRST_REEL_MIN_MS = 900;
-  const REEL_STOP_GAP_MS = 600;
+  const SPIN_FRAME_MS = 96;
+  const FIRST_REEL_MIN_MS = 1450;
+  const REEL_STOP_GAP_MS = 650;
+  const REEL_DECELERATION_STEPS_MS = [130, 190, 270];
 
   let balance = 0;
   let audioContext = null;
@@ -86,6 +87,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     tone(125, 0.08, 0.14, "sine", 0.022);
   }
 
+  function randomSymbol() {
+    const key = visualKeys[Math.floor(Math.random() * visualKeys.length)];
+    return symbols[key];
+  }
+
   function clearReelTimers() {
     reelTimers.forEach((timer) => {
       if (timer) window.clearInterval(timer);
@@ -96,12 +102,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   function startReels() {
     clearReelTimers();
     reels.forEach((reel) => {
-      reel.classList.remove("stopping");
+      reel.classList.remove("stopping", "slowing");
       reel.classList.add("spinning");
     });
     reelTimers = reels.map((reel) => window.setInterval(() => {
-      const key = visualKeys[Math.floor(Math.random() * visualKeys.length)];
-      reel.textContent = symbols[key];
+      reel.textContent = randomSymbol();
     }, SPIN_FRAME_MS));
   }
 
@@ -111,17 +116,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     const reel = reels[index];
     if (!reel) return;
     reel.textContent = symbols[key] || key || "?";
-    reel.classList.remove("spinning");
+    reel.classList.remove("spinning", "slowing");
     reel.classList.add("stopping");
     playReelStopSound(index);
     window.setTimeout(() => reel.classList.remove("stopping"), 280);
+  }
+
+  async function slowAndStopReel(index, key) {
+    if (reelTimers[index]) window.clearInterval(reelTimers[index]);
+    reelTimers[index] = null;
+    const reel = reels[index];
+    if (!reel) return;
+
+    // 세 릴 모두 정확히 같은 감속 패턴을 거쳐 멈춥니다.
+    reel.classList.remove("spinning");
+    reel.classList.add("slowing");
+    for (const delay of REEL_DECELERATION_STEPS_MS) {
+      reel.textContent = randomSymbol();
+      await wait(delay);
+    }
+    stopReel(index, key);
   }
 
   async function settleReelsSequentially(finalKeys, spinStartedAt) {
     const elapsed = performance.now() - spinStartedAt;
     await wait(Math.max(0, FIRST_REEL_MIN_MS - elapsed));
     for (let index = 0; index < reels.length; index += 1) {
-      stopReel(index, finalKeys[index]);
+      await slowAndStopReel(index, finalKeys[index]);
       if (index < reels.length - 1) await wait(REEL_STOP_GAP_MS);
     }
     reelTimers = [];
@@ -129,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function abortSpinAnimation() {
     clearReelTimers();
-    reels.forEach((reel) => reel.classList.remove("spinning", "stopping"));
+    reels.forEach((reel) => reel.classList.remove("spinning", "slowing", "stopping"));
   }
 
   try {
@@ -167,7 +188,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     input.disabled = true;
     resultCard.className = "result-card-mobile spinning-result";
     resultTitle.textContent = "회전 중...";
-    resultDetail.textContent = "왼쪽 릴부터 하나씩 멈춥니다.";
+    resultDetail.textContent = "세 릴 모두 같은 감속 속도로 하나씩 멈춥니다.";
 
     const spinStartedAt = performance.now();
     startReels();
