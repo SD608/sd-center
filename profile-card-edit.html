@@ -12,11 +12,11 @@
 <link rel="stylesheet" href="assets/css/profile-page.css?v=1" />
 <link rel="stylesheet" href="assets/css/profile-card-layout.css?v=1" />
 <link rel="stylesheet" href="assets/css/profile-card-edit.css?v=2-embed" />
-<link rel="stylesheet" href="assets/css/profile-assets-v2.css?v=1" />
+<link rel="stylesheet" href="assets/css/profile-assets-v3.css?v=1" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="assets/js/supabase-config.js?v=2" defer></script>
 <script src="assets/js/auth-common.js?v=2" defer></script>
-<script src="assets/js/profile-card-edit-v2.js?v=1" defer></script>
+<script src="assets/js/profile-card-edit-v3.js?v=1" defer></script>
 <script src="assets/js/profile-card-edit-embed.js?v=1" defer></script>
 </head>
 <body class="auth-body profile-body profile-card-edit-body">
@@ -80,19 +80,19 @@
           <section class="profile-card-module" data-card-block="coins">
             <span class="profile-card-module-label">SD COIN HOLDINGS</span>
             <div id="profileCoins" class="profile-coin-holdings"><span class="profile-coin-empty">불러오는 중...</span></div>
-            <p class="profile-card-module-note">6종 코인 보유 수량</p>
+            <p class="profile-card-module-note">선택한 코인 보유 수량</p>
           </section>
 
           <section class="profile-card-module" data-card-block="slot_best">
             <span class="profile-card-module-label">SLOT BEST</span>
-            <div class="profile-slot-best"><span id="profileSlotIcon" class="profile-slot-icon">🎰</span><div><strong id="profileSlotLabel">기록 없음</strong><small id="profileSlotScore">최고 기록 없음</small></div></div>
+            <div class="profile-slot-best"><span id="profileSlotIcon" class="profile-slot-icon">🎰</span><div><strong id="profileSlotLabel">기록 없음</strong><small id="profileSlotScore">기록 없음</small></div></div>
           </section>
         </div>
 
         <div id="profileCardEmpty" class="profile-card-empty" hidden>공개할 카드 항목이 없습니다.</div>
         <footer class="id-card-footer"><span>사용자 지정 공개 카드</span><span>SD GAME DATA ONLY</span></footer>
       </article>
-      <p class="profile-card-preview-note">오른쪽에서 순서, 공개 여부, 금 표시 방식을 바꾸면 이 카드에 즉시 반영됩니다. 저장 전에는 다른 사용자에게 보이지 않습니다.</p>
+      <p class="profile-card-preview-note">오른쪽에서 순서, 공개 여부, 금 단위, 공개할 코인을 바꾸면 카드에 즉시 반영됩니다. 저장 전에는 다른 사용자에게 보이지 않습니다.</p>
     </div>
 
     <aside class="profile-card-editor-panel" aria-label="프로필 카드 편집 패널">
@@ -100,7 +100,7 @@
         <div><span class="section-kicker">CARD SETTINGS</span><h2>카드 구성</h2></div>
         <span id="profileCardSaveState" class="profile-card-save-state is-saved">저장됨</span>
       </div>
-      <p class="profile-card-editor-help">⋮⋮ 손잡이를 끌어 카드 순서를 바꾸고, 스위치로 공개할 항목을 선택하세요. 금은 수량 또는 무게 중 하나를 선택할 수 있습니다. 계좌 잔액은 공개 항목에 포함되지 않습니다.</p>
+      <p class="profile-card-editor-help">⋮⋮ 손잡이로 카드 순서를 바꾸고 공개 항목을 선택하세요. 금은 g / kg / 수량 중 하나를 고를 수 있고, 코인은 공개할 종목을 직접 선택할 수 있습니다. 계좌 잔액은 공개되지 않습니다.</p>
 
       <div id="profileCardLayoutEditor" class="profile-card-layout-editor"></div>
 
@@ -109,7 +109,7 @@
         <button id="cancelProfileCardLayout" class="secondary-button" type="button">변경 취소</button>
         <button id="saveProfileCardLayout" class="primary-button" type="button">변경사항 저장</button>
       </div>
-      <p class="profile-card-editor-footnote">저장하면 이후 다른 사용자가 보는 공개 프로필에도 같은 순서와 공개 설정이 적용됩니다.</p>
+      <p class="profile-card-editor-footnote">저장하면 이후 다른 사용자가 보는 공개 프로필에도 같은 설정이 적용됩니다.</p>
     </aside>
   </section>
 </main>
