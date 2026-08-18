@@ -83,13 +83,17 @@ jobs:
           [IO.File]::WriteAllBytes((Join-Path $fixture 'assets\icon-512.png'), [byte[]](137,80,78,71,13,10,26,10))
           $zip=Join-Path $env:RUNNER_TEMP 'icon-fixture.zip'
           Compress-Archive -Path (Join-Path $fixture '*') -DestinationPath $zip -Force
+          $env:ICON_FIXTURE_ZIP=$zip
           $test=Join-Path $env:RUNNER_TEMP 'test-icon-discovery.js'
-          @"
-          const registry=require(${([char]39)}$($env:APP_ROOT.Replace('\','\\'))\\src\\app-registry.js${([char]39)});
-          const result=registry.inspectZip(${([char]39)}$($zip.Replace('\','\\'))${([char]39)});
-          if(result.metadata.icon!==${([char]39)}assets/icon-512.png${([char]39)}) throw new Error('icon discovery failed: '+result.metadata.icon);
+          @'
+          const path = require("node:path");
+          const registry = require(path.join(process.env.APP_ROOT, "src", "app-registry.js"));
+          const result = registry.inspectZip(process.env.ICON_FIXTURE_ZIP);
+          if (result.metadata.icon !== "assets/icon-512.png") {
+            throw new Error("icon discovery failed: " + result.metadata.icon);
+          }
           console.log(result.metadata.icon);
-          "@ | Set-Content $test -Encoding utf8
+          '@ | Set-Content $test -Encoding utf8
           Push-Location $env:APP_ROOT
           node $test
           Pop-Location
