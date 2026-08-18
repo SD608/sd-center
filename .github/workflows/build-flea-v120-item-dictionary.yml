@@ -7,7 +7,7 @@ on:
     paths:
       - tools/flea-v120-text.part*.txt
       - tools/flea-v120-items-manifest.txt
-      - tools/flea-v120-items-sprite.part*.txt
+      - tools/flea-v120-items-sprite.webp.b64
       - .github/workflows/build-flea-v120-item-dictionary.yml
 
 permissions:
@@ -34,19 +34,19 @@ jobs:
           cd /tmp/flea-v120
           cat "$GITHUB_WORKSPACE"/tools/flea-v120-text.part*.txt > /tmp/flea-v120.patch
           patch -p1 < /tmp/flea-v120.patch
-          cat "$GITHUB_WORKSPACE"/tools/flea-v120-items-sprite.part*.txt | base64 -d > /tmp/flea-items-v120.jpg
+          base64 -d "$GITHUB_WORKSPACE/tools/flea-v120-items-sprite.webp.b64" > /tmp/flea-items-v120.webp
           python - <<'PY'
           from pathlib import Path
           from PIL import Image
+          import os
           root = Path('/tmp/flea-v120/sd-flea-market/public/assets/items')
           root.mkdir(parents=True, exist_ok=True)
-          sprite = Image.open('/tmp/flea-items-v120.jpg').convert('RGB')
-          import os
+          sprite = Image.open('/tmp/flea-items-v120.webp').convert('RGB')
           manifest = (Path(os.environ['GITHUB_WORKSPACE']) / 'tools/flea-v120-items-manifest.txt').read_text(encoding='utf-8').splitlines()
           for line in manifest:
               name, x, y = line.split('\t')
               x, y = int(x), int(y)
-              crop = sprite.crop((x * 128, y * 96, (x + 1) * 128, (y + 1) * 96))
+              crop = sprite.crop((x * 64, y * 48, (x + 1) * 64, (y + 1) * 48)).resize((128, 96), Image.Resampling.LANCZOS)
               crop.save(root / name, 'PNG', optimize=True)
           PY
           cd /tmp/flea-v120/sd-flea-market
