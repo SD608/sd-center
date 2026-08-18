@@ -8,6 +8,13 @@ on:
       - 'tools/patch-sdlink-v141-icon.py'
       - 'assets/icons/sdlink.svg'
       - '.github/workflows/build-flea-v118-sdlink-v141.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/patch-flea-v118-bank-heist.py'
+      - 'tools/patch-sdlink-v141-icon.py'
+      - 'assets/icons/sdlink.svg'
+      - '.github/workflows/build-flea-v118-sdlink-v141.yml'
 
 permissions:
   contents: write
@@ -70,7 +77,6 @@ jobs:
               assert 'Array.from({ length: 8 }' in main and 'Array.from({ length: 8 }' in app
               assert 'emptySlots' not in main and 'emptySlots' not in app
               assert 'const risk = 0.32' in chase
-              print('FLEA_ROOT=' + str(app_root))
 
           with tempfile.TemporaryDirectory() as tmp:
               dst = Path(tmp) / 'link'
@@ -83,7 +89,6 @@ jobs:
               assert manifest['version'] == '1.4.1'
               assert manifest['icon'] == 'assets/sdlink-icon.svg'
               assert (app_root / manifest['icon']).is_file()
-              print('LINK_ROOT=' + str(app_root))
           PY
 
       - name: JavaScript syntax smoke test from packages
@@ -102,6 +107,7 @@ jobs:
           node --check "$LINK_ROOT/main.js"
 
       - name: Commit built releases
+        if: github.event_name == 'push'
         shell: bash
         run: |
           set -euo pipefail
