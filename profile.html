@@ -29,7 +29,7 @@
 
 <main class="profile-main section-shell">
   <section class="profile-hero">
-    <div><span class="section-kicker">SD608 공개 프로필</span><h1 id="profileHeading">회원 프로필</h1><p>공개할 정보와 카드 배치를 직접 꾸밀 수 있는 개인 프로필입니다.</p></div>
+    <div><span class="section-kicker">SD608 공개 프로필</span><h1 id="profileHeading">회원 프로필</h1></div>
     <div class="profile-hero-actions"><a class="secondary-button" href="ranking.html">랭킹으로 돌아가기</a><button id="refreshProfile" class="secondary-button" type="button">새로고침</button></div>
   </section>
   <div id="profileStatus" class="form-status account-status" hidden aria-live="polite"></div>
@@ -37,7 +37,6 @@
   <section id="profileMissing" class="profile-missing" hidden>
     <span>프로필 미생성</span>
     <h2 id="missingName">아직 프로필이 없습니다.</h2>
-    <p>프로필을 만들면 랭킹에서 닉네임을 눌러 개인 프로필 카드를 볼 수 있습니다.</p>
     <button id="createProfileButton" class="primary-button" type="button" hidden>내 프로필 만들기</button>
   </section>
 
@@ -61,7 +60,6 @@
           <section class="profile-card-module profile-card-nickname-module" data-card-block="nickname">
             <span class="profile-card-module-label">닉네임</span>
             <h2 id="profileNickname">회원</h2>
-            <p class="profile-card-module-note">SD608 온라인 공개 닉네임</p>
           </section>
 
           <section class="profile-card-module profile-card-title-module" data-card-block="title">
@@ -72,31 +70,26 @@
           <section class="profile-card-module" data-card-block="assets">
             <span class="profile-card-module-label">공개 자산</span>
             <strong id="profileAssetTotal" class="profile-card-value">-</strong>
-            <p class="profile-card-module-note">계좌·코인 자산 제외</p>
           </section>
 
           <section class="profile-card-module" data-card-block="gold">
             <span class="profile-card-module-label">보유 금</span>
             <strong id="profileGold" class="profile-card-value">-</strong>
-            <p id="profileGoldModeNote" class="profile-card-module-note">수량 기준</p>
           </section>
 
           <section class="profile-card-module" data-card-block="coins">
             <span class="profile-card-module-label">SD코인 보유량</span>
             <div id="profileCoins" class="profile-coin-holdings"><span class="profile-coin-empty">불러오는 중...</span></div>
-            <p class="profile-card-module-note">선택한 코인 보유 수량</p>
           </section>
         </div>
 
-        <div id="profileCardEmpty" class="profile-card-empty" hidden>이 사용자는 프로필 카드의 공개 항목을 모두 숨겼습니다.</div>
-        <footer class="id-card-footer"><span>사용자 지정 공개 카드</span><span>SD 게임 데이터 전용</span></footer>
+        <div id="profileCardEmpty" class="profile-card-empty" hidden>공개 항목 없음</div>
       </article>
     </div>
 
     <section id="profileEditTabPanel" class="profile-tab-panel profile-edit-tab-panel" data-profile-panel="edit" hidden>
       <div class="profile-edit-tab-heading">
-        <div><span class="section-kicker">실시간 프로필 편집</span><h2>프로필 실시간 편집</h2><p>왼쪽 프로필 카드와 오른쪽 설정을 한 화면에서 보면서 수정할 수 있습니다.</p></div>
-        <span class="profile-edit-tab-hint">프로필 수정은 이 탭에서 통합 관리</span>
+        <div><span class="section-kicker">실시간 프로필 편집</span><h2>프로필 실시간 편집</h2></div>
       </div>
       <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1&amp;v=8"></iframe>
     </section>
