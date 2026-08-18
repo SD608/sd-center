@@ -1,4 +1,4 @@
-name: Rebuild Flea Market v1.2.1 Icons
+name: Rebuild Flea Market v1.2.2 Icons
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   build:
-    if: github.event_name != 'issues' || github.event.issue.title == '[build] flea v1.2.1 icons'
+    if: github.event_name != 'issues' || github.event.issue.title == '[build] flea v1.2.2 icons'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,7 +32,7 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.1 아이콘 빌드를 시작했습니다. Run ID: $RUN_ID"
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.2 아이콘 매핑 수정 빌드를 시작했습니다. Run ID: $RUN_ID"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -69,13 +69,13 @@ jobs:
           print('sprite verified:', len(text), 'base64 chars,', len(raw), 'bytes')
           PY
 
-      - name: Build v1.2.0 with refreshed artwork
+      - name: Build v1.2.0 with corrected mapping
         shell: bash
         run: |
           cat tools/build-flea-v120.part0.py tools/build-flea-v120.part1.py tools/build-flea-v120.part2.py > /tmp/build-flea-v120.py
           python /tmp/build-flea-v120.py
 
-      - name: Promote refreshed package to v1.2.1
+      - name: Promote corrected package to v1.2.2
         shell: bash
         run: |
           python - <<'PY'
@@ -83,8 +83,8 @@ jobs:
           import hashlib, json, tempfile, zipfile
 
           src = Path('downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip')
-          out = Path('downloads/extensions/SDFleaMarket_v1.2.1_Desktop.zip')
-          sha = Path('downloads/extensions/SDFleaMarket_v1.2.1_Desktop.sha256')
+          out = Path('downloads/extensions/SDFleaMarket_v1.2.2_Desktop.zip')
+          sha = Path('downloads/extensions/SDFleaMarket_v1.2.2_Desktop.sha256')
 
           with tempfile.TemporaryDirectory() as td:
               root = Path(td)
@@ -96,20 +96,21 @@ jobs:
 
               package_json = pkg / 'package.json'
               data = json.loads(package_json.read_text(encoding='utf-8'))
-              data['version'] = '1.2.1'
+              data['version'] = '1.2.2'
               package_json.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
               app_json = pkg / 'sd-app.json'
               data = json.loads(app_json.read_text(encoding='utf-8'))
-              data['version'] = '1.2.1'
-              data['displayVersion'] = 'PC Expansion · v1.2.1'
+              data['version'] = '1.2.2'
+              data['displayVersion'] = 'PC Expansion · v1.2.2'
               app_json.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
               (pkg / 'RELEASE_NOTES.txt').write_text(
-                  'SD 플리마켓 v1.2.1\n\n'
-                  '- 아이템 사전과 물건 보관함의 36종 아이템 이미지를 새 아이콘으로 교체\n'
-                  '- 아이템 이름과 이미지 좌표를 정확히 다시 매핑\n'
-                  '- 기존 아이템 사전, 보관함, 획득 기록, 가격 및 게임 진행도 유지\n',
+                  'SD 플리마켓 v1.2.2\n\n'
+                  '- 아이템 이름과 아이콘이 서로 어긋나던 매핑 오류 수정\n'
+                  '- 최초 스프라이트의 정상 6x6 좌표표 복원\n'
+                  '- 아이템 사전과 물건 보관함에 동일하게 적용\n'
+                  '- 기존 보관함, 획득 기록, 가격 및 게임 진행도 유지\n',
                   encoding='utf-8'
               )
 
@@ -131,7 +132,7 @@ jobs:
           python - <<'PY'
           import zipfile
           from pathlib import Path
-          for filename in ['SDFleaMarket_v1.2.0_Desktop.zip', 'SDFleaMarket_v1.2.1_Desktop.zip']:
+          for filename in ['SDFleaMarket_v1.2.0_Desktop.zip', 'SDFleaMarket_v1.2.2_Desktop.zip']:
               path = Path('downloads/extensions') / filename
               with zipfile.ZipFile(path) as z:
                   names = [n for n in z.namelist() if n.startswith('sd-flea-market/public/assets/items/') and n.endswith('.png')]
@@ -153,12 +154,12 @@ jobs:
             tools/flea-v120-items-sprite.webp.b64 \
             downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip \
             downloads/extensions/SDFleaMarket_v1.2.0_Desktop.sha256 \
-            downloads/extensions/SDFleaMarket_v1.2.1_Desktop.zip \
-            downloads/extensions/SDFleaMarket_v1.2.1_Desktop.sha256
+            downloads/extensions/SDFleaMarket_v1.2.2_Desktop.zip \
+            downloads/extensions/SDFleaMarket_v1.2.2_Desktop.sha256
           if git diff --cached --quiet; then
             echo 'No package changes to commit.'
           else
-            git commit -m 'Rebuild flea market item artwork'
+            git commit -m 'Build flea market v1.2.2 icon mapping fix'
             git push
           fi
 
@@ -170,7 +171,7 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.1 아이콘 빌드가 완료되었습니다. Run ID: $RUN_ID"
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.2 아이콘 매핑 수정 빌드가 완료되었습니다. Run ID: $RUN_ID"
 
       - name: Report build failure
         if: failure() && github.event_name == 'issues'
@@ -180,4 +181,4 @@ jobs:
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.1 아이콘 빌드가 실패했습니다. Run ID: $RUN_ID"
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.2 아이콘 매핑 수정 빌드가 실패했습니다. Run ID: $RUN_ID"
