@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v25-profile-card-only";
+const CACHE_NAME = "sd608-mobile-v26-profile-korean-ui";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -12,7 +12,7 @@ const APP_SHELL = [
   "./flea-market-mobile.html",
   "./profile.html",
   "./profile-card-edit.html",
-  "./profile-card-edit.html?embed=1&v=6",
+  "./profile-card-edit.html?embed=1&v=7",
   "./profile-shop.html",
   "./login.html",
   "./signup.html",
