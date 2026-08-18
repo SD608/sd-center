@@ -123,7 +123,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     title.hidden = !profile.title;
     title.textContent = profile.title || "";
     document.getElementById("profileAssetTotal").textContent = won(profile.assets?.total);
-    document.getElementById("profileWalletBalance").textContent = won(profile.assets?.wallet_balance);
     document.getElementById("profileGold").textContent = `${Number(profile.assets?.gold_bars || 0).toLocaleString("ko-KR")}개 · ${Number(profile.assets?.gold_grams || 0).toLocaleString("ko-KR", { maximumFractionDigits: 2 })}g · 평가 ${won(profile.assets?.gold_value)}`;
     ownerTools.hidden = !profile.is_me;
     renderPhoto();
