@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="SD608 공개 프로필 카드 편집" />
+<meta name="theme-color" content="#0b1224" />
+<title>프로필 카드 편집 · SD608 Online</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="favicon.ico" />
+<link rel="stylesheet" href="assets/css/style.css?v=online2" />
+<link rel="stylesheet" href="assets/css/profile-page.css?v=1" />
+<link rel="stylesheet" href="assets/css/profile-card-layout.css?v=1" />
+<link rel="stylesheet" href="assets/css/profile-card-edit.css?v=1" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="assets/js/supabase-config.js?v=2" defer></script>
+<script src="assets/js/auth-common.js?v=2" defer></script>
+<script src="assets/js/profile-card-edit.js?v=1" defer></script>
+</head>
+<body class="auth-body profile-body profile-card-edit-body">
+<div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
+<header class="site-header auth-site-header">
+  <a class="brand" href="index.html"><img src="assets/icons/center.png" alt="" /><span>SD종합센터</span></a>
+  <nav class="nav-links"><a href="index.html">홈</a><a href="profile.html">내 프로필</a><a href="profile-shop.html">프로필 상점</a><a href="mobile.html">모바일 센터</a></nav>
+  <div class="header-account"><button id="logoutButton" class="header-login" type="button">로그아웃</button></div>
+</header>
+
+<main class="profile-card-edit-main section-shell">
+  <section class="profile-hero profile-card-edit-hero">
+    <div><span class="section-kicker">PROFILE CARD EDITOR</span><h1>프로필 카드 편집</h1><p>왼쪽 미리보기를 보면서 공개 항목과 카드 순서를 바로 수정할 수 있습니다.</p></div>
+    <div class="profile-hero-actions"><a class="secondary-button" href="profile.html">내 프로필로 돌아가기</a></div>
+  </section>
+
+  <div id="profileCardEditStatus" class="form-status account-status" hidden aria-live="polite"></div>
+
+  <section id="profileCardEditMissing" class="profile-missing" hidden>
+    <span>PROFILE NOT CREATED</span>
+    <h2>먼저 공개 프로필을 만들어야 합니다.</h2>
+    <p>내 프로필에서 공개 프로필을 만든 뒤 카드 편집을 사용할 수 있습니다.</p>
+    <a class="primary-button" href="profile.html">내 프로필로 이동</a>
+  </section>
+
+  <section id="profileCardEditContent" class="profile-card-edit-workspace" hidden>
+    <div class="profile-card-preview-column">
+      <div class="profile-card-edit-pane-heading">
+        <div><span class="section-kicker">LIVE PREVIEW</span><h2>실시간 미리보기</h2></div>
+        <span id="profileCardPreviewState" class="profile-card-save-state is-saved">저장된 상태</span>
+      </div>
+
+      <article id="profileIdCard" class="sd-id-card modular-profile-card profile-editor-preview-card" aria-label="SD608 공개 프로필 카드 미리보기">
+        <div class="id-watermark">SD608</div>
+        <header class="id-card-header"><div><small>SD608 ONLINE</small><strong>게임 프로필 등록증</strong></div><span>PUBLIC PROFILE</span></header>
+
+        <div id="profileCardGrid" class="profile-card-grid">
+          <section class="profile-card-module profile-card-photo-module" data-card-block="photo">
+            <span class="profile-card-module-label">PROFILE PHOTO</span>
+            <div class="id-photo" id="profilePhoto"><span>👤</span></div>
+          </section>
+
+          <section class="profile-card-module profile-card-identity-module" data-card-block="identity">
+            <span class="profile-card-module-label">IDENTITY</span>
+            <div class="profile-card-identity"><span id="profileTitleBadge" class="id-title" hidden></span><h2 id="profileNickname">회원</h2></div>
+            <p class="profile-card-module-note">SD608 Online 공개 닉네임</p>
+          </section>
+
+          <section class="profile-card-module" data-card-block="assets">
+            <span class="profile-card-module-label">PUBLIC ASSET</span>
+            <strong id="profileAssetTotal" class="profile-card-value">-</strong>
+            <p class="profile-card-module-note">계좌·코인 자산 제외</p>
+          </section>
+
+          <section class="profile-card-module" data-card-block="gold">
+            <span class="profile-card-module-label">GOLD</span>
+            <strong id="profileGold" class="profile-card-value">-</strong>
+            <p class="profile-card-module-note">SD금고 보유 금 기준</p>
+          </section>
+
+          <section class="profile-card-module" data-card-block="slot_best">
+            <span class="profile-card-module-label">SLOT BEST</span>
+            <div class="profile-slot-best"><span id="profileSlotIcon" class="profile-slot-icon">🎰</span><div><strong id="profileSlotLabel">기록 없음</strong><small id="profileSlotScore">최고 기록 없음</small></div></div>
+          </section>
+        </div>
+
+        <div id="profileCardEmpty" class="profile-card-empty" hidden>공개할 카드 항목이 없습니다.</div>
+        <footer class="id-card-footer"><span>사용자 지정 공개 카드</span><span>SD GAME DATA ONLY</span></footer>
+      </article>
+      <p class="profile-card-preview-note">오른쪽에서 순서나 공개 여부를 바꾸면 이 카드에 즉시 반영됩니다. 저장 전에는 다른 사용자에게 보이지 않습니다.</p>
+    </div>
+
+    <aside class="profile-card-editor-panel" aria-label="프로필 카드 편집 패널">
+      <div class="profile-card-edit-pane-heading">
+        <div><span class="section-kicker">CARD SETTINGS</span><h2>카드 구성</h2></div>
+        <span id="profileCardSaveState" class="profile-card-save-state is-saved">저장됨</span>
+      </div>
+      <p class="profile-card-editor-help">⋮⋮ 손잡이를 끌어 카드 순서를 바꾸고, 스위치로 공개할 항목을 선택하세요. 계좌 잔액은 공개 항목에 포함되지 않습니다.</p>
+
+      <div id="profileCardLayoutEditor" class="profile-card-layout-editor"></div>
+
+      <div class="profile-card-editor-actions">
+        <button id="resetProfileCardLayout" class="secondary-button" type="button">기본 배치</button>
+        <button id="cancelProfileCardLayout" class="secondary-button" type="button">변경 취소</button>
+        <button id="saveProfileCardLayout" class="primary-button" type="button">변경사항 저장</button>
+      </div>
+      <p class="profile-card-editor-footnote">저장하면 이후 다른 사용자가 보는 공개 프로필에도 같은 순서와 공개 설정이 적용됩니다.</p>
+    </aside>
+  </section>
+</main>
+</body>
+</html>
