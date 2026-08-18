@@ -1,0 +1,45 @@
+small><h1>플리마켓</h1><p>업무용 휴대폰</p></div>
++      <div class="phone-title"><small>SD COMPANY DEVICE</small><h1>플리마켓</h1></div>
+       <div class="phone-app-grid">
+-        <button class="phone-app" data-app="mission"><span class="phone-app-icon travel-icon">➜</span><strong>이동하기</strong><small>파밍지 선택</small></button>
++        <button class="phone-app" data-app="mission"><span class="phone-app-icon travel-icon">➜</span><strong>이동하기</strong></button>
+         <button class="phone-app" data-app="boxes"><span class="phone-app-icon box-icon">▣</span><strong>상자 보관함</strong><small><b id="phoneBoxCount">0</b>개 보관</small></button>
+-        <button class="phone-app" data-app="shop"><span class="phone-app-icon shop-icon">₩</span><strong>상점</strong><small>장비 구매</small></button>
++        <button class="phone-app" data-app="shop"><span class="phone-app-icon shop-icon">₩</span><strong>상점</strong></button>
+         <button class="phone-app" data-app="items"><span class="phone-app-icon item-icon">◆</span><strong>물건 보관함</strong><small><b id="phoneItemCount">0</b>개 보관</small></button>
++        <button class="phone-app" data-app="dictionary"><span class="phone-app-icon dictionary-icon">▦</span><strong>아이템 사전</strong><small><b id="phoneDictionaryCount">0/36</b> 획득</small></button>
+       </div>
+       <div class="phone-company-card"><span>회사 등급</span><strong id="phoneCompanyGrade">-</strong><small id="phoneCompanyNote">SD Link 회사 정보 확인 중</small><button id="refreshCompany" class="sync-refresh-button" type="button">새로고침</button></div>
+       <div class="phone-home-indicator"></div>
+@@ -151,6 +152,22 @@
+         <div id="itemList" class="card-grid"></div>
+         <div id="itemEmpty" class="empty">아직 획득한 물건이 없습니다.</div>
+       </section>
++
++      <section id="dictionaryPanel" class="panel">
++        <div class="panel-heading dictionary-heading"><div><p class="eyebrow">ITEM DICTIONARY</p><h1>아이템 사전</h1></div><div class="dictionary-progress"><span>획득 종류</span><strong id="dictionaryProgress">0 / 36</strong></div></div>
++        <div class="dictionary-toolbar">
++          <div id="dictionaryCategories" class="dictionary-categories">
++            <button class="active" type="button" data-dictionary-tier="all">전체</button>
++            <button type="button" data-dictionary-tier="worn">낡은 상자</button>
++            <button type="button" data-dictionary-tier="normal">평범한 상자</button>
++            <button type="button" data-dictionary-tier="fancy">고급진 상자</button>
++            <button type="button" data-dictionary-tier="premium">최고급 상자</button>
++            <button type="button" data-dictionary-tier="safe">금고</button>
++          </div>
++          <label class="dictionary-sort"><span>가격 정렬</span><select id="dictionarySort"><option value="price-asc">낮은 가격순</option><option value="price-desc">높은 가격순</option></select></label>
++        </div>
++        <div id="dictionaryList" class="dictionary-grid"></div>
++      </section>
+     </main>
+   </section>
+ 
+--- a/sd-flea-market/public/style.css
++++ b/sd-flea-market/public/style.css
+@@ -372,3 +372,22 @@
+ .safe-dial-shell.dragging{cursor:grabbing}
+ @media(max-width:900px){.item-vault-heading{flex-direction:column}.online-sync-box{width:100%;max-width:none;align-items:stretch}.online-sync-box small{text-align:left}.safe-control-grid{grid-template-columns:repeat(2,1fr)}}
+ 
++
++/* v1.2.0 item-specific artwork */
++.item-art{width:100%;height:104px;display:grid;place-items:center;margin:-2px 0 8px;border:1px solid #2c394b;border-radius:13px;backg
