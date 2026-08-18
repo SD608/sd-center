@@ -1,0 +1,81 @@
+name: Rebuild Flea v1.1.8 and SD Link v1.4.1
+
+on:
+  push:
+    branches: [fix/flea-v118-sdlink-icon-20260818]
+    paths:
+      - 'tools/patch-flea-v118-bank-heist-v2.py'
+      - '.github/workflows/build-flea-v118-sdlink-v141-v2.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/patch-flea-v118-bank-heist-v2.py'
+      - '.github/workflows/build-flea-v118-sdlink-v141-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/flea-v118-sdlink-icon-20260818
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build flea v1.1.8 from actual v1.1.7
+        run: |
+          python -m py_compile tools/patch-flea-v118-bank-heist.py tools/patch-flea-v118-bank-heist-v2.py
+          python tools/patch-flea-v118-bank-heist-v2.py
+
+      - name: Build SD Link v1.4.1 icon package
+        run: |
+          python -m py_compile tools/patch-sdlink-v141-icon.py
+          python tools/patch-sdlink-v141-icon.py
+
+      - name: Validate package internals
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/flea118" "$RUNNER_TEMP/link141"
+          mkdir -p "$RUNNER_TEMP/flea118" "$RUNNER_TEMP/link141"
+          unzip -q downloads/extensions/SDFleaMarket_v1.1.8_Desktop.zip -d "$RUNNER_TEMP/flea118"
+          unzip -q downloads/extensions/SDLink_v1.4.1_Desktop.zip -d "$RUNNER_TEMP/link141"
+          FLEA_ROOT=$(find "$RUNNER_TEMP/flea118" -name package.json -not -path '*/node_modules/*' -printf '%h\n' | head -n1)
+          LINK_ROOT=$(find "$RUNNER_TEMP/link141" -name package.json -not -path '*/node_modules/*' -printf '%h\n' | head -n1)
+          node --check "$FLEA_ROOT/main.js"
+          node --check "$FLEA_ROOT/public/app.js"
+          node --check "$FLEA_ROOT/public/bankchase.js"
+          node --check "$LINK_ROOT/main.js"
+          grep -q 'bankCarriedSafeCount(mission) < 1' "$FLEA_ROOT/main.js"
+          ! grep -q 'state.mission.safeOpened || 0) < 1' "$FLEA_ROOT/public/app.js"
+          grep -q 'Array.from({ length: 8 }' "$FLEA_ROOT/main.js"
+          ! grep -q 'emptySlots' "$FLEA_ROOT/main.js"
+          ! grep -q 'emptySlots' "$FLEA_ROOT/public/app.js"
+          grep -q 'const risk = 0.32' "$FLEA_ROOT/public/bankchase.js"
+          grep -q 'assets/sdlink-icon.svg' "$LINK_ROOT/sd-app.json"
+          test -f "$LINK_ROOT/assets/sdlink-icon.svg"
+
+      - name: Commit built releases
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            downloads/extensions/SDFleaMarket_v1.1.8_Desktop.zip \
+            downloads/extensions/SDLink_v1.4.1_Desktop.zip \
+            extensions-data.js assets/js/extensions-data.js \
+            update/extensions-catalog.json update/desktop-policy.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'release: 플리마켓 v1.1.8·SD Link v1.4.1 재빌드'
+          git push origin HEAD:fix/flea-v118-sdlink-icon-20260818
