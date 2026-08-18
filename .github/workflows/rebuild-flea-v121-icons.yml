@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   build:
@@ -21,6 +22,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Report build start
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body '플리마켓 v1.2.1 아이콘 빌드를 시작했습니다.'
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -121,3 +130,19 @@ jobs:
             git commit -m 'Rebuild flea market item artwork'
             git push
           fi
+
+      - name: Report build success
+        if: success() && github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body '플리마켓 v1.2.1 아이콘 빌드가 완료되었습니다.'
+
+      - name: Report build failure
+        if: failure() && github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body '플리마켓 v1.2.1 아이콘 빌드가 실패했습니다. Actions 로그 확인이 필요합니다.'
