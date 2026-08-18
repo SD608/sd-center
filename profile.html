@@ -17,9 +17,9 @@
 <script src="assets/js/supabase-config.js?v=2" defer></script>
 <script src="assets/js/auth-common.js?v=2" defer></script>
 <script src="assets/js/achievements-all.js?v=20260818-profile" defer></script>
-<script src="assets/js/profile-page-v4.js?v=1" defer></script>
+<script src="assets/js/profile-page-v5.js?v=1" defer></script>
 <script src="assets/js/profile-achievements.js?v=20260818" defer></script>
-<script src="assets/js/profile-tabs.js?v=1" defer></script>
+<script src="assets/js/profile-tabs-v2.js?v=1" defer></script>
 </head>
 <body class="auth-body profile-body">
 <div class="page-glow glow-one"></div><div class="page-glow glow-two"></div>
@@ -101,26 +101,14 @@
         <div class="profile-section-heading"><div><span class="section-kicker">ACHIEVEMENTS</span><h2>업적</h2></div><small id="achievementCount">0/0 달성</small></div>
         <div id="profileAchievements" class="achievement-grid"></div>
       </section>
-
-      <section id="profileOwnerTools" class="profile-owner-tools" hidden>
-        <div class="profile-section-heading">
-          <div><span class="section-kicker">EDIT PROFILE</span><h2>내 프로필 꾸미기</h2></div>
-          <div class="profile-hero-actions"><button id="openProfileEditTab" class="secondary-button" type="button">프로필 수정 탭</button><a class="secondary-button" href="profile-shop.html">치장품 상점</a></div>
-        </div>
-        <div class="owner-tools-grid">
-          <article class="owner-tool-card"><h3>자랑 아이템 선택</h3><p>현재 온라인 보관함에 있는 물건 중 최대 6개를 선택할 수 있습니다.</p><div id="showcasePicker" class="showcase-picker"></div><button id="saveShowcaseButton" class="primary-button" type="button">자랑 아이템 저장</button></article>
-          <article class="owner-tool-card"><h3>프로필 사진</h3><p>프로필 사진은 치장품 상점에서 구매한 사진만 사용할 수 있습니다.</p><div id="avatarPicker" class="profile-select-list"></div></article>
-          <article class="owner-tool-card"><h3>칭호</h3><p>업적으로 획득한 칭호를 장착할 수 있습니다.</p><div id="titlePicker" class="profile-select-list"></div></article>
-        </div>
-      </section>
     </div>
 
     <section id="profileEditTabPanel" class="profile-tab-panel profile-edit-tab-panel" data-profile-panel="edit" hidden>
       <div class="profile-edit-tab-heading">
-        <div><span class="section-kicker">LIVE CARD EDITOR</span><h2>프로필 카드 실시간 편집</h2><p>왼쪽 카드와 오른쪽 설정을 한 화면에서 보면서 수정할 수 있습니다.</p></div>
-        <span class="profile-edit-tab-hint">저장 전 변경은 미리보기만 적용</span>
+        <div><span class="section-kicker">LIVE PROFILE EDITOR</span><h2>프로필 실시간 편집</h2><p>왼쪽 프로필 카드와 오른쪽 설정을 한 화면에서 보면서 수정할 수 있습니다.</p></div>
+        <span class="profile-edit-tab-hint">프로필 수정은 이 탭에서 통합 관리</span>
       </div>
-      <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 카드 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1&amp;v=4"></iframe>
+      <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1&amp;v=5"></iframe>
     </section>
   </section>
 </main>
