@@ -1,6 +1,6 @@
 {
-  "catalogVersion": 34,
-  "updatedAt": "2026-08-18T20:10:00+09:00",
+  "catalogVersion": 35,
+  "updatedAt": "2026-08-18T21:45:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
@@ -42,11 +42,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.1.8",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.8_Desktop.zip?v=118",
+      "version": "1.1.9",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.9_Desktop.zip?v=119",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "은행 습격 탈출 버튼의 남은 safeOpened 검사를 제거했습니다. 금고는 8개·꽝 0개이며 실제 운반 금고를 기준으로 탈출하고 추격전 난이도는 보통으로 고정됩니다.",
+      "notes": "은행 도주 성공 시 확보한 금고를 즉시 개봉하지 않고 상자 보관함에 저장합니다. 현장 금고 명칭은 번호 없이 '금고'로 표시하며 v1.1.8의 금고 8개·꽝 0개·추격전 보통 고정 규칙을 유지합니다.",
       "requiredCenterVersion": "2.2.0"
     },
     "vault": {
