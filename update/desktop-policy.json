@@ -1,6 +1,6 @@
 {
-  "policyVersion": 10,
-  "updatedAt": "2026-08-18T10:05:00+09:00",
+  "policyVersion": 11,
+  "updatedAt": "2026-08-18T20:10:00+09:00",
   "required": true,
   "apps": {
     "sd-bitcoin-miner-desktop": {
@@ -18,7 +18,7 @@
     "sdlink-desktop": {
       "required": true,
       "minVersion": "1.4.0",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.0_Desktop.zip?v=140",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.1_Desktop.zip?v=141",
       "message": "PC 슬롯·홀짝의 SD Online 서버 통합을 위해 SD Link v1.4.0 이상이 필요합니다."
     },
     "sd-slot-desktop": {
