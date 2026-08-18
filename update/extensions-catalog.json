@@ -1,12 +1,14 @@
 {
-  "catalogVersion": 32,
-  "updatedAt": "2026-08-18T12:30:00+09:00",
+  "catalogVersion": 34,
+  "updatedAt": "2026-08-18T20:10:00+09:00",
   "apps": {
     "sdlink-desktop": {
       "name": "SD Link",
-      "version": "1.4.0",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.0_Desktop.zip?v=140",
-      "notes": "PC 슬롯·홀짝이 SD Link의 localhost 인증 브리지를 통해 모바일과 동일한 SD Online 게임 서버를 사용합니다. 로그인 토큰은 SD Link 내부에만 보관됩니다."
+      "version": "1.4.1",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.1_Desktop.zip?v=141",
+      "notes": "SD Link 전용 심플 연결고리 아이콘을 추가했습니다. v1.4.0의 PC 슬롯·홀짝 온라인 브리지와 백그라운드 동기화 기능은 그대로 유지됩니다.",
+      "icon": "https://sd608.github.io/sd-center/assets/icons/sdlink.svg?v=141",
+      "iconUrl": "https://sd608.github.io/sd-center/assets/icons/sdlink.svg?v=141"
     },
     "sd-logistics-center-desktop": {
       "name": "SD 물류센터",
@@ -40,11 +42,11 @@
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
-      "version": "1.1.7",
-      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.7_Desktop.zip?v=117",
+      "version": "1.1.8",
+      "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.1.8_Desktop.zip?v=118",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
-      "notes": "은행 습격 탈출 조건을 현장 금고 개봉 수가 아니라 실제 운반 중인 금고 수 기준으로 수정했습니다. 금고를 들고 있으면 정상적으로 탈출 및 오토바이 추격전으로 진행됩니다.",
+      "notes": "은행 습격 탈출 버튼의 남은 safeOpened 검사를 제거했습니다. 금고는 8개·꽝 0개이며 실제 운반 금고를 기준으로 탈출하고 추격전 난이도는 보통으로 고정됩니다.",
       "requiredCenterVersion": "2.2.0"
     },
     "vault": {
