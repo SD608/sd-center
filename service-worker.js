@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "sd608-mobile-v24-profile-edit-consolidated";
+const CACHE_NAME = "sd608-mobile-v25-profile-card-only";
 const APP_SHELL = [
   "./mobile.html",
   "./wallet-mobile.html",
@@ -12,7 +12,7 @@ const APP_SHELL = [
   "./flea-market-mobile.html",
   "./profile.html",
   "./profile-card-edit.html",
-  "./profile-card-edit.html?embed=1&v=5",
+  "./profile-card-edit.html?embed=1&v=6",
   "./profile-shop.html",
   "./login.html",
   "./signup.html",
@@ -42,8 +42,8 @@ const APP_SHELL = [
   "./assets/js/mobile-sdcoin.js?v=4",
   "./assets/js/mobile-sdcoin-summary.js?v=2",
   "./assets/js/flea-market-mobile.js?v=1",
-  "./assets/js/profile-page-v5.js?v=1",
-  "./assets/js/profile-card-edit-v5.js?v=1",
+  "./assets/js/profile-page-v6.js?v=1",
+  "./assets/js/profile-card-edit-v5.js?v=2-card-only",
   "./assets/js/profile-card-edit-embed-v2.js?v=1",
   "./assets/js/profile-tabs-v2.js?v=1",
   "./assets/js/profile-shop.js?v=3-achievement-filters",
