@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="description" content="SD608 공개 프로필 카드 편집" />
 <meta name="theme-color" content="#0b1224" />
-<title>프로필 수정 · SD608 Online</title>
+<title>프로필 카드 편집 · SD608 Online</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" href="assets/css/style.css?v=online2" />
@@ -17,7 +17,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="assets/js/supabase-config.js?v=2" defer></script>
 <script src="assets/js/auth-common.js?v=2" defer></script>
-<script src="assets/js/profile-card-edit-v5.js?v=1" defer></script>
+<script src="assets/js/profile-card-edit-v5.js?v=2-card-only" defer></script>
 <script src="assets/js/profile-card-edit-embed-v2.js?v=1" defer></script>
 </head>
 <body class="auth-body profile-body profile-card-edit-body">
@@ -30,7 +30,7 @@
 
 <main class="profile-card-edit-main section-shell">
   <section class="profile-hero profile-card-edit-hero">
-    <div><span class="section-kicker">PROFILE EDITOR</span><h1>프로필 수정</h1><p>왼쪽 미리보기를 보면서 카드 구성과 프로필 내용을 한곳에서 수정할 수 있습니다.</p></div>
+    <div><span class="section-kicker">PROFILE CARD EDITOR</span><h1>프로필 카드 편집</h1><p>왼쪽 미리보기를 보면서 공개 항목과 카드 순서를 바로 수정할 수 있습니다.</p></div>
     <div class="profile-hero-actions"><a class="secondary-button" href="profile.html">내 프로필로 돌아가기</a></div>
   </section>
 
@@ -39,7 +39,7 @@
   <section id="profileCardEditMissing" class="profile-missing" hidden>
     <span>PROFILE NOT CREATED</span>
     <h2>먼저 공개 프로필을 만들어야 합니다.</h2>
-    <p>내 프로필에서 공개 프로필을 만든 뒤 프로필 수정을 사용할 수 있습니다.</p>
+    <p>내 프로필에서 공개 프로필을 만든 뒤 카드 편집을 사용할 수 있습니다.</p>
     <a class="primary-button" href="profile.html">내 프로필로 이동</a>
   </section>
 
@@ -118,12 +118,6 @@
         <section class="profile-editor-content-section">
           <header><div><h4>칭호</h4><p>달성한 업적 칭호 중 하나를 장착합니다.</p></div></header>
           <div id="editorTitlePicker" class="profile-editor-option-list"><div class="profile-editor-empty">불러오는 중...</div></div>
-        </section>
-
-        <section class="profile-editor-content-section">
-          <header><div><h4>자랑 아이템</h4><p>온라인 보관함에서 최대 6개를 공개 프로필에 전시합니다.</p></div></header>
-          <div id="editorShowcasePicker" class="profile-editor-showcase-list"><div class="profile-editor-empty">불러오는 중...</div></div>
-          <button id="saveEditorShowcase" class="primary-button profile-editor-showcase-save" type="button">자랑 아이템 저장</button>
         </section>
       </div>
     </aside>
