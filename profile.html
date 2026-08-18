@@ -10,13 +10,13 @@
 <link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" href="assets/css/style.css?v=online2" />
 <link rel="stylesheet" href="assets/css/profile-page.css?v=1" />
-<link rel="stylesheet" href="assets/css/profile-card-layout.css?v=1" />
+<link rel="stylesheet" href="assets/css/profile-card-layout.css?v=2-split-identity" />
 <link rel="stylesheet" href="assets/css/profile-tabs.css?v=1" />
 <link rel="stylesheet" href="assets/css/profile-assets-v3.css?v=1" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="assets/js/supabase-config.js?v=2" defer></script>
 <script src="assets/js/auth-common.js?v=2" defer></script>
-<script src="assets/js/profile-page-v6.js?v=1" defer></script>
+<script src="assets/js/profile-page-v7.js?v=1" defer></script>
 <script src="assets/js/profile-tabs-v2.js?v=1" defer></script>
 </head>
 <body class="auth-body profile-body">
@@ -58,13 +58,16 @@
             <div class="id-photo" id="profilePhoto"><span>👤</span></div>
           </section>
 
-          <section class="profile-card-module profile-card-identity-module" data-card-block="identity">
-            <span class="profile-card-module-label">닉네임 · 칭호</span>
-            <div class="profile-card-identity">
-              <span id="profileTitleBadge" class="id-title" hidden></span>
-              <h2 id="profileNickname">회원</h2>
-            </div>
+          <section class="profile-card-module profile-card-nickname-module" data-card-block="nickname">
+            <span class="profile-card-module-label">닉네임</span>
+            <h2 id="profileNickname">회원</h2>
             <p class="profile-card-module-note">SD608 온라인 공개 닉네임</p>
+          </section>
+
+          <section class="profile-card-module profile-card-title-module" data-card-block="title">
+            <span class="profile-card-module-label">칭호</span>
+            <strong id="profileTitleBadge" class="profile-card-value">장착된 칭호 없음</strong>
+            <p class="profile-card-module-note">업적으로 획득해 장착한 칭호</p>
           </section>
 
           <section class="profile-card-module" data-card-block="assets">
@@ -96,7 +99,7 @@
         <div><span class="section-kicker">실시간 프로필 편집</span><h2>프로필 실시간 편집</h2><p>왼쪽 프로필 카드와 오른쪽 설정을 한 화면에서 보면서 수정할 수 있습니다.</p></div>
         <span class="profile-edit-tab-hint">프로필 수정은 이 탭에서 통합 관리</span>
       </div>
-      <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1&amp;v=7"></iframe>
+      <iframe id="profileCardEditorFrame" class="profile-card-editor-frame" title="프로필 실시간 편집기" loading="lazy" data-src="profile-card-edit.html?embed=1&amp;v=8"></iframe>
     </section>
   </section>
 </main>
