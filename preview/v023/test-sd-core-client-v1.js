@@ -83,11 +83,11 @@ const syncState = {
   assert.equal(spendCall.body.p_event_type, "spend");
   assert.equal(spendCall.body.p_amount, 200000, "Core amount must always be positive");
 
-  await assert.rejects(
+  assert.throws(
     () => client.applyWalletEvent({ deviceId: device.device_id, eventId: firstEventId, type: "reward", amount: -1 }),
     /positive safe integer/,
   );
-  await assert.rejects(
+  assert.throws(
     () => client.applyWalletEvent({ deviceId: device.device_id, eventId: firstEventId, type: "spend", amount: 1, targetAccountNumber: "608-X" }),
     /must not include/,
   );
