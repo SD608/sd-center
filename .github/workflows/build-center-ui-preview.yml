@@ -4,14 +4,14 @@ on:
   push:
     branches: [preview/center-ui-v230-20260819]
     paths:
-      - 'tools/center-ui-preview-assets-v04.b64'
-      - 'tools/patch-center-ui-v03.js'
+      - 'tools/center-ui-preview-assets-v04-good.b64'
+      - 'tools/patch-center-ui-v04.js'
       - '.github/workflows/build-center-ui-preview.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'tools/center-ui-preview-assets-v04.b64'
-      - 'tools/patch-center-ui-v03.js'
+      - 'tools/center-ui-preview-assets-v04-good.b64'
+      - 'tools/patch-center-ui-v04.js'
       - '.github/workflows/build-center-ui-preview.yml'
   workflow_dispatch:
 
@@ -58,40 +58,31 @@ jobs:
           if(Test-Path $preview){ Remove-Item $preview -Recurse -Force }
           Copy-Item $env:BASE_APP_DIR $preview -Recurse -Force
           $root=Join-Path $preview 'resources\app'
-          $assets=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets'
+          $assets=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04'
           if(Test-Path $assets){ Remove-Item $assets -Recurse -Force }
           $assetZip=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04.zip'
-          $assetB64=(Get-Content 'tools/center-ui-preview-assets-v04.b64' -Raw).Trim()
+          $assetB64=(Get-Content 'tools/center-ui-preview-assets-v04-good.b64' -Raw).Trim()
           [IO.File]::WriteAllBytes($assetZip, [Convert]::FromBase64String($assetB64))
           $assetHash=(Get-FileHash $assetZip -Algorithm SHA256).Hash.ToLower()
-          if($assetHash -ne '1b77322d4c63059a93b690b18c84db41b7f7e3b5803694236a18b6c758d99346'){ throw "v0.4 asset hash mismatch: $assetHash" }
+          if($assetHash -ne '1b250228b0112b8722eec3eb4cf89dbe138c20d5e7060e7995812e2d73db6b72'){ throw "v0.4 asset hash mismatch: $assetHash" }
           Expand-Archive -Path $assetZip -DestinationPath $assets -Force
           Copy-Item (Join-Path $assets 'index.html') (Join-Path $root 'public\index.html') -Force
           Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
           Copy-Item (Join-Path $assets 'ui-preview.js') (Join-Path $root 'public\js\ui-preview.js') -Force
-          node tools/patch-center-ui-v03.js "$root"
+          node tools/patch-center-ui-v04.js "$root"
           @(
             'SD종합센터 UI Remake Preview v0.4',
             'Base: official v2.2.7',
             '',
-            '실행 방법:',
-            '1. 설치되어 있는 SD종합센터를 완전 종료합니다.',
-            '2. 이 폴더의 SDCenter.exe를 실행합니다.',
-            '3. 프리뷰는 설치 프로그램이 아니며 공식 업데이트 서버에 등록되지 않습니다.',
-            '4. 기존 v2.2.7의 앱 실행/설치/업데이트/SD Link 기능을 그대로 사용합니다.',
-            '',
             'v0.4 수정:',
             '- 새 폴더 버튼 클릭 즉시 폴더 생성',
-            '- 기본 경제/게임 폴더 제거 및 이전 자동 폴더 저장값 초기화',
-            '- 홈 아이콘을 오른쪽으로 드래그할 때 정렬이 어긋나던 문제 수정',
-            '- 검색 결과에서 기존 즐겨찾기 앱을 항상 우선 표시',
-            '- 다른 화면으로 이동하면 남아 있던 검색어와 필터 상태를 정리',
-            '- 폴더 창이 상단/사이드바까지 완전히 막도록 수정',
-            '- Alt 키로 나타나는 Electron 기본 File/Edit/View 메뉴 제거',
-            '- 종료 취소 후 버튼 이름이 완전 종료로 바뀌던 문제 수정',
-            '- 모두 실행으로 실행된 앱도 최근 실행에 기록',
+            '- 기본 경제/게임 폴더 제거 및 v0.2/v0.3 자동 폴더 저장값 제거',
+            '- 기존 v0.3 안정화 수정 유지',
             '',
-            '주의: 이 빌드는 정식 배포 전 테스트용입니다.'
+            '실행 방법:',
+            '1. 기존 종합센터를 완전 종료합니다.',
+            '2. 이 폴더의 SDCenter.exe를 실행합니다.',
+            '3. 프리뷰는 정식 업데이트 서버에 등록되지 않습니다.'
           ) | Set-Content (Join-Path $preview 'PREVIEW_README.txt') -Encoding utf8
           'SD종합센터 UI Preview`nBase: v2.2.7`nPreview: UI Remake v0.4`nOfficial update metadata is NOT changed.' | Set-Content (Join-Path $root 'UI_PREVIEW.txt') -Encoding utf8
           "PREVIEW_DIR=$preview" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
@@ -111,11 +102,14 @@ jobs:
           $previewJs=Get-Content "$env:APP_ROOT\public\js\ui-preview.js" -Raw
           $main=Get-Content "$env:APP_ROOT\main.js" -Raw
           $appJs=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
-          foreach($marker in @('previewHomePanel','previewHomeGrid','previewUpdatesPanel','previewFolderBackdrop','previewNameBackdrop','globalSearchInput','appGrid','storeGrid','removedAppGrid')) {
+          foreach($marker in @('previewHomePanel','previewHomeGrid','previewUpdatesPanel','previewFolderBackdrop','previewNameBackdrop','globalSearchInput')) {
             if(-not $html.Contains($marker)){ throw "preview HTML marker missing: $marker" }
           }
-          foreach($marker in @('setPreviewView','PREVIEW_LAYOUT_KEY','PREVIEW_OLD_LAYOUT_KEY','sd-center-ui-preview-home-v2','previewInstalledAppCard','createPreviewFolder','localStorage.removeItem(PREVIEW_OLD_LAYOUT_KEY)','data-favorite','sdCenterPreviewMarkLaunched')) {
-            if(-not $previewJs.Contains($marker)){ throw "preview JS marker missing: $marker" }
+          foreach($marker in @('PREVIEW_LAYOUT_KEY = "sd-center-ui-preview-home-v2"','PREVIEW_OLD_LAYOUT_KEY = "sd-center-ui-preview-home-v1"','return apps.map((app) => ({ type: "app", id: app.id }))','function createPreviewFolder()','preview.layout.push({ type: "folder"','localStorage.removeItem(PREVIEW_OLD_LAYOUT_KEY)','previewElements.newFolderButton.addEventListener("click", createPreviewFolder)')) {
+            if(-not $previewJs.Contains($marker)){ throw "v0.4 folder marker missing: $marker" }
+          }
+          foreach($forbidden in @('id: "economy"','id: "games"','name: "경제"','name: "게임"')) {
+            if($previewJs.Contains($forbidden)){ throw "default folder must not remain: $forbidden" }
           }
           foreach($marker in @('Menu.setApplicationMenu(null);','mainWindow.setMenuBarVisibility(false);','mainWindow.removeMenu();')) {
             if(-not $main.Contains($marker)){ throw "menu removal marker missing: $marker" }
@@ -130,7 +124,7 @@ jobs:
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           $exe=Join-Path $env:PREVIEW_DIR 'SDCenter.exe'
           $proc=Start-Process -FilePath $exe -PassThru
-          Start-Sleep -Seconds 7
+          Start-Sleep -Seconds 8
           if($proc.HasExited){ throw "UI preview exited during smoke test: $($proc.ExitCode)" }
           Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
