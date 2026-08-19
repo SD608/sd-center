@@ -4,12 +4,14 @@ on:
   push:
     branches: [preview/center-ui-v230-20260819]
     paths:
-      - 'tools/center-ui-preview-assets.zip'
+      - 'tools/center-ui-preview-assets-v03.b64'
+      - 'tools/patch-center-ui-v03.js'
       - '.github/workflows/build-center-ui-preview.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'tools/center-ui-preview-assets.zip'
+      - 'tools/center-ui-preview-assets-v03.b64'
+      - 'tools/patch-center-ui-v03.js'
       - '.github/workflows/build-center-ui-preview.yml'
   workflow_dispatch:
 
@@ -52,18 +54,24 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-UI-Preview-v0.2'
+          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-UI-Preview-v0.3'
           if(Test-Path $preview){ Remove-Item $preview -Recurse -Force }
           Copy-Item $env:BASE_APP_DIR $preview -Recurse -Force
           $root=Join-Path $preview 'resources\app'
           $assets=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets'
           if(Test-Path $assets){ Remove-Item $assets -Recurse -Force }
-          Expand-Archive -Path 'tools/center-ui-preview-assets.zip' -DestinationPath $assets -Force
+          $assetZip=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v03.zip'
+          $assetB64=(Get-Content 'tools/center-ui-preview-assets-v03.b64' -Raw).Trim()
+          [IO.File]::WriteAllBytes($assetZip, [Convert]::FromBase64String($assetB64))
+          $assetHash=(Get-FileHash $assetZip -Algorithm SHA256).Hash.ToLower()
+          if($assetHash -ne 'd21d431cc84d3bd4c2c02493410be8f2061600eb6b8ba92f7d3e26ec447d53c3'){ throw "v0.3 asset hash mismatch: $assetHash" }
+          Expand-Archive -Path $assetZip -DestinationPath $assets -Force
           Copy-Item (Join-Path $assets 'index.html') (Join-Path $root 'public\index.html') -Force
           Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
           Copy-Item (Join-Path $assets 'ui-preview.js') (Join-Path $root 'public\js\ui-preview.js') -Force
+          node tools/patch-center-ui-v03.js "$root"
           @(
-            'SD종합센터 UI Remake Preview v0.2',
+            'SD종합센터 UI Remake Preview v0.3',
             'Base: official v2.2.7',
             '',
             '실행 방법:',
@@ -72,17 +80,19 @@ jobs:
             '3. 프리뷰는 설치 프로그램이 아니며 공식 업데이트 서버에 등록되지 않습니다.',
             '4. 기존 v2.2.7의 앱 실행/설치/업데이트/SD Link 기능을 그대로 사용합니다.',
             '',
-            '프리뷰 기능:',
-            '- 게임 런처형 홈 / 최근 실행',
-            '- 사용자 폴더 생성·이름 변경·삭제',
-            '- 홈 편집 / 드래그 정렬 / 폴더 이동',
-            '- 라이브러리형 앱 관리 / Ctrl+K 검색',
-            '- 전용 업데이트 화면',
-            '- 기존 확장팩 상점 / 삭제 보관함 유지',
+            'v0.3 수정:',
+            '- 새 폴더/이름 변경을 Electron 호환 자체 입력창으로 변경',
+            '- 홈 아이콘을 오른쪽으로 드래그할 때 정렬이 어긋나던 문제 수정',
+            '- 검색 결과에서 기존 즐겨찾기 앱을 항상 우선 표시',
+            '- 다른 화면으로 이동하면 남아 있던 검색어와 필터 상태를 정리',
+            '- 폴더 창이 상단/사이드바까지 완전히 막도록 수정',
+            '- Alt 키로 나타나는 Electron 기본 File/Edit/View 메뉴 제거',
+            '- 종료 취소 후 버튼 이름이 완전 종료로 바뀌던 문제 수정',
+            '- 모두 실행으로 실행된 앱도 최근 실행에 기록',
             '',
             '주의: 이 빌드는 정식 배포 전 테스트용입니다.'
           ) | Set-Content (Join-Path $preview 'PREVIEW_README.txt') -Encoding utf8
-          'SD종합센터 UI Preview`nBase: v2.2.7`nPreview: UI Remake v0.2`nOfficial update metadata is NOT changed.' | Set-Content (Join-Path $root 'UI_PREVIEW.txt') -Encoding utf8
+          'SD종합센터 UI Preview`nBase: v2.2.7`nPreview: UI Remake v0.3`nOfficial update metadata is NOT changed.' | Set-Content (Join-Path $root 'UI_PREVIEW.txt') -Encoding utf8
           "PREVIEW_DIR=$preview" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
@@ -90,6 +100,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\main.js"
           node --check "$env:APP_ROOT\public\js\app.js"
           node --check "$env:APP_ROOT\public\js\ui-preview.js"
           node --check "$env:APP_ROOT\preload.js"
@@ -97,12 +108,19 @@ jobs:
           if($pkg.version -ne '2.2.7'){ throw "Base version changed unexpectedly: $($pkg.version)" }
           $html=Get-Content "$env:APP_ROOT\public\index.html" -Raw
           $previewJs=Get-Content "$env:APP_ROOT\public\js\ui-preview.js" -Raw
-          foreach($marker in @('previewHomePanel','previewHomeGrid','previewUpdatesPanel','previewFolderBackdrop','globalSearchInput','appGrid','storeGrid','removedAppGrid')) {
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          $appJs=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
+          foreach($marker in @('previewHomePanel','previewHomeGrid','previewUpdatesPanel','previewFolderBackdrop','previewNameBackdrop','globalSearchInput','appGrid','storeGrid','removedAppGrid')) {
             if(-not $html.Contains($marker)){ throw "preview HTML marker missing: $marker" }
           }
-          foreach($marker in @('setPreviewView','PREVIEW_LAYOUT_KEY','previewInstalledAppCard','saveRecent','renderPreviewUpdates')) {
+          foreach($marker in @('setPreviewView','PREVIEW_LAYOUT_KEY','previewInstalledAppCard','openPreviewNameEditor','commitPreviewFolderName','data-favorite','sdCenterPreviewMarkLaunched')) {
             if(-not $previewJs.Contains($marker)){ throw "preview JS marker missing: $marker" }
           }
+          foreach($marker in @('Menu.setApplicationMenu(null);','mainWindow.setMenuBarVisibility(false);','mainWindow.removeMenu();')) {
+            if(-not $main.Contains($marker)){ throw "menu removal marker missing: $marker" }
+          }
+          if(-not $appJs.Contains('sdCenterPreviewMarkLaunched')){ throw 'launch-all recent hook missing' }
+          if($appJs.Contains('elements.quitCenterButton.textContent = "완전 종료";')){ throw 'old quit label remains' }
 
       - name: Smoke test portable preview
         shell: pwsh
@@ -125,7 +143,7 @@ jobs:
       - name: Upload portable preview
         uses: actions/upload-artifact@v4
         with:
-          name: SDCenter-UI-Preview-v0.2-win-x64
+          name: SDCenter-UI-Preview-v0.3-win-x64
           path: ${{ env.PREVIEW_DIR }}
           if-no-files-found: error
           compression-level: 6
