@@ -6,12 +6,14 @@ on:
     branches:
       - feature/sd-core
     paths:
+      - 'database/dev/sd_core_dev_baseline.sql'
       - 'database/migrations/sd_core_wallet_v1.sql'
       - 'database/migrations/sd_core_ledger_api_v1.sql'
       - 'tests/sd-core/**'
       - '.github/workflows/sd-core-regression.yml'
   pull_request:
     paths:
+      - 'database/dev/sd_core_dev_baseline.sql'
       - 'database/migrations/sd_core_wallet_v1.sql'
       - 'database/migrations/sd_core_ledger_api_v1.sql'
       - 'tests/sd-core/**'
