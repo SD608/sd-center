@@ -112,10 +112,10 @@ jobs:
           foreach($marker in @('previewHomePanel','previewHomeGrid','previewUpdatesPanel','previewFolderBackdrop','previewNameBackdrop','globalSearchInput')) {
             if(-not $html.Contains($marker)){ throw "preview HTML marker missing: $marker" }
           }
-          foreach($marker in @('PREVIEW_LAYOUT_KEY = "sd-center-ui-preview-home-v2"','function createPreviewFolder()','preview.layout.push({ type: "folder"','previewElements.newFolderButton.addEventListener("click", createPreviewFolder)','UI Preview v0.5: 앱 목록이 로딩되기 전에는 저장된 폴더 멤버십을 정리하지 않습니다.','if (!Array.isArray(state.apps) || state.apps.length === 0)','preview.layout = Array.isArray(preview.layout) ? preview.layout : [];')) {
+          foreach($marker in @('PREVIEW_LAYOUT_KEY = "sd-center-ui-preview-home-v2"','function createPreviewFolder()','preview.layout.push({ type: "folder"','previewElements.newFolderButton.addEventListener("click", createPreviewFolder)','UI Preview v0.5: 앱 목록 로딩 전에는 저장된 폴더 멤버십을 정리하지 않습니다.','appsReady: false','if (!preview.appsReady) return;','preview.appsReady = true;')) {
             if(-not $previewJs.Contains($marker)){ throw "v0.5 folder persistence marker missing: $marker" }
           }
-          $guardIndex=$previewJs.IndexOf('UI Preview v0.5: 앱 목록이 로딩되기 전에는 저장된 폴더 멤버십을 정리하지 않습니다.')
+          $guardIndex=$previewJs.IndexOf('UI Preview v0.5: 앱 목록 로딩 전에는 저장된 폴더 멤버십을 정리하지 않습니다.')
           $pruneIndex=$previewJs.IndexOf('const validIds = new Set(state.apps.map((app) => app.id));')
           if($guardIndex -lt 0 -or $pruneIndex -lt 0 -or $guardIndex -gt $pruneIndex){ throw 'startup persistence guard must run before layout pruning' }
           foreach($forbidden in @('id: "economy"','id: "games"','name: "경제"','name: "게임"')) {
