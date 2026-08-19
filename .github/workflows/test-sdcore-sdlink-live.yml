@@ -7,6 +7,12 @@ on:
     paths:
       - 'preview/v023/**'
       - '.github/workflows/test-sdcore-sdlink-live.yml'
+  pull_request:
+    branches:
+      - feature/sdlink-integrated-v022
+    paths:
+      - 'preview/v023/**'
+      - '.github/workflows/test-sdcore-sdlink-live.yml'
   workflow_dispatch:
 
 permissions:
