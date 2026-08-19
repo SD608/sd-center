@@ -303,6 +303,10 @@ begin
     raise exception using errcode = 'P1022', message = 'INVALID_SOURCE_APP';
   end if;
 
+  if pg_catalog.jsonb_typeof(v_metadata) <> 'object' then
+    raise exception using errcode = 'P1026', message = 'INVALID_METADATA';
+  end if;
+
   if pg_catalog.pg_column_size(v_metadata) > 16384 then
     raise exception using errcode = 'P1023', message = 'METADATA_TOO_LARGE';
   end if;
@@ -407,7 +411,9 @@ begin
        or v_existing.event_type is distinct from v_event_type
        or v_existing.amount is distinct from p_amount
        or v_existing.target_user_id is distinct from v_target_user_id
-       or v_existing.source_app is distinct from v_source_app then
+       or v_existing.source_app is distinct from v_source_app
+       or v_existing.description is distinct from v_description
+       or v_existing.metadata is distinct from v_metadata then
       raise exception using errcode = 'P1015', message = 'IDEMPOTENCY_CONFLICT';
     end if;
 
@@ -415,10 +421,16 @@ begin
       raise exception using errcode = 'P1025', message = 'EVENT_NOT_COMPLETED';
     end if;
 
+    select w.balance
+      into v_sender_balance_after
+    from public.wallets w
+    where w.id = v_sender_wallet_id;
+
     return v_existing.result || pg_catalog.jsonb_build_object(
       'ok', true,
       'duplicate', true,
-      'event_id', p_event_id
+      'event_id', p_event_id,
+      'current_balance', v_sender_balance_after
     );
   end if;
 
@@ -595,6 +607,7 @@ begin
     'counterparty_transaction_id', v_counterparty_tx_id,
     'balance_before', v_sender_balance_before,
     'balance_after', v_sender_balance_after,
+    'current_balance', v_sender_balance_after,
     'server_time', now()
   );
 
