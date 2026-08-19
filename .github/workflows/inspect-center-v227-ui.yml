@@ -5,33 +5,24 @@ on:
     branches: [preview/center-ui-v230-20260819]
     paths:
       - '.github/workflows/inspect-center-v227-ui.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-center-v227-ui.yml'
+      - 'tools/patch-center-ui-preview.js'
+      - 'tools/build-center-ui-preview.js'
+      - '.github/workflows/build-center-ui-preview.yml'
   workflow_dispatch:
-  issues:
-    types: [opened]
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   inspect:
-    if: github.event_name != 'issues' || github.event.issue.title == '[preview] inspect center v2.2.7 ui'
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: preview/center-ui-v230-20260819
-
-      - name: Report inspection start
-        if: github.event_name == 'issues'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: gh issue comment $env:ISSUE_NUMBER --repo $env:REPO --body "SD종합센터 v2.2.7 UI 소스 점검을 시작했습니다. Run ID: $env:RUN_ID"
 
       - name: Download verified v2.2.7 base
         shell: pwsh
@@ -76,23 +67,3 @@ jobs:
           path: ${{ env.UI_SOURCE }}
           if-no-files-found: error
           retention-days: 7
-
-      - name: Report inspection complete
-        if: success() && github.event_name == 'issues'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: gh issue comment $env:ISSUE_NUMBER --repo $env:REPO --body "UI 소스 점검이 완료되었습니다. Run ID: $env:RUN_ID"
-
-      - name: Report inspection failure
-        if: failure() && github.event_name == 'issues'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
-        run: gh issue comment $env:ISSUE_NUMBER --repo $env:REPO --body "UI 소스 점검이 실패했습니다. Run ID: $env:RUN_ID"
