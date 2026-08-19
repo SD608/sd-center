@@ -60,3 +60,6 @@ jobs:
 
       - name: Run required wallet regression
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/wallet_regression.sql
+
+      - name: Run ledger API regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/ledger_regression.sql
