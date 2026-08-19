@@ -1,0 +1,132 @@
+name: Build SDCenter UI Preview
+
+on:
+  push:
+    branches: [preview/center-ui-v230-20260819]
+    paths:
+      - 'tools/center-ui-preview-assets.zip'
+      - '.github/workflows/build-center-ui-preview.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/center-ui-preview-assets.zip'
+      - '.github/workflows/build-center-ui-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-preview:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.7.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "v2.2.7 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $base=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7'
+          if(-not (Test-Path (Join-Path $base 'SDCenter.exe'))){ throw 'v2.2.7 install missing' }
+          "BASE_APP_DIR=$base" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Prepare portable preview
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-UI-Preview-v0.2'
+          if(Test-Path $preview){ Remove-Item $preview -Recurse -Force }
+          Copy-Item $env:BASE_APP_DIR $preview -Recurse -Force
+          $root=Join-Path $preview 'resources\app'
+          $assets=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets'
+          if(Test-Path $assets){ Remove-Item $assets -Recurse -Force }
+          Expand-Archive -Path 'tools/center-ui-preview-assets.zip' -DestinationPath $assets -Force
+          Copy-Item (Join-Path $assets 'index.html') (Join-Path $root 'public\index.html') -Force
+          Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
+          Copy-Item (Join-Path $assets 'ui-preview.js') (Join-Path $root 'public\js\ui-preview.js') -Force
+          @(
+            'SD종합센터 UI Remake Preview v0.2',
+            'Base: official v2.2.7',
+            '',
+            '실행 방법:',
+            '1. 설치되어 있는 SD종합센터를 완전 종료합니다.',
+            '2. 이 폴더의 SDCenter.exe를 실행합니다.',
+            '3. 프리뷰는 설치 프로그램이 아니며 공식 업데이트 서버에 등록되지 않습니다.',
+            '4. 기존 v2.2.7의 앱 실행/설치/업데이트/SD Link 기능을 그대로 사용합니다.',
+            '',
+            '프리뷰 기능:',
+            '- 게임 런처형 홈 / 최근 실행',
+            '- 사용자 폴더 생성·이름 변경·삭제',
+            '- 홈 편집 / 드래그 정렬 / 폴더 이동',
+            '- 라이브러리형 앱 관리 / Ctrl+K 검색',
+            '- 전용 업데이트 화면',
+            '- 기존 확장팩 상점 / 삭제 보관함 유지',
+            '',
+            '주의: 이 빌드는 정식 배포 전 테스트용입니다.'
+          ) | Set-Content (Join-Path $preview 'PREVIEW_README.txt') -Encoding utf8
+          'SD종합센터 UI Preview`nBase: v2.2.7`nPreview: UI Remake v0.2`nOfficial update metadata is NOT changed.' | Set-Content (Join-Path $root 'UI_PREVIEW.txt') -Encoding utf8
+          "PREVIEW_DIR=$preview" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Validate preview source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\public\js\app.js"
+          node --check "$env:APP_ROOT\public\js\ui-preview.js"
+          node --check "$env:APP_ROOT\preload.js"
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.7'){ throw "Base version changed unexpectedly: $($pkg.version)" }
+          $html=Get-Content "$env:APP_ROOT\public\index.html" -Raw
+          $previewJs=Get-Content "$env:APP_ROOT\public\js\ui-preview.js" -Raw
+          foreach($marker in @('previewHomePanel','previewHomeGrid','previewUpdatesPanel','previewFolderBackdrop','globalSearchInput','appGrid','storeGrid','removedAppGrid')) {
+            if(-not $html.Contains($marker)){ throw "preview HTML marker missing: $marker" }
+          }
+          foreach($marker in @('setPreviewView','PREVIEW_LAYOUT_KEY','previewInstalledAppCard','saveRecent','renderPreviewUpdates')) {
+            if(-not $previewJs.Contains($marker)){ throw "preview JS marker missing: $marker" }
+          }
+
+      - name: Smoke test portable preview
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $exe=Join-Path $env:PREVIEW_DIR 'SDCenter.exe'
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 7
+          if($proc.HasExited){ throw "UI preview exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Write build info
+        shell: pwsh
+        run: |
+          $files=(Get-ChildItem $env:PREVIEW_DIR -Recurse -File | Measure-Object).Count
+          $bytes=(Get-ChildItem $env:PREVIEW_DIR -Recurse -File | Measure-Object Length -Sum).Sum
+          @("Files: $files","Bytes: $bytes","Commit: $env:GITHUB_SHA","Built: $(Get-Date -Format o)") | Set-Content (Join-Path $env:PREVIEW_DIR 'BUILD_INFO.txt') -Encoding utf8
+
+      - name: Upload portable preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-UI-Preview-v0.2-win-x64
+          path: ${{ env.PREVIEW_DIR }}
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 14
