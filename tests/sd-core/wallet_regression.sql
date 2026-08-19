@@ -12,6 +12,7 @@ declare
   v_balance bigint;
   v_target_balance bigint;
   v_tx_count bigint;
+  v_target_tx_count bigint;
   v_event_count bigint;
   v_public_api_count integer;
   v_public_api_all_invoker boolean;
@@ -239,25 +240,44 @@ begin
     raise exception 'transfer response mismatch: %', v_result;
   end if;
 
+  -- Sender can see only its own wallet/ledger under RLS.
   select balance into v_balance
   from public.wallets
   where user_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-
-  select balance into v_target_balance
-  from public.wallets
-  where user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-
-  if v_balance <> 800000 or v_target_balance <> 150000 then
-    raise exception 'transfer balances mismatch sender=% target=%', v_balance, v_target_balance;
-  end if;
 
   select count(*) into v_tx_count
   from public.transactions
   where metadata ->> 'sd_core_event_id' = '66666666-6666-4666-8666-666666666666';
 
-  if v_tx_count <> 2 then
-    raise exception 'transfer did not create exactly two ledger rows: %', v_tx_count;
+  if v_balance <> 800000 or v_tx_count <> 1 then
+    raise exception 'sender transfer view mismatch balance=% visible_tx=%', v_balance, v_tx_count;
   end if;
+
+  -- Switch JWT identity to receiver and verify the other half independently through RLS.
+  perform set_config('request.jwt.claim.sub', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', false);
+
+  select balance into v_target_balance
+  from public.wallets
+  where user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+
+  select count(*) into v_target_tx_count
+  from public.transactions
+  where metadata ->> 'sd_core_event_id' = '66666666-6666-4666-8666-666666666666';
+
+  if v_target_balance <> 150000 or v_target_tx_count <> 1 then
+    raise exception 'receiver transfer view mismatch balance=% visible_tx=%', v_target_balance, v_target_tx_count;
+  end if;
+
+  -- The receiver must not see the sender-owned event journal row.
+  select count(*) into v_event_count
+  from public.sd_core_wallet_events
+  where event_id = '66666666-6666-4666-8666-666666666666';
+
+  if v_event_count <> 0 then
+    raise exception 'receiver unexpectedly sees sender event journal row';
+  end if;
+
+  perform set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', false);
 
   -- Transfer replay must not move either wallet again.
   v_result := public.sd_core_apply_wallet_event(
@@ -275,15 +295,21 @@ begin
   from public.wallets
   where user_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
+  if coalesce((v_result ->> 'duplicate')::boolean, false) is not true
+     or v_balance <> 800000 then
+    raise exception 'transfer replay changed sender state: result=% sender=%', v_result, v_balance;
+  end if;
+
+  perform set_config('request.jwt.claim.sub', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', false);
   select balance into v_target_balance
   from public.wallets
   where user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
-  if coalesce((v_result ->> 'duplicate')::boolean, false) is not true
-     or v_balance <> 800000
-     or v_target_balance <> 150000 then
-    raise exception 'transfer replay was not idempotent: result=% sender=% target=%', v_result, v_balance, v_target_balance;
+  if v_target_balance <> 150000 then
+    raise exception 'transfer replay changed receiver state: %', v_target_balance;
   end if;
+
+  perform set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', false);
 
   -- A failed transfer must roll back the attempted event and leave both wallets unchanged.
   begin
@@ -307,12 +333,8 @@ begin
   from public.wallets
   where user_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
-  select balance into v_target_balance
-  from public.wallets
-  where user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-
-  if v_balance <> 800000 or v_target_balance <> 150000 then
-    raise exception 'failed transfer changed balances sender=% target=%', v_balance, v_target_balance;
+  if v_balance <> 800000 then
+    raise exception 'failed transfer changed sender balance=%', v_balance;
   end if;
 
   if exists (
@@ -321,6 +343,17 @@ begin
   ) then
     raise exception 'failed transfer left an event journal row';
   end if;
+
+  perform set_config('request.jwt.claim.sub', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', false);
+  select balance into v_target_balance
+  from public.wallets
+  where user_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+
+  if v_target_balance <> 150000 then
+    raise exception 'failed transfer changed receiver balance=%', v_target_balance;
+  end if;
+
+  perform set_config('request.jwt.claim.sub', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', false);
 
   -- Direct balance overwrite must remain impossible to authenticated clients.
   begin
