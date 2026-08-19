@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": 1,
+  "updatedAt": "2026-08-19T13:15:00Z",
+  "themes": [
+    {
+      "id": "logistics",
+      "name": "물류센터 · 차고",
+      "tag": "LOGISTICS",
+      "description": "첫 실험용 업로드 테마. 기존 홈 화면 구조는 유지하고 물류센터 대표 배경만 적용합니다.",
+      "priceLabel": "출시 무료",
+      "version": "1",
+      "enabled": true,
+      "order": 10,
+      "backgroundColor": "#101214",
+      "accent": "#e1aa4b",
+      "overlay": 0.38,
+      "backgroundUrl": "",
+      "thumbnailUrl": ""
+    }
+  ]
+}
