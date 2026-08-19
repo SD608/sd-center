@@ -11,8 +11,8 @@ function replaceOnce(source,needle,replacement,label){const i=source.indexOf(nee
 let preload = read("preload.js");
 preload = replaceOnce(
   preload,
-  `  installStoreApp: (id) => invoke("center:install-store-app", id),\n\n  // v2.1.3: 홈페이지 확장팩 카탈로그 기반 자동 업데이트`,
-  `  installStoreApp: (id) => invoke("center:install-store-app", id),\n\n  // UI Preview v0.21: 종합센터 내장 SD Link 시스템 서비스\n  getSdLinkIntegrationState: () => invoke("center:get-sdlink-state"),\n  openSdLinkManager: () => invoke("center:open-sdlink-manager"),\n  startSdLinkService: () => invoke("center:start-sdlink-service"),\n\n  // v2.1.3: 홈페이지 확장팩 카탈로그 기반 자동 업데이트`,
+  `  installStoreApp: (id) => invoke("center:install-store-app", id),`,
+  `  installStoreApp: (id) => invoke("center:install-store-app", id),\n\n  // UI Preview v0.21: 종합센터 내장 SD Link 시스템 서비스\n  getSdLinkIntegrationState: () => invoke("center:get-sdlink-state"),\n  openSdLinkManager: () => invoke("center:open-sdlink-manager"),\n  startSdLinkService: () => invoke("center:start-sdlink-service"),`,
   "preload sdlink methods",
 );
 preload = replaceOnce(
@@ -73,7 +73,7 @@ if (!renderer.includes("UI Preview v0.21: SD Link 통합 상태 칩")) {
     "  previewSdLinkStatus.dataset.phase=String(linkState.phase||\"checking\");",
     "  previewSdLinkStatusText.textContent=String(linkState.label||\"확인 중\");",
     "  const details=[",
-    "    `상태: ${linkState.label||\"확인 중\"}` ,",
+    "    `상태: ${linkState.label||\"확인 중\"}`,",
     "    linkState.onlineEmail?`계정: ${linkState.onlineEmail}`:\"\",",
     "    linkState.lastSyncAt?`마지막 동기화: ${new Date(linkState.lastSyncAt).toLocaleString(\"ko-KR\")}`:\"\",",
     "    linkState.lastSyncMessage?String(linkState.lastSyncMessage):\"\",",
