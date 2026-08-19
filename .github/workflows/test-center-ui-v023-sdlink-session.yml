@@ -46,7 +46,7 @@ jobs:
           foreach($forbidden in @('push_sd_link_transaction','pull_sd_link_transactions','signedAmount(','sd_core_apply_wallet_event','wallet_ledger','supabase/migrations')){
             if($joined.Contains($forbidden)){ throw "v0.23 session fix crossed protected Core/economic boundary: $forbidden" }
           }
-          foreach($required in @('SD_CENTER_LINK_INTEGRATED','session.remember = true','explicit logout')){
+          foreach($required in @('SD_CENTER_LINK_INTEGRATED','session.remember = true','patchIntegratedSdLinkAuthSession')){
             if(-not $joined.Contains($required)){ throw "v0.23 session persistence marker missing: $required" }
           }
           Write-Host 'v0.23 session persistence boundary contract passed'
