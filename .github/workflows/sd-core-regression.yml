@@ -7,11 +7,13 @@ on:
       - feature/sd-core
     paths:
       - 'database/migrations/sd_core_wallet_v1.sql'
+      - 'database/migrations/sd_core_ledger_api_v1.sql'
       - 'tests/sd-core/**'
       - '.github/workflows/sd-core-regression.yml'
   pull_request:
     paths:
       - 'database/migrations/sd_core_wallet_v1.sql'
+      - 'database/migrations/sd_core_ledger_api_v1.sql'
       - 'tests/sd-core/**'
       - '.github/workflows/sd-core-regression.yml'
 
@@ -50,8 +52,11 @@ jobs:
       - name: Build compatible SD Online fixture
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
 
-      - name: Apply SD Core migration
+      - name: Apply SD Core wallet migration
         run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+
+      - name: Apply SD Core ledger API migration
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
 
       - name: Run required wallet regression
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/wallet_regression.sql
