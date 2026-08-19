@@ -39,23 +39,39 @@ jobs:
       - name: Install Pillow
         run: python -m pip install --disable-pip-version-check pillow
 
-      - name: Prepare simple-color artwork
+      - name: Prepare verified simple-color artwork
         shell: bash
         run: |
           cp tools/flea-v120-items-manifest.txt /tmp/flea-old-manifest.txt
           cp tools/flea-v120-items-sprite.webp.b64 /tmp/flea-old-sprite.b64
           cp tools/flea-v123-simple-manifest.txt tools/flea-v120-items-manifest.txt
-          base64 -w0 tools/flea-v123-simple-sprite.webp > tools/flea-v120-items-sprite.webp.b64
+          cat \
+            tools/flea-v123-simple-sprite.part00.b64 \
+            tools/flea-v123-simple-sprite.part01.b64 \
+            tools/flea-v123-simple-sprite.part02.b64 \
+            tools/flea-v123-simple-sprite.part03.b64 \
+            tools/flea-v123-simple-sprite.part04.b64 \
+            tools/flea-v123-simple-sprite.part05.b64 \
+            tools/flea-v123-simple-sprite.part06.b64 \
+            > tools/flea-v120-items-sprite.webp.b64
           python - <<'PY'
-          import base64
+          import base64, io
           from pathlib import Path
-          raw = base64.b64decode(Path('tools/flea-v120-items-sprite.webp.b64').read_text())
-          if raw[:4] != b'RIFF' or raw[8:12] != b'WEBP':
-              raise SystemExit('v1.2.3 sprite is not a WEBP file')
-          print('simple sprite bytes:', len(raw))
+          from PIL import Image
+          text=''.join(Path('tools/flea-v120-items-sprite.webp.b64').read_text(encoding='ascii').split())
+          if len(text) != 25960:
+              raise SystemExit(f'bad v1.2.3 sprite base64 length: {len(text)}')
+          raw=base64.b64decode(text, validate=True)
+          if len(raw) != 19470:
+              raise SystemExit(f'bad v1.2.3 sprite byte length: {len(raw)}')
+          img=Image.open(io.BytesIO(raw))
+          img.load()
+          if img.size != (384,288):
+              raise SystemExit(f'bad sprite dimensions: {img.size}')
+          print('simple sprite verified:', img.format, img.size, len(raw))
           PY
 
-      - name: Build refreshed base
+      - name: Build refreshed base package
         shell: bash
         run: |
           cat tools/build-flea-v120.part0.py tools/build-flea-v120.part1.py tools/build-flea-v120.part2.py > /tmp/build-flea-v120.py
@@ -67,49 +83,33 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import hashlib, json, tempfile, zipfile
-
-          src = Path('downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip')
-          out = Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip')
-          sha = Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.sha256')
-
+          src=Path('downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip')
+          out=Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip')
+          sha=Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.sha256')
           with tempfile.TemporaryDirectory() as td:
-              root = Path(td)
-              with zipfile.ZipFile(src) as z:
-                  z.extractall(root)
-              pkg = root / 'sd-flea-market'
-              if not pkg.is_dir():
-                  raise RuntimeError('sd-flea-market package root missing')
-
-              p = pkg / 'package.json'
-              data = json.loads(p.read_text(encoding='utf-8'))
-              data['version'] = '1.2.3'
-              p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-
-              p = pkg / 'sd-app.json'
-              data = json.loads(p.read_text(encoding='utf-8'))
-              data['version'] = '1.2.3'
-              data['displayVersion'] = 'PC Expansion · v1.2.3'
-              p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-
-              (pkg / 'RELEASE_NOTES.txt').write_text(
+              root=Path(td)
+              with zipfile.ZipFile(src) as z: z.extractall(root)
+              pkg=root/'sd-flea-market'
+              if not pkg.is_dir(): raise RuntimeError('sd-flea-market package root missing')
+              p=pkg/'package.json'
+              data=json.loads(p.read_text(encoding='utf-8')); data['version']='1.2.3'
+              p.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+              p=pkg/'sd-app.json'
+              data=json.loads(p.read_text(encoding='utf-8')); data['version']='1.2.3'; data['displayVersion']='PC Expansion · v1.2.3'
+              p.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+              (pkg/'RELEASE_NOTES.txt').write_text(
                   'SD 플리마켓 v1.2.3\n\n'
                   '- 아이템 사전과 물건 보관함의 실제 36종 이미지를 단순 채색 아이콘으로 교체\n'
-                  '- 사진처럼 현실적인 질감을 줄이고 기본 색상과 윤곽 중심으로 정리\n'
+                  '- 현실적인 사진 질감을 줄이고 기본 색상과 윤곽 중심으로 정리\n'
                   '- 새 6x6 배열 기준으로 아이템 이름과 아이콘을 1:1 고정\n'
-                  '- 기존 보관함, 획득 기록, 가격 및 게임 진행도 유지\n',
-                  encoding='utf-8'
-              )
-
-              if out.exists():
-                  out.unlink()
-              with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+                  '- 기존 보관함, 획득 기록, 가격 및 게임 진행도 유지\n',encoding='utf-8')
+              if out.exists(): out.unlink()
+              with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
                   for path in sorted(pkg.rglob('*')):
-                      if path.is_file():
-                          z.write(path, Path('sd-flea-market') / path.relative_to(pkg))
-
-          digest = hashlib.sha256(out.read_bytes()).hexdigest()
-          sha.write_text(f'{digest}  {out.name}\n', encoding='utf-8')
-          print(out.name, out.stat().st_size, digest)
+                      if path.is_file(): z.write(path,Path('sd-flea-market')/path.relative_to(pkg))
+          digest=hashlib.sha256(out.read_bytes()).hexdigest()
+          sha.write_text(f'{digest}  {out.name}\n',encoding='utf-8')
+          print(out.name,out.stat().st_size,digest)
           PY
 
       - name: Update v1.2.3 catalogs
@@ -117,57 +117,48 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import json, re
-
-          p = Path('update/extensions-catalog.json')
-          data = json.loads(p.read_text(encoding='utf-8'))
-          data['catalogVersion'] = max(int(data.get('catalogVersion', 0)) + 1, 39)
-          data['updatedAt'] = '2026-08-19T09:36:00+09:00'
-          flea = data['apps']['sd-flea-market']
-          flea['version'] = '1.2.3'
-          flea['downloadUrl'] = 'https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip?v=123'
-          flea['notes'] = '아이템 사전과 물건 보관함의 실제 36종 아이콘을 단순 채색 스타일로 교체했습니다. 새 6x6 배열을 기준으로 이름과 아이콘을 1:1로 고정했으며 기존 획득 기록과 보관함 데이터는 유지됩니다.'
-          p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-
-          for filename in ['extensions-data.js', 'assets/js/extensions-data.js']:
-              path = Path(filename)
-              text = path.read_text(encoding='utf-8')
-              pattern = r'(\{\s*"id":\s*"sd-flea-market",.*?\n\s*\})'
-              m = re.search(pattern, text, re.S)
-              if not m:
-                  raise RuntimeError(f'flea entry missing in {filename}')
-              block = m.group(1)
-              block = re.sub(r'"version":\s*"v1\.2\.\d+"', '"version": "v1.2.3"', block)
-              block = re.sub(r'"fileName":\s*"SDFleaMarket_v1\.2\.\d+_Desktop\.zip"', '"fileName": "SDFleaMarket_v1.2.3_Desktop.zip"', block)
-              block = re.sub(r'"downloadUrl":\s*"downloads/extensions/SDFleaMarket_v1\.2\.\d+_Desktop\.zip\?v=\d+"', '"downloadUrl": "downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip?v=123"', block)
-              block = re.sub(r'"description":\s*"[^"]*"', '"description": "실제 플리마켓 36종 아이템 이미지를 단순 채색 아이콘으로 교체하고 아이템 사전과 물건 보관함에 동일하게 적용한 버전입니다. 이름과 아이콘을 새 6x6 배열 기준으로 1:1 고정했으며 기존 획득 기록과 보관함 데이터는 유지됩니다."', block)
-              text = text[:m.start()] + block + text[m.end():]
-              path.write_text(text, encoding='utf-8')
+          import json,re
+          p=Path('update/extensions-catalog.json')
+          data=json.loads(p.read_text(encoding='utf-8'))
+          data['catalogVersion']=max(int(data.get('catalogVersion',0))+1,39)
+          data['updatedAt']='2026-08-19T10:19:00+09:00'
+          flea=data['apps']['sd-flea-market']
+          flea['version']='1.2.3'
+          flea['downloadUrl']='https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip?v=123'
+          flea['notes']='아이템 사전과 물건 보관함의 실제 36종 아이콘을 단순 채색 스타일로 교체했습니다. 새 6x6 배열 기준으로 이름과 아이콘을 1:1 고정했으며 기존 획득 기록과 보관함 데이터는 유지됩니다.'
+          p.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          for filename in ['extensions-data.js','assets/js/extensions-data.js']:
+              path=Path(filename); text=path.read_text(encoding='utf-8')
+              pattern=r'(\{\s*"id":\s*"sd-flea-market",.*?\n\s*\})'
+              m=re.search(pattern,text,re.S)
+              if not m: raise RuntimeError(f'flea entry missing in {filename}')
+              block=m.group(1)
+              block=re.sub(r'"version":\s*"v1\.2\.\d+"','"version": "v1.2.3"',block)
+              block=re.sub(r'"fileName":\s*"SDFleaMarket_v1\.2\.\d+_Desktop\.zip"','"fileName": "SDFleaMarket_v1.2.3_Desktop.zip"',block)
+              block=re.sub(r'"downloadUrl":\s*"downloads/extensions/SDFleaMarket_v1\.2\.\d+_Desktop\.zip\?v=\d+"','"downloadUrl": "downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip?v=123"',block)
+              block=re.sub(r'"description":\s*"[^"]*"','"description": "실제 플리마켓 36종 아이템 이미지를 단순 채색 아이콘으로 교체하고 아이템 사전과 물건 보관함에 동일하게 적용한 버전입니다. 이름과 아이콘은 새 6x6 배열 기준으로 1:1 고정했습니다."',block)
+              path.write_text(text[:m.start()]+block+text[m.end():],encoding='utf-8')
           PY
 
       - name: Validate v1.2.3 release
         shell: bash
         run: |
           python - <<'PY'
-          import json, zipfile
+          import json,zipfile
           from pathlib import Path
-          path = Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip')
+          path=Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip')
           with zipfile.ZipFile(path) as z:
               names=[n for n in z.namelist() if n.startswith('sd-flea-market/public/assets/items/') and n.endswith('.png')]
-              if len(names) != 36:
-                  raise SystemExit(f'expected 36 item images, got {len(names)}')
+              if len(names)!=36: raise SystemExit(f'expected 36 item images, got {len(names)}')
               package=json.loads(z.read('sd-flea-market/package.json'))
               app=json.loads(z.read('sd-flea-market/sd-app.json'))
-              if package.get('version') != '1.2.3' or app.get('version') != '1.2.3':
-                  raise SystemExit(f'bad embedded versions: {package.get("version")} / {app.get("version")}')
+              if package.get('version')!='1.2.3' or app.get('version')!='1.2.3': raise SystemExit('embedded version mismatch')
               appjs=z.read('sd-flea-market/public/app.js').decode('utf-8')
               for token in ['dictionary-product-image','inventory-item-image','itemImageHtml']:
-                  if token not in appjs:
-                      raise SystemExit(f'missing {token}')
+                  if token not in appjs: raise SystemExit(f'missing {token}')
           catalog=json.loads(Path('update/extensions-catalog.json').read_text(encoding='utf-8'))
           flea=catalog['apps']['sd-flea-market']
-          if flea.get('version') != '1.2.3' or 'SDFleaMarket_v1.2.3_Desktop.zip' not in flea.get('downloadUrl',''):
-              raise SystemExit('catalog validation failed')
+          if flea.get('version')!='1.2.3' or 'SDFleaMarket_v1.2.3_Desktop.zip' not in flea.get('downloadUrl',''): raise SystemExit('catalog validation failed')
           print('v1.2.3 validation OK')
           PY
 
@@ -184,12 +175,7 @@ jobs:
         run: |
           git config user.name 'SD Build Bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add \
-            downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip \
-            downloads/extensions/SDFleaMarket_v1.2.3_Desktop.sha256 \
-            update/extensions-catalog.json \
-            extensions-data.js \
-            assets/js/extensions-data.js
+          git add downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip downloads/extensions/SDFleaMarket_v1.2.3_Desktop.sha256 update/extensions-catalog.json extensions-data.js assets/js/extensions-data.js
           if git diff --cached --quiet; then
             echo 'No release changes to commit.'
           else
