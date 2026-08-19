@@ -2,6 +2,10 @@ name: Build Flea Market v1.2.3 Simple Icons
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rebuild-flea-v123-simple-icons.yml'
   issues:
     types: [opened]
 
