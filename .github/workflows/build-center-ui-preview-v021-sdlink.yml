@@ -9,6 +9,14 @@ on:
       - 'tools/patch-center-ui-v021-sdlink-ui.js'
       - 'tools/check-center-ui-v021-sdlink.js'
       - '.github/workflows/build-center-ui-preview-v021-sdlink.yml'
+  pull_request:
+    branches: [preview/center-ui-v230-20260819]
+    paths:
+      - 'preview/v021/**'
+      - 'tools/patch-center-ui-v021-sdlink-main.js'
+      - 'tools/patch-center-ui-v021-sdlink-ui.js'
+      - 'tools/check-center-ui-v021-sdlink.js'
+      - '.github/workflows/build-center-ui-preview-v021-sdlink.yml'
   workflow_dispatch:
 
 permissions:
