@@ -6,12 +6,14 @@ on:
     paths:
       - 'tools/center-ui-preview-assets-v04-good.b64'
       - 'tools/patch-center-ui-v04.js'
+      - 'tools/patch-center-ui-v05.js'
       - '.github/workflows/build-center-ui-preview.yml'
   pull_request:
     branches: [main]
     paths:
       - 'tools/center-ui-preview-assets-v04-good.b64'
       - 'tools/patch-center-ui-v04.js'
+      - 'tools/patch-center-ui-v05.js'
       - '.github/workflows/build-center-ui-preview.yml'
   workflow_dispatch:
 
@@ -54,7 +56,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-UI-Preview-v0.4'
+          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-UI-Preview-v0.5'
           if(Test-Path $preview){ Remove-Item $preview -Recurse -Force }
           Copy-Item $env:BASE_APP_DIR $preview -Recurse -Force
           $root=Join-Path $preview 'resources\app'
@@ -70,21 +72,26 @@ jobs:
           Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
           Copy-Item (Join-Path $assets 'ui-preview.js') (Join-Path $root 'public\js\ui-preview.js') -Force
           node tools/patch-center-ui-v04.js "$root"
+          node tools/patch-center-ui-v05.js "$root"
           @(
-            'SD종합센터 UI Remake Preview v0.4',
+            'SD종합센터 UI Remake Preview v0.5',
             'Base: official v2.2.7',
             '',
-            'v0.4 수정:',
-            '- 새 폴더 버튼 클릭 즉시 폴더 생성',
-            '- 기본 경제/게임 폴더 제거 및 v0.2/v0.3 자동 폴더 저장값 제거',
-            '- 기존 v0.3 안정화 수정 유지',
+            'v0.5 수정:',
+            '- 완전 종료 후 재실행해도 폴더 안 앱 배치가 유지되도록 수정',
+            '- 앱 목록이 로딩되기 전 저장된 폴더 멤버십을 삭제하지 않도록 초기화 순서 보강',
+            '- v0.4의 새 폴더/이름 변경/기본 폴더 제거 동작 유지',
+            '',
+            '참고:',
+            '- v0.4에서 이미 한 번 풀려 나온 앱은 v0.5에서 폴더에 다시 넣어야 합니다.',
+            '- 그 뒤부터는 완전 종료 후에도 폴더 배치가 유지되어야 합니다.',
             '',
             '실행 방법:',
             '1. 기존 종합센터를 완전 종료합니다.',
             '2. 이 폴더의 SDCenter.exe를 실행합니다.',
             '3. 프리뷰는 정식 업데이트 서버에 등록되지 않습니다.'
           ) | Set-Content (Join-Path $preview 'PREVIEW_README.txt') -Encoding utf8
-          'SD종합센터 UI Preview`nBase: v2.2.7`nPreview: UI Remake v0.4`nOfficial update metadata is NOT changed.' | Set-Content (Join-Path $root 'UI_PREVIEW.txt') -Encoding utf8
+          'SD종합센터 UI Preview`nBase: v2.2.7`nPreview: UI Remake v0.5`nOfficial update metadata is NOT changed.' | Set-Content (Join-Path $root 'UI_PREVIEW.txt') -Encoding utf8
           "PREVIEW_DIR=$preview" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
@@ -105,9 +112,12 @@ jobs:
           foreach($marker in @('previewHomePanel','previewHomeGrid','previewUpdatesPanel','previewFolderBackdrop','previewNameBackdrop','globalSearchInput')) {
             if(-not $html.Contains($marker)){ throw "preview HTML marker missing: $marker" }
           }
-          foreach($marker in @('PREVIEW_LAYOUT_KEY = "sd-center-ui-preview-home-v2"','PREVIEW_OLD_LAYOUT_KEY = "sd-center-ui-preview-home-v1"','return apps.map((app) => ({ type: "app", id: app.id }))','function createPreviewFolder()','preview.layout.push({ type: "folder"','localStorage.removeItem(PREVIEW_OLD_LAYOUT_KEY)','previewElements.newFolderButton.addEventListener("click", createPreviewFolder)')) {
-            if(-not $previewJs.Contains($marker)){ throw "v0.4 folder marker missing: $marker" }
+          foreach($marker in @('PREVIEW_LAYOUT_KEY = "sd-center-ui-preview-home-v2"','function createPreviewFolder()','preview.layout.push({ type: "folder"','previewElements.newFolderButton.addEventListener("click", createPreviewFolder)','UI Preview v0.5: 앱 목록이 로딩되기 전에는 저장된 폴더 멤버십을 정리하지 않습니다.','if (!Array.isArray(state.apps) || state.apps.length === 0)','preview.layout = Array.isArray(preview.layout) ? preview.layout : [];')) {
+            if(-not $previewJs.Contains($marker)){ throw "v0.5 folder persistence marker missing: $marker" }
           }
+          $guardIndex=$previewJs.IndexOf('UI Preview v0.5: 앱 목록이 로딩되기 전에는 저장된 폴더 멤버십을 정리하지 않습니다.')
+          $pruneIndex=$previewJs.IndexOf('const validIds = new Set(state.apps.map((app) => app.id));')
+          if($guardIndex -lt 0 -or $pruneIndex -lt 0 -or $guardIndex -gt $pruneIndex){ throw 'startup persistence guard must run before layout pruning' }
           foreach($forbidden in @('id: "economy"','id: "games"','name: "경제"','name: "게임"')) {
             if($previewJs.Contains($forbidden)){ throw "default folder must not remain: $forbidden" }
           }
@@ -138,7 +148,7 @@ jobs:
       - name: Upload portable preview
         uses: actions/upload-artifact@v4
         with:
-          name: SDCenter-UI-Preview-v0.4-win-x64
+          name: SDCenter-UI-Preview-v0.5-win-x64
           path: ${{ env.PREVIEW_DIR }}
           if-no-files-found: error
           compression-level: 6
