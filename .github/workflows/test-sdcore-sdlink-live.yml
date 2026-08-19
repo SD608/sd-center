@@ -1,0 +1,39 @@
+name: Test SD Core ↔ SD Link Live Integration
+
+on:
+  push:
+    branches:
+      - integration/sdcore-sdlink-v022
+    paths:
+      - 'preview/v023/**'
+      - '.github/workflows/test-sdcore-sdlink-live.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  adapter-and-live-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check
+        run: |
+          node --check preview/v023/sd-core-client.js
+          node --check preview/v023/test-sd-core-client-v1.js
+          node --check preview/v023/live-sd-core-probe.js
+
+      - name: Run adapter contract regression
+        run: node preview/v023/test-sd-core-client-v1.js
+
+      - name: Run live SD Core Dev connectivity regression
+        env:
+          SD_CORE_DEV_URL: https://rwjueffaziiawdebbwpf.supabase.co
+          SD_CORE_DEV_PUBLISHABLE_KEY: sb_publishable_bEI7U7RzZpMB92xM9nXx3A_rTG8R--2
+        run: node preview/v023/live-sd-core-probe.js
