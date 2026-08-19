@@ -1,0 +1,54 @@
+name: Test SDCenter v0.22 SD Link Hardening
+
+on:
+  push:
+    branches: [feature/sdlink-integrated-v022]
+    paths:
+      - 'preview/v022/**'
+      - 'tools/patch-center-ui-v022-sdlink-hardening.js'
+      - '.github/workflows/test-center-ui-v022-sdlink.yml'
+  pull_request:
+    branches: [preview/center-ui-v230-20260819]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hardening-contract:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check 'preview/v022/sdlink-integration.js'
+          node --check 'preview/v022/test-sdlink-hardening-v022.js'
+          node --check 'tools/patch-center-ui-v022-sdlink-hardening.js'
+      - name: Run state regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $fixture=Join-Path $env:RUNNER_TEMP 'sdlink-v022-fixture'
+          New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'src') | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'tools') | Out-Null
+          Copy-Item 'preview/v022/sdlink-integration.js' (Join-Path $fixture 'src\sdlink-integration.js') -Force
+          Copy-Item 'preview/v022/test-sdlink-hardening-v022.js' (Join-Path $fixture 'tools\test-sdlink-hardening-v022.js') -Force
+          node (Join-Path $fixture 'tools\test-sdlink-hardening-v022.js')
+      - name: Guard Core and economy boundary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $joined=(Get-Content 'tools/patch-center-ui-v022-sdlink-hardening.js' -Raw)+(Get-Content 'preview/v022/sdlink-integration.js' -Raw)
+          foreach($forbidden in @('push_sd_link_transaction','pull_sd_link_transactions','signedAmount(','wallet_ledger','supabase/migrations')){
+            if($joined.Contains($forbidden)){ throw "v0.22 crossed protected Core/economic boundary: $forbidden" }
+          }
+          foreach($required in @('scheduleSdLinkRestart','detectLegacyStandaloneSdLink','entry.id !== SD_LINK_ID','protected: true','legacy-conflict','sync-error','sync-stale')){
+            if(-not $joined.Contains($required)){ throw "v0.22 hardening marker missing: $required" }
+          }
+          Write-Host 'v0.22 boundary and hardening contract passed'
