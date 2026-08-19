@@ -28,7 +28,8 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 배포 빌드를 시작했습니다. Run ID: $RUN_ID"
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 배포 빌드를 시작했습니다. Run ID: $RUN_ID"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -203,7 +204,8 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 배포가 완료되었습니다. Run ID: $RUN_ID"
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 배포가 완료되었습니다. Run ID: $RUN_ID"
 
       - name: Report failure
         if: failure() && github.event_name == 'issues'
@@ -212,4 +214,5 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 배포가 실패했습니다. Run ID: $RUN_ID"
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 배포가 실패했습니다. Run ID: $RUN_ID"
