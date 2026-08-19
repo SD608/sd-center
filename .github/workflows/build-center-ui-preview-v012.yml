@@ -1,0 +1,131 @@
+name: Build SDCenter UI Preview v0.12
+
+on:
+  push:
+    branches: [preview/center-ui-v230-20260819]
+    paths:
+      - 'tools/patch-center-ui-v012.js'
+      - '.github/workflows/build-center-ui-preview-v012.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-preview-v012:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.7.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "v2.2.7 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $base=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7'
+          if(-not (Test-Path (Join-Path $base 'SDCenter.exe'))){ throw 'v2.2.7 install missing' }
+          "BASE_APP_DIR=$base" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Prepare portable preview v0.12
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-UI-Preview-v0.12'
+          if(Test-Path $preview){ Remove-Item $preview -Recurse -Force }
+          Copy-Item $env:BASE_APP_DIR $preview -Recurse -Force
+          $root=Join-Path $preview 'resources\app'
+          $assets=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04'
+          $assetZip=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04.zip'
+          $assetB64=(Get-Content 'tools/center-ui-preview-assets-v04-good.b64' -Raw).Trim()
+          [IO.File]::WriteAllBytes($assetZip,[Convert]::FromBase64String($assetB64))
+          $assetHash=(Get-FileHash $assetZip -Algorithm SHA256).Hash.ToLower()
+          if($assetHash -ne '1b250228b0112b8722eec3eb4cf89dbe138c20d5e7060e7995812e2d73db6b72'){ throw "preview asset hash mismatch: $assetHash" }
+          Expand-Archive -Path $assetZip -DestinationPath $assets -Force
+          Copy-Item (Join-Path $assets 'index.html') (Join-Path $root 'public\index.html') -Force
+          Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
+          Copy-Item (Join-Path $assets 'ui-preview.js') (Join-Path $root 'public\js\ui-preview.js') -Force
+          foreach($v in @('04','05','06','07','08','09','010','011','012')){ node "tools/patch-center-ui-v$v.js" "$root" }
+          @(
+            'SD종합센터 UI Remake Preview v0.12',
+            'Base: official v2.2.7',
+            '',
+            '테마 상점 동시 출시 프리뷰:',
+            '- 사이드바 테마 상점 추가',
+            '- SD Dark / 물류센터 / 플리마켓 / 광부 / 카지노 / 금고 6종 테마',
+            '- 테마 즉시 적용 및 재실행 후 선택 유지',
+            '- 테마 카드 미리보기 / 기본 테마 복원',
+            '- 출시 테마는 무료 제공',
+            '- 유료 결제는 SD Core 공용 결제 API 준비 후 동일 상점에 연결',
+            '',
+            'v0.11 2차 감사 수정과 v0.10 UI 최종 마감은 모두 유지됩니다.',
+            '프리뷰이며 정식 업데이트 메타데이터는 변경하지 않았습니다.'
+          ) | Set-Content (Join-Path $preview 'PREVIEW_README.txt') -Encoding utf8
+          "SD종합센터 UI Preview`nBase: v2.2.7`nPreview: UI Remake v0.12`nTheme Store preview with 6 free launch themes.`nPaid theme purchases wait for the SD Core payment API.`nOfficial update metadata is NOT changed." | Set-Content (Join-Path $root 'UI_PREVIEW.txt') -Encoding utf8
+          "PREVIEW_DIR=$preview" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Validate preview v0.12
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\public\js\app.js"
+          node --check "$env:APP_ROOT\public\js\ui-preview.js"
+          node --check "$env:APP_ROOT\preload.js"
+          node --check "$env:APP_ROOT\src\required-updates.js"
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.7'){ throw "Base version changed unexpectedly: $($pkg.version)" }
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          $app=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
+          $js=Get-Content "$env:APP_ROOT\public\js\ui-preview.js" -Raw
+          $css=Get-Content "$env:APP_ROOT\public\css\ui-preview.css" -Raw
+          $html=Get-Content "$env:APP_ROOT\public\index.html" -Raw
+          foreach($marker in @('centerAppOperationLocks','withCenterAppOperation','withCenterBulkAppOperation')){ if(-not $main.Contains($marker)){ throw "v0.11 regression marker missing: $marker" } }
+          foreach($marker in @('anyAppOperation','state.updatingAll || state.addingApp')){ if(-not $app.Contains($marker)){ throw "v0.11 renderer regression marker missing: $marker" } }
+          foreach($marker in @('SD종합센터 UI Preview v0.12','const PREVIEW_THEME_KEY','renderPreviewThemeStore','applyPreviewTheme','SD Core 공용 결제 API')){ if(-not $js.Contains($marker)){ throw "v0.12 theme marker missing: $marker" } }
+          foreach($marker in @('UI Preview v0.12: 테마 상점 + 테마 엔진','.preview-theme-grid','data-preview-theme="logistics"')){ if(-not $css.Contains($marker)){ throw "v0.12 CSS marker missing: $marker" } }
+          foreach($marker in @('UI Preview v0.12','data-preview-view="themes"','id="previewThemeStorePanel"','id="previewThemeGrid"')){ if(-not $html.Contains($marker)){ throw "v0.12 HTML marker missing: $marker" } }
+
+      - name: Smoke test portable preview
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $exe=Join-Path $env:PREVIEW_DIR 'SDCenter.exe'
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 10
+          if($proc.HasExited){ throw "UI preview exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Write build info
+        shell: pwsh
+        run: |
+          $files=(Get-ChildItem $env:PREVIEW_DIR -Recurse -File | Measure-Object).Count
+          $bytes=(Get-ChildItem $env:PREVIEW_DIR -Recurse -File | Measure-Object Length -Sum).Sum
+          @("Files: $files","Bytes: $bytes","Commit: $env:GITHUB_SHA","Built: $(Get-Date -Format o)") | Set-Content (Join-Path $env:PREVIEW_DIR 'BUILD_INFO.txt') -Encoding utf8
+
+      - name: Upload portable preview v0.12
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-UI-Preview-v0.12-win-x64
+          path: ${{ env.PREVIEW_DIR }}
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 14
