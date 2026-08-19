@@ -321,7 +321,7 @@ UPDATE wallets SET balance = <locally calculated balance>
 
 or equivalent upsert/overwrite behavior.
 
-## 10. RLS and function permissions
+## 10. RLS and privileged execution boundary
 
 `sd_core_wallet_events` has RLS enabled.
 
@@ -331,14 +331,21 @@ Authenticated users may select only rows where:
 auth.uid() = user_id
 ```
 
-The Core mutation functions are `SECURITY DEFINER` because they must update server-owned rows that clients cannot update directly. Each Core function:
+The public `sd_core_*` RPC functions are `SECURITY INVOKER`. They do not own privileged table-write rights themselves.
 
-- uses an empty `search_path`
-- references application tables with explicit schema names
-- validates `auth.uid()` internally
-- verifies device ownership/state
-- revokes execution from `PUBLIC` and `anon`
-- grants execution only to `authenticated`
+Privileged wallet/device mutations are implemented in the non-exposed `sd_core_private` schema using `SECURITY DEFINER` functions. The migration must keep `sd_core_private` out of Supabase Data API exposed schemas.
+
+Security rules for the private implementation:
+
+- empty `search_path`
+- explicit schema-qualified application table references
+- `auth.uid()` validation inside the privileged implementation
+- authenticated account status validation
+- `device_id` ownership, active-state, and revocation validation
+- `PUBLIC` and `anon` execution revoked
+- only the authenticated role required by the public invoker wrappers receives execute permission
+
+This split is intentional: Data API clients see the stable public RPC contract, while privileged write logic stays outside the exposed `public` schema.
 
 ## 11. Error codes
 
