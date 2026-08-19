@@ -1,8 +1,12 @@
 -- SD Core wallet v1
 -- Additive migration: does not remove or change legacy SD Link RPCs.
--- Target: Supabase Postgres 17 / public schema
+-- Target: Supabase Postgres 17.
 
 begin;
+
+create schema if not exists sd_core_private;
+revoke all on schema sd_core_private from public, anon;
+grant usage on schema sd_core_private to authenticated;
 
 create table public.sd_core_wallet_events (
   event_id uuid primary key,
@@ -13,13 +17,13 @@ create table public.sd_core_wallet_events (
   target_user_id uuid null references auth.users(id) on delete restrict,
   source_app text not null check (char_length(source_app) between 1 and 80),
   description text not null default '' check (char_length(description) <= 160),
-  metadata jsonb not null default '{}'::jsonb,
+  metadata jsonb not null default '{}'::jsonb check (pg_catalog.jsonb_typeof(metadata) = 'object'),
   status text not null default 'processing' check (status in ('processing', 'completed')),
   primary_transaction_id uuid null references public.transactions(id) on delete restrict,
   counterparty_transaction_id uuid null references public.transactions(id) on delete restrict,
   balance_before bigint null check (balance_before is null or balance_before >= 0),
   balance_after bigint null check (balance_after is null or balance_after >= 0),
-  result jsonb not null default '{}'::jsonb,
+  result jsonb not null default '{}'::jsonb check (pg_catalog.jsonb_typeof(result) = 'object'),
   created_at timestamptz not null default now(),
   completed_at timestamptz null,
   constraint sd_core_wallet_events_transfer_target_ck check (
@@ -34,6 +38,18 @@ create index sd_core_wallet_events_user_created_idx
 create index sd_core_wallet_events_device_created_idx
   on public.sd_core_wallet_events (device_id, created_at desc);
 
+create index sd_core_wallet_events_target_created_idx
+  on public.sd_core_wallet_events (target_user_id, created_at desc)
+  where target_user_id is not null;
+
+create unique index sd_core_wallet_events_primary_tx_uidx
+  on public.sd_core_wallet_events (primary_transaction_id)
+  where primary_transaction_id is not null;
+
+create unique index sd_core_wallet_events_counterparty_tx_uidx
+  on public.sd_core_wallet_events (counterparty_transaction_id)
+  where counterparty_transaction_id is not null;
+
 alter table public.sd_core_wallet_events enable row level security;
 
 create policy sd_core_wallet_events_select_own
@@ -46,12 +62,11 @@ revoke all on table public.sd_core_wallet_events from anon;
 revoke insert, update, delete on table public.sd_core_wallet_events from authenticated;
 grant select on table public.sd_core_wallet_events to authenticated;
 
--- The client may read its wallet and ledger, but may never write final balances
--- or ledger rows directly. Mutations go through server-owned RPCs only.
+-- Final wallet/ledger state is server-owned. Clients may not overwrite it directly.
 revoke insert, update, delete on table public.wallets from anon, authenticated;
 revoke insert, update, delete on table public.transactions from anon, authenticated;
 
-create or replace function public.sd_core_register_device(
+create or replace function sd_core_private.register_device_impl(
   p_device_key text,
   p_device_name text,
   p_platform text default 'windows'
@@ -156,7 +171,7 @@ begin
 end;
 $$;
 
-create or replace function public.sd_core_get_snapshot(
+create or replace function sd_core_private.get_snapshot_impl(
   p_device_id uuid
 )
 returns jsonb
@@ -237,7 +252,7 @@ begin
 end;
 $$;
 
-create or replace function public.sd_core_apply_wallet_event(
+create or replace function sd_core_private.apply_wallet_event_impl(
   p_device_id uuid,
   p_event_id uuid,
   p_event_type text,
@@ -435,7 +450,6 @@ begin
   end if;
 
   if v_event_type = 'transfer' then
-    -- Lock both wallets in deterministic UUID order to avoid cross-transfer deadlocks.
     perform 1
     from public.wallets w
     where w.id in (v_sender_wallet_id, v_target_wallet_id)
@@ -461,28 +475,15 @@ begin
       raise exception using errcode = 'P1014', message = 'BALANCE_LIMIT_EXCEEDED';
     end if;
 
-    update public.wallets
-       set balance = v_sender_balance_after
-     where id = v_sender_wallet_id;
-
-    update public.wallets
-       set balance = v_target_balance_after
-     where id = v_target_wallet_id;
+    update public.wallets set balance = v_sender_balance_after where id = v_sender_wallet_id;
+    update public.wallets set balance = v_target_balance_after where id = v_target_wallet_id;
 
     v_primary_description := coalesce(nullif(v_description, ''), 'SD Core transfer');
     v_counterparty_description := 'SD Core transfer received';
 
     insert into public.transactions (
-      wallet_id,
-      user_id,
-      transaction_type,
-      description,
-      amount,
-      balance_before,
-      balance_after,
-      request_id,
-      platform,
-      metadata
+      wallet_id, user_id, transaction_type, description, amount,
+      balance_before, balance_after, request_id, platform, metadata
     ) values (
       v_sender_wallet_id,
       v_user_id,
@@ -503,16 +504,8 @@ begin
     ) returning id into v_primary_tx_id;
 
     insert into public.transactions (
-      wallet_id,
-      user_id,
-      transaction_type,
-      description,
-      amount,
-      balance_before,
-      balance_after,
-      request_id,
-      platform,
-      metadata
+      wallet_id, user_id, transaction_type, description, amount,
+      balance_before, balance_after, request_id, platform, metadata
     ) values (
       v_target_wallet_id,
       v_target_user_id,
@@ -549,9 +542,7 @@ begin
       v_sender_balance_after := v_sender_balance_before - p_amount;
     end if;
 
-    update public.wallets
-       set balance = v_sender_balance_after
-     where id = v_sender_wallet_id;
+    update public.wallets set balance = v_sender_balance_after where id = v_sender_wallet_id;
 
     v_primary_description := coalesce(
       nullif(v_description, ''),
@@ -562,16 +553,8 @@ begin
     );
 
     insert into public.transactions (
-      wallet_id,
-      user_id,
-      transaction_type,
-      description,
-      amount,
-      balance_before,
-      balance_after,
-      request_id,
-      platform,
-      metadata
+      wallet_id, user_id, transaction_type, description, amount,
+      balance_before, balance_after, request_id, platform, metadata
     ) values (
       v_sender_wallet_id,
       v_user_id,
@@ -625,6 +608,66 @@ begin
 end;
 $$;
 
+revoke execute on function sd_core_private.register_device_impl(text, text, text) from public, anon;
+revoke execute on function sd_core_private.get_snapshot_impl(uuid) from public, anon;
+revoke execute on function sd_core_private.apply_wallet_event_impl(uuid, uuid, text, bigint, text, text, text, jsonb) from public, anon;
+
+grant execute on function sd_core_private.register_device_impl(text, text, text) to authenticated;
+grant execute on function sd_core_private.get_snapshot_impl(uuid) to authenticated;
+grant execute on function sd_core_private.apply_wallet_event_impl(uuid, uuid, text, bigint, text, text, text, jsonb) to authenticated;
+
+-- Public API wrappers are SECURITY INVOKER. Privileged writes stay in the private schema.
+create or replace function public.sd_core_register_device(
+  p_device_key text,
+  p_device_name text,
+  p_platform text default 'windows'
+)
+returns jsonb
+language sql
+security invoker
+set search_path = ''
+as $$
+  select sd_core_private.register_device_impl(p_device_key, p_device_name, p_platform)
+$$;
+
+create or replace function public.sd_core_get_snapshot(
+  p_device_id uuid
+)
+returns jsonb
+language sql
+security invoker
+set search_path = ''
+as $$
+  select sd_core_private.get_snapshot_impl(p_device_id)
+$$;
+
+create or replace function public.sd_core_apply_wallet_event(
+  p_device_id uuid,
+  p_event_id uuid,
+  p_event_type text,
+  p_amount bigint,
+  p_target_account_number text default null,
+  p_source_app text default 'sd_link',
+  p_description text default '',
+  p_metadata jsonb default '{}'::jsonb
+)
+returns jsonb
+language sql
+security invoker
+set search_path = ''
+as $$
+  select sd_core_private.apply_wallet_event_impl(
+    p_device_id,
+    p_event_id,
+    p_event_type,
+    p_amount,
+    p_target_account_number,
+    p_source_app,
+    p_description,
+    p_metadata
+  )
+$$;
+
 revoke execute on function public.sd_core_register_device(text, text, text) from public, anon;
 revoke execute on function public.sd_core_get_snapshot(uuid) from public, anon;
 revoke execute on function public.sd_core_apply_wallet_event(uuid, uuid, text, bigint, text, text, text, jsonb) from public, anon;
@@ -633,10 +676,13 @@ grant execute on function public.sd_core_register_device(text, text, text) to au
 grant execute on function public.sd_core_get_snapshot(uuid) to authenticated;
 grant execute on function public.sd_core_apply_wallet_event(uuid, uuid, text, bigint, text, text, text, jsonb) to authenticated;
 
+comment on schema sd_core_private is
+  'Non-exposed privileged SD Core implementation schema. Keep it out of Supabase Data API exposed schemas.';
+
 comment on table public.sd_core_wallet_events is
   'SD Core v1 idempotency/event journal. Clients cannot insert/update/delete directly.';
 
 comment on function public.sd_core_apply_wallet_event(uuid, uuid, text, bigint, text, text, text, jsonb) is
-  'Meaning-based wallet mutation API. Amount is always positive; server decides balance direction.';
+  'Meaning-based wallet API. Amount is positive; server-private implementation decides balance direction.';
 
 commit;
