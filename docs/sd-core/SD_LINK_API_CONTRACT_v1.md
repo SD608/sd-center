@@ -1,43 +1,43 @@
 # SD Link ↔ SD Core API Contract v1
 
-Status: feature branch contract. This document defines the new SD Core API surface only. It does **not** delete, rename, or change the legacy SD Link RPCs such as `push_sd_link_transaction`, `register_sd_link_device`, `get_sd_link_snapshot`, or `pull_sd_link_transactions`.
+Status: feature-branch contract for `feature/sd-core`.
 
-## 1. Scope
+This contract adds SD Core APIs without deleting, renaming, or changing the meaning of legacy SD Link RPCs such as `push_sd_link_transaction`, `register_sd_link_device`, `get_sd_link_snapshot`, and `pull_sd_link_transactions`.
 
-SD Core v1 is the central, always-online source of truth for account-bound wallet state and transaction ledger state. PC-local data may be used as an input source by SD Link, but the client must never overwrite the server's final wallet balance directly.
+## 1. Trust and state model
 
-The v1 sequence is:
+SD Core is the central online source of truth for account-bound wallet and ledger data.
 
-1. Supabase Auth login obtains a user access token.
-2. The device is registered or resolved with `sd_core_register_device`.
-3. Wallet writes use semantic requests through `sd_core_apply_wallet_event`.
-4. Current server truth is read through `sd_core_get_snapshot`.
-5. Future Core modules may reuse the same account/device/event identity model for inventory, achievements, and seasons.
+- Supabase Auth JWT identifies the account.
+- `device_id` binds a Core request to a registered device owned by that account.
+- Wallet mutations use semantic event types, not signed client deltas.
+- `event_id` is the global idempotency key for a logical wallet mutation.
+- Clients never write the final wallet balance or transaction rows directly.
+- Server state remains readable when the original PC/local database is unavailable.
+
+Future inventory, achievements, and seasons should reuse the same account/device/event model rather than creating direct cross-extension DB access.
 
 ## 2. Authentication
 
-All SD Core v1 RPCs require an authenticated Supabase user session.
+All v1 APIs require a signed-in Supabase user session.
 
-Required HTTP headers when calling the Supabase Data API directly:
+When using the Supabase Data API directly:
 
 ```http
-Authorization: Bearer <supabase_user_access_token>
-apikey: <supabase_publishable_or_legacy_anon_key>
+Authorization: Bearer <user_access_token>
+apikey: <publishable_or_legacy_anon_key>
 Content-Type: application/json
 ```
 
 Rules:
 
-- Never ship a `service_role`/secret key inside SD Link, the desktop app, website JavaScript, or mobile clients.
-- The JWT establishes the account identity. The server uses `auth.uid()` and never accepts a caller-supplied `user_id` for wallet mutation.
-- `device_id` is a server-issued/bound device identity, not a replacement for the JWT.
-- Every wallet mutation verifies that `device_id` belongs to the authenticated user and is active/not revoked.
+- Never ship `service_role` or another secret server key in SD Link, website JavaScript, desktop, or mobile clients.
+- The server derives `user_id` from `auth.uid()`; mutation requests do not accept a caller-supplied `user_id`.
+- A valid JWT alone is not enough for wallet mutation: the supplied `device_id` must also belong to the user and be active/not revoked.
 
-## 3. Device registration
+## 3. Register device
 
-RPC: `sd_core_register_device`
-
-Data API path:
+RPC:
 
 ```text
 POST /rest/v1/rpc/sd_core_register_device
@@ -47,19 +47,15 @@ Request:
 
 ```json
 {
-  "p_device_key": "<64 lowercase hex SHA-256 device key>",
+  "p_device_key": "<64 lowercase hex device key>",
   "p_device_name": "My Windows PC",
   "p_platform": "windows"
 }
 ```
 
-Allowed `p_platform` values:
+Allowed platforms: `windows`, `android`, `web`.
 
-- `windows`
-- `android`
-- `web`
-
-Response example:
+Response:
 
 ```json
 {
@@ -73,18 +69,11 @@ Response example:
 }
 ```
 
-Client requirements:
+SD Link should persist the returned `device_id` for that account/device binding. A revoked device is not silently reactivated.
 
-- Persist the returned `device_id` with the account/device binding.
-- `p_device_key` stays compatible with the current 64-hex SD Link device-key shape.
-- Re-registering an existing active device may refresh its name/platform/last-seen time.
-- A revoked device key is not silently reactivated. Generate/re-link with a new device identity instead.
+## 4. Get current server snapshot
 
-## 4. Server snapshot
-
-RPC: `sd_core_get_snapshot`
-
-Data API path:
+RPC:
 
 ```text
 POST /rest/v1/rpc/sd_core_get_snapshot
@@ -98,7 +87,7 @@ Request:
 }
 ```
 
-Response example:
+Response:
 
 ```json
 {
@@ -112,19 +101,17 @@ Response example:
 }
 ```
 
-`balance` from this RPC is the current server truth. SD Link must not replace it with a locally calculated final balance after the call.
+`balance` is authoritative server state. SD Link must not overwrite it afterward with a locally calculated final balance.
 
-## 5. Wallet event mutation
+## 5. Apply wallet event
 
-RPC: `sd_core_apply_wallet_event`
-
-Data API path:
+RPC:
 
 ```text
 POST /rest/v1/rpc/sd_core_apply_wallet_event
 ```
 
-Request shape:
+Request:
 
 ```json
 {
@@ -141,81 +128,19 @@ Request shape:
 }
 ```
 
-### 5.1 Required semantic rule
+### Transaction types and sign rule
 
-`p_amount` is **always a positive integer**.
+`p_amount` is always a positive integer. The client never sends a negative amount to describe direction.
 
-The client must never encode direction by sending a negative amount. The server owns direction:
-
-| `p_event_type` | Client amount | Server effect |
+| `p_event_type` | Required amount | Server effect |
 |---|---:|---:|
-| `reward` | positive | `+amount` |
-| `spend` | positive | `-amount` |
+| `reward` | positive | wallet `+amount` |
+| `spend` | positive | wallet `-amount` |
 | `transfer` | positive | sender `-amount`, receiver `+amount` |
 
-Negative, zero, null, or over-limit amounts are rejected.
+For `transfer`, `p_target_account_number` is required. For `reward` and `spend`, it must be null/empty. Self-transfer is rejected.
 
-### 5.2 `reward`
-
-Request:
-
-```json
-{
-  "p_device_id": "<device uuid>",
-  "p_event_id": "<new uuid>",
-  "p_event_type": "reward",
-  "p_amount": 100000,
-  "p_target_account_number": null,
-  "p_source_app": "sd_link",
-  "p_description": "Reward",
-  "p_metadata": {}
-}
-```
-
-### 5.3 `spend`
-
-Request:
-
-```json
-{
-  "p_device_id": "<device uuid>",
-  "p_event_id": "<new uuid>",
-  "p_event_type": "spend",
-  "p_amount": 200000,
-  "p_target_account_number": null,
-  "p_source_app": "sd_link",
-  "p_description": "Purchase",
-  "p_metadata": {}
-}
-```
-
-### 5.4 `transfer`
-
-Request:
-
-```json
-{
-  "p_device_id": "<device uuid>",
-  "p_event_id": "<new uuid>",
-  "p_event_type": "transfer",
-  "p_amount": 50000,
-  "p_target_account_number": "608-2026-0002",
-  "p_source_app": "sd_link",
-  "p_description": "Transfer",
-  "p_metadata": {}
-}
-```
-
-Rules:
-
-- `p_target_account_number` is required only for `transfer`.
-- Self-transfer is rejected.
-- Both wallet balance updates and both ledger entries are in one database transaction.
-- Wallets are locked in deterministic order to reduce transfer deadlock risk.
-
-## 6. Mutation response
-
-First successful application example:
+### First application response
 
 ```json
 {
@@ -233,38 +158,21 @@ First successful application example:
 }
 ```
 
-Meaning of balance fields:
+For transfer, `counterparty_transaction_id` identifies the receiver-side ledger row.
 
-- `balance_before`: balance immediately before this event was first applied.
-- `balance_after`: balance immediately after this event was first applied.
-- `current_balance`: current server balance at response time.
+## 6. `event_id` / duplicate request rules
 
-For a first-time request, `balance_after` and `current_balance` are normally equal.
+`p_event_id` is the idempotency key for one logical wallet event.
 
-## 7. `event_id` and idempotency
+1. Generate one UUID for the logical event.
+2. If HTTP timeout/network loss/app restart leaves the outcome unknown, retry with the **same** `event_id`.
+3. Do not create a new `event_id` merely because an HTTP call is retried.
+4. Exact replay is returned as `duplicate: true` and is not applied again.
+5. Reusing the same `event_id` with a changed semantic payload returns `IDEMPOTENCY_CONFLICT`.
 
-`p_event_id` is the idempotency key for the logical wallet event.
+Conflict comparison includes authenticated user, `device_id`, event type, amount, resolved transfer target, source app, description, and metadata.
 
-Rules:
-
-1. Generate one UUID per logical event.
-2. Keep the same `event_id` when retrying because of timeout, app restart, network loss, or unknown response status.
-3. Do not generate a new `event_id` just because the same HTTP request is being retried.
-4. A matching replay is not applied again.
-5. A reused `event_id` with changed semantic payload is rejected as an idempotency conflict.
-
-Payload fields participating in conflict detection include:
-
-- authenticated user
-- `device_id`
-- event type
-- amount
-- resolved transfer target
-- source app
-- description
-- metadata
-
-Exact replay response example after other transactions have already occurred:
+Exact replay after later transactions can return:
 
 ```json
 {
@@ -279,133 +187,162 @@ Exact replay response example after other transactions have already occurred:
 }
 ```
 
-This means the original event was applied once at 1,000,000 → 1,100,000, but the wallet is now 900,000 after later events. SD Link must use `current_balance` or call `sd_core_get_snapshot` before updating its displayed authoritative balance.
+`balance_before` / `balance_after` describe the original event application. `current_balance` is the server balance at replay response time. SD Link should use `current_balance`, or call `sd_core_get_snapshot`, for current displayed authority.
 
-## 8. Atomicity and ledger guarantees
+## 7. Read transaction ledger
 
-`sd_core_apply_wallet_event` is a single PostgreSQL transaction.
+RPC:
 
-For `reward`/`spend`:
+```text
+POST /rest/v1/rpc/sd_core_list_transactions
+```
 
-- wallet row lock
-- balance validation/calculation
-- wallet balance update
-- transaction ledger insert
-- event journal completion
+Request:
+
+```json
+{
+  "p_device_id": "6e7464b2-1f2d-4e1e-8bd3-c31abf70b96a",
+  "p_after_seq": 14800,
+  "p_limit": 100
+}
+```
+
+Rules:
+
+- `device_id` must belong to the authenticated account and be active/not revoked.
+- `p_after_seq` is exclusive. Send `0` for the first page.
+- Results are ascending by `sync_seq`.
+- `p_limit` is clamped to `1..200` by the server.
+- RLS remains in effect: a sender and receiver each see only their own ledger rows.
+
+Response is an array of rows:
+
+```json
+[
+  {
+    "sync_seq": 14801,
+    "transaction_id": "65f8bb4c-0d8e-434e-9d74-69c11c72dd94",
+    "transaction_type": "sd_core_reward",
+    "description": "Delivery reward",
+    "amount": 100000,
+    "balance_before": 1000000,
+    "balance_after": 1100000,
+    "platform": "windows",
+    "metadata": {
+      "sd_core_event_id": "4a9d913f-9cb0-43f3-8630-14b1425894c8"
+    },
+    "created_at": "2026-08-20T00:00:00+00:00"
+  }
+]
+```
+
+This is the new Core ledger API. Legacy `pull_sd_link_transactions` remains available for old clients and is not changed by v1.
+
+## 8. Atomicity
+
+`sd_core_apply_wallet_event` executes in one PostgreSQL transaction.
+
+For `reward` / `spend`:
+
+- lock wallet
+- validate/calculates server delta
+- update balance
+- insert transaction ledger row
+- mark `event_id` completed
 
 For `transfer`:
 
-- both wallets are locked
-- sender/receiver balances are validated/calculated
-- both balances are updated
-- two ledger rows are inserted
-- one event journal row links the pair
+- lock both wallets in deterministic order
+- validate balances
+- update sender and receiver
+- insert sender and receiver ledger rows
+- link both rows from the single event journal entry
 
-If any step fails, the whole RPC transaction is rolled back. A wallet balance change cannot commit without its corresponding ledger/event journal records.
+Any error rolls the whole call back. A failed event must not leave a committed balance-only change, ledger-only change, or half-transfer.
 
-## 9. Direct DB writes are forbidden
+## 9. Direct DB write prohibition
 
-Authenticated/anonymous clients must not receive INSERT/UPDATE/DELETE access to:
+Clients must not receive direct INSERT/UPDATE/DELETE access to:
 
 - `public.wallets`
 - `public.transactions`
 - `public.sd_core_wallet_events`
 
-Clients may read their own rows according to RLS, but wallet mutations must go through Core RPCs.
-
-Do not implement any SD Link code that does:
+Do not implement SD Link code equivalent to:
 
 ```text
-UPDATE wallets SET balance = <locally calculated balance>
+UPDATE wallets SET balance = <local_final_balance>
 ```
 
-or equivalent upsert/overwrite behavior.
+Wallet mutations must go through the Core event API.
 
-## 10. RLS and privileged execution boundary
+## 10. RLS and privileged boundary
 
-`sd_core_wallet_events` has RLS enabled.
+`public.sd_core_wallet_events` has RLS enabled and users may select only their own event rows.
 
-Authenticated users may select only rows where:
-
-```text
-auth.uid() = user_id
-```
-
-The public `sd_core_*` RPC functions are `SECURITY INVOKER`. They do not own privileged table-write rights themselves.
-
-Privileged wallet/device mutations are implemented in the non-exposed `sd_core_private` schema using `SECURITY DEFINER` functions. The migration must keep `sd_core_private` out of Supabase Data API exposed schemas.
-
-Security rules for the private implementation:
+The public `sd_core_*` endpoints are `SECURITY INVOKER` APIs. Privileged wallet/device mutation implementation lives in the non-exposed `sd_core_private` schema using `SECURITY DEFINER` functions with:
 
 - empty `search_path`
-- explicit schema-qualified application table references
-- `auth.uid()` validation inside the privileged implementation
-- authenticated account status validation
-- `device_id` ownership, active-state, and revocation validation
-- `PUBLIC` and `anon` execution revoked
-- only the authenticated role required by the public invoker wrappers receives execute permission
+- schema-qualified table access
+- internal `auth.uid()` checks
+- account/device state checks
+- `PUBLIC` and `anon` execute revoked
 
-This split is intentional: Data API clients see the stable public RPC contract, while privileged write logic stays outside the exposed `public` schema.
+`sd_core_private` must **not** be added to Supabase Data API exposed schemas. The public API is the supported client surface.
 
 ## 11. Error codes
 
-Supabase/PostgREST returns PostgreSQL SQLSTATE in the response `code` field for Core-defined errors.
+Supabase/PostgREST exposes Core-defined PostgreSQL SQLSTATE values in the error `code` field.
 
 | SQLSTATE | Message | Meaning |
 |---|---|---|
 | `P1001` | `AUTH_REQUIRED` | no authenticated user |
-| `P1002` | `ACCOUNT_INACTIVE` | account is not active |
-| `P1003` | `DEVICE_NOT_FOUND` | device_id not owned/found |
-| `P1004` | `DEVICE_INACTIVE` | device link is paused/inactive |
-| `P1006` | `DEVICE_REVOKED` | device was revoked |
+| `P1002` | `ACCOUNT_INACTIVE` | account inactive |
+| `P1003` | `DEVICE_NOT_FOUND` | device missing or owned by another user |
+| `P1004` | `DEVICE_INACTIVE` | device paused/inactive |
+| `P1006` | `DEVICE_REVOKED` | revoked device |
 | `P1007` | `EVENT_ID_REQUIRED` | missing event id |
 | `P1010` | `INVALID_EVENT_TYPE` | not reward/spend/transfer |
 | `P1011` | `INVALID_AMOUNT` | amount must be positive and within limit |
-| `P1012` | `INVALID_TARGET` / `TARGET_NOT_ALLOWED` | transfer target rules violated |
+| `P1012` | `INVALID_TARGET` / `TARGET_NOT_ALLOWED` | target rule violation |
 | `P1013` | `INSUFFICIENT_FUNDS` | spend/transfer would go below zero |
-| `P1014` | `BALANCE_LIMIT_EXCEEDED` | resulting balance exceeds server limit |
-| `P1015` | `IDEMPOTENCY_CONFLICT` | same event_id reused with different payload |
-| `P1016` | `WALLET_NOT_FOUND` | authenticated account has no wallet |
-| `P1017` | `TARGET_NOT_FOUND` | transfer target account does not exist |
-| `P1018` | `SELF_TRANSFER_NOT_ALLOWED` | sender and recipient are the same user |
-| `P1019` | `INVALID_DEVICE_KEY` | device key is not 64 lowercase hex after normalization |
-| `P1020` | `INVALID_DEVICE_NAME` | device name too short |
-| `P1021` | `INVALID_PLATFORM` | platform unsupported |
-| `P1022` | `INVALID_SOURCE_APP` | source app missing/too long |
-| `P1023` | `METADATA_TOO_LARGE` | metadata exceeds 16 KiB |
-| `P1024` | `TARGET_ACCOUNT_INACTIVE` | target account is inactive |
-| `P1025` | `EVENT_NOT_COMPLETED` | existing event is not in completed state |
-| `P1026` | `INVALID_METADATA` | metadata must be a JSON object |
+| `P1014` | `BALANCE_LIMIT_EXCEEDED` | resulting balance over server limit |
+| `P1015` | `IDEMPOTENCY_CONFLICT` | same event id, different payload |
+| `P1016` | `WALLET_NOT_FOUND` | account has no wallet |
+| `P1017` | `TARGET_NOT_FOUND` | transfer target does not exist |
+| `P1018` | `SELF_TRANSFER_NOT_ALLOWED` | sender equals receiver |
+| `P1019` | `INVALID_DEVICE_KEY` | invalid 64-hex device key |
+| `P1020` | `INVALID_DEVICE_NAME` | invalid device name |
+| `P1021` | `INVALID_PLATFORM` | unsupported platform |
+| `P1022` | `INVALID_SOURCE_APP` | invalid source app |
+| `P1023` | `METADATA_TOO_LARGE` | metadata over 16 KiB |
+| `P1024` | `TARGET_ACCOUNT_INACTIVE` | transfer target inactive |
+| `P1025` | `EVENT_NOT_COMPLETED` | existing event not completed |
+| `P1026` | `INVALID_METADATA` | metadata is not a JSON object |
 
-Standard PostgreSQL/Data API errors may also occur before the function body runs, for example `22P02` when a UUID argument is malformed.
+Malformed typed arguments can also fail before the function body, e.g. PostgreSQL `22P02` for an invalid UUID string.
 
-Client retry guidance:
+### Retry policy
 
-- Retry network errors/timeouts with the **same** `event_id`.
-- Treat `P1015` as a client logic/data-integrity error; do not auto-generate a replacement ID and retry silently.
-- Treat `P1013` and validation codes as final unless user/game state changes.
-- After an unknown outcome, retry with the same `event_id`, then use `current_balance`/snapshot.
+- Network error / timeout / unknown response: retry the same request with the same `event_id`.
+- `P1015`: client data-integrity bug; do not silently generate a new ID and retry.
+- `P1013` and validation errors: do not retry until relevant user/game state changes.
+- After any uncertain outcome, exact replay plus `current_balance`, or a fresh snapshot, resolves server truth.
 
-## 12. Legacy SD Link compatibility
+## 12. Legacy compatibility
 
-The following compatibility rule is mandatory during migration:
+Mandatory migration rules:
 
-- Do not remove or rename current legacy RPCs.
-- Do not silently change legacy parameter meaning from signed amount to semantic positive amount.
-- New SD Link code must opt into `sd_core_*` APIs explicitly.
-- Old SD Link clients may continue using the legacy protocol until a separate client migration is approved.
+- Do not remove or rename existing SD Link RPCs.
+- Do not change legacy signed-amount parameter meaning in place.
+- New SD Link code opts into `sd_core_*` APIs explicitly.
+- Old clients may continue using the old protocol until a separate client migration is approved.
 
-Known legacy mismatch:
+Known legacy mismatch: `push_sd_link_transaction` currently uses `deposit`/`withdraw` plus a signed amount. SD Core v1 intentionally uses semantic `reward`/`spend`/`transfer` with positive amounts. The SD Link integration side must translate its local intent when it explicitly adopts Core v1.
 
-- Legacy `push_sd_link_transaction` currently accepts `deposit`/`withdraw` plus a signed amount.
-- SD Core v1 intentionally does **not** copy that behavior.
-- The SD Link integration branch should translate local intent into `reward`/`spend`/`transfer` with positive `p_amount` and a stable `event_id`.
+## 13. Required regression gate
 
-No legacy protocol change is authorized by this document alone.
-
-## 13. Required regression scenario
-
-The integration is not considered verified unless this exact sequence passes:
+The integration is not verified until this exact sequence passes:
 
 ```text
 start balance                 1,000,000
@@ -416,15 +353,15 @@ re-login / re-sync              900,000
 PC unavailable; server read     900,000
 ```
 
-The repository test `tests/sd-core/wallet_regression.sql` encodes this scenario and also checks event conflict handling and direct balance-write denial.
+Repository tests additionally verify transfer atomicity, sender/receiver RLS isolation, failed-transfer rollback, direct wallet/event-write denial, function privilege boundaries, and ledger pagination/device ownership.
 
-## 14. Future extension points
+## 14. Future Core modules
 
-The v1 identity/idempotency model is intended to be reused, not duplicated, when Core expands to:
+The following are extension points, not part of wallet v1 implementation yet:
 
-- common inventory and item IDs
-- achievement event ingestion/progress
-- seasons and season rewards
+- common inventory / item IDs
+- achievement event ingestion and progress
+- seasons / season rewards
 - shared expansion state
 
-Future modules should prefer semantic commands/events and server-owned state transitions rather than accepting final client-calculated state blobs where authoritative server calculation is practical.
+They should reuse Core account/device/event identity and avoid extensions directly reading each other's local databases or installation folders.
