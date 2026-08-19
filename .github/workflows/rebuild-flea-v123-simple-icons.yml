@@ -1,0 +1,213 @@
+name: Build Flea Market v1.2.3 Simple Icons
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  build:
+    if: github.event_name != 'issues' || github.event.issue.title == '[build] flea v1.2.3 simple icons'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Report start
+        if: github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 빌드를 시작했습니다. Run ID: $RUN_ID"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Prepare v1.2.3 artwork
+        shell: bash
+        run: |
+          cp tools/flea-v120-items-manifest.txt /tmp/flea-old-manifest.txt
+          cp tools/flea-v120-items-sprite.webp.b64 /tmp/flea-old-sprite.b64
+          cp tools/flea-v123-simple-manifest.txt tools/flea-v120-items-manifest.txt
+          base64 -w0 tools/flea-v123-simple-sprite.webp > tools/flea-v120-items-sprite.webp.b64
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          raw = base64.b64decode(Path('tools/flea-v120-items-sprite.webp.b64').read_text())
+          if raw[:4] != b'RIFF' or raw[8:12] != b'WEBP':
+              raise SystemExit('v1.2.3 sprite is not WEBP')
+          print('simple sprite bytes:', len(raw))
+          PY
+
+      - name: Build refreshed base package
+        shell: bash
+        run: |
+          cat tools/build-flea-v120.part0.py tools/build-flea-v120.part1.py tools/build-flea-v120.part2.py > /tmp/build-flea-v120.py
+          python /tmp/build-flea-v120.py
+
+      - name: Promote to v1.2.3
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, json, tempfile, zipfile
+
+          src = Path('downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip')
+          out = Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip')
+          sha = Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.sha256')
+
+          with tempfile.TemporaryDirectory() as td:
+              root = Path(td)
+              with zipfile.ZipFile(src) as z:
+                  z.extractall(root)
+              pkg = root / 'sd-flea-market'
+              if not pkg.is_dir():
+                  raise RuntimeError('sd-flea-market package root missing')
+
+              package_json = pkg / 'package.json'
+              data = json.loads(package_json.read_text(encoding='utf-8'))
+              data['version'] = '1.2.3'
+              package_json.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+              app_json = pkg / 'sd-app.json'
+              data = json.loads(app_json.read_text(encoding='utf-8'))
+              data['version'] = '1.2.3'
+              data['displayVersion'] = 'PC Expansion · v1.2.3'
+              app_json.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+              (pkg / 'RELEASE_NOTES.txt').write_text(
+                  'SD 플리마켓 v1.2.3\n\n'
+                  '- 아이템 사전과 물건 보관함의 36종 이미지를 단순 채색 아이콘으로 교체\n'
+                  '- 사진처럼 현실적인 질감을 줄이고 기본 색상과 윤곽 중심으로 정리\n'
+                  '- 새 6x6 배열 기준으로 아이템 이름과 아이콘을 1:1 고정\n'
+                  '- 기존 보관함, 획득 기록, 가격 및 게임 진행도 유지\n',
+                  encoding='utf-8'
+              )
+
+              if out.exists():
+                  out.unlink()
+              with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+                  for path in sorted(pkg.rglob('*')):
+                      if path.is_file():
+                          z.write(path, Path('sd-flea-market') / path.relative_to(pkg))
+
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          sha.write_text(f'{digest}  {out.name}\n', encoding='utf-8')
+          print(out, out.stat().st_size, digest)
+          PY
+
+      - name: Update extension catalogs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          p = Path('update/extensions-catalog.json')
+          data = json.loads(p.read_text(encoding='utf-8'))
+          data['catalogVersion'] = max(int(data.get('catalogVersion', 0)) + 1, 39)
+          data['updatedAt'] = '2026-08-19T09:36:00+09:00'
+          app = data['apps']['sd-flea-market']
+          app['version'] = '1.2.3'
+          app['downloadUrl'] = 'https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip?v=123'
+          app['notes'] = '아이템 사전과 물건 보관함의 실제 36종 아이콘을 단순 채색 스타일로 교체했습니다. 새 6x6 배열을 기준으로 이름과 아이콘을 1:1로 고정했으며 기존 획득 기록과 보관함 데이터는 유지됩니다.'
+          p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          for filename in ['extensions-data.js', 'assets/js/extensions-data.js']:
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              pattern = r'(\{\s*"id":\s*"sd-flea-market",.*?\n\s*\})'
+              m = re.search(pattern, text, re.S)
+              if not m:
+                  raise RuntimeError(f'flea entry missing in {filename}')
+              block = m.group(1)
+              block = re.sub(r'"version":\s*"v1\.2\.\d+"', '"version": "v1.2.3"', block)
+              block = re.sub(r'"fileName":\s*"SDFleaMarket_v1\.2\.\d+_Desktop\.zip"', '"fileName": "SDFleaMarket_v1.2.3_Desktop.zip"', block)
+              block = re.sub(r'"downloadUrl":\s*"downloads/extensions/SDFleaMarket_v1\.2\.\d+_Desktop\.zip\?v=\d+"', '"downloadUrl": "downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip?v=123"', block)
+              block = re.sub(r'"description":\s*"[^"]*"', '"description": "실제 플리마켓 36종 아이템 이미지를 단순 채색 아이콘으로 교체하고 아이템 사전과 물건 보관함에 동일하게 적용한 버전입니다. 이름과 아이콘을 새 6x6 배열 기준으로 1:1 고정했으며 기존 획득 기록과 보관함 데이터는 유지됩니다."', block)
+              text = text[:m.start()] + block + text[m.end():]
+              path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate v1.2.3 package
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, zipfile
+          from pathlib import Path
+
+          path = Path('downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip')
+          with zipfile.ZipFile(path) as z:
+              names = [n for n in z.namelist() if n.startswith('sd-flea-market/public/assets/items/') and n.endswith('.png')]
+              if len(names) != 36:
+                  raise SystemExit(f'expected 36 item images, got {len(names)}')
+              package = json.loads(z.read('sd-flea-market/package.json'))
+              app = json.loads(z.read('sd-flea-market/sd-app.json'))
+              if package.get('version') != '1.2.3' or app.get('version') != '1.2.3':
+                  raise SystemExit(f'bad embedded versions: {package.get("version")} / {app.get("version")}')
+              appjs = z.read('sd-flea-market/public/app.js').decode('utf-8')
+              for token in ['dictionary-product-image', 'inventory-item-image', 'itemImageHtml']:
+                  if token not in appjs:
+                      raise SystemExit(f'missing {token}')
+
+          catalog = json.loads(Path('update/extensions-catalog.json').read_text(encoding='utf-8'))
+          flea = catalog['apps']['sd-flea-market']
+          if flea.get('version') != '1.2.3' or 'v1.2.3_Desktop.zip' not in flea.get('downloadUrl',''):
+              raise SystemExit('catalog did not move to v1.2.3')
+          print('v1.2.3 validation OK')
+          PY
+
+      - name: Restore build inputs
+        if: always()
+        shell: bash
+        run: |
+          cp /tmp/flea-old-manifest.txt tools/flea-v120-items-manifest.txt
+          cp /tmp/flea-old-sprite.b64 tools/flea-v120-items-sprite.webp.b64
+          git checkout -- downloads/extensions/SDFleaMarket_v1.2.0_Desktop.zip downloads/extensions/SDFleaMarket_v1.2.0_Desktop.sha256 || true
+
+      - name: Commit v1.2.3 release
+        shell: bash
+        run: |
+          git config user.name 'SD Build Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add \
+            downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip \
+            downloads/extensions/SDFleaMarket_v1.2.3_Desktop.sha256 \
+            update/extensions-catalog.json \
+            extensions-data.js \
+            assets/js/extensions-data.js
+          if git diff --cached --quiet; then
+            echo 'No release changes to commit.'
+          else
+            git commit -m 'Release flea market v1.2.3 simple icons'
+            git push origin main
+          fi
+
+      - name: Report success
+        if: success() && github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 배포가 완료되었습니다. Run ID: $RUN_ID"
+
+      - name: Report failure
+        if: failure() && github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "플리마켓 v1.2.3 단순 채색 아이콘 배포가 실패했습니다. Run ID: $RUN_ID"
