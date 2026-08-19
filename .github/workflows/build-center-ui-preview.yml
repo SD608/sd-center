@@ -64,7 +64,7 @@ jobs:
           $assetB64=(Get-Content 'tools/center-ui-preview-assets-v04.b64' -Raw).Trim()
           [IO.File]::WriteAllBytes($assetZip, [Convert]::FromBase64String($assetB64))
           $assetHash=(Get-FileHash $assetZip -Algorithm SHA256).Hash.ToLower()
-          if($assetHash -ne '1b250228b0112b8722eec3eb4cf89dbe138c20d5e7060e7995812e2d73db6b72'){ throw "v0.4 asset hash mismatch: $assetHash" }
+          if($assetHash -ne '1b77322d4c63059a93b690b18c84db41b7f7e3b5803694236a18b6c758d99346'){ throw "v0.4 asset hash mismatch: $assetHash" }
           Expand-Archive -Path $assetZip -DestinationPath $assets -Force
           Copy-Item (Join-Path $assets 'index.html') (Join-Path $root 'public\index.html') -Force
           Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
