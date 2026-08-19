@@ -95,7 +95,8 @@ jobs:
           $html=Get-Content "$env:APP_ROOT\public\index.html" -Raw
           foreach($marker in @('centerAppOperationLocks','withCenterAppOperation','withCenterBulkAppOperation')){ if(-not $main.Contains($marker)){ throw "v0.11 regression marker missing: $marker" } }
           foreach($marker in @('anyAppOperation','state.updatingAll || state.addingApp')){ if(-not $app.Contains($marker)){ throw "v0.11 renderer regression marker missing: $marker" } }
-          foreach($marker in @('const PREVIEW_THEME_KEY','renderPreviewThemeStore','applyPreviewTheme','renderPreviewThemeHomeDeck','GARAGE CONTROL','VAULT 01 // SECURED','UI Preview v0.14')){ if(-not $js.Contains($marker) -and -not $html.Contains($marker)){ throw "v0.14 marker missing: $marker" } }
+          foreach($marker in @('const PREVIEW_THEME_KEY','renderPreviewThemeStore','applyPreviewTheme','renderPreviewThemeHomeDeck','GARAGE CONTROL','VAULT 01 // SECURED')){ if(-not $js.Contains($marker)){ throw "v0.14 JS marker missing: $marker" } }
+          if(-not $html.Contains('UI Preview v0.14')){ throw 'v0.14 HTML marker missing' }
           if($js.Contains("function renderPreviewHomeOverview() {`n  renderPreviewThemeHomeDeck();")){ throw 'v0.14 early theme call regression' }
           $decl=$js.IndexOf('const PREVIEW_THEME_KEY')
           if($decl -lt 0){ throw 'v0.14 theme declaration missing' }
