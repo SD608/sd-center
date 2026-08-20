@@ -2,7 +2,7 @@ name: Test SDCenter v0.24 Integrated SD Core Bridge
 
 on:
   push:
-    branches: [release/sd-center-core-v1]
+    branches: [release/sd-center-core-v1, hardening/core-runtime-errors-20260820]
     paths:
       - 'preview/v024-core/**'
       - 'tools/patch-center-ui-v024-core.js'
@@ -33,6 +33,7 @@ jobs:
           $ErrorActionPreference='Stop'
           node --check 'preview/v024-core/sdlink-core-runtime.js'
           node --check 'preview/v024-core/test-sdlink-core-runtime-v024.js'
+          node --check 'preview/v024-core/test-sdlink-core-errors-v024.js'
           node --check 'tools/patch-center-ui-v024-core.js'
 
       - name: Run integrated Core bridge regression
@@ -40,6 +41,7 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           node 'preview/v024-core/test-sdlink-core-runtime-v024.js'
+          node 'preview/v024-core/test-sdlink-core-errors-v024.js'
 
       - name: Guard transition contract
         shell: pwsh
@@ -54,7 +56,9 @@ jobs:
             'push_sd_link_transaction',
             'pull_sd_link_transactions',
             'stableCoreEventId',
-            '온라인 가상잔액이 부족합니다.'
+            '온라인 가상잔액이 부족합니다.',
+            'REWARD_CAPABILITY_REQUIRED',
+            'SD Core 서버 기능을 준비 중입니다.'
           )){
             if(-not $joined.Contains($required)){ throw "Core bridge marker missing: $required" }
           }
