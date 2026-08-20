@@ -308,7 +308,7 @@ function normalizeV011Target(root) {
   ui = replaceRequired(
     ui,
     'previewContextAppId=app.id;menu.classList.remove("hidden");',
-    'previewContextAppId = app.id;\n  menu.classList.remove("hidden");',
+    '  previewContextAppId = app.id;\n  menu.classList.remove("hidden");',
     "compact context open state",
   );
   ui = replaceRequired(
@@ -348,7 +348,11 @@ if (base === "patch-center-ui-v010.js") {
   source = source.replace(bad, repaired);
 }
 
-if (base === "patch-center-ui-v011.js") normalizeV011Target(appRoot);
+if (base === "patch-center-ui-v011.js") {
+  normalizeV011Target(appRoot);
+  source = source.replace('throw new Error(`Patch marker missing: ${label}`);', 'throw new Error("Patch marker missing: " + label);');
+  source = source.replace('throw new Error(`Missing v0.11 marker in ${rel}: ${marker}`);', 'throw new Error("Missing v0.11 marker in " + rel + ": " + marker);');
+}
 source = literalizeAllTemplates(source);
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "sd-center-legacy-patch-"));
