@@ -20,13 +20,21 @@ function replaceOnce(source, needle, replacement, label) {
 const repoRoot = path.resolve(__dirname, "..");
 const helperSource = path.join(repoRoot, "preview", "v024-core", "sdlink-core-runtime.js");
 const testSource = path.join(repoRoot, "preview", "v024-core", "test-sdlink-core-runtime-v024.js");
-if (!fs.existsSync(helperSource) || !fs.existsSync(testSource)) throw new Error("v0.24 Core bridge assets missing");
+const publicErrorTestSource = path.join(repoRoot, "preview", "v024-core", "test-core-public-errors-v024.js");
+if (!fs.existsSync(helperSource) || !fs.existsSync(testSource) || !fs.existsSync(publicErrorTestSource)) {
+  throw new Error("v0.24 Core bridge assets missing");
+}
 fs.copyFileSync(helperSource, file("src/sdlink-core-runtime.js"));
 let testText = fs.readFileSync(testSource, "utf8").replace(
   'require("./sdlink-core-runtime")',
   'require("../src/sdlink-core-runtime")',
 );
 write("tools/test-sdlink-core-runtime-v024.js", testText);
+let publicErrorTestText = fs.readFileSync(publicErrorTestSource, "utf8").replace(
+  'require("./sdlink-core-runtime")',
+  'require("../src/sdlink-core-runtime")',
+);
+write("tools/test-core-public-errors-v024.js", publicErrorTestText);
 
 let main = read("main.js");
 if (!main.includes("patchIntegratedSdLinkCoreRuntime")) {
