@@ -7,6 +7,21 @@ on:
       - release/v024-final-gate-20260820
     paths:
       - 'preview/v024-core/**'
+      - 'tools/patch-center-ui-v09.js'
+      - 'tools/patch-center-ui-v010.js'
+      - 'tools/patch-center-ui-v011.js'
+      - 'tools/patch-center-ui-v012.js'
+      - 'tools/patch-center-ui-v013.js'
+      - 'tools/patch-center-ui-v014.js'
+      - 'tools/patch-center-ui-v015.js'
+      - 'tools/patch-center-ui-v016.js'
+      - 'tools/patch-center-ui-v017.js'
+      - 'tools/patch-center-ui-v018.js'
+      - 'tools/patch-center-ui-v019.js'
+      - 'tools/patch-center-ui-v020.js'
+      - 'tools/apply-center-ui-v021-sdlink.js'
+      - 'tools/patch-center-ui-v022-sdlink-hardening.js'
+      - 'tools/patch-center-ui-v023-sdlink-session.js'
       - 'tools/patch-center-ui-v024-core.js'
       - 'database/migrations/**'
       - 'database/ops/**'
@@ -17,6 +32,21 @@ on:
     branches: [release/sd-center-core-v1]
     paths:
       - 'preview/v024-core/**'
+      - 'tools/patch-center-ui-v09.js'
+      - 'tools/patch-center-ui-v010.js'
+      - 'tools/patch-center-ui-v011.js'
+      - 'tools/patch-center-ui-v012.js'
+      - 'tools/patch-center-ui-v013.js'
+      - 'tools/patch-center-ui-v014.js'
+      - 'tools/patch-center-ui-v015.js'
+      - 'tools/patch-center-ui-v016.js'
+      - 'tools/patch-center-ui-v017.js'
+      - 'tools/patch-center-ui-v018.js'
+      - 'tools/patch-center-ui-v019.js'
+      - 'tools/patch-center-ui-v020.js'
+      - 'tools/apply-center-ui-v021-sdlink.js'
+      - 'tools/patch-center-ui-v022-sdlink-hardening.js'
+      - 'tools/patch-center-ui-v023-sdlink-session.js'
       - 'tools/patch-center-ui-v024-core.js'
       - 'database/migrations/**'
       - 'database/ops/**'
@@ -27,62 +57,114 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build-and-smoke:
     runs-on: windows-latest
     timeout-minutes: 45
+    env:
+      BASE_ARTIFACT_ID: '9369432878'
+      BASE_ARTIFACT_SHA256: 'c1cc3ed5e6a45d2fd777c9f98dd9fa05ed43ca8d1e5190ae4486429ca2c812ed'
+      BASE_BUILD_COMMIT: '951031fabe8c3a24e75858b4e3d618a499ae7162'
+      USER_VERIFIED_V023_ZIP_SHA256: 'ea3a912e0e3f771788462d82af16a7129b8684d50ee12c2840d5ebd5090087cb'
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Download verified official v2.2.7 base
+      - name: Download pinned preserved v0.8 Windows artifact
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $ErrorActionPreference='Stop'
-          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.7.exe"
-          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
-          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
-          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "base hash mismatch: $hash" }
-          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          $archive=Join-Path $env:RUNNER_TEMP 'v08-artifact.zip'
+          $headers=@{
+            Authorization="Bearer $env:GH_TOKEN"
+            Accept='application/vnd.github+json'
+            'X-GitHub-Api-Version'='2022-11-28'
+          }
+          Invoke-WebRequest -Headers $headers -Uri "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$env:BASE_ARTIFACT_ID/zip" -OutFile $archive
+          $hash=(Get-FileHash $archive -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne $env:BASE_ARTIFACT_SHA256){ throw "pinned v0.8 artifact SHA mismatch: $hash" }
+          $base=Join-Path $env:RUNNER_TEMP 'SDCenter-v08-baseline'
+          Expand-Archive -Path $archive -DestinationPath $base -Force
+          if(-not (Test-Path (Join-Path $base 'SDCenter.exe'))){ throw 'v0.8 baseline executable missing' }
+          $buildInfo=Get-Content (Join-Path $base 'BUILD_INFO.txt') -Raw
+          if(-not $buildInfo.Contains("Commit: $env:BASE_BUILD_COMMIT")){ throw 'v0.8 BUILD_INFO commit mismatch' }
+          $root=Join-Path $base 'resources\app'
+          $preview=Get-Content (Join-Path $root 'UI_PREVIEW.txt') -Raw
+          if(-not $preview.Contains('UI Remake v0.8')){ throw 'v0.8 preview marker mismatch' }
+          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.7'){ throw "v0.8 package version mismatch: $($pkg.version)" }
+          "BASE_DIR=$base" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Install verified base
+      - name: Reconstruct v0.23 from v0.8 forward only
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
-          Start-Sleep -Seconds 5
-          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          $base=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7'
-          if(-not (Test-Path (Join-Path $base 'SDCenter.exe'))){ throw 'base install missing' }
-          "BASE_APP_DIR=$base" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          $v023=Join-Path $env:RUNNER_TEMP 'SDCenter-Reconstructed-v0.23'
+          Copy-Item $env:BASE_DIR $v023 -Recurse -Force
+          $root=Join-Path $v023 'resources\app'
+          foreach($v in @('09','010','011','012','013','014','015','016','017','018','019','020')){
+            $script="tools/patch-center-ui-v$v.js"
+            if(-not (Test-Path $script)){ throw "required reconstruction patch missing: $script" }
+            node $script $root
+            if($LASTEXITCODE -ne 0){ throw "reconstruction patch failed: $script" }
+          }
+          node 'tools/apply-center-ui-v021-sdlink.js' $root
+          if($LASTEXITCODE -ne 0){ throw 'v0.21 integration failed' }
+          node 'tools/patch-center-ui-v022-sdlink-hardening.js' $root
+          if($LASTEXITCODE -ne 0){ throw 'v0.22 hardening failed' }
+          node 'tools/patch-center-ui-v023-sdlink-session.js' $root
+          if($LASTEXITCODE -ne 0){ throw 'v0.23 session patch failed' }
+          @(
+            'Reconstructed v0.23 baseline for CI diagnostics only.',
+            "Pinned source artifact id: $env:BASE_ARTIFACT_ID",
+            "Pinned source artifact SHA-256: $env:BASE_ARTIFACT_SHA256",
+            "Recorded user-verified v0.23 ZIP SHA-256: $env:USER_VERIFIED_V023_ZIP_SHA256",
+            'This reconstruction is NOT asserted byte-identical to the user-verified v0.23 ZIP.'
+          ) | Set-Content (Join-Path $v023 'V023_BASELINE_PROVENANCE.txt') -Encoding utf8
+          "V023_DIR=$v023" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "V023_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Rebuild full candidate from official base
+      - name: Validate reconstructed v0.23 before Core overlay
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-v0.24-Core-Candidate'
-          if(Test-Path $preview){ Remove-Item $preview -Recurse -Force }
-          Copy-Item $env:BASE_APP_DIR $preview -Recurse -Force
-          $root=Join-Path $preview 'resources\app'
-          $assets=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04'
-          $assetZip=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04.zip'
-          $assetB64=(Get-Content 'tools/center-ui-preview-assets-v04-good.b64' -Raw).Trim()
-          [IO.File]::WriteAllBytes($assetZip,[Convert]::FromBase64String($assetB64))
-          $assetHash=(Get-FileHash $assetZip -Algorithm SHA256).Hash.ToLower()
-          if($assetHash -ne '1b250228b0112b8722eec3eb4cf89dbe138c20d5e7060e7995812e2d73db6b72'){ throw "asset hash mismatch: $assetHash" }
-          Expand-Archive -Path $assetZip -DestinationPath $assets -Force
-          Copy-Item (Join-Path $assets 'index.html') (Join-Path $root 'public\index.html') -Force
-          Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
-          Copy-Item (Join-Path $assets 'ui-preview.js') (Join-Path $root 'public\js\ui-preview.js') -Force
-          foreach($v in @('04','05','06','07','08','09','010','011','012','013','014','015','016','017','018','019','020')){ node "tools/patch-center-ui-v$v.js" "$root" }
-          node 'tools/apply-center-ui-v021-sdlink.js' "$root"
-          node 'tools/patch-center-ui-v022-sdlink-hardening.js' "$root"
-          node 'tools/patch-center-ui-v023-sdlink-session.js' "$root"
-          node 'tools/patch-center-ui-v024-core.js' "$root"
-          "CANDIDATE_DIR=$preview" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          node "$env:V023_ROOT\tools\check-all.js"
+          node "$env:V023_ROOT\tools\test-theme-catalog-v020.js"
+          node "$env:V023_ROOT\tools\test-theme-assets-v020.js"
+          node "$env:V023_ROOT\tools\test-theme-ui-v020.js"
+          node "$env:V023_ROOT\tools\test-sdlink-integration-v021.js"
+          node "$env:V023_ROOT\tools\test-sdlink-hardening-v022.js"
+          node "$env:V023_ROOT\tools\test-sdlink-session-persistence-v023.js"
+          foreach($file in @(
+            "$env:V023_ROOT\main.js",
+            "$env:V023_ROOT\preload.js",
+            "$env:V023_ROOT\public\js\app.js",
+            "$env:V023_ROOT\public\js\ui-preview.js",
+            "$env:V023_ROOT\src\sdlink-integration.js",
+            "$env:V023_ROOT\src\sdlink-session-persistence.js",
+            "$env:V023_ROOT\src\theme-catalog.js",
+            "$env:V023_ROOT\src\theme-assets.js"
+          )){ node --check $file }
+          $pkg=Get-Content "$env:V023_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.7'){ throw "reconstructed v0.23 changed official base version: $($pkg.version)" }
+
+      - name: Apply v0.24 Core overlay
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $candidate=Join-Path $env:RUNNER_TEMP 'SDCenter-v0.24-Core-BlockedCandidate'
+          Copy-Item $env:V023_DIR $candidate -Recurse -Force
+          $root=Join-Path $candidate 'resources\app'
+          node 'tools/patch-center-ui-v024-core.js' $root
+          if($LASTEXITCODE -ne 0){ throw 'v0.24 Core overlay failed' }
+          "CANDIDATE_DIR=$candidate" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
           "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Full regression validation
@@ -138,11 +220,16 @@ jobs:
           Get-FileHash (Join-Path $env:CANDIDATE_DIR 'SDCenter.exe') -Algorithm SHA256 | Format-List
           Get-FileHash (Join-Path $env:APP_ROOT 'main.js') -Algorithm SHA256 | Format-List
           Get-FileHash (Join-Path $env:APP_ROOT 'src\sdlink-core-runtime.js') -Algorithm SHA256 | Format-List
+          Get-ChildItem $env:APP_ROOT -Recurse -File | ForEach-Object {
+            $rel=$_.FullName.Substring($env:APP_ROOT.Length).TrimStart('\') -replace '\\','/'
+            $sha=(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$sha  $rel"
+          } | Sort-Object | Set-Content (Join-Path $env:CANDIDATE_DIR 'CANDIDATE_FILE_SHA256.txt') -Encoding utf8
 
-      - name: Upload full Windows candidate
+      - name: Upload blocked Windows candidate
         uses: actions/upload-artifact@v4
         with:
-          name: SDCenter-v0.24-Core-Candidate-win-x64
+          name: SDCenter-v0.24-BlockedCandidate-v08Reconstruction-win-x64
           path: ${{ env.CANDIDATE_DIR }}
           if-no-files-found: error
           compression-level: 6
