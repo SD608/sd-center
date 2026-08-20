@@ -7,11 +7,13 @@ on:
       - hardening/achievement-authority-20260820
     paths:
       - 'sql/SD608_업적_서버권한_하드닝.sql'
+      - 'assets/js/achievement-custom-ui.js'
       - 'tests/achievement-security/**'
       - '.github/workflows/achievement-authority-hardening.yml'
   pull_request:
     paths:
       - 'sql/SD608_업적_서버권한_하드닝.sql'
+      - 'assets/js/achievement-custom-ui.js'
       - 'tests/achievement-security/**'
       - '.github/workflows/achievement-authority-hardening.yml'
 
@@ -48,3 +50,7 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f sql/SD608_업적_서버권한_하드닝.sql
       - name: Run authority and asset-preservation regression
         run: psql -v ON_ERROR_STOP=1 -f tests/achievement-security/authority_regression.sql
+      - name: Check achievement UI syntax
+        run: node --check assets/js/achievement-custom-ui.js
+      - name: Run achievement UI authority regression
+        run: node tests/achievement-security/ui_authority_regression.js
