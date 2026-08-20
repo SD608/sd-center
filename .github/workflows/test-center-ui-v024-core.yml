@@ -33,6 +33,7 @@ jobs:
           $ErrorActionPreference='Stop'
           node --check 'preview/v024-core/sdlink-core-runtime.js'
           node --check 'preview/v024-core/test-sdlink-core-runtime-v024.js'
+          node --check 'preview/v024-core/test-core-public-errors-v024.js'
           node --check 'tools/patch-center-ui-v024-core.js'
 
       - name: Run integrated Core bridge regression
@@ -40,6 +41,7 @@ jobs:
         run: |
           $ErrorActionPreference='Stop'
           node 'preview/v024-core/test-sdlink-core-runtime-v024.js'
+          node 'preview/v024-core/test-core-public-errors-v024.js'
 
       - name: Guard transition contract
         shell: pwsh
@@ -54,6 +56,9 @@ jobs:
             'push_sd_link_transaction',
             'pull_sd_link_transactions',
             'stableCoreEventId',
+            'translateCoreError',
+            'SD_CORE_UNAVAILABLE',
+            '거래는 보존되며',
             '온라인 가상잔액이 부족합니다.'
           )){
             if(-not $joined.Contains($required)){ throw "Core bridge marker missing: $required" }
