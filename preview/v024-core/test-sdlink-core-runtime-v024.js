@@ -61,9 +61,17 @@ module.exports = { SyncEngine };
     const { SyncEngine } = require(path.join(temp, "src", "sync-engine.js"));
     const calls = [];
     let failSpend = false;
+    let failUnavailable = false;
     const originalRpcFunction = async function rpc(name, body) {
       calls.push({ name, body });
-      if (name === "sd_core_register_device") return { device_id: "11111111-1111-4111-8111-111111111111" };
+      if (name === "sd_core_register_device") {
+        if (failUnavailable) {
+          const e = new Error("Could not find the function public.sd_core_register_device in the schema cache");
+          e.code = "PGRST202";
+          throw e;
+        }
+        return { device_id: "11111111-1111-4111-8111-111111111111" };
+      }
       if (name === "sd_core_apply_sd_link_event") {
         if (failSpend) {
           const error = new Error("INSUFFICIENT_FUNDS");
@@ -116,6 +124,17 @@ module.exports = { SyncEngine };
     assert.equal(list.body.p_after_seq, 70);
     assert.equal(list.body.p_device_id, "11111111-1111-4111-8111-111111111111");
     assert.equal(auth.rpc, originalRpcFunction, "auth.rpc must be restored after pull");
+
+    const freshEngine = new SyncEngine({ auth, syncState: state });
+    failUnavailable = true;
+    await assert.rejects(
+      () => freshEngine.pushLocalTransactions({ ...config, localId: "local-core-missing" }, 1100000),
+      (error) => error.code === "SD_CORE_UNAVAILABLE"
+        && /거래는 보존/.test(error.message)
+        && !/schema cache|PGRST|sd_core_register_device/i.test(error.message),
+      "raw PostgREST/schema-cache error must not escape to UI",
+    );
+    failUnavailable = false;
 
     console.log("SD Link integrated Core runtime v0.24 regression PASS");
   } finally {
