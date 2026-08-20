@@ -2,15 +2,26 @@ name: Build SDCenter v0.24 Core Candidate
 
 on:
   push:
+    branches:
+      - release/sd-center-core-v1
+      - release/v024-final-gate-20260820
+    paths:
+      - 'preview/v024-core/**'
+      - 'tools/patch-center-ui-v024-core.js'
+      - 'database/migrations/**'
+      - 'database/ops/**'
+      - 'sql/**'
+      - 'assets/js/achievement-custom-ui.js'
+      - '.github/workflows/build-center-v024-core-candidate.yml'
+  pull_request:
     branches: [release/sd-center-core-v1]
     paths:
       - 'preview/v024-core/**'
       - 'tools/patch-center-ui-v024-core.js'
-      - '.github/workflows/build-center-v024-core-candidate.yml'
-  pull_request:
-    paths:
-      - 'preview/v024-core/**'
-      - 'tools/patch-center-ui-v024-core.js'
+      - 'database/migrations/**'
+      - 'database/ops/**'
+      - 'sql/**'
+      - 'assets/js/achievement-custom-ui.js'
       - '.github/workflows/build-center-v024-core-candidate.yml'
   workflow_dispatch:
 
@@ -86,6 +97,7 @@ jobs:
           node "$env:APP_ROOT\tools\test-sdlink-hardening-v022.js"
           node "$env:APP_ROOT\tools\test-sdlink-session-persistence-v023.js"
           node "$env:APP_ROOT\tools\test-sdlink-core-runtime-v024.js"
+          node "$env:APP_ROOT\tools\test-core-public-errors-v024.js"
           foreach($file in @(
             "$env:APP_ROOT\main.js",
             "$env:APP_ROOT\preload.js",
@@ -104,7 +116,7 @@ jobs:
             if(-not $main.Contains($marker)){ throw "main integration marker missing: $marker" }
           }
           $core=Get-Content "$env:APP_ROOT\src\sdlink-core-runtime.js" -Raw
-          foreach($marker in @('sd_core_register_device','sd_core_apply_sd_link_event','sd_core_list_transactions','stableCoreEventId')){
+          foreach($marker in @('sd_core_register_device','sd_core_apply_sd_link_event','sd_core_list_transactions','stableCoreEventId','translateCoreError','SD_CORE_UNAVAILABLE')){
             if(-not $core.Contains($marker)){ throw "Core bridge marker missing: $marker" }
           }
 
