@@ -28,7 +28,8 @@ try {
     activated: true,
     autoSync: true,
     migrationStatus: "completed",
-    lastSyncAt: "2026-08-20T00:00:00.000Z",
+    // 상태 판정의 stale 기준이 현재 시간에 의존하므로 고정 날짜를 사용하지 않습니다.
+    lastSyncAt: new Date().toISOString(),
     lastSyncMessage: "ok",
   }), "utf8");
 
