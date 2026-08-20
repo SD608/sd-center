@@ -1,7 +1,6 @@
 "use strict";
 
 const fs = require("node:fs");
-const path = require("node:path");
 const zlib = require("node:zlib");
 const { spawnSync } = require("node:child_process");
 
@@ -13,8 +12,10 @@ if (!patchPath || !appRoot) {
 
 const source = fs.readFileSync(patchPath, "utf8");
 const start = source.indexOf("const E={");
-const end = source.indexOf("};\nconst d=", start);
-if (start < 0 || end < 0) throw new Error("v0.20 embedded payload object not found");
+const tail = source.slice(Math.max(0, start));
+const endMatch = /};\r?\nconst d=/.exec(tail);
+if (start < 0 || !endMatch) throw new Error("v0.20 embedded payload object not found");
+const end = start + endMatch.index;
 
 const objectText = source.slice(start, end);
 const payloadRe = /"([A-Za-z0-9_]+)":"([A-Za-z0-9+/=]+)"/g;
