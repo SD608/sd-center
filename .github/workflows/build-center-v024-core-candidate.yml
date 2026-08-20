@@ -8,6 +8,7 @@ on:
     paths:
       - 'preview/v024-core/**'
       - 'tools/run-legacy-ui-template-patch.js'
+      - 'tools/run-v017-compat.js'
       - 'tools/patch-center-ui-v09.js'
       - 'tools/patch-center-ui-v010.js'
       - 'tools/patch-center-ui-v011.js'
@@ -34,6 +35,7 @@ on:
     paths:
       - 'preview/v024-core/**'
       - 'tools/run-legacy-ui-template-patch.js'
+      - 'tools/run-v017-compat.js'
       - 'tools/patch-center-ui-v09.js'
       - 'tools/patch-center-ui-v010.js'
       - 'tools/patch-center-ui-v011.js'
@@ -116,6 +118,8 @@ jobs:
             if(-not (Test-Path $script)){ throw "required reconstruction patch missing: $script" }
             if($v -eq '010' -or $v -eq '011'){
               node 'tools/run-legacy-ui-template-patch.js' $script $root
+            } elseif($v -eq '017') {
+              node 'tools/run-v017-compat.js' $script $root
             } else {
               node $script $root
             }
