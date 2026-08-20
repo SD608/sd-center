@@ -35,6 +35,24 @@ begin
   end if;
 end $$;
 
+-- Privileged-boundary checks are performed as postgres so lack of private schema USAGE itself
+-- does not prevent introspection of the privilege state.
+do $$
+declare
+  v_private_oid oid := to_regprocedure('private.upsert_sd_authoritative_achievement(uuid,text,numeric,numeric,jsonb)');
+begin
+  if pg_catalog.has_function_privilege('anon','public.sync_sd_achievement_progress(jsonb,text)','EXECUTE') then
+    raise exception 'anon unexpectedly has achievement sync EXECUTE';
+  end if;
+  if v_private_oid is null then raise exception 'private authoritative upsert missing'; end if;
+  if pg_catalog.has_function_privilege('authenticated',v_private_oid,'EXECUTE') then
+    raise exception 'authenticated can call private achievement upsert';
+  end if;
+  if pg_catalog.has_schema_privilege('authenticated','private','USAGE') then
+    raise exception 'authenticated unexpectedly has private schema USAGE';
+  end if;
+end $$;
+
 -- Authenticated direct writes must fail; legacy sync must be harmless canonical readback.
 set role authenticated;
 select set_config('request.jwt.claim.sub','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',false);
@@ -77,13 +95,6 @@ begin
   where user_id=auth.uid() and achievement_id='wallet-07';
   if coalesce(v_value,0)<>0 or coalesce(v_unlocked,false) then
     raise exception 'compat sync forged wallet achievement value=% unlocked=%',v_value,v_unlocked;
-  end if;
-
-  if pg_catalog.has_function_privilege('anon','public.sync_sd_achievement_progress(jsonb,text)','EXECUTE') then
-    raise exception 'anon unexpectedly has achievement sync EXECUTE';
-  end if;
-  if pg_catalog.has_function_privilege('authenticated','private.upsert_sd_authoritative_achievement(uuid,text,numeric,numeric,jsonb)','EXECUTE') then
-    raise exception 'authenticated can call private achievement upsert';
   end if;
 end $$;
 
