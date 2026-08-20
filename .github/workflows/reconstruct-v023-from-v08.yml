@@ -21,6 +21,26 @@ on:
       - 'tools/patch-center-ui-v022-sdlink-hardening.js'
       - 'tools/patch-center-ui-v023-sdlink-session.js'
       - 'tools/patch-center-ui-v024-core.js'
+  pull_request:
+    branches: [release/sd-center-core-v1]
+    paths:
+      - '.github/workflows/reconstruct-v023-from-v08.yml'
+      - 'tools/patch-center-ui-v09.js'
+      - 'tools/patch-center-ui-v010.js'
+      - 'tools/patch-center-ui-v011.js'
+      - 'tools/patch-center-ui-v012.js'
+      - 'tools/patch-center-ui-v013.js'
+      - 'tools/patch-center-ui-v014.js'
+      - 'tools/patch-center-ui-v015.js'
+      - 'tools/patch-center-ui-v016.js'
+      - 'tools/patch-center-ui-v017.js'
+      - 'tools/patch-center-ui-v018.js'
+      - 'tools/patch-center-ui-v019.js'
+      - 'tools/patch-center-ui-v020.js'
+      - 'tools/apply-center-ui-v021-sdlink.js'
+      - 'tools/patch-center-ui-v022-sdlink-hardening.js'
+      - 'tools/patch-center-ui-v023-sdlink-session.js'
+      - 'tools/patch-center-ui-v024-core.js'
   workflow_dispatch:
 
 permissions:
