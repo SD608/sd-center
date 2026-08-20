@@ -35,9 +35,6 @@ function scanBlockComment(source, start) {
   return end + 2;
 }
 
-// Once a generator interpolation is changed into literal parent-template text,
-// characters that used to be protected by JS expression lexical rules must be
-// protected from the parent template parser as well.
 function literalizeQuotedExpressionText(source, start, quote) {
   let i = start + 1;
   let out = quote;
@@ -133,8 +130,6 @@ function literalizeNestedTemplate(source, start) {
     const ch = source[i];
     const next = source[i + 1];
     if (ch === "\\") {
-      // Preserve the nested target template's own escape sequence after the
-      // parent generator template cooks it.
       out += "\\\\";
       if (i + 1 < source.length) out += next;
       i += 2;
@@ -161,11 +156,9 @@ function literalizeExpression(source, start) {
   let i = start;
   let depth = 1;
   let out = "";
-
   while (i < source.length) {
     const ch = source[i];
     const next = source[i + 1];
-
     if (ch === "'") {
       const quoted = literalizeQuotedExpressionText(source, i, "'");
       out += quoted.text;
@@ -220,11 +213,9 @@ function literalizeExpression(source, start) {
       if (depth === 0) return { text: out, end: i };
       continue;
     }
-
     out += ch;
     i += 1;
   }
-
   throw new Error("Unterminated template interpolation in legacy patch source");
 }
 
@@ -299,11 +290,57 @@ function literalizeAllTemplates(source) {
   return out;
 }
 
+function replaceRequired(source, needle, replacement, label) {
+  if (!source.includes(needle)) throw new Error(`v0.11 normalization marker missing: ${label}`);
+  return source.replace(needle, replacement);
+}
+
+function normalizeV011Target(root) {
+  const uiPath = path.join(root, "public", "js", "ui-preview.js");
+  let ui = fs.readFileSync(uiPath, "utf8").replace(/\r\n/g, "\n");
+
+  ui = replaceRequired(
+    ui,
+    'function closePreviewAppContextMenu(){document.getElementById("previewAppContextMenu")?.classList.add("hidden");previewContextAppId="";}',
+    'function closePreviewAppContextMenu() {\n  const menu = document.getElementById("previewAppContextMenu");\n  menu?.classList.add("hidden");\n  previewContextAppId = "";\n}',
+    "compact close context menu",
+  );
+  ui = replaceRequired(
+    ui,
+    'previewContextAppId=app.id;menu.classList.remove("hidden");',
+    'previewContextAppId = app.id;\n  menu.classList.remove("hidden");',
+    "compact context open state",
+  );
+  ui = replaceRequired(
+    ui,
+    'function closePreviewAppInfo(){document.getElementById("previewAppInfoBackdrop")?.classList.add("hidden");}',
+    'function closePreviewAppInfo() {\n  document.getElementById("previewAppInfoBackdrop")?.classList.add("hidden");\n}',
+    "compact close info",
+  );
+
+  const compactAction = 'document.getElementById("previewAppContextMenu")?.addEventListener("click",async event=>{const button=event.target.closest("[data-preview-context-action]");if(!button||!previewContextAppId)return;const appId=previewContextAppId,action=button.dataset.previewContextAction;closePreviewAppContextMenu();if(action==="open")await launchApp(appId);else if(action==="info")showPreviewAppInfo(appId);else if(action==="folder"){const result=await bridge.openAppFolder(appId);if(!result?.ok)showToast(result?.error||"폴더를 열지 못했습니다.");}else if(action==="delete")await deleteApp(appId);});';
+  const canonicalAction = 'document.getElementById("previewAppContextMenu")?.addEventListener("click", async (event) => {\n  const actionButton = event.target.closest("[data-preview-context-action]");\n  if (!actionButton || !previewContextAppId) return;\n  const appId = previewContextAppId;\n  const action = actionButton.dataset.previewContextAction;\n  closePreviewAppContextMenu();\n  if (action === "open") {\n    await launchApp(appId);\n  } else if (action === "info") {\n    showPreviewAppInfo(appId);\n  } else if (action === "folder") {\n    const result = await bridge.openAppFolder(appId);\n    if (!result?.ok) showToast(result?.error || "폴더를 열지 못했습니다.");\n  } else if (action === "delete") {\n    await deleteApp(appId);\n  }\n});';
+  ui = replaceRequired(ui, compactAction, canonicalAction, "compact context action handler");
+
+  const compactPointer = 'document.addEventListener("pointerdown",event=>{const menu=document.getElementById("previewAppContextMenu");if(menu&&!menu.classList.contains("hidden")&&!event.target.closest("#previewAppContextMenu"))closePreviewAppContextMenu();});';
+  const canonicalPointer = 'document.addEventListener("pointerdown", (event) => {\n  const menu = document.getElementById("previewAppContextMenu");\n  if (menu && !menu.classList.contains("hidden") && !event.target.closest("#previewAppContextMenu")) closePreviewAppContextMenu();\n});';
+  ui = replaceRequired(ui, compactPointer, canonicalPointer, "compact pointer close handler");
+
+  ui = replaceRequired(ui, 'window.addEventListener("blur",closePreviewAppContextMenu);', 'window.addEventListener("blur", closePreviewAppContextMenu);', "blur handler spacing");
+  ui = replaceRequired(ui, 'window.addEventListener("resize",closePreviewAppContextMenu);', 'window.addEventListener("resize", closePreviewAppContextMenu);', "resize handler spacing");
+  ui = replaceRequired(ui, 'window.addEventListener("scroll",closePreviewAppContextMenu,true);', 'window.addEventListener("scroll", closePreviewAppContextMenu, true);', "scroll handler spacing");
+
+  const compactEscape = 'document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;closePreviewAppContextMenu();closePreviewAppInfo();});';
+  const canonicalEscape = 'document.addEventListener("keydown", (event) => {\n  if (event.key !== "Escape") return;\n  closePreviewAppContextMenu();\n  closePreviewAppInfo();\n});';
+  ui = replaceRequired(ui, compactEscape, canonicalEscape, "compact escape handler");
+
+  fs.writeFileSync(uiPath, ui, "utf8");
+  console.log("Normalized compact v0.9 context UI for v0.11 audit patch");
+}
+
 let source = fs.readFileSync(patchPath, "utf8").replace(/\r\n/g, "\n");
 const base = path.basename(patchPath).toLowerCase();
 
-// v0.10 contains one historically malformed nested runtime template literal:
-// the runtime backticks were not escaped from the generator's outer template.
 if (base === "patch-center-ui-v010.js") {
   const bad = '    tile.setAttribute("aria-label",`${app.name||"앱"} 열기`);';
   const repaired = '    tile.setAttribute("aria-label",\\`${app.name||"앱"} 열기\\`);';
@@ -311,9 +348,7 @@ if (base === "patch-center-ui-v010.js") {
   source = source.replace(bad, repaired);
 }
 
-// v0.10/v0.11 were authored as generators whose template snippets are meant
-// to be copied into the target app. Literalize interpolation so the generator
-// does not evaluate target-runtime variables such as appCount/count/state.
+if (base === "patch-center-ui-v011.js") normalizeV011Target(appRoot);
 source = literalizeAllTemplates(source);
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "sd-center-legacy-patch-"));
