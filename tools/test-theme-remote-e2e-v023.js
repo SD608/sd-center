@@ -9,7 +9,7 @@ const { fileURLToPath } = require("node:url");
 
 const repoRoot = path.resolve(__dirname, "..");
 const patchPath = path.join(repoRoot, "tools", "patch-center-ui-v020.js");
-const CATALOG_URL = "https://raw.githubusercontent.com/SD608/sd-center/theme-catalog/themes/catalog.json";
+const CATALOG_URL = "https://raw.githubusercontent.com/SD608/sd-center/theme-catalog/themes/e2e/catalog.json";
 const THEME_ID = "e2e-validation";
 const V1_MANIFEST_URL = "https://raw.githubusercontent.com/SD608/sd-center/theme-catalog/themes/assets/e2e-validation/v1/manifest.json";
 const V1_MANIFEST_SHA = "7d6a51c74e64592b394ebd2ff658e3ce78e32381f39f6c6695128796f6163606";
