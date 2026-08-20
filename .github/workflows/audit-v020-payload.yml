@@ -5,12 +5,14 @@ on:
     branches: [release/v024-final-gate-20260820]
     paths:
       - 'tools/run-v020-payload-audit.js'
+      - 'tools/recover-v020-ui-payload.js'
       - 'tools/patch-center-ui-v020.js'
       - '.github/workflows/audit-v020-payload.yml'
   pull_request:
     branches: [release/sd-center-core-v1]
     paths:
       - 'tools/run-v020-payload-audit.js'
+      - 'tools/recover-v020-ui-payload.js'
       - 'tools/patch-center-ui-v020.js'
       - '.github/workflows/audit-v020-payload.yml'
   workflow_dispatch:
@@ -27,6 +29,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Recover uiBlock by base64 integrity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node 'tools/recover-v020-ui-payload.js' 'tools/patch-center-ui-v020.js'
       - name: Identify invalid embedded payloads
         shell: pwsh
         run: |
