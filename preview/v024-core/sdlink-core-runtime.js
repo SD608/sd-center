@@ -30,13 +30,58 @@ function semanticFromLegacyAmount(value) {
 }
 
 function coreErrorCode(error) {
-  return String(error?.details?.code || error?.code || "").trim();
+  return String(error?.details?.code || error?.code || "").trim().toUpperCase();
+}
+
+function coreErrorText(error) {
+  return [error?.message, error?.details?.message, error?.details, error?.hint]
+    .filter(Boolean)
+    .map(String)
+    .join(" ");
+}
+
+function publicCoreError(error) {
+  const code = coreErrorCode(error);
+  const raw = coreErrorText(error);
+  let message = "SD Core 동기화 중 오류가 발생했습니다. 다시 시도해 주세요.";
+
+  if (code === "P1001" || /AUTH_REQUIRED/i.test(raw)) {
+    message = "로그인이 필요합니다. 다시 로그인해 주세요.";
+  } else if (code === "P1002" || /ACCOUNT_INACTIVE/i.test(raw)) {
+    message = "현재 이용할 수 없는 계정입니다.";
+  } else if (code === "P1003" || /DEVICE_NOT_FOUND/i.test(raw)) {
+    message = "등록된 기기를 확인하지 못했습니다. SD Link를 다시 연결해 주세요.";
+  } else if (code === "P1004" || /DEVICE_INACTIVE/i.test(raw)) {
+    message = "이 기기는 현재 비활성 상태입니다.";
+  } else if (code === "P1006" || /DEVICE_REVOKED/i.test(raw)) {
+    message = "연결 해제된 기기입니다. 기기를 다시 등록해 주세요.";
+  } else if (code === "P1013" || /INSUFFICIENT_FUNDS/i.test(raw)) {
+    message = "온라인 가상잔액이 부족합니다.";
+  } else if (code === "P1015" || /IDEMPOTENCY_CONFLICT/i.test(raw)) {
+    message = "동기화 거래 정보가 이전 요청과 일치하지 않습니다.";
+  } else if (code === "P1025" || /EVENT_NOT_COMPLETED/i.test(raw)) {
+    message = "거래 처리 상태를 확인하는 중입니다. 다시 동기화해 주세요.";
+  } else if (code === "P1030" || /REWARD_CAPABILITY_REQUIRED/i.test(raw)) {
+    message = "이 보상은 아직 SD Core 서버 검증을 지원하지 않습니다.";
+  } else if (
+    code === "PGRST202" || code === "42883" || code === "42P01" ||
+    /schema cache|could not find .*function|function .* does not exist|relation .* does not exist/i.test(raw)
+  ) {
+    message = "SD Core 서버 기능을 준비 중입니다. 다시 동기화해 주세요.";
+  } else if (
+    /fetch failed|failed to fetch|network|timeout|timed out|econnreset|econnrefused|enotfound|socket hang up/i.test(raw)
+  ) {
+    message = "네트워크 연결을 확인한 뒤 다시 시도해 주세요.";
+  }
+
+  const translated = new Error(message);
+  translated.code = code || "SD_CORE_ERROR";
+  translated.cause = error;
+  return translated;
 }
 
 function isInsufficientFunds(error) {
-  const code = coreErrorCode(error);
-  const message = String(error?.message || error?.details?.message || "");
-  return code === "P1013" || /INSUFFICIENT_FUNDS/i.test(message);
+  return coreErrorCode(error) === "P1013" || /INSUFFICIENT_FUNDS/i.test(coreErrorText(error));
 }
 
 async function ensureCoreDevice(engine, config, originalRpc) {
@@ -47,11 +92,18 @@ async function ensureCoreDevice(engine, config, originalRpc) {
   if (engine.__sdCoreDeviceId && engine.__sdCoreDeviceKey === deviceKey) {
     return engine.__sdCoreDeviceId;
   }
-  const result = await originalRpc("sd_core_register_device", {
-    p_device_key: deviceKey,
-    p_device_name: String(config?.deviceName || "SD종합센터 PC").trim() || "SD종합센터 PC",
-    p_platform: "windows",
-  });
+
+  let result;
+  try {
+    result = await originalRpc("sd_core_register_device", {
+      p_device_key: deviceKey,
+      p_device_name: String(config?.deviceName || "SD종합센터 PC").trim() || "SD종합센터 PC",
+      p_platform: "windows",
+    });
+  } catch (error) {
+    throw publicCoreError(error);
+  }
+
   const value = Array.isArray(result) && result.length === 1 ? result[0] : result;
   const deviceId = String(value?.device_id || "").trim();
   if (!deviceId) throw new Error("SD Core 기기 등록 응답이 올바르지 않습니다.");
@@ -110,13 +162,9 @@ function patchIntegratedSdLinkCoreRuntime(childDirectory) {
             },
           });
         } catch (error) {
-          // Preserve the old engine's rejected-withdraw behavior.
-          if (isInsufficientFunds(error)) {
-            const translated = new Error("온라인 가상잔액이 부족합니다.");
-            translated.cause = error;
-            throw translated;
-          }
-          throw error;
+          // Preserve the old engine's insufficient-funds rejected-withdraw behavior.
+          if (isInsufficientFunds(error)) throw publicCoreError(error);
+          throw publicCoreError(error);
         }
       };
       try {
@@ -134,11 +182,15 @@ function patchIntegratedSdLinkCoreRuntime(childDirectory) {
       const previousRpc = auth.rpc;
       auth.rpc = async (name, body = {}) => {
         if (name !== "pull_sd_link_transactions") return originalRpc(name, body);
-        return originalRpc("sd_core_list_transactions", {
-          p_device_id: deviceId,
-          p_after_seq: Math.max(0, Number(body.p_after_seq || 0)),
-          p_limit: Math.min(200, Math.max(1, Number(body.p_limit || 100))),
-        });
+        try {
+          return await originalRpc("sd_core_list_transactions", {
+            p_device_id: deviceId,
+            p_after_seq: Math.max(0, Number(body.p_after_seq || 0)),
+            p_limit: Math.min(200, Math.max(1, Number(body.p_limit || 100))),
+          });
+        } catch (error) {
+          throw publicCoreError(error);
+        }
       };
       try {
         return await originalPull.call(this, config, initialCursor);
@@ -163,4 +215,6 @@ module.exports = {
   patchIntegratedSdLinkCoreRuntime,
   semanticFromLegacyAmount,
   stableCoreEventId,
+  coreErrorCode,
+  publicCoreError,
 };
