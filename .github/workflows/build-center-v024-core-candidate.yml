@@ -1,0 +1,132 @@
+name: Build SDCenter v0.24 Core Candidate
+
+on:
+  push:
+    branches: [release/sd-center-core-v1]
+    paths:
+      - 'preview/v024-core/**'
+      - 'tools/patch-center-ui-v024-core.js'
+      - '.github/workflows/build-center-v024-core-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified official v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.7.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "base hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install verified base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $base=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7'
+          if(-not (Test-Path (Join-Path $base 'SDCenter.exe'))){ throw 'base install missing' }
+          "BASE_APP_DIR=$base" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Rebuild full candidate from official base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-v0.24-Core-Candidate'
+          if(Test-Path $preview){ Remove-Item $preview -Recurse -Force }
+          Copy-Item $env:BASE_APP_DIR $preview -Recurse -Force
+          $root=Join-Path $preview 'resources\app'
+          $assets=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04'
+          $assetZip=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04.zip'
+          $assetB64=(Get-Content 'tools/center-ui-preview-assets-v04-good.b64' -Raw).Trim()
+          [IO.File]::WriteAllBytes($assetZip,[Convert]::FromBase64String($assetB64))
+          $assetHash=(Get-FileHash $assetZip -Algorithm SHA256).Hash.ToLower()
+          if($assetHash -ne '1b250228b0112b8722eec3eb4cf89dbe138c20d5e7060e7995812e2d73db6b72'){ throw "asset hash mismatch: $assetHash" }
+          Expand-Archive -Path $assetZip -DestinationPath $assets -Force
+          Copy-Item (Join-Path $assets 'index.html') (Join-Path $root 'public\index.html') -Force
+          Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
+          Copy-Item (Join-Path $assets 'ui-preview.js') (Join-Path $root 'public\js\ui-preview.js') -Force
+          foreach($v in @('04','05','06','07','08','09','010','011','012','013','014','015','016','017','018','019','020')){ node "tools/patch-center-ui-v$v.js" "$root" }
+          node 'tools/apply-center-ui-v021-sdlink.js' "$root"
+          node 'tools/patch-center-ui-v022-sdlink-hardening.js' "$root"
+          node 'tools/patch-center-ui-v023-sdlink-session.js' "$root"
+          node 'tools/patch-center-ui-v024-core.js' "$root"
+          "CANDIDATE_DIR=$preview" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Full regression validation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node "$env:APP_ROOT\tools\check-all.js"
+          node "$env:APP_ROOT\tools\test-theme-catalog-v020.js"
+          node "$env:APP_ROOT\tools\test-theme-assets-v020.js"
+          node "$env:APP_ROOT\tools\test-theme-ui-v020.js"
+          node "$env:APP_ROOT\tools\test-sdlink-integration-v021.js"
+          node "$env:APP_ROOT\tools\test-sdlink-hardening-v022.js"
+          node "$env:APP_ROOT\tools\test-sdlink-session-persistence-v023.js"
+          node "$env:APP_ROOT\tools\test-sdlink-core-runtime-v024.js"
+          foreach($file in @(
+            "$env:APP_ROOT\main.js",
+            "$env:APP_ROOT\preload.js",
+            "$env:APP_ROOT\public\js\app.js",
+            "$env:APP_ROOT\public\js\ui-preview.js",
+            "$env:APP_ROOT\src\sdlink-integration.js",
+            "$env:APP_ROOT\src\sdlink-session-persistence.js",
+            "$env:APP_ROOT\src\sdlink-core-runtime.js",
+            "$env:APP_ROOT\src\theme-catalog.js",
+            "$env:APP_ROOT\src\theme-assets.js"
+          )){ node --check $file }
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.7'){ throw "candidate changed official base version early: $($pkg.version)" }
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          foreach($marker in @('patchIntegratedSdLinkAuthSession','patchIntegratedSdLinkCoreRuntime','SD_CENTER_LINK_INTEGRATED')){
+            if(-not $main.Contains($marker)){ throw "main integration marker missing: $marker" }
+          }
+          $core=Get-Content "$env:APP_ROOT\src\sdlink-core-runtime.js" -Raw
+          foreach($marker in @('sd_core_register_device','sd_core_apply_sd_link_event','sd_core_list_transactions','stableCoreEventId')){
+            if(-not $core.Contains($marker)){ throw "Core bridge marker missing: $marker" }
+          }
+
+      - name: Portable Windows smoke
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $exe=Join-Path $env:CANDIDATE_DIR 'SDCenter.exe'
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 12
+          if($proc.HasExited){ throw "candidate exited during smoke: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Candidate file hash inventory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-FileHash (Join-Path $env:CANDIDATE_DIR 'SDCenter.exe') -Algorithm SHA256 | Format-List
+          Get-FileHash (Join-Path $env:APP_ROOT 'main.js') -Algorithm SHA256 | Format-List
+          Get-FileHash (Join-Path $env:APP_ROOT 'src\sdlink-core-runtime.js') -Algorithm SHA256 | Format-List
+
+      - name: Upload full Windows candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-v0.24-Core-Candidate-win-x64
+          path: ${{ env.CANDIDATE_DIR }}
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 14
