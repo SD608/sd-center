@@ -7,6 +7,11 @@ on:
       - 'preview/v024-core/**'
       - 'tools/patch-center-ui-v024-core.js'
       - '.github/workflows/build-center-v024-core-candidate.yml'
+  pull_request:
+    paths:
+      - 'preview/v024-core/**'
+      - 'tools/patch-center-ui-v024-core.js'
+      - '.github/workflows/build-center-v024-core-candidate.yml'
   workflow_dispatch:
 
 permissions:
