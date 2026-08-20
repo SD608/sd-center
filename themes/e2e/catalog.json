@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": 1,
+  "updatedAt": "2026-08-20T00:03:52Z",
+  "themes": [
+    {
+      "id": "e2e-validation",
+      "name": "E2E 검증 테마",
+      "description": "Theme Package v1 원격 다운로드·업데이트·복구 검증 전용 카탈로그",
+      "tag": "TEST",
+      "priceLabel": "검증용",
+      "version": "2",
+      "order": 9999,
+      "manifestUrl": "https://raw.githubusercontent.com/SD608/sd-center/theme-catalog/themes/assets/e2e-validation/v2/manifest.json",
+      "manifestSha256": "bd5f7d0eb17253f0b51bd75e6d69136f5d435015df2c2c394ceaa524c8bd34a0",
+      "enabled": true
+    }
+  ]
+}
