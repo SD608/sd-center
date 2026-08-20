@@ -7,6 +7,7 @@ on:
       - release/v024-final-gate-20260820
     paths:
       - 'preview/v024-core/**'
+      - 'tools/run-legacy-ui-template-patch.js'
       - 'tools/patch-center-ui-v09.js'
       - 'tools/patch-center-ui-v010.js'
       - 'tools/patch-center-ui-v011.js'
@@ -32,6 +33,7 @@ on:
     branches: [release/sd-center-core-v1]
     paths:
       - 'preview/v024-core/**'
+      - 'tools/run-legacy-ui-template-patch.js'
       - 'tools/patch-center-ui-v09.js'
       - 'tools/patch-center-ui-v010.js'
       - 'tools/patch-center-ui-v011.js'
@@ -112,7 +114,11 @@ jobs:
           foreach($v in @('09','010','011','012','013','014','015','016','017','018','019','020')){
             $script="tools/patch-center-ui-v$v.js"
             if(-not (Test-Path $script)){ throw "required reconstruction patch missing: $script" }
-            node $script $root
+            if($v -eq '010' -or $v -eq '011'){
+              node 'tools/run-legacy-ui-template-patch.js' $script $root
+            } else {
+              node $script $root
+            }
             if($LASTEXITCODE -ne 0){ throw "reconstruction patch failed: $script" }
           }
           node 'tools/apply-center-ui-v021-sdlink.js' $root
