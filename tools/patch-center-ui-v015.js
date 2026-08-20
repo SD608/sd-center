@@ -11,6 +11,12 @@ function mustReplace(text, from, to, label){
   if(!text.includes(from)) throw new Error(`v0.15 marker missing: ${label}`);
   return text.replace(from,to);
 }
+function mustReplaceAny(text, variants, to, label){
+  for(const from of variants){
+    if(text.includes(from)) return text.replace(from,to);
+  }
+  throw new Error(`v0.15 marker missing: ${label}`);
+}
 let html = read(htmlPath);
 html = mustReplace(html,
   '<button class="preview-nav" type="button" data-preview-view="themes"><span>◈</span><b>테마</b></button>',
@@ -37,9 +43,12 @@ js = mustReplace(js,
 `function loadPreviewTheme(){\n  let saved="sd-dark";\n  try{saved=String(localStorage.getItem(PREVIEW_THEME_KEY)||"sd-dark");}catch{}\n  previewThemeId=previewThemeById(saved).id;\n  document.body.dataset.previewTheme=previewThemeId;\n  renderPreviewThemeHomeDeck();\n}`,
 `function previewThemeHomeTarget(){return document.getElementById("previewHomePanel");}\nfunction loadPreviewTheme(){\n  let saved="sd-dark";\n  try{saved=String(localStorage.getItem(PREVIEW_THEME_KEY)||"sd-dark");}catch{}\n  previewThemeId=previewThemeById(saved).id;\n  const home=previewThemeHomeTarget();\n  if(home)home.dataset.previewTheme=previewThemeId;\n}`,
 'load theme home only');
-js = mustReplace(js,
+js = mustReplaceAny(js,
+[
 `function applyPreviewTheme(id,{toast=true}={}){\n  const theme=previewThemeById(id);\n  previewThemeId=theme.id;\n  document.body.dataset.previewTheme=theme.id;\n  try{localStorage.setItem(PREVIEW_THEME_KEY,theme.id);}catch{}\n  renderPreviewThemeStore();\n  renderPreviewThemeHomeDeck();\n  if(toast)showToast(\`\${theme.name} 테마를 적용했습니다.\`);\n}`,
-`function applyPreviewTheme(id,{toast=true}={}){\n  const theme=previewThemeById(id);\n  previewThemeId=theme.id;\n  const home=previewThemeHomeTarget();\n  if(home)home.dataset.previewTheme=theme.id;\n  try{localStorage.setItem(PREVIEW_THEME_KEY,theme.id);}catch{}\n  renderPreviewThemeStore();\n  if(toast)showToast(\`\${theme.name} 홈 테마를 적용했습니다.\`);\n}`,
+`function applyPreviewTheme(id,{toast=true}={}){\n  const theme=previewThemeById(id);\n  previewThemeId=theme.id;\n  document.body.dataset.previewTheme=theme.id;\n  try{localStorage.setItem(PREVIEW_THEME_KEY,theme.id);}catch{}\n  renderPreviewThemeStore();\n  renderPreviewThemeHomeDeck();\n  if(toast)showToast(theme.name+" 테마를 적용했습니다.");\n}`
+],
+`function applyPreviewTheme(id,{toast=true}={}){\n  const theme=previewThemeById(id);\n  previewThemeId=theme.id;\n  const home=previewThemeHomeTarget();\n  if(home)home.dataset.previewTheme=theme.id;\n  try{localStorage.setItem(PREVIEW_THEME_KEY,theme.id);}catch{}\n  renderPreviewThemeStore();\n  if(toast)showToast(theme.name+" 홈 테마를 적용했습니다.");\n}`,
 'apply theme home only');
 const shortcutMarker = '// UI Preview v0.13: 테마 홈 데크 바로가기.';
 const shortcutStart = js.indexOf(shortcutMarker);
