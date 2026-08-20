@@ -1,0 +1,28 @@
+name: Audit v0.20 Embedded Payloads
+
+on:
+  push:
+    branches: [release/v024-final-gate-20260820]
+    paths:
+      - 'tools/run-v020-payload-audit.js'
+      - 'tools/patch-center-ui-v020.js'
+      - '.github/workflows/audit-v020-payload.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Identify invalid embedded payloads
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node 'tools/run-v020-payload-audit.js' 'tools/patch-center-ui-v020.js' '.'
