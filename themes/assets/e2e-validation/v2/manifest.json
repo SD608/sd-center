@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "e2e-validation",
+  "version": "2",
+  "assets": {
+    "home": {
+      "url": "https://raw.githubusercontent.com/SD608/sd-center/theme-catalog/themes/assets/e2e-validation/v2/home.png",
+      "sha256": "1cd6a0a4df3a65da42bc689dd99d1dfd84bcd9d7b70494a2a283fd0cec6d6355"
+    },
+    "sub": {
+      "url": "https://raw.githubusercontent.com/SD608/sd-center/theme-catalog/themes/assets/e2e-validation/v2/sub.png",
+      "sha256": "eaef8142209584a574d5e0ab012bda3ba1dcf917accb4994f8d1ed34ab0e0c76"
+    },
+    "thumbnail": {
+      "url": "https://raw.githubusercontent.com/SD608/sd-center/theme-catalog/themes/assets/e2e-validation/v2/thumbnail.png",
+      "sha256": "9e739ab1bd80aeb95fe89c2aca9166b80a1f1c1f44c243e2d3c67f06f3efccf5"
+    }
+  },
+  "style": {
+    "backgroundColor": "#0b2534",
+    "accent": "#7dd7ff",
+    "sidebarAccent": "#3e9bc4",
+    "sidebarStrength": 0.08,
+    "overlay": 0.38,
+    "subOverlay": 0.52
+  }
+}
