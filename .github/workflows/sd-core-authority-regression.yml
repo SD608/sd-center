@@ -1,0 +1,115 @@
+name: SD Core Authority Hardening
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - hardening/sd-core-authority-20260820
+    paths:
+      - 'database/migrations/sd_core_reward_authority_v1.sql'
+      - 'tests/sd-core/reward_authority_regression.sql'
+      - 'tests/sd-core/legacy_sdlink_compat_regression.sql'
+      - '.github/workflows/sd-core-authority-regression.yml'
+  pull_request:
+    paths:
+      - 'database/migrations/sd_core_reward_authority_v1.sql'
+      - 'tests/sd-core/reward_authority_regression.sql'
+      - 'tests/sd-core/legacy_sdlink_compat_regression.sql'
+      - '.github/workflows/sd-core-authority-regression.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  baseline-wallet-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env: &pg_env
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: sd_core_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build compatible SD Online fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
+      - name: Apply base Core migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_sdlink_compat_v1.sql
+      - name: Run existing wallet regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/wallet_regression.sql
+      - name: Run existing ledger regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/ledger_regression.sql
+
+  reward-authority-final-state:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env: *pg_env
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build compatible SD Online fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
+      - name: Apply Core migrations including reward authority
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_sdlink_compat_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_reward_authority_v1.sql
+      - name: Reject client reward and preserve trusted paths
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/reward_authority_regression.sql
+
+  legacy-transition-hardened:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env: *pg_env
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build compatible SD Online fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
+      - name: Apply hardened Core migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_sdlink_compat_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_reward_authority_v1.sql
+      - name: Verify legacy lost-response transition remains exactly-once
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/legacy_sdlink_compat_regression.sql
