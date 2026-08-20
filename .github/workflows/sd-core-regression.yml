@@ -9,6 +9,7 @@ on:
       - 'database/dev/sd_core_dev_baseline.sql'
       - 'database/migrations/sd_core_wallet_v1.sql'
       - 'database/migrations/sd_core_ledger_api_v1.sql'
+      - 'database/migrations/sd_core_sdlink_compat_v1.sql'
       - 'tests/sd-core/**'
       - '.github/workflows/sd-core-regression.yml'
   pull_request:
@@ -16,6 +17,7 @@ on:
       - 'database/dev/sd_core_dev_baseline.sql'
       - 'database/migrations/sd_core_wallet_v1.sql'
       - 'database/migrations/sd_core_ledger_api_v1.sql'
+      - 'database/migrations/sd_core_sdlink_compat_v1.sql'
       - 'tests/sd-core/**'
       - '.github/workflows/sd-core-regression.yml'
 
@@ -32,8 +34,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: sd_core_test
-        ports:
-          - 5432:5432
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres -d sd_core_test"
           --health-interval 5s
@@ -46,14 +47,14 @@ jobs:
       PGPASSWORD: postgres
       PGDATABASE: sd_core_test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Build compatible SD Online fixture
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
-      - name: Apply SD Core wallet migration
-        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
-      - name: Apply SD Core ledger API migration
-        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+      - name: Apply Core migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_sdlink_compat_v1.sql
       - name: Run required wallet regression
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/wallet_regression.sql
       - name: Run ledger API regression
@@ -68,8 +69,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: sd_core_test
-        ports:
-          - 5432:5432
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres -d sd_core_test"
           --health-interval 5s
@@ -77,14 +77,14 @@ jobs:
           --health-retries 12
     env: *pg_env
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Build compatible SD Online fixture
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
-      - name: Apply SD Core wallet migration
-        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
-      - name: Apply SD Core ledger API migration
-        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+      - name: Apply Core migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_sdlink_compat_v1.sql
       - name: Run forced failure and validation faults
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fault_injection.sql
 
@@ -97,8 +97,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: sd_core_test
-        ports:
-          - 5432:5432
+        ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres -d sd_core_test"
           --health-interval 5s
@@ -106,13 +105,41 @@ jobs:
           --health-retries 12
     env: *pg_env
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Build compatible SD Online fixture
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
-      - name: Apply SD Core wallet migration
-        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
-      - name: Apply SD Core ledger API migration
-        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+      - name: Apply Core migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_sdlink_compat_v1.sql
       - name: Run concurrent spend and replay faults
         run: bash tests/sd-core/concurrency_fault.sh
+
+  legacy-sdlink-transition:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env: *pg_env
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build compatible SD Online fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
+      - name: Apply Core migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_sdlink_compat_v1.sql
+      - name: Simulate lost legacy response then switch to Core
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/legacy_sdlink_compat_regression.sql
