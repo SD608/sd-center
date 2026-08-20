@@ -39,29 +39,80 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
-
-    env:
+    env: &pg_env
       PGHOST: 127.0.0.1
       PGPORT: 5432
       PGUSER: postgres
       PGPASSWORD: postgres
       PGDATABASE: sd_core_test
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Build compatible SD Online fixture
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
-
       - name: Apply SD Core wallet migration
         run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
-
       - name: Apply SD Core ledger API migration
         run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
-
       - name: Run required wallet regression
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/wallet_regression.sql
-
       - name: Run ledger API regression
         run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/ledger_regression.sql
+
+  fault-injection:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env: *pg_env
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build compatible SD Online fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
+      - name: Apply SD Core wallet migration
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+      - name: Apply SD Core ledger API migration
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+      - name: Run forced failure and validation faults
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fault_injection.sql
+
+  concurrency-fault:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env: *pg_env
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build compatible SD Online fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
+      - name: Apply SD Core wallet migration
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+      - name: Apply SD Core ledger API migration
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+      - name: Run concurrent spend and replay faults
+        run: bash tests/sd-core/concurrency_fault.sh
