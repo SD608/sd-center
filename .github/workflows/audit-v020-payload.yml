@@ -7,6 +7,7 @@ on:
       - 'tools/run-v020-payload-audit.js'
       - 'tools/recover-v020-ui-payload.js'
       - 'tools/scan-v020-ui-deflate.py'
+      - 'tools/inspect-v020-intact-contract.js'
       - 'tools/patch-center-ui-v020.js'
       - '.github/workflows/audit-v020-payload.yml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'tools/run-v020-payload-audit.js'
       - 'tools/recover-v020-ui-payload.js'
       - 'tools/scan-v020-ui-deflate.py'
+      - 'tools/inspect-v020-intact-contract.js'
       - 'tools/patch-center-ui-v020.js'
       - '.github/workflows/audit-v020-payload.yml'
   workflow_dispatch:
@@ -31,6 +33,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Inspect intact v0.20 contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node 'tools/inspect-v020-intact-contract.js' 'tools/patch-center-ui-v020.js'
       - name: Localize uiBlock deflate corruption
         shell: pwsh
         run: |
