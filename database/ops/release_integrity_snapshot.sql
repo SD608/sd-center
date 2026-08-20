@@ -1,8 +1,7 @@
 \set ON_ERROR_STOP on
-\pset tuples_only on
-\pset format unaligned
 
 -- Read-only release integrity snapshot.
+-- Invoke with psql -At so the output is one JSON line with no formatting chatter.
 -- Run immediately before and after additive production migrations while writes are quiesced.
 -- It emits only aggregate counts and irreversible row digests; no raw user/device identifiers.
 
