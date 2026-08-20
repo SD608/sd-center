@@ -7,6 +7,12 @@ on:
       - 'tools/run-v020-payload-audit.js'
       - 'tools/patch-center-ui-v020.js'
       - '.github/workflows/audit-v020-payload.yml'
+  pull_request:
+    branches: [release/sd-center-core-v1]
+    paths:
+      - 'tools/run-v020-payload-audit.js'
+      - 'tools/patch-center-ui-v020.js'
+      - '.github/workflows/audit-v020-payload.yml'
   workflow_dispatch:
 
 permissions:
