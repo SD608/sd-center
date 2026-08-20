@@ -11,7 +11,7 @@ if (!patchPath || !appRoot) {
   throw new Error("Usage: node run-legacy-ui-template-patch.js <patch-script> <app-root>");
 }
 
-function copyQuoted(source, start, quote) {
+function scanQuotedSource(source, start, quote) {
   let i = start + 1;
   while (i < source.length) {
     if (source[i] === "\\") {
@@ -24,119 +24,187 @@ function copyQuoted(source, start, quote) {
   throw new Error(`Unterminated ${quote} string in legacy patch source`);
 }
 
-function copyLineComment(source, start) {
+function scanLineComment(source, start) {
   const end = source.indexOf("\n", start + 2);
   return end < 0 ? source.length : end;
 }
 
-function copyBlockComment(source, start) {
+function scanBlockComment(source, start) {
   const end = source.indexOf("*/", start + 2);
   if (end < 0) throw new Error("Unterminated block comment in legacy patch source");
   return end + 2;
 }
 
-// Finds the closing brace of a template interpolation while preserving enough
-// JavaScript lexical structure to ignore braces in quoted strings/comments and
-// nested template literals. The returned text is made safe to live as literal
-// text inside the parent template: every `${` and backtick is escaped.
+// Once a generator interpolation is changed into literal parent-template text,
+// characters that used to be protected by JS expression lexical rules must be
+// protected from the parent template parser as well.
+function literalizeQuotedExpressionText(source, start, quote) {
+  let i = start + 1;
+  let out = quote;
+  while (i < source.length) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (ch === "\\") {
+      out += "\\\\";
+      if (i + 1 < source.length) out += next;
+      i += 2;
+      continue;
+    }
+    if (ch === "$" && next === "{") {
+      out += "\\${";
+      i += 2;
+      continue;
+    }
+    if (ch === "`") {
+      out += "\\`";
+      i += 1;
+      continue;
+    }
+    out += ch;
+    i += 1;
+    if (ch === quote) return { text: out, end: i };
+  }
+  throw new Error(`Unterminated ${quote} string in template expression`);
+}
+
+function literalizeLineCommentExpressionText(source, start) {
+  let i = start;
+  let out = "";
+  while (i < source.length) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (ch === "$" && next === "{") {
+      out += "\\${";
+      i += 2;
+      continue;
+    }
+    if (ch === "`") {
+      out += "\\`";
+      i += 1;
+      continue;
+    }
+    if (ch === "\\") {
+      out += "\\\\";
+      i += 1;
+      continue;
+    }
+    out += ch;
+    i += 1;
+    if (ch === "\n") return { text: out, end: i };
+  }
+  return { text: out, end: i };
+}
+
+function literalizeBlockCommentExpressionText(source, start) {
+  let i = start;
+  let out = "";
+  while (i < source.length) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (ch === "$" && next === "{") {
+      out += "\\${";
+      i += 2;
+      continue;
+    }
+    if (ch === "`") {
+      out += "\\`";
+      i += 1;
+      continue;
+    }
+    if (ch === "\\") {
+      out += "\\\\";
+      i += 1;
+      continue;
+    }
+    if (ch === "*" && next === "/") {
+      out += "*/";
+      return { text: out, end: i + 2 };
+    }
+    out += ch;
+    i += 1;
+  }
+  throw new Error("Unterminated block comment in template expression");
+}
+
+function literalizeNestedTemplate(source, start) {
+  let i = start + 1;
+  let out = "\\`";
+  while (i < source.length) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (ch === "\\") {
+      // Preserve the nested target template's own escape sequence after the
+      // parent generator template cooks it.
+      out += "\\\\";
+      if (i + 1 < source.length) out += next;
+      i += 2;
+      continue;
+    }
+    if (ch === "`") {
+      out += "\\`";
+      return { text: out, end: i + 1 };
+    }
+    if (ch === "$" && next === "{") {
+      out += "\\${";
+      const nested = literalizeExpression(source, i + 2);
+      out += nested.text;
+      i = nested.end;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  throw new Error("Unterminated nested template literal in legacy patch source");
+}
+
 function literalizeExpression(source, start) {
   let i = start;
   let depth = 1;
   let out = "";
-  const stack = [{ type: "expr" }];
 
   while (i < source.length) {
-    const mode = stack[stack.length - 1];
     const ch = source[i];
     const next = source[i + 1];
 
-    // Everything in a now-literal interpolation must not start a new parent
-    // template interpolation.
-    if (ch === "$" && next === "{") {
-      out += "\\${";
-      if (mode.type === "expr") depth += 1;
-      else if (mode.type === "template") stack.push({ type: "expr", nested: true, depth: 1 });
-      i += 2;
-      continue;
-    }
-
-    // Any backtick occurring inside the expression must become literal text in
-    // the parent template. Track nested-template lexical state separately.
-    if (ch === "`") {
-      out += "\\`";
-      if (mode.type === "expr") stack.push({ type: "template" });
-      else if (mode.type === "template") stack.pop();
-      i += 1;
-      continue;
-    }
-
-    if (mode.type === "single" || mode.type === "double") {
-      out += ch;
-      if (ch === "\\" && i + 1 < source.length) {
-        out += source[i + 1];
-        i += 2;
-        continue;
-      }
-      if ((mode.type === "single" && ch === "'") || (mode.type === "double" && ch === '"')) {
-        stack.pop();
-      }
-      i += 1;
-      continue;
-    }
-
-    if (mode.type === "lineComment") {
-      out += ch;
-      if (ch === "\n") stack.pop();
-      i += 1;
-      continue;
-    }
-
-    if (mode.type === "blockComment") {
-      out += ch;
-      if (ch === "*" && next === "/") {
-        out += "/";
-        i += 2;
-        stack.pop();
-      } else {
-        i += 1;
-      }
-      continue;
-    }
-
-    if (mode.type === "template") {
-      out += ch;
-      if (ch === "\\" && i + 1 < source.length) {
-        out += source[i + 1];
-        i += 2;
-      } else {
-        i += 1;
-      }
-      continue;
-    }
-
-    // Expression lexical state.
     if (ch === "'") {
-      out += ch;
-      stack.push({ type: "single" });
-      i += 1;
+      const quoted = literalizeQuotedExpressionText(source, i, "'");
+      out += quoted.text;
+      i = quoted.end;
       continue;
     }
     if (ch === '"') {
-      out += ch;
-      stack.push({ type: "double" });
-      i += 1;
+      const quoted = literalizeQuotedExpressionText(source, i, '"');
+      out += quoted.text;
+      i = quoted.end;
       continue;
     }
     if (ch === "/" && next === "/") {
-      out += "//";
-      stack.push({ type: "lineComment" });
-      i += 2;
+      const comment = literalizeLineCommentExpressionText(source, i);
+      out += comment.text;
+      i = comment.end;
       continue;
     }
     if (ch === "/" && next === "*") {
-      out += "/*";
-      stack.push({ type: "blockComment" });
+      const comment = literalizeBlockCommentExpressionText(source, i);
+      out += comment.text;
+      i = comment.end;
+      continue;
+    }
+    if (ch === "`") {
+      const nestedTemplate = literalizeNestedTemplate(source, i);
+      out += nestedTemplate.text;
+      i = nestedTemplate.end;
+      continue;
+    }
+    if (ch === "$" && next === "{") {
+      out += "\\${";
+      depth += 1;
       i += 2;
+      continue;
+    }
+    if (ch === "\\") {
+      out += "\\\\";
+      i += 1;
       continue;
     }
     if (ch === "{") {
@@ -168,7 +236,7 @@ function literalizeTemplate(source, start) {
     const next = source[i + 1];
     if (ch === "\\") {
       out += ch;
-      if (i + 1 < source.length) out += source[i + 1];
+      if (i + 1 < source.length) out += next;
       i += 2;
       continue;
     }
@@ -196,25 +264,25 @@ function literalizeAllTemplates(source) {
     const ch = source[i];
     const next = source[i + 1];
     if (ch === "'") {
-      const end = copyQuoted(source, i, "'");
+      const end = scanQuotedSource(source, i, "'");
       out += source.slice(i, end);
       i = end;
       continue;
     }
     if (ch === '"') {
-      const end = copyQuoted(source, i, '"');
+      const end = scanQuotedSource(source, i, '"');
       out += source.slice(i, end);
       i = end;
       continue;
     }
     if (ch === "/" && next === "/") {
-      const end = copyLineComment(source, i);
+      const end = scanLineComment(source, i);
       out += source.slice(i, end);
       i = end;
       continue;
     }
     if (ch === "/" && next === "*") {
-      const end = copyBlockComment(source, i);
+      const end = scanBlockComment(source, i);
       out += source.slice(i, end);
       i = end;
       continue;
@@ -244,8 +312,8 @@ if (base === "patch-center-ui-v010.js") {
 }
 
 // v0.10/v0.11 were authored as generators whose template snippets are meant
-// to be copied into the target app. Literalize their interpolation so the
-// generator does not evaluate target-runtime variables such as appCount/count.
+// to be copied into the target app. Literalize interpolation so the generator
+// does not evaluate target-runtime variables such as appCount/count/state.
 source = literalizeAllTemplates(source);
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "sd-center-legacy-patch-"));
