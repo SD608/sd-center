@@ -1,0 +1,37 @@
+name: Test Theme Package v1 Remote E2E
+
+on:
+  push:
+    branches: [feature/sdlink-integrated-v023]
+    paths:
+      - 'tools/test-theme-remote-e2e-v023.js'
+      - 'tools/patch-center-ui-v020.js'
+      - '.github/workflows/test-theme-remote-e2e-v023.yml'
+  pull_request:
+    branches: [preview/center-ui-v230-20260819]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remote-theme-e2e:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check 'tools/test-theme-remote-e2e-v023.js'
+
+      - name: Run actual raw.githubusercontent.com package v1 E2E
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node 'tools/test-theme-remote-e2e-v023.js'
