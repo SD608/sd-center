@@ -11,6 +11,8 @@ function mustReplace(text, from, to, label){
   if(!text.includes(from)) throw new Error(`v0.15 marker missing: ${label}`);
   return text.replace(from,to);
 }
+// Historical v0.13/v0.14 artifacts contain two semantically equivalent toast forms.
+// Accept either shape so reconstruction follows the actual artifact instead of a stale draft marker.
 function mustReplaceAny(text, variants, to, label){
   for(const from of variants){
     if(text.includes(from)) return text.replace(from,to);
