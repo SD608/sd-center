@@ -1,0 +1,69 @@
+name: Logistics Server Authority v2
+
+on:
+  push:
+    branches: [release/v024-final-gate-20260820]
+    paths:
+      - 'database/migrations/sd_core_server_wallet_delta_v1.sql'
+      - 'database/migrations/sd_logistics_authority_schema_v2.sql'
+      - 'database/migrations/sd_logistics_contract_api_v2.sql'
+      - 'database/migrations/sd_logistics_economy_api_v2.sql'
+      - 'database/migrations/sd_logistics_driver_api_v2.sql'
+      - 'database/migrations/sd_logistics_achievement_authority_v2.sql'
+      - 'tests/logistics-server-authority-v2/**'
+      - '.github/workflows/logistics-server-authority-v2.yml'
+  pull_request:
+    paths:
+      - 'database/migrations/sd_core_server_wallet_delta_v1.sql'
+      - 'database/migrations/sd_logistics_authority_schema_v2.sql'
+      - 'database/migrations/sd_logistics_contract_api_v2.sql'
+      - 'database/migrations/sd_logistics_economy_api_v2.sql'
+      - 'database/migrations/sd_logistics_driver_api_v2.sql'
+      - 'database/migrations/sd_logistics_achievement_authority_v2.sql'
+      - 'tests/logistics-server-authority-v2/**'
+      - '.github/workflows/logistics-server-authority-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  logistics-server-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: logistics_server_authority_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d logistics_server_authority_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: logistics_server_authority_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production-shaped fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/logistics-server-authority-v2/fixture.sql
+      - name: Apply trusted server wallet helper
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_server_wallet_delta_v1.sql
+      - name: Apply logistics authority schema and baseline import
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_logistics_authority_schema_v2.sql
+      - name: Apply logistics server APIs
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_logistics_contract_api_v2.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_logistics_economy_api_v2.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_logistics_driver_api_v2.sql
+      - name: Apply 16 of 16 logistics achievement authority
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_logistics_achievement_authority_v2.sql
+      - name: Run server authority regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/logistics-server-authority-v2/regression.sql

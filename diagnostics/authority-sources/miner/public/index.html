@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <meta
+    name="description"
+    content="SD지갑 가상계좌와 연동되는 광산 채굴·보관함·판매 시뮬레이션"
+  />
+
+  <title>SD광부</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div class="ambient ambient-copper"></div>
+  <div class="ambient ambient-emerald"></div>
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">SD JOB CENTER · MINER</p>
+      <h1>SD광부</h1>
+      <p class="subtitle">
+        돌벽을 채굴하고, 계좌별 보관함의 광석을 판매하세요.
+      </p>
+    </div>
+
+    <div class="top-actions">
+      <button
+        id="refreshButton"
+        class="button button-ghost"
+        type="button"
+      >
+        새로고침 · F5
+      </button>
+
+      <button
+        id="settingsButton"
+        class="button button-ghost"
+        type="button"
+      >
+        계좌 설정
+      </button>
+    </div>
+  </header>
+
+  <div class="simulation-banner">
+    실제 화폐·광물 거래가 아닌 SD지갑 가상계좌 전용 시뮬레이션입니다.
+  </div>
+
+  <main class="app-shell">
+    <section id="entranceView" class="entrance-view">
+      <div class="entrance-scene">
+        <div class="mountain mountain-back"></div>
+        <div class="mountain mountain-front"></div>
+
+        <div class="mine-entrance">
+          <div class="entrance-frame"></div>
+          <div class="entrance-darkness"></div>
+          <div class="track track-left"></div>
+          <div class="track track-right"></div>
+          <div class="track-tie tie-1"></div>
+          <div class="track-tie tie-2"></div>
+          <div class="track-tie tie-3"></div>
+        </div>
+
+        <div class="entrance-sign">
+          <span>SD MINE</span>
+          <strong>광산 입구</strong>
+        </div>
+      </div>
+
+      <div class="entrance-card">
+        <p class="section-kicker">CONNECTED ACCOUNT</p>
+        <h2 id="entranceAccountName">계좌를 연결하세요</h2>
+        <p id="entranceBalance" class="entrance-balance">
+          ₩0
+        </p>
+
+        <button
+          id="enterMineButton"
+          class="enter-mine-button"
+          type="button"
+        >
+          광산 입장
+        </button>
+
+        <p class="control-hint">
+          돌벽을 클릭해 채굴합니다. 자동 채굴 업그레이드 구매 후 숫자 0으로 켜고 끌 수 있습니다.
+        </p>
+      </div>
+    </section>
+
+    <section id="mineView" class="mine-layout hidden">
+      <section class="mine-panel">
+        <div class="mine-toolbar">
+          <div>
+            <p class="section-kicker">MINING ZONE</p>
+            <h2>지하 채굴장</h2>
+          </div>
+
+          <div class="mine-toolbar-actions">
+            <span id="autoMiningStatus" class="status-chip">
+              수동 채굴
+            </span>
+
+            <button
+              id="leaveMineButton"
+              class="button button-ghost"
+              type="button"
+            >
+              광산 나가기
+            </button>
+          </div>
+        </div>
+
+        <div class="mine-scene">
+          <div class="ceiling-rocks"></div>
+          <div class="support-beam beam-left"></div>
+          <div class="support-beam beam-right"></div>
+          <div class="support-beam beam-top"></div>
+
+          <button
+            id="rockWall"
+            class="rock-wall"
+            type="button"
+            aria-label="돌벽 채굴"
+          >
+            <span class="rock r1"></span>
+            <span class="rock r2"></span>
+            <span class="rock r3"></span>
+            <span class="rock r4"></span>
+            <span class="rock r5"></span>
+            <span class="rock r6"></span>
+            <span class="rock r7"></span>
+            <span class="rock r8"></span>
+            <span class="rock r9"></span>
+            <span class="rock r10"></span>
+
+            <span class="crack c1"></span>
+            <span class="crack c2"></span>
+            <span class="crack c3"></span>
+
+            <span class="wall-label">
+              클릭하여 채굴
+              <small>업그레이드 후 숫자 0으로 자동 채굴 ON/OFF</small>
+            </span>
+          </button>
+
+          <div id="oreDrop" class="ore-drop hidden">
+            <div id="oreDropIcon" class="ore-icon stone"></div>
+            <strong id="oreDropName">돌</strong>
+            <span id="oreDropChance">47.6%</span>
+          </div>
+
+          <div class="mine-floor"></div>
+          <div id="pickaxe" class="pickaxe">
+            <span class="pickaxe-head"></span>
+            <span class="pickaxe-handle"></span>
+          </div>
+        </div>
+
+        <div class="mine-footer">
+          <div>
+            <span>채굴 간격</span>
+            <strong>0.3초</strong>
+          </div>
+          <div>
+            <span>총 채굴 횟수</span>
+            <strong id="totalMined">0회</strong>
+          </div>
+          <div>
+            <span>최근 획득</span>
+            <strong id="lastOre">없음</strong>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-column">
+        <section class="panel-card account-card">
+          <div class="card-heading">
+            <div>
+              <p class="section-kicker">MINER ACCOUNT</p>
+              <h2>사용 계좌</h2>
+            </div>
+            <span id="accountUsername" class="account-user">
+              -
+            </span>
+          </div>
+
+          <div class="account-chip">
+            <div>
+              <strong id="accountBank">-</strong>
+              <span id="accountNumber">-</span>
+            </div>
+            <span id="accountOwner">-</span>
+          </div>
+
+          <p class="metric-label">가상 잔액</p>
+          <p id="accountBalance" class="balance-value">₩0</p>
+        </section>
+
+        <section class="panel-card">
+          <div class="card-heading">
+            <div>
+              <p class="section-kicker">INVENTORY</p>
+              <h2>광석 보관함</h2>
+            </div>
+            <span id="inventoryValue" class="inventory-value">
+              ₩0
+            </span>
+          </div>
+
+          <div id="inventoryList" class="inventory-list"></div>
+        </section>
+      </aside>
+
+      <section class="statistics-panel">
+        <div class="card-heading">
+          <div>
+            <p class="section-kicker">MINING STATISTICS</p>
+            <h2>채굴·수익 통계</h2>
+          </div>
+        </div>
+
+        <div class="statistics-grid">
+          <article>
+            <span>총채굴량</span>
+            <strong id="statsTotalMined">0개</strong>
+          </article>
+          <article>
+            <span>현재 보관량</span>
+            <strong id="statsInventoryQuantity">0개</strong>
+          </article>
+          <article>
+            <span>누적 판매량</span>
+            <strong id="statsSoldQuantity">0개</strong>
+          </article>
+          <article>
+            <span>누적 수익</span>
+            <strong id="statsSalesRevenue">₩0</strong>
+          </article>
+          <article>
+            <span>판매 횟수</span>
+            <strong id="statsSaleCount">0회</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="shop-panel">
+        <div class="shop-heading">
+          <div>
+            <p class="section-kicker">ORE MARKET</p>
+            <h2>광석 상점</h2>
+            <p>
+              판매하면 선택한 SD지갑 계좌로 즉시 입금됩니다.
+            </p>
+          </div>
+
+          <button
+            id="sellAllButton"
+            class="button button-primary"
+            type="button"
+          >
+            전체 판매
+          </button>
+        </div>
+
+
+<article
+  id="autoMiningUpgradeCard"
+  class="upgrade-card"
+>
+  <div class="upgrade-symbol" aria-hidden="true">
+    <span></span>
+  </div>
+
+  <div class="upgrade-copy">
+    <p class="section-kicker">
+      MINING UPGRADE
+    </p>
+    <h3>자동 채굴 업그레이드</h3>
+    <p id="autoMiningUpgradeDescription">
+      구매 후 숫자 0을 누를 때마다 자동 채굴을 켜고 끌 수 있습니다.
+    </p>
+  </div>
+
+  <div class="upgrade-purchase">
+    <strong id="autoMiningUpgradePrice">
+      ₩500,000
+    </strong>
+
+    <button
+      id="buyAutoMiningUpgradeButton"
+      class="button button-primary"
+      type="button"
+    >
+      업그레이드 구매
+    </button>
+  </div>
+</article>
+
+<div id="shopGrid" class="shop-grid"></div>
+      </section>
+
+      <section class="sales-history-panel">
+        <div class="card-heading">
+          <div>
+            <p class="section-kicker">SALES RECORD</p>
+            <h2>판매 기록</h2>
+          </div>
+          <span class="record-limit">최근 50건</span>
+        </div>
+
+        <div id="salesHistoryList" class="history-list">
+          <p class="empty-state">판매 기록이 없습니다.</p>
+        </div>
+      </section>
+
+      <section class="history-panel">
+        <div class="card-heading">
+          <div>
+            <p class="section-kicker">MINING LOG</p>
+            <h2>최근 작업 기록</h2>
+          </div>
+        </div>
+
+        <div id="historyList" class="history-list">
+          <p class="empty-state">기록이 없습니다.</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <section class="modal">
+      <div class="modal-header">
+        <div>
+          <p class="section-kicker">WALLET CONNECTION</p>
+          <h2>SD지갑 계좌 연결</h2>
+        </div>
+
+        <button
+          id="closeSettingsButton"
+          class="modal-close"
+          type="button"
+          aria-label="설정 닫기"
+        >
+          ×
+        </button>
+      </div>
+
+      <p class="settings-help">
+        SD지갑의 SQLite DB를 연결한 뒤 계좌를 선택하세요.
+        각 계좌는 서로 다른 광석 보관함을 사용합니다.
+      </p>
+
+      <div class="button-row">
+        <button
+          id="autoDetectWalletButton"
+          class="button button-primary"
+          type="button"
+        >
+          자동 찾기
+        </button>
+
+        <button
+          id="chooseWalletDatabaseButton"
+          class="button button-ghost"
+          type="button"
+        >
+          DB 직접 선택
+        </button>
+      </div>
+
+      <p id="walletPathText" class="path-text">
+        연결된 DB 없음
+      </p>
+
+      <label class="field">
+        <span>광부 계정으로 사용할 계좌</span>
+        <select id="accountSelect">
+          <option value="">계좌를 먼저 불러오세요</option>
+        </select>
+      </label>
+
+      <button
+        id="saveSettingsButton"
+        class="button button-primary full-width"
+        type="button"
+      >
+        계좌 연결 저장
+      </button>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="./js/app.js"></script>
+
+  <a class="sd-center-quick-link" href="sdcenter://open" title="SD종합센터 열기">
+    <span>SD</span> 종합센터
+  </a>
+</body>
+</html>

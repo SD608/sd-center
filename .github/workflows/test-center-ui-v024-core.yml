@@ -34,6 +34,8 @@ jobs:
           node --check 'preview/v024-core/sdlink-core-runtime.js'
           node --check 'preview/v024-core/test-sdlink-core-runtime-v024.js'
           node --check 'preview/v024-core/test-core-public-errors-v024.js'
+          node --check 'preview/v024-core/sdlink-background-window-guard.js'
+          node --check 'preview/v024-core/test-sdlink-background-window-guard-v024.js'
           node --check 'tools/patch-center-ui-v024-core.js'
 
       - name: Run integrated Core bridge regression
@@ -42,12 +44,13 @@ jobs:
           $ErrorActionPreference='Stop'
           node 'preview/v024-core/test-sdlink-core-runtime-v024.js'
           node 'preview/v024-core/test-core-public-errors-v024.js'
+          node 'preview/v024-core/test-sdlink-background-window-guard-v024.js'
 
       - name: Guard transition contract
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          $joined=(Get-Content 'preview/v024-core/sdlink-core-runtime.js' -Raw)+(Get-Content 'tools/patch-center-ui-v024-core.js' -Raw)
+          $joined=(Get-Content 'preview/v024-core/sdlink-core-runtime.js' -Raw)+(Get-Content 'preview/v024-core/sdlink-background-window-guard.js' -Raw)+(Get-Content 'tools/patch-center-ui-v024-core.js' -Raw)
           foreach($required in @(
             'SD_CENTER_LINK_INTEGRATED',
             'sd_core_register_device',
@@ -59,11 +62,15 @@ jobs:
             'translateCoreError',
             'SD_CORE_UNAVAILABLE',
             '거래는 보존되며',
-            '온라인 가상잔액이 부족합니다.'
+            '온라인 가상잔액이 부족합니다.',
+            'createSdLinkBackgroundWindowGuard',
+            'allowManagerWindow',
+            '--sd-link-auto-start',
+            'windowsHide'
           )){
-            if(-not $joined.Contains($required)){ throw "Core bridge marker missing: $required" }
+            if(-not $joined.Contains($required)){ throw "Core/R2 guard marker missing: $required" }
           }
           foreach($forbidden in @('request_sd_wallet_migration =','get_sd_link_snapshot =','syncAchievementProgress =','syncBitcoinSnapshot =')){
             if($joined.Contains($forbidden)){ throw "Core bridge unexpectedly rewrites protected onboarding/non-wallet flow: $forbidden" }
           }
-          Write-Host 'v0.24 Core bridge transition contract passed'
+          Write-Host 'v0.24 Core bridge + SD Link background window guard transition contract passed'

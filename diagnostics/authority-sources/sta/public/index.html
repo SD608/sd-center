@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>STA</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">STA</div>
+        <div>
+          <h1>특수 작전 확장팩</h1>
+          <p>해킹 · 습격 · 운반</p>
+        </div>
+      </div>
+      <div class="wallet-strip">
+        <label class="account-box">
+          <span>작전 계좌</span>
+          <select id="accountSelect"></select>
+        </label>
+        <div class="balance-box"><span>현재 가상잔액</span><strong id="balanceText">연결 안 됨</strong></div>
+        <button id="refreshButton" class="small-button">F5 새로고침</button>
+        <button id="autoDetectButton" class="small-button">자동 연결</button>
+        <button id="chooseDbButton" class="small-button">DB 선택</button>
+      </div>
+      <div class="top-actions">
+        <button id="soundButton" class="icon-button" title="효과음">🔊</button>
+        <button id="musicButton" class="icon-button" title="배경음">🎵</button>
+        <input id="volumeSlider" type="range" min="0" max="100" value="70" title="음량">
+        <button id="centerButton" class="small-button">종합센터</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="menuScene" class="scene active">
+        <div class="operation-summary">
+          <div>
+            <span>작전 진행도</span>
+            <strong id="progressText">0 / 3</strong>
+          </div>
+          <div>
+            <span>미정산 현금</span>
+            <strong id="rawCashText">0원</strong>
+          </div>
+          <div>
+            <span>예상 최종 보수</span>
+            <strong id="projectedPayoutText">0원</strong>
+          </div>
+          <div>
+            <span>상태</span>
+            <strong id="operationStatusText">새 작전 대기</strong>
+          </div>
+        </div>
+
+        <div class="mission-grid">
+          <article id="hackingCard" class="mission-card" data-mission="hacking">
+            <div class="card-number">01</div>
+            <div class="card-icon">🔌</div>
+            <h2>해킹</h2>
+            <p>전선을 같은 색 단자에 연결합니다.</p>
+            <div class="card-status" id="hackingStatus">입장 가능</div>
+          </article>
+
+          <article id="raidCard" class="mission-card locked" data-mission="raid">
+            <div class="lock-badge">🔒</div>
+            <div class="card-number">02</div>
+            <div class="card-icon">🏦</div>
+            <h2>습격</h2>
+            <p>레이저 보안실을 통과하고 금고를 열어 현금을 확보합니다.</p>
+            <div class="card-status" id="raidStatus">잠김</div>
+          </article>
+
+          <article id="transportCard" class="mission-card locked" data-mission="transport">
+            <div class="lock-badge">🔒</div>
+            <div class="card-number">03</div>
+            <div class="card-icon">🏍️</div>
+            <h2>운반</h2>
+            <p>오토바이를 조작해 벽을 피하고 목적지까지 현금을 운반합니다.</p>
+            <div class="card-status" id="transportStatus">잠김</div>
+          </article>
+        </div>
+
+        <div class="rules-panel">
+          <div><strong>50,000원</strong><span>작전 참가비</span></div>
+          <div><strong>5회</strong><span>레이저 최대 충돌</span></div>
+          <div><strong>25초</strong><span>금고 현금 획득</span></div>
+          <div><strong>2,000원</strong><span>유효 클릭 1회</span></div>
+        </div>
+        <p class="virtual-warning">본 확장팩의 모든 금액은 SD지갑 내부 가상잔액이며 실제 화폐가 아닙니다.</p>
+      </section>
+
+      <section id="hackingScene" class="scene game-scene">
+        <div class="scene-header">
+          <button class="back-button" data-back>← 작전 메뉴</button>
+          <div><h2>전선 해킹</h2><p id="hackingRoundText">해킹 1 / 3</p></div>
+          <div class="instruction">왼쪽 단자를 누른 채 같은 색 오른쪽 단자로 연결</div>
+        </div>
+        <div class="canvas-shell hacking-shell">
+          <canvas id="hackingCanvas" width="1100" height="560"></canvas>
+        </div>
+      </section>
+
+      <section id="laserScene" class="scene game-scene">
+        <div class="scene-header">
+          <button class="back-button" data-back>← 작전 메뉴</button>
+          <div><h2>레이저 보안실</h2><p>WASD로 이동 · 레이저 5회 충돌 시 작전 실패</p></div>
+          <div class="danger-counter">충돌 <strong id="laserHitText">0 / 5</strong></div>
+        </div>
+        <div class="canvas-shell laser-shell">
+          <canvas id="laserCanvas" width="1100" height="620"></canvas>
+        </div>
+      </section>
+
+      <section id="vaultScene" class="scene game-scene">
+        <div class="scene-header">
+          <button class="back-button" data-back>← 작전 메뉴</button>
+          <div><h2>금고 개방</h2><p>마우스 왼쪽 클릭 또는 Space를 연타하세요. 입력을 멈추면 게이지가 감소합니다.</p></div>
+          <div class="instruction">필요 입력 100회</div>
+        </div>
+        <div id="vaultArea" class="vault-area" tabindex="0">
+          <div class="vault-door">
+            <div class="vault-ring" id="vaultRing">
+              <div class="vault-center"><strong id="vaultPercent">0%</strong><span>잠금 해제</span></div>
+            </div>
+          </div>
+          <div class="vault-prompt">여기를 빠르게 클릭하거나 Space를 누르세요</div>
+        </div>
+      </section>
+
+      <section id="lootScene" class="scene game-scene">
+        <div class="scene-header">
+          <div class="locked-back">금고 현금 확보 중</div>
+          <div><h2>현금 획득</h2><p>마우스 왼쪽 클릭 · 속도 제한 없음 · 1회당 2,000원</p></div>
+          <div class="loot-timer"><strong id="lootTimerText">25.0</strong><span>초</span></div>
+        </div>
+        <div id="lootArea" class="loot-area">
+          <div class="cash-stack">💵</div>
+          <div class="cash-total"><span>미정산 현금</span><strong id="lootCashText">0원</strong></div>
+          <p>현금 더미를 빠르게 클릭하세요</p>
+        </div>
+      </section>
+
+      <section id="transportScene" class="scene game-scene">
+        <div class="scene-header">
+          <button class="back-button" data-back>← 작전 메뉴</button>
+          <div><h2>현금 운반</h2><p>야간 도심을 질주해 추격과 장애물을 피하고 목적지에 도착하세요.</p></div>
+          <div class="transport-stats">
+            <span>충돌 <strong id="transportHitText">0회</strong></span>
+            <span>예상 보수 <strong id="transportPayoutText">0원</strong></span>
+          </div>
+        </div>
+        <div class="canvas-shell transport-shell">
+          <canvas id="transportCanvas" width="1100" height="620"></canvas>
+        </div>
+      </section>
+
+      <section id="payoutScene" class="scene game-scene">
+        <div class="payout-panel">
+          <div class="payout-icon">✓</div>
+          <h2>운반 완료</h2>
+          <div class="payout-breakdown">
+            <div><span>금고에서 확보한 현금</span><strong id="payoutRawText">0원</strong></div>
+            <div><span>운반 충돌 손실</span><strong id="payoutLossText">-0원</strong></div>
+            <div class="final"><span>최종 보수</span><strong id="payoutFinalText">0원</strong></div>
+          </div>
+          <label class="payout-account"><span>보수를 지급받을 계좌</span><select id="payoutAccountSelect"></select></label>
+          <div class="payout-actions">
+            <button id="payoutRefreshButton" class="secondary-button">F5 계좌 새로고침</button>
+            <button id="payoutButton" class="primary-button">최종 보수 받기</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="overlayMessage" class="overlay-message" aria-live="polite">
+      <div class="overlay-card"><h2 id="overlayTitle"></h2><p id="overlayBody"></p></div>
+    </div>
+
+    <div id="modal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <h2 id="modalTitle"></h2>
+        <p id="modalBody"></p>
+        <div class="modal-actions">
+          <button id="modalCancel" class="secondary-button">취소</button>
+          <button id="modalConfirm" class="primary-button">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+  </div>
+  <script src="js/app.js"></script>
+</body>
+</html>

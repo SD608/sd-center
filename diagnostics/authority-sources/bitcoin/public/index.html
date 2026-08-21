@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="SD지갑과 연결되는 원룸형 가상 비트코인 채굴 시뮬레이션"
+  />
+  <title>SD비트코인 채굴장</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <div class="ambient ambient-blue"></div>
+  <div class="ambient ambient-gold"></div>
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">SD CRYPTO CITY · SIMULATION</p>
+      <h1>SD비트코인 채굴장</h1>
+      <p class="subtitle">
+        원룸을 사고 채굴 틀과 그래픽카드를 설치해 가상 비트코인을 채굴하세요.
+      </p>
+    </div>
+
+    <div class="top-actions">
+      <button id="refreshButton" class="button ghost" type="button">
+        새로고침 · F5
+      </button>
+      <button id="settingsButton" class="button ghost" type="button">
+        계좌 설정
+      </button>
+    </div>
+  </header>
+
+  <div class="simulation-banner">
+    실제 암호화폐가 아닌 가상경제 시뮬레이션입니다. X를 눌러도 시스템 트레이에서 채굴하며, 가동 중인 GPU 1개당 UTC 기준 하루 100,000원의 전기세가 결제되지 않으면 채굴이 중지됩니다.
+  </div>
+
+  <main class="app-shell">
+    <section class="account-strip">
+      <div>
+        <span>사용 계좌</span>
+        <strong id="accountLabel">연결되지 않음</strong>
+      </div>
+      <div>
+        <span>가상계좌 잔액</span>
+        <strong id="accountBalance">₩0</strong>
+      </div>
+      <div>
+        <span>보유 비트코인</span>
+        <strong id="topBtcBalance">0.00 BTC</strong>
+      </div>
+      <div>
+        <span>평가금액</span>
+        <strong id="topBtcValue">₩0</strong>
+      </div>
+    </section>
+
+    <section id="electricityPanel" class="electricity-panel">
+      <div class="electricity-copy">
+        <p class="section-kicker">ELECTRICITY · UTC BILLING</p>
+        <h2>채굴장 전기 상태</h2>
+        <p id="electricityDescription">GPU를 설치하면 GPU 1개당 UTC 날짜 기준 하루 100,000원이 청구됩니다.</p>
+      </div>
+
+      <div class="electricity-metrics">
+        <div><span>가동 상태</span><strong id="electricityStatus">대기</strong></div>
+        <div><span>하루 전기세</span><strong id="electricityDailyFee">₩0</strong></div>
+        <div><span>다음 결제</span><strong id="electricityNextBilling">GPU 설치 후 시작</strong></div>
+        <div><span>밀린 금액</span><strong id="electricityDebt">₩0</strong></div>
+      </div>
+
+      <button id="reactivateElectricityButton" class="button danger hidden" type="button">
+        밀린 전기세 납부 후 재가동
+      </button>
+    </section>
+
+    <nav class="view-tabs" aria-label="앱 화면 전환">
+      <button class="active" type="button" data-view="map">원룸 맵</button>
+      <button type="button" data-view="room">원룸 내부</button>
+      <button type="button" data-view="vault">비트코인 금고</button>
+      <button type="button" data-view="history">기록</button>
+    </nav>
+
+    <section id="mapView" class="view-panel">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">ROOM MAP</p>
+          <h2>채굴 원룸 단지</h2>
+          <p>원룸 가격은 A에서 E로 갈수록 500,000원씩 상승합니다.</p>
+        </div>
+        <div class="map-legend">
+          <span><i class="owned-dot"></i>내 소유</span>
+          <span><i class="locked-dot"></i>미구매</span>
+        </div>
+      </div>
+
+      <div class="room-map">
+        <div class="corridor"></div>
+        <div id="roomGrid" class="room-grid"></div>
+      </div>
+    </section>
+
+    <section id="roomView" class="view-panel hidden">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">MINING ROOM</p>
+          <h2 id="roomTitle">A 원룸</h2>
+          <p id="roomSubtitle">맵에서 원룸을 선택하세요.</p>
+        </div>
+        <button id="backToMapButton" class="button ghost" type="button">
+          맵으로
+        </button>
+      </div>
+
+      <div class="room-layout">
+        <section class="room-scene-panel">
+          <div id="roomScene" class="room-scene wall-concrete floor-dark">
+            <div class="window-unit">
+              <span class="window-light"></span>
+            </div>
+            <div class="wall-line"></div>
+
+            <div id="rackArea" class="rack-area"></div>
+
+            <div class="room-door">
+              <span></span>
+            </div>
+
+            <div class="room-status-board">
+              <span>그래픽카드</span>
+              <strong id="roomGpuCount">0 / 0</strong>
+              <span>누적 채굴</span>
+              <strong id="roomMinedBtc">0.00 BTC</strong>
+            </div>
+          </div>
+        </section>
+
+        <aside class="room-controls">
+          <section class="panel-card">
+            <p class="section-kicker">FACILITY SHOP</p>
+            <h3>채굴 시설 상점</h3>
+
+            <article class="shop-item">
+              <div>
+                <strong>채굴 틀</strong>
+                <span>틀 1개당 그래픽카드 5개</span>
+              </div>
+              <strong id="framePrice">₩0</strong>
+              <button id="buyFrameButton" class="button primary" type="button">
+                틀 구매
+              </button>
+            </article>
+
+            <article class="shop-item">
+              <div>
+                <strong>그래픽카드</strong>
+                <span>10초마다 0.02% 확률로 0.05 BTC · 성공 시 내구도 -1%</span>
+              </div>
+              <strong id="gpuPrice">₩0</strong>
+              <button id="buyGpuButton" class="button primary" type="button">
+                GPU 구매
+              </button>
+            </article>
+          </section>
+
+          <section class="panel-card">
+            <p class="section-kicker">INTERIOR</p>
+            <h3>원룸 꾸미기</h3>
+
+            <label class="field">
+              <span>벽지</span>
+              <select id="wallThemeSelect">
+                <option value="concrete">콘크리트</option>
+                <option value="brick">붉은 벽돌</option>
+                <option value="neon">네온</option>
+                <option value="clean">화이트</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>바닥</span>
+              <select id="floorThemeSelect">
+                <option value="dark">다크 타일</option>
+                <option value="wood">나무 바닥</option>
+                <option value="tile">밝은 타일</option>
+              </select>
+            </label>
+
+            <button id="saveDecorationButton" class="button ghost full" type="button">
+              인테리어 저장
+            </button>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section id="vaultView" class="view-panel hidden">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">BITCOIN VAULT</p>
+          <h2>비트코인 전용 금고</h2>
+          <p>채굴된 비트코인을 확인하고 선택한 가상계좌로 판매합니다.</p>
+        </div>
+      </div>
+
+      <div class="vault-layout">
+        <section class="bitcoin-vault">
+          <div class="vault-ring ring-one"></div>
+          <div class="vault-ring ring-two"></div>
+          <div class="bitcoin-coin" aria-label="회전하는 비트코인">
+            <div class="coin-face coin-front">₿</div>
+            <div class="coin-face coin-back">₿</div>
+          </div>
+
+          <div class="vault-metrics">
+            <div>
+              <span>보유 비트코인</span>
+              <strong id="vaultBtcBalance">0.00 BTC</strong>
+            </div>
+            <div>
+              <span>현재 평가금액</span>
+              <strong id="vaultBtcValue">₩0</strong>
+            </div>
+            <div>
+              <span>누적 판매량</span>
+              <strong id="totalSoldBtc">0.00 BTC</strong>
+            </div>
+            <div>
+              <span>누적 판매금액</span>
+              <strong id="totalSalesKrw">₩0</strong>
+            </div>
+          </div>
+        </section>
+
+        <aside class="sell-panel panel-card">
+          <p class="section-kicker">SELL BITCOIN</p>
+          <h3>비트코인 판매</h3>
+
+          <div id="quickSellButtons" class="quick-sell">
+            <button type="button" data-amount="0.05">0.05</button>
+            <button type="button" data-amount="0.1">0.10</button>
+            <button type="button" data-amount="0.5">0.50</button>
+            <button type="button" data-amount="1">1.00</button>
+            <button type="button" data-amount="all">전부</button>
+          </div>
+
+          <label class="field">
+            <span>판매 수량(BTC)</span>
+            <input id="sellAmountInput" type="text" inputmode="decimal" value="0.05" />
+          </label>
+
+          <div class="sale-preview">
+            <span>예상 입금액</span>
+            <strong id="salePreview">₩225,000</strong>
+          </div>
+
+          <button id="sellBitcoinButton" class="button primary full" type="button">
+            선택 계좌로 판매
+          </button>
+
+          <p class="sell-note">
+            1 BTC = 4,500,000원으로 고정됩니다.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="historyView" class="view-panel hidden">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">ACTIVITY LOG</p>
+          <h2>최근 활동 기록</h2>
+        </div>
+      </div>
+
+      <div id="historyList" class="history-list">
+        <p class="empty-state">기록이 없습니다.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="purchaseModal" class="modal-backdrop hidden">
+    <section class="modal small-modal">
+      <div class="modal-header">
+        <div>
+          <p class="section-kicker">ROOM PURCHASE</p>
+          <h2 id="purchaseRoomTitle">A 원룸 구매</h2>
+        </div>
+        <button id="closePurchaseButton" class="modal-close" type="button">×</button>
+      </div>
+
+      <p id="purchaseRoomPrice" class="purchase-price">₩500,000</p>
+      <p class="modal-help">
+        구매하면 이 계좌의 소유가 되며 채굴 시설 설치와 인테리어 변경이 가능합니다.
+      </p>
+
+      <button id="confirmRoomPurchaseButton" class="button primary full" type="button">
+        원룸 구매 확정
+      </button>
+    </section>
+  </div>
+
+  <div id="settingsModal" class="modal-backdrop hidden">
+    <section class="modal">
+      <div class="modal-header">
+        <div>
+          <p class="section-kicker">WALLET CONNECTION</p>
+          <h2>SD지갑 연결</h2>
+        </div>
+        <button id="closeSettingsButton" class="modal-close" type="button">×</button>
+      </div>
+
+      <p class="modal-help">
+        계좌마다 원룸 소유권, 채굴 시설, 비트코인 잔액과 판매 기록이 독립적으로 저장됩니다.
+      </p>
+
+      <div class="button-row">
+        <button id="autoDetectButton" class="button primary" type="button">
+          자동 찾기
+        </button>
+        <button id="chooseDatabaseButton" class="button ghost" type="button">
+          DB 직접 선택
+        </button>
+      </div>
+
+      <p id="walletPathText" class="path-text">연결된 DB 없음</p>
+
+      <label class="field">
+        <span>사용할 가상계좌</span>
+        <select id="accountSelect">
+          <option value="">계좌를 먼저 불러오세요</option>
+        </select>
+      </label>
+
+      <button id="saveSettingsButton" class="button primary full" type="button">
+        계좌 연결 저장
+      </button>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="./js/app.js"></script>
+
+  <a class="sd-center-quick-link" href="sdcenter://open" title="SD종합센터 열기">
+    <span>SD</span> 종합센터
+  </a>
+</body>
+</html>

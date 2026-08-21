@@ -1,0 +1,132 @@
+name: Test Flea v1.2.4 UI Candidate and App Updater
+
+on:
+  push:
+    branches: [release/v024-final-gate-20260820]
+    paths:
+      - '.github/workflows/test-flea-v124-and-app-updater.yml'
+      - 'tools/build-flea-v124-compact-inventory.py'
+      - 'tools/audit-center-app-updater-v227.js'
+  pull_request:
+    paths:
+      - '.github/workflows/test-flea-v124-and-app-updater.yml'
+      - 'tools/build-flea-v124-compact-inventory.py'
+      - 'tools/audit-center-app-updater-v227.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flea-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build non-publishing v1.2.4 candidate
+        run: python tools/build-flea-v124-compact-inventory.py
+
+      - name: Validate candidate scope and catalog safety
+        shell: python
+        run: |
+          import hashlib, json, zipfile
+          from pathlib import Path
+
+          out=Path('artifacts/flea-v124/SDFleaMarket_v1.2.4_Desktop-CANDIDATE.zip')
+          if not out.is_file(): raise SystemExit('candidate missing')
+          digest=hashlib.sha256(out.read_bytes()).hexdigest()
+          print('candidate sha256:',digest)
+          with zipfile.ZipFile(out) as z:
+              pkg=json.loads(z.read('sd-flea-market/package.json'))
+              app=json.loads(z.read('sd-flea-market/sd-app.json'))
+              css=z.read('sd-flea-market/public/style.css').decode('utf-8')
+              if pkg.get('version')!='1.2.4' or app.get('version')!='1.2.4': raise SystemExit('candidate version mismatch')
+              for marker in [
+                  'v1.2.4 compact inventory artwork',
+                  '.item-card .item-art{width:min(96px,100%);height:76px',
+                  '.item-card .inventory-item-image{width:82px;height:64px',
+              ]:
+                  if marker not in css: raise SystemExit(f'compact UI marker missing: {marker}')
+          catalog=json.loads(Path('update/extensions-catalog.json').read_text(encoding='utf-8'))
+          flea=catalog['apps']['sd-flea-market']
+          if flea.get('version')!='1.2.3': raise SystemExit('official flea catalog changed before Release Gate')
+          if 'SDFleaMarket_v1.2.3_Desktop.zip' not in flea.get('downloadUrl',''): raise SystemExit('official flea URL changed before Release Gate')
+          pinned=sum(1 for entry in catalog['apps'].values() if entry.get('sha256'))
+          total=len(catalog['apps'])
+          print(f'catalog sha256 pins: {pinned}/{total}')
+          if pinned < total:
+              print('WARNING: extension catalog does not pin SHA-256 for every official app entry.')
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flea-v1.2.4-compact-ui-candidate
+          path: artifacts/flea-v124/
+          if-no-files-found: error
+
+  updater-windows-audit:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download exact official v2.2.7 installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup=Join-Path $env:RUNNER_TEMP 'SDCenterSetup-v2.2.7.exe'
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
+          $size=(Get-Item $setup).Length
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($size -ne 140105216){ throw "official v2.2.7 size mismatch: $size" }
+          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "official v2.2.7 hash mismatch: $hash" }
+          "SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install exact official v2.2.7 baseline
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7\resources\app'
+          if(-not (Test-Path (Join-Path $root 'main.js'))){ throw 'installed v2.2.7 main.js missing' }
+          "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Audit actual installed extension updater contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/audit-center-app-updater-v227.js "$env:APP_ROOT"
+          node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\src\app-registry.js"
+
+      - name: Launch official center process smoke
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $exe=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7\SDCenter.exe'
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "center exited during updater audit smoke: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+  release-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm no official publication mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '"version": "1.2.3"' update/extensions-catalog.json
+          grep -q 'SDFleaMarket_v1.2.3_Desktop.zip' update/extensions-catalog.json
+          ! grep -q 'SDFleaMarket_v1.2.4_Desktop' update/extensions-catalog.json
+          echo 'Official catalog remains unchanged; candidate is artifact-only.'

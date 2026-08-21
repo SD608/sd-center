@@ -1,0 +1,13 @@
+{
+  "productName": "SD비트코인 채굴장",
+  "id": "bitcoin",
+  "userDataFolder": "SD비트코인 채굴장",
+  "icon": "public/icons/icon-512.png",
+  "improvement": "전기세와 GPU 내구도를 관리하며 채굴 규모를 키울 수 있습니다.",
+  "description": "방과 채굴 장비를 확장해 자동 채굴 시설을 운영하는 시뮬레이션입니다.",
+  "entry": "main.js",
+  "version": "1.2.2",
+  "name": "SD비트코인 채굴장",
+  "displayVersion": "Version 1.2 · v1.2.2",
+  "accent": "orange"
+}

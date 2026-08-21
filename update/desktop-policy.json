@@ -12,25 +12,33 @@
     "sd-logistics-center-desktop": {
       "required": true,
       "minVersion": "1.1.0",
+      "version": "1.1.0",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_v1.1.0_Desktop.zip?v=110",
+      "sha256": "3a1b1c156b233d0d74555dce2f8899030cd4573f00524dc4edeb4e130a1ace08",
       "message": "PC 물류 진행도를 홈페이지 계정에 연동하기 위해 SD 물류센터 v1.1.0 이상이 필요합니다. 기존 진행도와 SD지갑 잔액은 유지됩니다."
     },
     "sdlink-desktop": {
       "required": true,
       "minVersion": "1.4.0",
+      "version": "1.4.1",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.1_Desktop.zip?v=141",
+      "sha256": "032d7e9fec32d99f9ae13a568baa1d1d80c5fb713392bdd103ccbd3ce9f59707",
       "message": "PC 슬롯·홀짝의 SD Online 서버 통합을 위해 SD Link v1.4.0 이상이 필요합니다."
     },
     "sd-slot-desktop": {
       "required": true,
       "minVersion": "1.1.0",
+      "version": "1.1.0",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_v1.1.0_Desktop.zip?v=110",
+      "sha256": "66ae3b9ee4e6d5bb97fb08d90e5bd045a6f463b155ec194ebb6d37a2f7478d5b",
       "message": "PC·모바일 슬롯을 같은 서버 게임으로 사용하려면 SD슬롯 v1.1.0 이상이 필요합니다."
     },
     "sd-odd-even-desktop": {
       "required": true,
       "minVersion": "1.2.0",
+      "version": "1.2.0",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.2.0_Desktop.zip?v=120",
+      "sha256": "da5b4aa44f78d87f14e5ca3386c9b530fccdf293ceba562fce2c69eeff4f26f9",
       "message": "PC·모바일 홀짝을 같은 서버 게임으로 사용하려면 SD홀짝 v1.2.0 이상이 필요합니다."
     }
   }

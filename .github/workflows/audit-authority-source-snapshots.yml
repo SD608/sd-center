@@ -1,0 +1,60 @@
+name: Authority Source Snapshot Audit
+
+on:
+  push:
+    branches: [release/v024-final-gate-20260820]
+    paths:
+      - '.github/workflows/audit-authority-source-snapshots.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/v024-final-gate-20260820
+      - name: Download official packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pkgs diagnostics/authority-sources
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/pkgs/bitcoin.zip 'https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDBitcoinMiner_v1.2.2_Desktop.zip'
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/pkgs/miner.zip 'https://sd608.github.io/sd-center/downloads/extensions/SDMiner_v1.1.1_Desktop.zip?v=111'
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/pkgs/mukjjippa.zip 'https://sd608.github.io/sd-center/downloads/extensions/SDMukjippa_Version1_1_Desktop.zip'
+          curl -fL --retry 4 --retry-delay 2 -o /tmp/pkgs/sta.zip 'https://sd608.github.io/sd-center/downloads/extensions/STA_Version6_Desktop.zip?v=151'
+      - name: Extract text sources only
+        shell: bash
+        run: |
+          set -euo pipefail
+          for app in bitcoin miner mukjjippa sta; do
+            rm -rf /tmp/$app
+            mkdir -p /tmp/$app diagnostics/authority-sources/$app
+            unzip -q /tmp/pkgs/$app.zip -d /tmp/$app
+            root=$(find /tmp/$app -maxdepth 3 -type f -name package.json -printf '%h\n' | head -n1)
+            test -n "$root"
+            while IFS= read -r -d '' file; do
+              rel=${file#"$root"/}
+              mkdir -p "diagnostics/authority-sources/$app/$(dirname "$rel")"
+              cp "$file" "diagnostics/authority-sources/$app/$rel"
+            done < <(find "$root" -type f \( -name '*.js' -o -name '*.json' -o -name '*.html' -o -name '*.css' \) -print0)
+          done
+      - name: Record package hashes
+        shell: bash
+        run: |
+          sha256sum /tmp/pkgs/*.zip > diagnostics/authority-sources/PACKAGE_SHA256.txt
+      - name: Commit audit snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diagnostics/authority-sources
+          if git diff --cached --quiet; then
+            echo 'No snapshot changes'
+            exit 0
+          fi
+          git commit -m 'chore: add authority audit source snapshots'
+          git push origin HEAD:release/v024-final-gate-20260820
