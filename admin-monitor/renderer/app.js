@@ -3,10 +3,46 @@
 const api = window.sdAdmin;
 const logic = window.SD_UI_LOGIC;
 const MAX_ADJUSTMENT_AMOUNT = logic.MAX_ADJUSTMENT_AMOUNT;
-const state = { admin:null, users:[], expanded:new Set(), selectedUser:null, adjustDirection:null, pendingAdjustment:null, refreshTimer:null };
+const state = { admin:null, users:[], expanded:new Set(), roadmapExpanded:new Set(), selectedUser:null, adjustDirection:null, pendingAdjustment:null, refreshTimer:null, roadmap:null };
 const $=(id)=>document.getElementById(id);
 const el=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;};
 function setStatus(node,text,success=false){if(!node)return;node.hidden=!text;node.textContent=text||"";node.classList.toggle("success",Boolean(success));}
+
+function showTool(name){
+  const roadmap=name==="roadmap";
+  $("roadmapView").hidden=!roadmap;
+  $("accessView").hidden=roadmap;
+  $("roadmapNav").classList.toggle("active",roadmap);
+  $("accessNav").classList.toggle("active",!roadmap);
+}
+function roadmapProgress(chapter){const steps=Array.isArray(chapter?.steps)?chapter.steps:[];const complete=steps.filter(step=>step.status==="complete").length;return{complete,total:steps.length,percent:steps.length?complete/steps.length*100:0};}
+function renderRoadmap(){
+  const list=$("roadmapList"),chapters=Array.isArray(state.roadmap?.chapters)?state.roadmap.chapters:[];
+  list.replaceChildren();
+  let complete=0,total=0;
+  for(const chapter of chapters){const p=roadmapProgress(chapter);complete+=p.complete;total+=p.total;}
+  const percent=total?complete/total*100:0;
+  $("roadmapPercent").textContent=`${percent.toFixed(1)}%`;
+  $("roadmapCount").textContent=`${complete} / ${total}`;
+  $("roadmapOverallBar").style.width=`${percent}%`;
+  if(!chapters.length){list.append(el("div","empty","로드맵 데이터가 없습니다."));return;}
+  for(const chapter of chapters){
+    const id=String(chapter.id||""),expanded=state.roadmapExpanded.has(id),p=roadmapProgress(chapter),card=el("article","roadmap-card");
+    const head=el("div","roadmap-head"),toggle=el("button","roadmap-chapter-button",`${expanded?"▼":"▶"} ${id}. ${chapter.title||""}`),label=el("span",`roadmap-label ${chapter.status||"pending"}`,chapter.label||chapter.status||"");
+    toggle.type="button";toggle.addEventListener("click",()=>{if(expanded)state.roadmapExpanded.delete(id);else state.roadmapExpanded.add(id);renderRoadmap();});head.append(toggle,label);
+    const progress=el("div","chapter-progress"),track=el("div","progress-track"),bar=el("span");bar.style.width=`${p.percent}%`;track.append(bar);progress.append(track,el("strong","",`${p.complete}/${p.total} · ${p.percent.toFixed(1)}%`));card.append(head,progress);
+    if(expanded){const detail=el("div","roadmap-steps");for(const step of chapter.steps||[]){const mark=step.status==="complete"?"✓":step.status==="in_progress"?"●":"○";detail.append(el("div",`roadmap-step ${step.status||"pending"}`,`${mark}  ${step.id}  ${step.title||""}`));}card.append(detail);}
+    list.append(card);
+  }
+}
+async function loadRoadmap(showNotice=false){
+  $("roadmapRefreshButton").disabled=true;setStatus($("roadmapStatus"),"");
+  try{const result=await api.getRoadmap();if(!result.ok)throw new Error(result.error||"로드맵을 불러오지 못했습니다.");state.roadmap=result.data?.roadmap||null;$("roadmapPath").textContent=result.data?.path||"";renderRoadmap();if(showNotice){setStatus($("roadmapStatus"),"새로고침 완료",true);setTimeout(()=>setStatus($("roadmapStatus"),""),1200);}}
+  catch(error){setStatus($("roadmapStatus"),error.message||"로드맵을 불러오지 못했습니다.");}
+  finally{$("roadmapRefreshButton").disabled=false;}
+}
+async function showRoadmapFile(){const result=await api.showRoadmapFile();if(!result.ok)setStatus($("roadmapStatus"),result.error||"로드맵 데이터 파일을 열지 못했습니다.");}
+
 function appLabel(app){return app.count>1?`${app.appName} ×${app.count}`:app.appName;}
 function renderUsers(){const list=$("userList"),query=$("searchInput").value,onlineOnly=$("onlineOnly").checked,users=logic.filterUsers(state.users,query,onlineOnly);$("onlineCount").textContent=String(state.users.filter(u=>u.online).length);$("totalCount").textContent=String(state.users.length);list.replaceChildren();if(!users.length){list.append(el("div","empty",query||onlineOnly?"검색 결과가 없습니다.":"표시할 사용자가 없습니다."));return;}for(const user of users){const card=el("article","user-card");card.tabIndex=0;card.setAttribute("role","button");card.setAttribute("aria-label",`${user.nickname||"사용자"} 상세 보기`);const identity=el("div","identity"),dot=el("span",`dot${user.online?" online":""}`),name=el("strong","",user.nickname||"사용자");identity.append(dot,name);if(user.role==="admin")identity.append(el("span","role","관리자"));const apps=el("div","apps-line"),expanded=state.expanded.has(user.user_id),split=logic.splitApps(user.running_apps,expanded,3);if(!split.total){apps.append(el("span","muted",user.online?"실행 앱 확인 중":logic.formatRelativeTime(user.last_seen_at)));}else{for(const app of split.visible)apps.append(el("span",`app-chip${app.count>1?" duplicate":""}`,appLabel(app)));if(split.hiddenCount>0){const more=el("button","more-button",`+${split.hiddenCount}`);more.type="button";more.addEventListener("click",event=>{event.stopPropagation();state.expanded.add(user.user_id);renderUsers();});apps.append(more);}else if(expanded&&split.total>3){const less=el("button","more-button","접기");less.type="button";less.addEventListener("click",event=>{event.stopPropagation();state.expanded.delete(user.user_id);renderUsers();});apps.append(less);}}const balance=el("div","balance");balance.append(el("strong","",logic.formatAmount(user.balance)),el("small","",user.online?"온라인":logic.formatRelativeTime(user.last_seen_at)));card.append(identity,apps,balance);const open=()=>openUser(user.user_id);card.addEventListener("click",open);card.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();open();}});list.append(card);}}
 async function loadUsers(showNotice=false){$("refreshButton").disabled=true;try{const result=await api.listUsers();if(!result.ok)throw new Error(result.error||"목록을 불러오지 못했습니다.");state.users=Array.isArray(result.data)?result.data:[];renderUsers();if(showNotice){setStatus($("appStatus"),"새로고침 완료",true);setTimeout(()=>setStatus($("appStatus"),""),1200);}}catch(error){setStatus($("appStatus"),error.message||"사용자 목록을 불러오지 못했습니다.");}finally{$("refreshButton").disabled=false;}}
@@ -21,4 +57,7 @@ function openAdjustment(direction){if(state.pendingAdjustment)return showPending
 async function submitAdjustment(event){event.preventDefault();if(!state.pendingAdjustment){const amount=Number($("adjustAmount").value),note=$("adjustNote").value.trim();if(!Number.isSafeInteger(amount)||amount<1||amount>MAX_ADJUSTMENT_AMOUNT)return setStatus($("adjustStatus"),"금액은 1 이상 1,000억 이하의 정수로 입력하세요.");if(state.adjustDirection==="debit"&&amount>Number(state.selectedUser?.balance||0))return setStatus($("adjustStatus"),"현재 잔액보다 많이 출금할 수 없습니다.");state.pendingAdjustment={userId:state.selectedUser.user_id,direction:state.adjustDirection,amount,note,requestId:crypto.randomUUID()};}const payload=state.pendingAdjustment;$("adjustSubmit").disabled=true;setStatus($("adjustStatus"),"");const result=await api.adjustWallet(payload);$("adjustSubmit").disabled=false;if(!result.ok){if(result.uncertain){setAdjustmentLocked(true);$("adjustSubmit").textContent="같은 요청으로 재시도";return setStatus($("adjustStatus"),`${result.error||"응답을 확인하지 못했습니다."} 같은 요청 ID로만 재시도합니다.`);}state.pendingAdjustment=null;setAdjustmentLocked(false);return setStatus($("adjustStatus"),result.error||"처리하지 못했습니다.");}state.pendingAdjustment=null;setAdjustmentLocked(false);setStatus($("adjustStatus"),`${state.adjustDirection==="credit"?"입금":"출금"} 완료 · ${logic.formatAmount(result.data?.balance_after)}`,true);await loadUsers(false);await openUser(payload.userId);setTimeout(()=>$("adjustDialog").close(),650);}
 async function login(event){event.preventDefault();$("loginButton").disabled=true;setStatus($("loginStatus"),"");const result=await api.login($("email").value,$("password").value);$("password").value="";$("loginButton").disabled=false;if(!result.ok)return setStatus($("loginStatus"),result.error||"로그인하지 못했습니다.");state.admin=result.data;$("adminName").textContent=result.data?.nickname||"관리자";$("loginView").hidden=true;$("appView").hidden=false;await loadUsers(false);await restorePendingAdjustment();if(state.refreshTimer)clearInterval(state.refreshTimer);state.refreshTimer=setInterval(()=>loadUsers(false),30000);}
 async function logout(){if(state.refreshTimer)clearInterval(state.refreshTimer);state.refreshTimer=null;await api.logout();state.users=[];state.admin=null;$("appView").hidden=true;$("loginView").hidden=false;if($("detailDialog").open)$("detailDialog").close();}
-$("loginForm").addEventListener("submit",login);$("logoutButton").addEventListener("click",logout);$("refreshButton").addEventListener("click",()=>loadUsers(true));$("searchInput").addEventListener("input",renderUsers);$("onlineOnly").addEventListener("change",renderUsers);$("detailClose").addEventListener("click",()=>$("detailDialog").close());$("creditButton").addEventListener("click",()=>openAdjustment("credit"));$("debitButton").addEventListener("click",()=>openAdjustment("debit"));$("adjustClose").addEventListener("click",()=>$("adjustDialog").close());$("adjustCancel").addEventListener("click",()=>$("adjustDialog").close());$("adjustAmount").addEventListener("input",updateAmountPreview);$("adjustForm").addEventListener("submit",submitAdjustment);updateAmountPreview();
+
+$("roadmapNav").addEventListener("click",()=>showTool("roadmap"));$("accessNav").addEventListener("click",()=>showTool("access"));$("roadmapRefreshButton").addEventListener("click",()=>loadRoadmap(true));$("roadmapFileButton").addEventListener("click",showRoadmapFile);
+$("loginForm").addEventListener("submit",login);$("logoutButton").addEventListener("click",logout);$("refreshButton").addEventListener("click",()=>loadUsers(true));$("searchInput").addEventListener("input",renderUsers);$("onlineOnly").addEventListener("change",renderUsers);$("detailClose").addEventListener("click",()=>$("detailDialog").close());$("creditButton").addEventListener("click",()=>openAdjustment("credit"));$("debitButton").addEventListener("click",()=>openAdjustment("debit"));$("adjustClose").addEventListener("click",()=>$("adjustDialog").close());$("adjustCancel").addEventListener("click",()=>$("adjustDialog").close());$("adjustAmount").addEventListener("input",updateAmountPreview);$("adjustForm").addEventListener("submit",submitAdjustment);
+updateAmountPreview();showTool("roadmap");loadRoadmap(false);
