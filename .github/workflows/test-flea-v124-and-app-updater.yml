@@ -7,6 +7,11 @@ on:
       - '.github/workflows/test-flea-v124-and-app-updater.yml'
       - 'tools/build-flea-v124-compact-inventory.py'
       - 'tools/audit-center-app-updater-v227.js'
+  pull_request:
+    paths:
+      - '.github/workflows/test-flea-v124-and-app-updater.yml'
+      - 'tools/build-flea-v124-compact-inventory.py'
+      - 'tools/audit-center-app-updater-v227.js'
   workflow_dispatch:
 
 permissions:
