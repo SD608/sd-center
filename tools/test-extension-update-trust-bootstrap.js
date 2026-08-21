@@ -83,6 +83,27 @@ try {
   const fakeBytes = Buffer.from("exact approved package bytes\n", "utf8");
   fs.writeFileSync(zip, fakeBytes);
   const digest = crypto.createHash("sha256").update(fakeBytes).digest("hex");
+
+  verify(
+    { metadata: { id: "future-test", rawVersion: "2.0.0" } },
+    { version: "2.0.0", sha256: digest },
+    zip,
+    "2.0.0",
+  );
+
+  let wrongBytesBlocked = false;
+  try {
+    verify(
+      { metadata: { id: "future-test", rawVersion: "2.0.0" } },
+      { version: "2.0.0", sha256: "0".repeat(64) },
+      zip,
+      "2.0.0",
+    );
+  } catch {
+    wrongBytesBlocked = true;
+  }
+  if (!wrongBytesBlocked) throw new Error("wrong package SHA was accepted");
+
   let higherVersionBlocked = false;
   try {
     verify({ metadata: { id: "future-test", rawVersion: "2.0.1" } }, { version: "2.0.0", sha256: digest }, zip, "2.0.0");
