@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  statuses: write
 
 jobs:
   repair-feed:
@@ -70,3 +71,24 @@ jobs:
             echo "97299eab1117b6fa1e2edd25c9e3aaadca5de28c7085cc866bb25b73550e47d5  remote.nupkg" | sha256sum -c -
             rm -f remote-RELEASES remote.nupkg
           done
+
+      - name: Publish machine-readable repair result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state="success"
+          description="v2.2.8 Squirrel feed repaired and verified"
+          if [ "$JOB_STATUS" != "success" ]; then
+            state="failure"
+            description="v2.2.8 Squirrel feed repair failed"
+          fi
+          gh api -X POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state="$state" \
+            -f context="release/v2.2.8-squirrel-feed-repair" \
+            -f description="$description"
+          test "$state" = "success"
