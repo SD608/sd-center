@@ -1,0 +1,98 @@
+name: Test Extension Update Integrity Hardening
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-extension-update-integrity-hardening.yml'
+      - 'tools/patch-v024-extension-update-integrity.js'
+      - 'tools/test-extension-update-integrity-helper.js'
+      - 'tools/audit-extension-catalog-integrity.py'
+      - 'update/extensions-catalog.json'
+      - 'update/desktop-policy.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-updater-hardening:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download exact official v2.2.7 installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup=Join-Path $env:RUNNER_TEMP 'SDCenterSetup-v2.2.7.exe'
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
+          if((Get-Item $setup).Length -ne 140105216){ throw 'official v2.2.7 size mismatch' }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "official v2.2.7 hash mismatch: $hash" }
+          "SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Install exact official v2.2.7 baseline
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7\resources\app'
+          if(-not (Test-Path (Join-Path $root 'main.js'))){ throw 'installed v2.2.7 main.js missing' }
+          "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Apply exact-version + SHA-256 updater hardening
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/patch-v024-extension-update-integrity.js "$env:APP_ROOT"
+          node --check "$env:APP_ROOT\main.js"
+      - name: Test integrity helper behavior
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node tools/test-extension-update-integrity-helper.js "$env:APP_ROOT\main.js"
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          foreach($marker in @('verifyOfficialExtensionPackage','crypto.createHash("sha256")','actualSha256 !== expectedSha256','compareVersions(inspected.metadata.rawVersion, version) !== 0')) {
+            if(-not $main.Contains($marker)){ throw "missing hardening marker: $marker" }
+          }
+      - name: Launch patched center process smoke
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $exe=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7\SDCenter.exe'
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 5
+          if($proc.HasExited){ throw "patched center exited during smoke: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+  catalog-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify all official update entries are SHA pinned
+        run: |
+          python tools/audit-extension-catalog-integrity.py | tee /tmp/audit.txt
+          grep -q 'catalog integrity pins: 10/10' /tmp/audit.txt
+          grep -q 'required-policy integrity pins: 4/4' /tmp/audit.txt
+
+  release-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm no official flea v1.2.4 publication yet
+        run: |
+          python - <<'PY'
+          import json
+          data=json.load(open('update/extensions-catalog.json',encoding='utf-8'))
+          flea=data['apps']['sd-flea-market']
+          assert flea['version']=='1.2.3'
+          assert 'SDFleaMarket_v1.2.3_Desktop.zip' in flea['downloadUrl']
+          assert len(flea['sha256'])==64
+          print('release-safety PASS: official flea remains v1.2.3 and SHA pinned')
+          PY
