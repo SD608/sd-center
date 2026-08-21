@@ -1,0 +1,50 @@
+name: Season Ranking Authority
+
+on:
+  push:
+    branches: [release/v024-final-gate-20260820]
+    paths:
+      - 'database/migrations/sd_season0_ranking_authority_v1.sql'
+      - 'tests/season-ranking-authority/**'
+      - '.github/workflows/season-ranking-authority.yml'
+  pull_request:
+    paths:
+      - 'database/migrations/sd_season0_ranking_authority_v1.sql'
+      - 'tests/season-ranking-authority/**'
+      - '.github/workflows/season-ranking-authority.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  season-ranking-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: season_ranking_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d season_ranking_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: season_ranking_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/season-ranking-authority/fixture.sql
+      - name: Apply Season 0 ranking authority
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_season0_ranking_authority_v1.sql
+      - name: Run ranking regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/season-ranking-authority/regression.sql

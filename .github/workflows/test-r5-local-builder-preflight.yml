@@ -1,0 +1,88 @@
+name: Test R5 Local Builder Preflight
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-r5-local-builder-preflight.yml'
+      - 'tools/RUN-R5-FINAL-GATE-BUILDER.cmd'
+      - 'tools/run-v024-final-installer-r5-local.ps1'
+      - 'tools/run-v024-final-installer-local.ps1'
+      - 'tools/test-extension-update-trust-bootstrap.js'
+      - 'tools/test-offline-ui-state-v024.js'
+      - 'tools/patch-v024-offline-ui-state.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-parser-and-safety:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse R5 wrapper with Windows PowerShell 5.1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $legacy="$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+          if(-not (Test-Path $legacy)){ throw 'Windows PowerShell 5.1 missing' }
+          & $legacy -NoProfile -Command @'
+          $ErrorActionPreference='Stop'
+          $path=(Resolve-Path 'tools/run-v024-final-installer-r5-local.ps1').Path
+          $tokens=$null; $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile($path,[ref]$tokens,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){ $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }
+          Write-Host 'R5 wrapper PowerShell parser PASS'
+          '@
+          if($LASTEXITCODE -ne 0){ throw 'R5 wrapper parser failed' }
+      - name: Validate R5 CMD PowerShell path independence
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $launcher=Get-Content 'tools/RUN-R5-FINAL-GATE-BUILDER.cmd' -Raw
+          foreach($marker in @(
+            'set "PS=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"',
+            'set "PS=%SystemRoot%\Sysnative\WindowsPowerShell\v1.0\powershell.exe"',
+            '"%PS%" -NoProfile -ExecutionPolicy Bypass',
+            '728a60445253a8798bb65d578e2192222d4cffcce61d22a3b2192f7fc2612ee5',
+            '7791eb054d6334d9c4c7c9fb27795b63b4e59ec5'
+          )) {
+            if(-not $launcher.Contains($marker)){ throw "missing R5 launcher marker: $marker" }
+          }
+          if($launcher.Contains('powershell.exe -NoProfile')){ throw 'launcher still relies on PATH powershell.exe invocation' }
+          $legacy="$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+          if(-not (Test-Path $legacy -PathType Leaf)){ throw 'expected Windows PowerShell absolute path missing on runner' }
+          Write-Host 'R5 launcher absolute Windows PowerShell path PASS'
+      - name: Validate exact R5 identity and release safety markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $wrapper=Get-Content 'tools/run-v024-final-installer-r5-local.ps1' -Raw
+          $base=Get-Content 'tools/run-v024-final-installer-local.ps1' -Raw
+          foreach($marker in @(
+            '728a60445253a8798bb65d578e2192222d4cffcce61d22a3b2192f7fc2612ee5',
+            'eec3a7ac2ce56e3fd68005d0ed86f766b99c4d37832f03d8729ad5d6d8afb38d',
+            'a563fe772adff9a9c4ce834c20c6a02c802e8b61da6ff411aa103ec43383448b',
+            '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b',
+            'test-extension-update-trust-bootstrap.js',
+            'test-offline-ui-state-v024.js',
+            'Running R5 offline/remote-failure UI regression...'
+          )) {
+            if(-not $wrapper.Contains($marker)){ throw "missing R5 marker: $marker" }
+          }
+          if(-not $base.Contains('publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY')){ throw 'base builder blocked-publication marker missing' }
+          foreach($bad in @('gh release create','git push origin HEAD:main','center-update.json')) {
+            if($wrapper.Contains($bad) -or $base.Contains($bad)){ throw "publication side effect marker found: $bad" }
+          }
+          Write-Host 'R5 local builder release-safety PASS'
+      - name: Syntax-check R5 offline patch/regression sources
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check tools/patch-v024-offline-ui-state.js
+          node --check tools/test-offline-ui-state-v024.js
+          node --check tools/test-extension-update-trust-bootstrap.js
+          Write-Host 'R5 JavaScript helper syntax PASS'

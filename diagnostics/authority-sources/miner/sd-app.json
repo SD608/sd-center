@@ -1,0 +1,13 @@
+{
+  "productName": "SD광부",
+  "id": "miner",
+  "userDataFolder": "SD광부",
+  "icon": "public/icons/icon-512.png",
+  "improvement": "채굴·보관·판매를 반복하며 누적 성과를 키우는 콘텐츠입니다.",
+  "description": "광물을 채굴하고 보관한 뒤 SD지갑 가상 잔액으로 판매하는 채굴 시뮬레이션입니다.",
+  "entry": "main.js",
+  "version": "1.1.1",
+  "name": "SD광부",
+  "displayVersion": "Stage 3 · v1.1.0",
+  "accent": "green"
+}

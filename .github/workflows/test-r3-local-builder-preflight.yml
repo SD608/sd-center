@@ -1,0 +1,54 @@
+name: Test R3 Local Builder Preflight
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-r3-local-builder-preflight.yml'
+      - 'tools/run-v024-final-installer-r3-local.ps1'
+      - 'tools/run-v024-final-installer-local.ps1'
+      - 'tools/test-extension-update-integrity-helper.js'
+      - 'tools/patch-v024-extension-update-integrity.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-parser-and-safety:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse R3 wrapper with Windows PowerShell 5.1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $legacy="$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+          if(-not (Test-Path $legacy)){ throw 'Windows PowerShell 5.1 missing' }
+          & $legacy -NoProfile -Command @'
+          $ErrorActionPreference='Stop'
+          $path=(Resolve-Path 'tools/run-v024-final-installer-r3-local.ps1').Path
+          $tokens=$null; $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile($path,[ref]$tokens,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){ $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }
+          Write-Host 'R3 wrapper PowerShell parser PASS'
+          '@
+          if($LASTEXITCODE -ne 0){ throw 'R3 wrapper parser failed' }
+      - name: Validate exact R3 identity and release safety markers
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $wrapper=Get-Content 'tools/run-v024-final-installer-r3-local.ps1' -Raw
+          $base=Get-Content 'tools/run-v024-final-installer-local.ps1' -Raw
+          foreach($marker in @(
+            'f88c77455849e8545a192ed7cc0979bb33864c9fdbebcfbd0110408170849939',
+            '065b1c2c78c60d45026d3ba41718fedd9c8ff05595119c0adb441eaffacfd215',
+            '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b',
+            'test-extension-update-integrity-helper.js'
+          )) {
+            if(-not $wrapper.Contains($marker)){ throw "missing R3 marker: $marker" }
+          }
+          if(-not $base.Contains('publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY')){ throw 'base builder blocked-publication marker missing' }
+          foreach($bad in @('gh release create','git push origin HEAD:main','center-update.json')) {
+            if($wrapper.Contains($bad) -or $base.Contains($bad)){ throw "publication side effect marker found: $bad" }
+          }
+          Write-Host 'R3 local builder release-safety PASS'

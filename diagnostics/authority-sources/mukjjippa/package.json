@@ -1,0 +1,21 @@
+{
+  "name": "sd-mukjippa-desktop",
+  "productName": "SD묵찌빠",
+  "version": "1.0.1",
+  "private": true,
+  "description": "SD지갑 가상잔액과 연동되는 연승 도전형 묵찌빠 시뮬레이션",
+  "author": "SD608",
+  "main": "main.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "check": "node tools/check-all.js",
+    "test": "node tools/test-game.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "electron": "latest"
+  }
+}

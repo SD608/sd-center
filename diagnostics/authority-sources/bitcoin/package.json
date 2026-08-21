@@ -1,0 +1,23 @@
+{
+  "name": "sd-bitcoin-miner-desktop",
+  "productName": "SD비트코인 채굴장",
+  "version": "1.2.2",
+  "private": true,
+  "description": "GPU별 전기세·내구도와 0.02% 확률을 적용한 SD지갑 연동 비트코인 채굴 시뮬레이션",
+  "author": "SDWallet",
+  "main": "main.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "make": "electron-forge make",
+    "package": "electron-forge package",
+    "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-database.js && node --check src/mining-service.js && node --check public/js/app.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "@electron-forge/maker-squirrel": "latest",
+    "electron": "latest"
+  }
+}
