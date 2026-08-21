@@ -1,11 +1,13 @@
 "use strict";
 (()=>{
 const C=`logistics|LOGISTICS|물류센터;flea|FLEA MARKET|플리마켓;miner|MINER|광부;mukjjippa|MUK-JJI-PPA|묵찌빠;slot|SLOT|슬롯;oddeven|ODD / EVEN|홀짝;bitcoin|BITCOIN|비트코인 채굴;sta|STA|STA;gold|GOLD|금 구매;npcvault|NPC VAULT|NPC 금고 따기;sdcoin|SD COIN|SD코인;wallet|WALLET|지갑;ranking|BANK BALANCE RANKING|통장 잔고 랭킹`.split(";").map(x=>{const[id,e,l]=x.split("|");return{id,e,l}});
+// 히든 업적도 실제 이름/조건을 원본 데이터에 보존합니다.
+// 사용자 UI에서만 미해금 상태를 ???로 가리고, 검수/동기화/Core에서는 실제 정의를 읽을 수 있어야 합니다.
 const A=`logistics-01|logistics|해외 진출|해외 배달 완료|||회
 logistics-02|logistics|지점장|S등급 달성|||
 logistics-03|logistics|본부장|물류센터 5레벨 달성|p|5|레벨
 logistics-04|logistics|C.E.O|물류센터 10레벨 달성|p|10|레벨
-logistics-05|logistics|봉고르기니|스타터 차량 레벨 MAX|p|MAX|레벨
+logistics-05|logistics|봉고르기니|스타터 차량을 초대형까지 업그레이드|p|MAX|차급
 logistics-06|logistics|배송의 왕|수동 배송 누적 수익 1억원|p|100000000|원
 logistics-07|logistics|배송의 황제|수동 배송 누적 수익 10억원|p|1000000000|원
 logistics-08|logistics|배송의 신|수동 배송 누적 수익 100억원|p|10000000000|원
@@ -15,7 +17,7 @@ logistics-11|logistics|운수재벌|차량 10대 보유|p|10|대
 logistics-12|logistics|택배기사|배송 100회 완료|p|100|회
 logistics-13|logistics|오늘도 배송중|배송 1,000회 완료|p|1000|회
 logistics-14|logistics|글로벌 물류기업|해외 배송 100회 완료|p|100|회
-logistics-15|logistics|베테랑 기사|수동 배송 100회 연속 성공|p|100|회
+logistics-15|logistics|베테랑 기사|수동 배송 누적 100회|p|100|회
 logistics-16|logistics|카 컬렉터|모든 차량 종류 한 번 이상 보유|p|ALL|종
 flea-01|flea|바늘 도둑|은행 습격 1회 성공|p|1|회
 flea-02|flea|비일비제|은행 습격 10회 성공|p|10|회
@@ -30,11 +32,11 @@ flea-10|flea|파밍왕|루팅한 상자 1,000개|p|1000|개
 flea-11|flea|만물상|모든 종류의 물건 획득 (판매 여부 무관)|p|ALL|종
 flea-12|flea|당근하세요?|첫 물건 판매|||
 flea-13|flea|도매상|물건 1,000개 판매|p|1000|개
-flea-14|flea|교도소 단골|은행 습격 실패 10회|p|10|회
+flea-14|flea|교도소 단골|은행 습격 실패 10회|ph|10|회
 flea-15|flea|득템|한 번의 루팅에서 최고 등급 아이템 획득|||
-flea-16|flea|꽝|상자 하나에서 최저 등급 물건만 획득|||
+flea-16|flea|꽝|상자 하나에서 최저 등급 물건만 획득|h||
 flea-17|flea|사재기|동일 물건 100개 획득|p|100|개
-flea-18|flea|폭주족|은행 습격 중 오토바이 최대 속도로 500m 이상 주행|p|500|m
+flea-18|flea|폭주족|은행 습격 중 오토바이 최대 속도로 500m 이상 주행|ph|500|m
 flea-19|flea|되팔이|다른 사람이 판매한 물건 50회 구입|p|50|회
 miner-01|miner|아오지 생존자|누적 광석 1,000개 캐기|p|1000|개
 miner-02|miner|돌 곡괭이|누적 판매 금액 100만원|p|1000000|원
@@ -42,7 +44,7 @@ miner-03|miner|철 곡괭이|누적 판매 금액 500만원|p|5000000|원
 miner-04|miner|다이아 곡괭이|누적 판매 금액 1,000만원|p|10000000|원
 miner-05|miner|광산의 주인|광석 10,000개 캐기|p|10000|개
 miner-06|miner|노다지|최고 등급 광석 첫 획득|||
-miner-07|miner|금맥|한 번의 채굴에서 최고 등급 광석 연속 획득|||
+miner-07|miner|금맥|한 번의 채굴에서 최고 등급 광석 연속 획득|h||
 miner-08|miner|지질학자|모든 종류의 광석 획득|p|ALL|종
 miner-09|miner|광산재벌|광석 누적 판매 1억원|p|100000000|원
 mukjjippa-01|mukjjippa|울버린|최대 연승 달성|p|MAX|연승
@@ -56,20 +58,20 @@ slot-06|slot|오늘은 아닌가봐|아무 당첨 없이 50회 연속 실패|p|5
 slot-07|slot|카지노의 왕|슬롯 누적 획득 금액 1억원|p|100000000|원
 oddeven-01|oddeven|내가 뭐라고 했더라?|8연승 달성|p|8|연승
 oddeven-02|oddeven|운칠기삼|올인으로 8연승 달성|p|8|연승
-oddeven-03|oddeven|말이 안되는거잖아|8연패 달성|p|8|연패
+oddeven-03|oddeven|말이 안되는거잖아|8연패 달성|ph|8|연패
 oddeven-04|oddeven|반반의 확률|첫 승리|||
 oddeven-05|oddeven|촉이 온다|100승 달성|p|100|승
 oddeven-06|oddeven|확률을 지배하는 자|1,000승 달성|p|1000|승
-oddeven-07|oddeven|거기서?|7연승 후 8번째 판 패배|||
-oddeven-08|oddeven|전재산 삭제|올인 후 패배|||
+oddeven-07|oddeven|거기서?|7연승 후 8번째 판 패배|h||
+oddeven-08|oddeven|전재산 삭제|올인 후 패배|h||
 oddeven-09|oddeven|홀릭|연속으로 홀만 선택해 5승|p|5|승
 oddeven-10|oddeven|짝사랑|연속으로 짝만 선택해 5승|p|5|승
 bitcoin-01|bitcoin|채굴 시작|비트코인 첫 획득|||
 bitcoin-02|bitcoin|개미|비트코인 10개 보유|p|10|BTC
 bitcoin-03|bitcoin|암호화폐의 거장|비트코인 100개 보유|p|100|BTC
 bitcoin-04|bitcoin|사토시 나카모토|비트코인 1,000개 보유|p|1000|BTC
-bitcoin-05|bitcoin|???|???|h||
-sta-01|sta|바이커|오토바이 추돌 0번으로 클리어|||
+bitcoin-05|bitcoin|Bitcoin Not Found|비트코인 404개 획득|ph|404|BTC
+sta-01|sta|바이커|오토바이 추돌 0번으로 클리어|h||
 sta-02|sta|기계손|한 번에 현금 100만원 획득|||
 sta-03|sta|해커|해킹 준비 작업 100번 진행|p|100|회
 gold-01|gold|금수저|보유 금 10개|p|10|개
@@ -82,7 +84,7 @@ npcvault-04|npcvault|빈집털이|금고 10개 따기|p|10|개
 npcvault-05|npcvault|루팡|금고 100개 따기|p|100|개
 npcvault-06|npcvault|오션스 일레븐|초대형 금고 10번 성공|p|10|회
 npcvault-07|npcvault|마스터키|모든 종류의 금고 성공|p|ALL|종
-npcvault-08|npcvault|손기술|금고 따기 연속 10회 성공|p|10|회
+npcvault-08|npcvault|손기술|금고 따기 연속 10회 성공|ph|10|회
 sdcoin-coin-01|sdcoin|DDJ|DDJ코인 10,000개 소유|p|10000|개
 sdcoin-coin-02|sdcoin|HSH|HSH코인 10,000개 소유|p|10000|개
 sdcoin-coin-03|sdcoin|SET|SET코인 10,000개 소유|p|10000|개
@@ -101,6 +103,7 @@ wallet-06|wallet|억만장자|잔액 1,000억원|p|100000000000|원
 wallet-07|wallet|조만장자|잔액 1조원|p|1000000000000|원
 ranking-01|ranking|전설|시즌 0 통장 잔고 랭킹 1위|||`.trim().split("\n").map(x=>{const[id,c,n,d,f,t,u]=x.split("|");return{id,c,n,d,h:f.includes("h"),p:f.includes("p"),t:/^\d+$/.test(t)?Number(t):t,u}});
 window.SD_ACHIEVEMENTS=A;
+window.SD_HIDDEN_ACHIEVEMENTS=A.filter(a=>a.h);
 window.SD_ACHIEVEMENT_PROGRESS=window.SD_ACHIEVEMENT_PROGRESS||{};
 window.SD_ACHIEVEMENT_UNLOCKED=window.SD_ACHIEVEMENT_UNLOCKED||{};
 const N=v=>Number(v||0).toLocaleString("ko-KR"),V=(v,u)=>typeof v==="number"?N(v)+(u||""):v;
