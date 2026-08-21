@@ -23,7 +23,11 @@ for (const required of [exePath, packagePath, iconPath]) {
   if (!fs.existsSync(required)) throw new Error(`required installer input missing: ${required}`);
 }
 
-const pkg = JSON.parse(fs.readFileSync(packagePath, "utf8"));
+// Windows PowerShell 5.1 may write UTF-8 files with a BOM. The staging
+// pipeline now writes package.json without one, but strip it defensively so
+// a BOM can never make the Final Gate builder fail before validation.
+const packageJson = fs.readFileSync(packagePath, "utf8").replace(/^\uFEFF/, "");
+const pkg = JSON.parse(packageJson);
 if (pkg.version !== installerVersion) {
   throw new Error(`staged package version ${pkg.version} does not match installer version ${installerVersion}`);
 }
