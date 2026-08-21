@@ -11,9 +11,10 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ExpectedCandidateFilename = 'SDCenter-UI-Preview-v0.24-Core-FinalGateCandidate-win-x64.zip'
-$ExpectedCandidateZipSha256 = 'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f'
+$ExpectedCandidateZipSha256 = '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b'
 $ExpectedCandidateExeSha256 = '226811c8086805c68ce631330808842d320654797e3bf3c6661d345b1bf427ba'
-$ExpectedCandidateMainSha256 = 'c5e54e2f46815564e560c5b14200a21062138ecee17d24bdb7e628a4ac8caf9c'
+$ExpectedCandidateMainSha256 = '1c5379d171d1226b80e951655bd85e0eb098beb77ba817c49fa1b49f30b32187'
+$ExpectedBackgroundGuardSha256 = '5b5ab522315facb2e2562c8c1cced6736bdc4d0252c194e60b68b86641c95e20'
 $ExpectedCoreRuntimeSha256 = '1be6f63eac00363ae4c19af42d33398aca1402431c9a7f88bb480edf7f1b68b6'
 $CurrentOfficialVersion = '2.2.7'
 $ElectronWinstallerVersion = '5.4.4'
@@ -107,6 +108,7 @@ try {
   Assert-Hash -Path (Join-Path $candidateDir 'SDCenter.exe') -Expected $ExpectedCandidateExeSha256 -Label 'candidate SDCenter.exe'
   Assert-Hash -Path (Join-Path $appRoot 'main.js') -Expected $ExpectedCandidateMainSha256 -Label 'candidate main.js'
   Assert-Hash -Path (Join-Path $appRoot 'src\sdlink-core-runtime.js') -Expected $ExpectedCoreRuntimeSha256 -Label 'candidate Core runtime'
+  Assert-Hash -Path (Join-Path $appRoot 'src\sdlink-background-window-guard.js') -Expected $ExpectedBackgroundGuardSha256 -Label 'candidate SD Link background window guard'
 
   $packagePath = Join-Path $appRoot 'package.json'
   $pkg = Get-Content -LiteralPath $packagePath -Raw | ConvertFrom-Json
@@ -124,6 +126,7 @@ try {
   Invoke-Node -Arguments @((Join-Path $appRoot 'tools\test-sdlink-session-persistence-v023.js'))
   Invoke-Node -Arguments @((Join-Path $appRoot 'tools\test-sdlink-core-runtime-v024.js'))
   Invoke-Node -Arguments @((Join-Path $appRoot 'tools\test-core-public-errors-v024.js'))
+  Invoke-Node -Arguments @((Join-Path $appRoot 'tools\test-sdlink-background-window-guard-v024.js'))
 
   foreach ($relative in @(
     'main.js',
@@ -133,6 +136,7 @@ try {
     'src\sdlink-integration.js',
     'src\sdlink-session-persistence.js',
     'src\sdlink-core-runtime.js',
+    'src\sdlink-background-window-guard.js',
     'src\theme-catalog.js',
     'src\theme-assets.js'
   )) {
@@ -164,6 +168,7 @@ try {
 
   Assert-Hash -Path (Join-Path $stage 'resources\app\main.js') -Expected $ExpectedCandidateMainSha256 -Label 'staged main.js'
   Assert-Hash -Path (Join-Path $stage 'resources\app\src\sdlink-core-runtime.js') -Expected $ExpectedCoreRuntimeSha256 -Label 'staged Core runtime'
+  Assert-Hash -Path (Join-Path $stage 'resources\app\src\sdlink-background-window-guard.js') -Expected $ExpectedBackgroundGuardSha256 -Label 'staged SD Link background window guard'
 
   if (Test-Path -LiteralPath $output) {
     Remove-Item -LiteralPath $output -Recurse -Force
@@ -230,6 +235,7 @@ try {
     "candidate_exe_sha256=$ExpectedCandidateExeSha256",
     "candidate_main_sha256=$ExpectedCandidateMainSha256",
     "candidate_core_runtime_sha256=$ExpectedCoreRuntimeSha256",
+    "candidate_background_guard_sha256=$ExpectedBackgroundGuardSha256",
     "staging_installer_version=$InstallerVersion",
     "electron_winstaller_version=$ElectronWinstallerVersion",
     "builder_package_lock_sha256=$builderLockSha256",

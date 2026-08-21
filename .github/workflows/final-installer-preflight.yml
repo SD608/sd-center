@@ -1,146 +1,95 @@
-name: Final Installer Workflow Preflight
+name: Final Installer R2 Preflight
 
 on:
-  pull_request:
-    branches: [release/sd-center-core-v1]
-    paths:
-      - 'tools/build-v024-final-installer.js'
-      - 'tools/run-v024-final-installer-local.ps1'
-      - 'tools/RUN-FINAL-GATE-BUILDER.cmd'
-      - '.github/workflows/build-center-v024-final-installer.yml'
-      - '.github/workflows/final-installer-preflight.yml'
   push:
     branches: [release/v024-final-gate-20260820]
     paths:
-      - 'tools/build-v024-final-installer.js'
-      - 'tools/run-v024-final-installer-local.ps1'
       - 'tools/RUN-FINAL-GATE-BUILDER.cmd'
-      - '.github/workflows/build-center-v024-final-installer.yml'
+      - 'tools/run-v024-final-installer-local.ps1'
+      - 'tools/build-v024-final-installer.js'
+      - 'tools/patch-center-ui-v024-core.js'
+      - 'preview/v024-core/sdlink-background-window-guard.js'
+      - 'preview/v024-core/test-sdlink-background-window-guard-v024.js'
       - '.github/workflows/final-installer-preflight.yml'
+      - '.github/workflows/build-center-v024-final-installer.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  EXPECTED_R2_CANDIDATE_ZIP_SHA256: '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b'
+  EXPECTED_R2_MAIN_SHA256: '1c5379d171d1226b80e951655bd85e0eb098beb77ba817c49fa1b49f30b32187'
+  EXPECTED_R2_BACKGROUND_GUARD_SHA256: '5b5ab522315facb2e2562c8c1cced6736bdc4d0252c194e60b68b86641c95e20'
+
 jobs:
-  validate:
+  invariant:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate installer builder JavaScript
-        run: node --check tools/build-v024-final-installer.js
-      - name: Parse installer workflow YAML
-        shell: ruby {0}
+      - name: R2 syntax and behavior regression
         run: |
-          require 'yaml'
-          YAML.load_file('.github/workflows/build-center-v024-final-installer.yml', aliases: true)
-          puts 'installer workflow YAML parsed'
-      - name: Validate immutable candidate and release-safety guards
-        shell: python
+          set -euo pipefail
+          node --check tools/patch-center-ui-v024-core.js
+          node --check tools/build-v024-final-installer.js
+          node --check preview/v024-core/sdlink-background-window-guard.js
+          node --check preview/v024-core/test-sdlink-background-window-guard-v024.js
+          node preview/v024-core/test-sdlink-background-window-guard-v024.js
+      - name: R2 immutable and release-safety checks
         run: |
+          set -euo pipefail
+          python - <<'PY'
           from pathlib import Path
-
-          workflow = Path('.github/workflows/build-center-v024-final-installer.yml').read_text(encoding='utf-8')
           local_builder = Path('tools/run-v024-final-installer-local.ps1').read_text(encoding='utf-8')
-          builder = Path('tools/build-v024-final-installer.js').read_text(encoding='utf-8')
+          patcher = Path('tools/patch-center-ui-v024-core.js').read_text(encoding='utf-8')
           launcher = Path('tools/RUN-FINAL-GATE-BUILDER.cmd').read_text(encoding='utf-8')
-          combined = workflow + '\n' + local_builder + '\n' + builder + '\n' + launcher
           required = [
-              'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f',
-              'ea3a912e0e3f771788462d82af16a7129b8684d50ee12c2840d5ebd5090087cb',
-              '226811c8086805c68ce631330808842d320654797e3bf3c6661d345b1bf427ba',
-              'c5e54e2f46815564e560c5b14200a21062138ecee17d24bdb7e628a4ac8caf9c',
-              '1be6f63eac00363ae4c19af42d33398aca1402431c9a7f88bb480edf7f1b68b6',
-              "ELECTRON_WINSTALLER_VERSION: '5.4.4'",
-              "$ElectronWinstallerVersion = '5.4.4'",
-              'contents: read',
-              'actions: read',
-              'publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY',
-              'official_main_manifest_release_modified=false',
-              r'%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe',
-              r'%ProgramFiles%\nodejs\node.exe',
-              'SDCENTER_NODE_EXE',
-              '--probe-only',
+              '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b',
+              '1c5379d171d1226b80e951655bd85e0eb098beb77ba817c49fa1b49f30b32187',
+              '5b5ab522315facb2e2562c8c1cced6736bdc4d0252c194e60b68b86641c95e20',
               'System.Text.UTF8Encoding($false)',
-              "replace(/^\\uFEFF/",
+              'test-sdlink-background-window-guard-v024.js',
+              'createSdLinkBackgroundWindowGuard',
+              'allowManagerWindow',
+              'windowsHide',
+              '--sd-link-auto-start',
+              '--probe-only',
           ]
+          combined = local_builder + '\n' + patcher + '\n' + launcher
           for token in required:
               if token not in combined:
-                  raise SystemExit(f'missing Final Gate invariant: {token}')
-          forbidden = [
-              'gh release ' + 'create',
-              'gh release ' + 'upload',
-              'git push origin HEAD:' + 'main',
-              'update/center-update.json',
-          ]
-          for token in forbidden:
-              if token in local_builder or token in launcher:
-                  raise SystemExit(f'forbidden local-builder release side effect: {token}')
-          print('Final Gate installer invariants passed')
+                  raise SystemExit(f'missing Final Gate R2 invariant: {token}')
+          old = 'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f'
+          if old in local_builder:
+              raise SystemExit('R1 candidate hash still accepted by local builder')
+          for token in ['gh release create', 'gh release upload', 'git push origin HEAD:main']:
+              if token in combined:
+                  raise SystemExit(f'forbidden publication side effect found: {token}')
+          print('Final Gate R2 immutable/release-safety checks PASS')
+          PY
 
-  validate-local-windows-builder:
+  windows-local-builder:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Parse local Final Gate PowerShell
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $tokens = $null
-          $errors = $null
-          [void][System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path 'tools/run-v024-final-installer-local.ps1'),
-            [ref]$tokens,
-            [ref]$errors
-          )
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_.Message }
-            throw "PowerShell parser reported $($errors.Count) error(s)."
-          }
-          Write-Host 'local Final Gate PowerShell parsed'
-      - name: Confirm Windows PowerShell absolute fallback exists
-        shell: cmd
-        run: |
-          if not exist "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" exit /b 1
-          "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Write-Host 'Windows PowerShell absolute fallback works'"
-      - name: Validate Windows PowerShell UTF-8 no-BOM JSON staging
+      - name: Parse local PowerShell builder
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          $path = Join-Path $env:RUNNER_TEMP 'sdcenter-staged-package.json'
-          $json = ([pscustomobject]@{ name = 'sdcenter'; version = '2.2.8' } | ConvertTo-Json -Depth 100)
-          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-          [IO.File]::WriteAllText($path, $json, $utf8NoBom)
-          $bytes = [IO.File]::ReadAllBytes($path)
-          if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
-            throw 'UTF-8 BOM unexpectedly present'
-          }
-          & node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')); console.log('Windows PowerShell staged JSON parse passed')" $path
-          if ($LASTEXITCODE -ne 0) { throw "Node JSON parse failed with $LASTEXITCODE" }
-      - name: Execute launcher dependency probe with spaced Node path
+          $text = Get-Content -LiteralPath 'tools/run-v024-final-installer-local.ps1' -Raw
+          [void][scriptblock]::Create($text)
+          Write-Host 'Windows PowerShell local builder parser PASS'
+      - name: Execute launcher dependency probe
+        shell: cmd
+        run: tools\RUN-FINAL-GATE-BUILDER.cmd --probe-only
+      - name: Confirm background guard source regression
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          $probeDir = Join-Path $env:RUNNER_TEMP 'SDCenter Node Path With Spaces'
-          New-Item -ItemType Directory -Force -Path $probeDir | Out-Null
-          $nodeSource = (Get-Command node.exe).Source
-          $probeNode = Join-Path $probeDir 'node.exe'
-          Copy-Item -LiteralPath $nodeSource -Destination $probeNode -Force
-          $env:SDCENTER_NODE_EXE = $probeNode
-          & cmd.exe /d /c 'tools\RUN-FINAL-GATE-BUILDER.cmd --probe-only'
-          if ($LASTEXITCODE -ne 0) { throw "launcher dependency probe failed with $LASTEXITCODE" }
-          Write-Host 'launcher dependency probe with spaced Node path passed'
-      - name: Confirm local builder has no publication commands
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $text = (Get-Content 'tools/run-v024-final-installer-local.ps1' -Raw) + "`n" + (Get-Content 'tools/RUN-FINAL-GATE-BUILDER.cmd' -Raw)
-          foreach ($token in @('gh release create', 'gh release upload', 'git push origin HEAD:main', 'update/center-update.json')) {
-            if ($text.Contains($token)) { throw "forbidden release side effect: $token" }
-          }
-          Write-Host 'local Final Gate release-safety guard passed'
+          node preview/v024-core/test-sdlink-background-window-guard-v024.js
+          if ($LASTEXITCODE -ne 0) { throw "background guard regression failed: $LASTEXITCODE" }

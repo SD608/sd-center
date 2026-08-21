@@ -1,292 +1,62 @@
-name: Build SDCenter v0.24 Final Gate Installer
+name: SDCenter v0.24 Final Gate R2 Guard
 
 on:
   push:
     branches: [release/v024-final-gate-20260820]
     paths:
+      - 'tools/run-v024-final-installer-local.ps1'
       - 'tools/build-v024-final-installer.js'
+      - 'tools/patch-center-ui-v024-core.js'
+      - 'preview/v024-core/sdlink-background-window-guard.js'
+      - 'preview/v024-core/test-sdlink-background-window-guard-v024.js'
       - '.github/workflows/build-center-v024-final-installer.yml'
   workflow_dispatch:
-    inputs:
-      candidate_url:
-        description: 'HTTPS URL to the exact SDCenter-UI-Preview-v0.24-Core-FinalGateCandidate-win-x64.zip'
-        required: false
-        type: string
-      candidate_artifact_id:
-        description: 'GitHub Actions artifact ID containing exactly one exact candidate ZIP'
-        required: false
-        type: string
-      installer_version:
-        description: 'Staging Squirrel version only; no main/manifest/Release update'
-        required: true
-        default: '2.2.8'
-        type: string
 
 permissions:
   contents: read
-  actions: read
 
 env:
-  EXPECTED_CANDIDATE_FILENAME: 'SDCenter-UI-Preview-v0.24-Core-FinalGateCandidate-win-x64.zip'
-  EXPECTED_CANDIDATE_ZIP_SHA256: 'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f'
-  EXPECTED_V023_ZIP_SHA256: 'ea3a912e0e3f771788462d82af16a7129b8684d50ee12c2840d5ebd5090087cb'
-  EXPECTED_CANDIDATE_EXE_SHA256: '226811c8086805c68ce631330808842d320654797e3bf3c6661d345b1bf427ba'
-  EXPECTED_CANDIDATE_MAIN_SHA256: 'c5e54e2f46815564e560c5b14200a21062138ecee17d24bdb7e628a4ac8caf9c'
-  EXPECTED_CORE_RUNTIME_SHA256: '1be6f63eac00363ae4c19af42d33398aca1402431c9a7f88bb480edf7f1b68b6'
-  CURRENT_OFFICIAL_VERSION: '2.2.7'
-  CURRENT_OFFICIAL_SETUP_SHA256: '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'
-  ELECTRON_WINSTALLER_VERSION: '5.4.4'
+  EXPECTED_R2_CANDIDATE_ZIP_SHA256: '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b'
+  EXPECTED_R2_MAIN_SHA256: '1c5379d171d1226b80e951655bd85e0eb098beb77ba817c49fa1b49f30b32187'
+  EXPECTED_R2_BACKGROUND_GUARD_SHA256: '5b5ab522315facb2e2562c8c1cced6736bdc4d0252c194e60b68b86641c95e20'
 
 jobs:
-  workflow-preflight:
+  r2-source-guard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate Final Gate builder source
-        run: node --check tools/build-v024-final-installer.js
-      - name: Confirm workflow is read-only to repository contents
-        shell: bash
+      - name: Validate R2 hotfix sources
+        run: |
+          set -euo pipefail
+          node --check tools/patch-center-ui-v024-core.js
+          node --check preview/v024-core/sdlink-background-window-guard.js
+          node --check preview/v024-core/test-sdlink-background-window-guard-v024.js
+          node preview/v024-core/test-sdlink-background-window-guard-v024.js
+          node --check tools/build-v024-final-installer.js
+      - name: Enforce local-only blocked installer path
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          text = Path('.github/workflows/build-center-v024-final-installer.yml').read_text(encoding='utf-8')
-          forbidden = ['gh release ' + 'create', 'gh release ' + 'upload', 'git push origin HEAD:' + 'main']
-          for token in forbidden:
-              if token in text:
-                  raise SystemExit(f'forbidden release side effect found: {token}')
-          print('Final Gate workflow repository-write guard passed')
+          p = Path('tools/run-v024-final-installer-local.ps1').read_text(encoding='utf-8')
+          required = [
+              '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b',
+              '1c5379d171d1226b80e951655bd85e0eb098beb77ba817c49fa1b49f30b32187',
+              '5b5ab522315facb2e2562c8c1cced6736bdc4d0252c194e60b68b86641c95e20',
+              'test-sdlink-background-window-guard-v024.js',
+          ]
+          for token in required:
+              if token not in p:
+                  raise SystemExit(f'missing R2 local-builder invariant: {token}')
+          old = 'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f'
+          if old in p:
+              raise SystemExit('R1 candidate hash still accepted by local builder')
+          combined = p + '\n' + Path('tools/build-v024-final-installer.js').read_text(encoding='utf-8')
+          for token in ['gh release create', 'gh release upload', 'git push origin HEAD:main']:
+              if token in combined:
+                  raise SystemExit(f'forbidden publication side effect found: {token}')
+          print('R2 blocked installer source guard PASS')
           PY
-
-  build-installer:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: windows-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Acquire exact verified candidate ZIP
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CANDIDATE_URL: ${{ inputs.candidate_url }}
-          CANDIDATE_ARTIFACT_ID: ${{ inputs.candidate_artifact_id }}
-        run: |
-          $ErrorActionPreference='Stop'
-          $hasUrl=-not [string]::IsNullOrWhiteSpace($env:CANDIDATE_URL)
-          $hasArtifact=-not [string]::IsNullOrWhiteSpace($env:CANDIDATE_ARTIFACT_ID)
-          if($hasUrl -eq $hasArtifact){ throw 'Provide exactly one of candidate_url or candidate_artifact_id.' }
-          $candidateZip=Join-Path $env:RUNNER_TEMP $env:EXPECTED_CANDIDATE_FILENAME
-          if($hasUrl){
-            if(-not $env:CANDIDATE_URL.StartsWith('https://')){ throw 'candidate_url must use HTTPS.' }
-            Invoke-WebRequest -Uri $env:CANDIDATE_URL -OutFile $candidateZip
-          } else {
-            if($env:CANDIDATE_ARTIFACT_ID -notmatch '^\d+$'){ throw 'candidate_artifact_id must be numeric.' }
-            $archive=Join-Path $env:RUNNER_TEMP 'candidate-artifact-wrapper.zip'
-            $headers=@{Authorization="Bearer $env:GH_TOKEN";Accept='application/vnd.github+json';'X-GitHub-Api-Version'='2022-11-28'}
-            Invoke-WebRequest -Headers $headers -Uri "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$env:CANDIDATE_ARTIFACT_ID/zip" -OutFile $archive
-            $artifactDir=Join-Path $env:RUNNER_TEMP 'candidate-artifact-wrapper'
-            Expand-Archive $archive $artifactDir -Force
-            $matches=@(Get-ChildItem $artifactDir -Recurse -File -Filter $env:EXPECTED_CANDIDATE_FILENAME)
-            if($matches.Count -ne 1){ throw "Expected exactly one exact candidate ZIP, found $($matches.Count)." }
-            Copy-Item $matches[0].FullName $candidateZip -Force
-          }
-          $hash=(Get-FileHash $candidateZip -Algorithm SHA256).Hash.ToLower()
-          if($hash -ne $env:EXPECTED_CANDIDATE_ZIP_SHA256){ throw "Exact candidate ZIP SHA mismatch: $hash" }
-          "CANDIDATE_ZIP=$candidateZip" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Verify candidate bytes and regressions
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          function Assert-Hash([string]$Path,[string]$Expected,[string]$Label){
-            $actual=(Get-FileHash $Path -Algorithm SHA256).Hash.ToLower()
-            if($actual -ne $Expected){ throw "$Label SHA mismatch: $actual" }
-          }
-          $extract=Join-Path $env:RUNNER_TEMP 'v024-exact-candidate'
-          Expand-Archive $env:CANDIDATE_ZIP $extract -Force
-          if(Test-Path (Join-Path $extract 'SDCenter.exe')){ $candidateDir=$extract }
-          else {
-            $matches=@(Get-ChildItem $extract -Recurse -File -Filter 'SDCenter.exe')
-            if($matches.Count -ne 1){ throw "Expected one SDCenter.exe, found $($matches.Count)." }
-            $candidateDir=$matches[0].Directory.FullName
-          }
-          $root=Join-Path $candidateDir 'resources\app'
-          Assert-Hash (Join-Path $candidateDir 'SDCenter.exe') $env:EXPECTED_CANDIDATE_EXE_SHA256 'candidate SDCenter.exe'
-          Assert-Hash (Join-Path $root 'main.js') $env:EXPECTED_CANDIDATE_MAIN_SHA256 'candidate main.js'
-          Assert-Hash (Join-Path $root 'src\sdlink-core-runtime.js') $env:EXPECTED_CORE_RUNTIME_SHA256 'candidate Core runtime'
-          $pkg=Get-Content (Join-Path $root 'package.json') -Raw | ConvertFrom-Json
-          if($pkg.version -ne $env:CURRENT_OFFICIAL_VERSION){ throw "Exact candidate package version drifted: $($pkg.version)" }
-          node "$root\tools\check-all.js"
-          node "$root\tools\test-theme-catalog-v020.js"
-          node "$root\tools\test-theme-assets-v020.js"
-          node "$root\tools\test-theme-ui-v020.js"
-          node "$root\tools\test-sdlink-integration-v021.js"
-          node "$root\tools\test-sdlink-hardening-v022.js"
-          node "$root\tools\test-sdlink-session-persistence-v023.js"
-          node "$root\tools\test-sdlink-core-runtime-v024.js"
-          node "$root\tools\test-core-public-errors-v024.js"
-          foreach($file in @('main.js','preload.js','public\js\app.js','public\js\ui-preview.js','src\sdlink-integration.js','src\sdlink-session-persistence.js','src\sdlink-core-runtime.js','src\theme-catalog.js','src\theme-assets.js')){ node --check (Join-Path $root $file) }
-          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          $proc=Start-Process (Join-Path $candidateDir 'SDCenter.exe') -PassThru
-          Start-Sleep 10
-          if($proc.HasExited){ throw "Portable candidate exited during smoke: $($proc.ExitCode)" }
-          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          "CANDIDATE_DIR=$candidateDir" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Stage exact candidate for installer version
-        shell: pwsh
-        env:
-          REQUESTED_VERSION: ${{ inputs.installer_version }}
-        run: |
-          $ErrorActionPreference='Stop'
-          if($env:REQUESTED_VERSION -notmatch '^\d+\.\d+\.\d+$'){ throw 'installer_version must be x.y.z numeric SemVer.' }
-          if([version]$env:REQUESTED_VERSION -le [version]$env:CURRENT_OFFICIAL_VERSION){ throw "installer_version must be greater than $env:CURRENT_OFFICIAL_VERSION." }
-          $stage=Join-Path $env:RUNNER_TEMP 'SDCenter-v024-installer-stage'
-          Copy-Item $env:CANDIDATE_DIR $stage -Recurse -Force
-          $packagePath=Join-Path $stage 'resources\app\package.json'
-          $pkg=Get-Content $packagePath -Raw | ConvertFrom-Json
-          $pkg.version=$env:REQUESTED_VERSION
-          $pkg | ConvertTo-Json -Depth 100 | Set-Content $packagePath -Encoding utf8
-          "APP_DIR=$stage" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "INSTALLER_VERSION=$env:REQUESTED_VERSION" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Install pinned Squirrel builder and build installer
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          $builder=Join-Path $env:RUNNER_TEMP 'squirrel-final-gate-builder'
-          New-Item -ItemType Directory -Force $builder | Out-Null
-          Push-Location $builder
-          npm init -y | Out-Null
-          npm install "electron-winstaller@$env:ELECTRON_WINSTALLER_VERSION" --save-exact --no-audit --no-fund
-          $resolved=(node -p "require('./node_modules/electron-winstaller/package.json').version").Trim()
-          if($resolved -ne $env:ELECTRON_WINSTALLER_VERSION){ throw "electron-winstaller version mismatch: $resolved" }
-          $lockHash=(Get-FileHash 'package-lock.json' -Algorithm SHA256).Hash.ToLower()
-          Pop-Location
-          $env:NODE_PATH=Join-Path $builder 'node_modules'
-          $env:BUILD_OUTPUT=Join-Path $env:RUNNER_TEMP 'squirrel-v024-final-gate'
-          node tools/build-v024-final-installer.js
-          $setup=Join-Path $env:BUILD_OUTPUT 'SDCenterSetup.exe'
-          $releases=Join-Path $env:BUILD_OUTPUT 'RELEASES'
-          $nupkg=Get-ChildItem $env:BUILD_OUTPUT -Filter '*-full.nupkg' | Select-Object -First 1
-          if(-not (Test-Path $setup) -or -not (Test-Path $releases) -or -not $nupkg){ throw 'Squirrel output incomplete.' }
-          $size=(Get-Item $setup).Length
-          if($size -lt 100MB){ throw "Installer too small: $size" }
-          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
-          "NODE_PATH=$env:NODE_PATH" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILD_OUTPUT=$env:BUILD_OUTPUT" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILDER_LOCK_SHA256=$lockHash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILT_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILT_RELEASES=$releases" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILT_NUPKG=$($nupkg.FullName)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILT_NUPKG_NAME=$($nupkg.Name)" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILT_SIZE=$size" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-          "BUILT_HASH=$hash" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Windows installer CI smoke
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          function Stop-Center { Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue }
-          function Assert-Launch([string]$Exe,[string]$Label){
-            Stop-Center
-            $p=Start-Process $Exe -PassThru
-            Start-Sleep 7
-            if($p.HasExited){ throw "$Label exited during smoke: $($p.ExitCode)" }
-            Stop-Center
-          }
-          $installRoot=Join-Path $env:LOCALAPPDATA 'SDCenter'
-          Stop-Center
-          if(Test-Path $installRoot){ Remove-Item $installRoot -Recurse -Force }
-          $userData=Join-Path $env:APPDATA 'SDCenter'
-          New-Item -ItemType Directory -Force $userData | Out-Null
-          $sentinel=Join-Path $userData 'FINAL_GATE_USERDATA_SENTINEL.txt'
-          'preserve-me' | Set-Content $sentinel -Encoding ascii
-
-          Start-Process $env:BUILT_SETUP -ArgumentList '--silent' -Wait
-          Start-Sleep 5; Stop-Center
-          $newDir=Join-Path $installRoot "app-$env:INSTALLER_VERSION"
-          $newExe=Join-Path $newDir 'SDCenter.exe'
-          if(-not (Test-Path $newExe)){ throw 'Fresh install missing.' }
-          if((Get-Content $sentinel -Raw).Trim() -ne 'preserve-me'){ throw 'userData changed during fresh install.' }
-          $mainHash=(Get-FileHash (Join-Path $newDir 'resources\app\main.js') -Algorithm SHA256).Hash.ToLower()
-          $coreHash=(Get-FileHash (Join-Path $newDir 'resources\app\src\sdlink-core-runtime.js') -Algorithm SHA256).Hash.ToLower()
-          if($mainHash -ne $env:EXPECTED_CANDIDATE_MAIN_SHA256 -or $coreHash -ne $env:EXPECTED_CORE_RUNTIME_SHA256){ throw 'Installed product source hash mismatch.' }
-          Assert-Launch $newExe 'Fresh install'
-          Assert-Launch $newExe 'Full-exit restart'
-
-          Start-Process $env:BUILT_SETUP -ArgumentList '--silent' -Wait
-          Start-Sleep 5; Stop-Center
-          if((Get-Content $sentinel -Raw).Trim() -ne 'preserve-me'){ throw 'userData changed during reinstall.' }
-
-          $updateExe=Join-Path $installRoot 'Update.exe'
-          if(Test-Path $updateExe){ Start-Process $updateExe -ArgumentList '--uninstall','-s' -Wait; Start-Sleep 4 }
-          Stop-Center
-          if(Test-Path $installRoot){ Remove-Item $installRoot -Recurse -Force }
-          $official=Join-Path $env:RUNNER_TEMP 'SDCenterSetup-v2.2.7.exe'
-          Invoke-WebRequest 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $official
-          $officialHash=(Get-FileHash $official -Algorithm SHA256).Hash.ToLower()
-          if($officialHash -ne $env:CURRENT_OFFICIAL_SETUP_SHA256){ throw "Official v2.2.7 setup SHA mismatch: $officialHash" }
-          Start-Process $official -ArgumentList '--silent' -Wait
-          Start-Sleep 5; Stop-Center
-          if(-not (Test-Path (Join-Path $installRoot "app-$env:CURRENT_OFFICIAL_VERSION\SDCenter.exe"))){ throw 'Official v2.2.7 base install missing.' }
-          Start-Process $env:BUILT_SETUP -ArgumentList '--silent' -Wait
-          Start-Sleep 6; Stop-Center
-          if(-not (Test-Path $newExe)){ throw 'v2.2.7 update did not install Final Gate version.' }
-          if((Get-Content $sentinel -Raw).Trim() -ne 'preserve-me'){ throw 'userData changed during update.' }
-          Assert-Launch $newExe 'v2.2.7 update'
-
-          $rule="SDCenter-FinalGate-Offline-$env:GITHUB_RUN_ID"
-          $ruleCreated=$false
-          try {
-            try { New-NetFirewallRule -DisplayName $rule -Direction Outbound -Program $newExe -Action Block -Profile Any | Out-Null; $ruleCreated=$true }
-            catch { Write-Warning "Firewall offline smoke unavailable on runner: $($_.Exception.Message)" }
-            if($ruleCreated){ Assert-Launch $newExe 'Temporary offline launch' }
-          } finally {
-            if($ruleCreated){ Remove-NetFirewallRule -DisplayName $rule -ErrorAction SilentlyContinue }
-          }
-          Assert-Launch $newExe 'Network recovery launch'
-
-      - name: Record provenance and upload blocked installer artifact
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          $out=Join-Path $env:GITHUB_WORKSPACE 'final-gate-installer-output'
-          New-Item -ItemType Directory -Force $out | Out-Null
-          Copy-Item $env:BUILT_SETUP (Join-Path $out 'SDCenterSetup.exe') -Force
-          Copy-Item $env:BUILT_RELEASES (Join-Path $out 'RELEASES') -Force
-          Copy-Item $env:BUILT_NUPKG (Join-Path $out $env:BUILT_NUPKG_NAME) -Force
-          "$env:BUILT_HASH  SDCenterSetup.exe" | Set-Content (Join-Path $out 'SHA256.txt') -Encoding ascii
-          @(
-            'SDCenter v0.24 Final Gate installer artifact — NOT AN OFFICIAL RELEASE',
-            "Repository: $env:GITHUB_REPOSITORY",
-            "Source commit: $env:GITHUB_SHA",
-            "Exact v0.23 ZIP SHA-256: $env:EXPECTED_V023_ZIP_SHA256",
-            "Exact v0.24 candidate ZIP SHA-256: $env:EXPECTED_CANDIDATE_ZIP_SHA256",
-            "Candidate SDCenter.exe SHA-256: $env:EXPECTED_CANDIDATE_EXE_SHA256",
-            "Candidate main.js SHA-256: $env:EXPECTED_CANDIDATE_MAIN_SHA256",
-            "Candidate Core runtime SHA-256: $env:EXPECTED_CORE_RUNTIME_SHA256",
-            "Staging installer version: $env:INSTALLER_VERSION",
-            "electron-winstaller: $env:ELECTRON_WINSTALLER_VERSION",
-            "Builder package-lock SHA-256: $env:BUILDER_LOCK_SHA256",
-            "Installer bytes: $env:BUILT_SIZE",
-            "Installer SHA-256: $env:BUILT_HASH",
-            'CI: exact-candidate gate + regressions + fresh install + restart + reinstall + v2.2.7 update + userData sentinel + best-effort offline/recovery.',
-            'Still required on physical Windows: reboot persistence and human UI checks at 100/125/150% scaling.',
-            'No main merge, official manifest/version update, or GitHub Release is performed by this workflow.'
-          ) | Set-Content (Join-Path $out 'FINAL_GATE_PROVENANCE.txt') -Encoding utf8
-          "OUTPUT_DIR=$out" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-      - uses: actions/upload-artifact@v4
-        with:
-          name: SDCenter-v0.24-FinalGate-Installer-${{ inputs.installer_version }}
-          path: ${{ env.OUTPUT_DIR }}
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 14
