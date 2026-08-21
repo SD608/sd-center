@@ -1,0 +1,50 @@
+name: Verify SDCenter v2.2.8 Publication
+
+on:
+  pull_request:
+    paths:
+      - 'site-config.js'
+      - 'update/center-update.json'
+      - '.github/workflows/verify-v228-publication.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-publication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release metadata is pinned to exact R5
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib
+          expected_version='2.2.8'
+          expected_url='https://github.com/SD608/sd-center/releases/download/v.2.2.8/SDCenterSetup.exe'
+          expected_sha='b9b48f2bd2fe09e601304b5b1c3cd634ad3be21f46294a16855d993f707ec0cc'
+          m=json.loads(pathlib.Path('update/center-update.json').read_text(encoding='utf-8'))
+          assert m['version']==expected_version, m
+          assert m['downloadUrl']==expected_url, m
+          assert m['sha256']==expected_sha, m
+          s=pathlib.Path('site-config.js').read_text(encoding='utf-8')
+          assert 'version: "2.2.8"' in s
+          assert expected_url in s
+          assert 'releases/tag/v.2.2.8' in s
+          print('metadata pin PASS')
+          PY
+      - name: Download published installer and verify exact bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://github.com/SD608/sd-center/releases/download/v.2.2.8/SDCenterSetup.exe'
+          expected_size='140152832'
+          expected_sha='b9b48f2bd2fe09e601304b5b1c3cd634ad3be21f46294a16855d993f707ec0cc'
+          curl -fL --retry 3 --retry-delay 2 -o SDCenterSetup.exe "$url"
+          actual_size="$(stat -c %s SDCenterSetup.exe)"
+          test "$actual_size" = "$expected_size"
+          echo "$expected_sha  SDCenterSetup.exe" | sha256sum -c -
+          echo 'exact public R5 installer PASS'
