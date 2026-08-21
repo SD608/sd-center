@@ -60,8 +60,14 @@ function readAchievementProgress({ databasePath, accountId, bitcoinQuantity=null
     }
     let minedBtc=0;
     if(tables.has("bitcoin_rooms")) minedBtc=n(safeOne(db,"SELECT COALESCE(SUM(mined_btc),0) AS v FROM bitcoin_rooms WHERE account_id=?",String(accountId))?.v);
-    out.push(item("bitcoin-01",Math.max(btc,minedBtc),btc>0||minedBtc>0,{btc,minedBtc}));
-    out.push(threshold("bitcoin-02",btc,10,{btc}),threshold("bitcoin-03",btc,100,{btc}),threshold("bitcoin-04",btc,1000,{btc}));
+    const acquiredBtc=Math.max(btc,minedBtc);
+    out.push(item("bitcoin-01",acquiredBtc,acquiredBtc>0,{btc,minedBtc,acquiredBtc}));
+    out.push(
+      threshold("bitcoin-02",btc,10,{btc}),
+      threshold("bitcoin-03",btc,100,{btc}),
+      threshold("bitcoin-04",btc,1000,{btc}),
+      threshold("bitcoin-05",acquiredBtc,404,{btc,minedBtc,acquiredBtc})
+    );
 
     // 광부
     if(tables.has("mining_inventory")){
