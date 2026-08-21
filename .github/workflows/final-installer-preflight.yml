@@ -44,8 +44,9 @@ jobs:
 
           workflow = Path('.github/workflows/build-center-v024-final-installer.yml').read_text(encoding='utf-8')
           local_builder = Path('tools/run-v024-final-installer-local.ps1').read_text(encoding='utf-8')
+          builder = Path('tools/build-v024-final-installer.js').read_text(encoding='utf-8')
           launcher = Path('tools/RUN-FINAL-GATE-BUILDER.cmd').read_text(encoding='utf-8')
-          combined = workflow + '\n' + local_builder + '\n' + launcher
+          combined = workflow + '\n' + local_builder + '\n' + builder + '\n' + launcher
           required = [
               'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f',
               'ea3a912e0e3f771788462d82af16a7129b8684d50ee12c2840d5ebd5090087cb',
@@ -62,6 +63,8 @@ jobs:
               r'%ProgramFiles%\nodejs\node.exe',
               'SDCENTER_NODE_EXE',
               '--probe-only',
+              'System.Text.UTF8Encoding($false)',
+              "replace(/^\\uFEFF/",
           ]
           for token in required:
               if token not in combined:
@@ -105,6 +108,20 @@ jobs:
         run: |
           if not exist "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" exit /b 1
           "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Write-Host 'Windows PowerShell absolute fallback works'"
+      - name: Validate Windows PowerShell UTF-8 no-BOM JSON staging
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = Join-Path $env:RUNNER_TEMP 'sdcenter-staged-package.json'
+          $json = ([pscustomobject]@{ name = 'sdcenter'; version = '2.2.8' } | ConvertTo-Json -Depth 100)
+          $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+          [IO.File]::WriteAllText($path, $json, $utf8NoBom)
+          $bytes = [IO.File]::ReadAllBytes($path)
+          if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+            throw 'UTF-8 BOM unexpectedly present'
+          }
+          & node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')); console.log('Windows PowerShell staged JSON parse passed')" $path
+          if ($LASTEXITCODE -ne 0) { throw "Node JSON parse failed with $LASTEXITCODE" }
       - name: Execute launcher dependency probe with spaced Node path
         shell: pwsh
         run: |
