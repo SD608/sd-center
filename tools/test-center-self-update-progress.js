@@ -19,7 +19,7 @@ const dialog = { showMessageBox: async () => ({ response: 1 }) };
 const appCatalog = [];
 const terminateAppAndWait = async () => {};
 let isQuitting = false;
-let centerUpdateState = { phase: "idle", updateAvailable: false, downloaded: false, version: "", error: "" };
+  let centerUpdateState = { phase: "idle", updateAvailable: false, downloaded: false, version: "", error: "" };
 function sendCenterUpdateState(extra = {}) { centerUpdateState = { ...centerUpdateState, ...extra }; return centerUpdateState; }
 autoUpdater.on("checking-for-update", () => sendCenterUpdateState({ phase: "checking", error: "" }));
 autoUpdater.on("update-available", () => sendCenterUpdateState({ phase: "available", updateAvailable: true, downloaded: false, error: "" }));
@@ -40,8 +40,8 @@ async function checkCenterSelfUpdate() {
 }
 async function installCenterSelfUpdate() {
   const confirmation = await dialog.showMessageBox();
-  if (confirmation.response !== 1) return { ok: false, canceled: true };
-  await Promise.all(appCatalog.map((entry) => terminateAppAndWait(entry.id)));
+    if (confirmation.response !== 1) return { ok: false, canceled: true };
+    await Promise.all(appCatalog.map((entry) => terminateAppAndWait(entry.id)));
   isQuitting = true;
   setTimeout(() => autoUpdater.quitAndInstall(), 120);
   return { ok: true, installing: true };
