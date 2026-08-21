@@ -1,0 +1,62 @@
+name: SDCenter v0.24 Final Gate R2 Guard
+
+on:
+  push:
+    branches: [release/v024-final-gate-20260820]
+    paths:
+      - 'tools/run-v024-final-installer-local.ps1'
+      - 'tools/build-v024-final-installer.js'
+      - 'tools/patch-center-ui-v024-core.js'
+      - 'preview/v024-core/sdlink-background-window-guard.js'
+      - 'preview/v024-core/test-sdlink-background-window-guard-v024.js'
+      - '.github/workflows/build-center-v024-final-installer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EXPECTED_R2_CANDIDATE_ZIP_SHA256: '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b'
+  EXPECTED_R2_MAIN_SHA256: '1c5379d171d1226b80e951655bd85e0eb098beb77ba817c49fa1b49f30b32187'
+  EXPECTED_R2_BACKGROUND_GUARD_SHA256: '5b5ab522315facb2e2562c8c1cced6736bdc4d0252c194e60b68b86641c95e20'
+
+jobs:
+  r2-source-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate R2 hotfix sources
+        run: |
+          set -euo pipefail
+          node --check tools/patch-center-ui-v024-core.js
+          node --check preview/v024-core/sdlink-background-window-guard.js
+          node --check preview/v024-core/test-sdlink-background-window-guard-v024.js
+          node preview/v024-core/test-sdlink-background-window-guard-v024.js
+          node --check tools/build-v024-final-installer.js
+      - name: Enforce local-only blocked installer path
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tools/run-v024-final-installer-local.ps1').read_text(encoding='utf-8')
+          required = [
+              '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b',
+              '1c5379d171d1226b80e951655bd85e0eb098beb77ba817c49fa1b49f30b32187',
+              '5b5ab522315facb2e2562c8c1cced6736bdc4d0252c194e60b68b86641c95e20',
+              'test-sdlink-background-window-guard-v024.js',
+          ]
+          for token in required:
+              if token not in p:
+                  raise SystemExit(f'missing R2 local-builder invariant: {token}')
+          old = 'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f'
+          if old in p:
+              raise SystemExit('R1 candidate hash still accepted by local builder')
+          combined = p + '\n' + Path('tools/build-v024-final-installer.js').read_text(encoding='utf-8')
+          for token in ['gh release create', 'gh release upload', 'git push origin HEAD:main']:
+              if token in combined:
+                  raise SystemExit(f'forbidden publication side effect found: {token}')
+          print('R2 blocked installer source guard PASS')
+          PY

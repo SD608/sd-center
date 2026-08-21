@@ -1,0 +1,55 @@
+name: Audit v0.20 Embedded Payloads
+
+on:
+  push:
+    branches: [release/v024-final-gate-20260820]
+    paths:
+      - 'tools/run-v020-payload-audit.js'
+      - 'tools/recover-v020-ui-payload.js'
+      - 'tools/scan-v020-ui-deflate.py'
+      - 'tools/inspect-v020-intact-contract.js'
+      - 'tools/patch-center-ui-v020.js'
+      - '.github/workflows/audit-v020-payload.yml'
+  pull_request:
+    branches: [release/sd-center-core-v1]
+    paths:
+      - 'tools/run-v020-payload-audit.js'
+      - 'tools/recover-v020-ui-payload.js'
+      - 'tools/scan-v020-ui-deflate.py'
+      - 'tools/inspect-v020-intact-contract.js'
+      - 'tools/patch-center-ui-v020.js'
+      - '.github/workflows/audit-v020-payload.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect intact v0.20 contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node 'tools/inspect-v020-intact-contract.js' 'tools/patch-center-ui-v020.js'
+      - name: Localize uiBlock deflate corruption
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          python 'tools/scan-v020-ui-deflate.py' 'tools/patch-center-ui-v020.js'
+      - name: Test single-character uiBlock deletion
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          node 'tools/recover-v020-ui-payload.js' 'tools/patch-center-ui-v020.js'
+      - name: Identify invalid embedded payloads
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          node 'tools/run-v020-payload-audit.js' 'tools/patch-center-ui-v020.js' '.'

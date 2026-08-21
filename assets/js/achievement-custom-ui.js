@@ -14,6 +14,16 @@
     ranking: "통장 잔고 랭킹"
   };
 
+  // No server-final validator exists for these codes yet.
+  // Existing server-unlocked assets remain earned; only NEW acquisition is pending.
+  const PENDING_IDS = new Set([
+    "bitcoin-01", "bitcoin-02", "bitcoin-03", "bitcoin-04", "bitcoin-05",
+    "flea-01", "flea-02", "flea-03", "flea-04", "flea-08", "flea-09", "flea-10", "flea-11", "flea-14", "flea-15", "flea-16", "flea-17", "flea-18",
+    "logistics-01", "logistics-02", "logistics-03", "logistics-04", "logistics-05", "logistics-06", "logistics-07", "logistics-08", "logistics-09", "logistics-10", "logistics-11", "logistics-12", "logistics-13", "logistics-14", "logistics-15", "logistics-16",
+    "miner-01", "miner-02", "miner-03", "miner-04", "miner-05", "miner-06", "miner-07", "miner-08", "miner-09",
+    "mukjjippa-01", "mukjjippa-02", "ranking-01", "sta-01", "sta-02", "sta-03"
+  ]);
+
   let lastActiveId = "";
   let remoteLoadedFor = "";
   let drag = null;
@@ -22,13 +32,11 @@
 
   const auth = () => window.SD_AUTH || null;
   const achievements = () => Array.isArray(window.SD_ACHIEVEMENTS) ? window.SD_ACHIEVEMENTS : [];
-  const progress = () => window.SD_ACHIEVEMENT_PROGRESS || {};
   const unlocked = () => window.SD_ACHIEVEMENT_UNLOCKED || {};
 
+  // Final completion authority is the server/Core unlocked flag only.
   function isDone(item) {
-    if (!item) return false;
-    if (Boolean(unlocked()[item.id])) return true;
-    return Boolean(item.p && typeof item.t === "number" && Number(progress()[item.id] || 0) >= item.t);
+    return Boolean(item && unlocked()[item.id]);
   }
 
   function injectStyles() {
@@ -50,6 +58,10 @@
       .achievement-source-category{display:inline-flex;align-items:center;min-height:25px;margin-top:13px;padding:0 9px;border:1px solid rgba(91,214,153,.15);border-radius:999px;background:rgba(91,214,153,.06);color:#8fd6b1;font-size:.65rem;font-weight:900}
       .achievement-unlocked-at{margin-top:10px;color:#65758e;font-size:.68rem;font-weight:800}
       .achievement-completed-empty{padding:44px 24px;border:1px dashed rgba(91,214,153,.18);border-radius:22px;background:rgba(91,214,153,.025);color:#789188;text-align:center;line-height:1.8}
+      .achievement-card.pending-achievement{border-style:dashed;border-color:rgba(142,156,181,.18);background:linear-gradient(145deg,rgba(39,48,64,.62),rgba(12,21,38,.94))}
+      .achievement-card.pending-achievement .achievement-icon{background:rgba(255,255,255,.05);filter:grayscale(1)}
+      .achievement-card.pending-achievement .achievement-badge{display:inline-flex!important;align-items:center;min-height:25px;padding:0 9px;border:1px solid rgba(148,163,184,.18);border-radius:999px;background:rgba(148,163,184,.07);color:#a8b3c4;font-size:.65rem;font-weight:900}
+      .achievement-card.pending-achievement .achievement-condition{opacity:.72}
       @media(max-width:760px){.achievement-order-hint{display:none}.achievement-order-tools{margin-top:6px}.achievement-drag-handle{width:27px}}
     `;
     document.head.append(style);
@@ -161,14 +173,13 @@
   function reorderRegular(order) {
     const tabs = document.querySelector(".achievement-tabs");
     if (!tabs) return;
-    const normalized = normalizeOrder(order);
-    for (const id of normalized) {
+    for (const id of normalizeOrder(order)) {
       const button = tabs.querySelector(`.achievement-tab[data-achievement-tab="${id}"]`);
       if (button) tabs.append(button);
     }
     const special = tabs.querySelector(`.achievement-tab[data-achievement-tab="${SPECIAL_ID}"]`);
     if (special) tabs.prepend(special);
-    reorderPanels(normalized);
+    reorderPanels(order);
   }
 
   function rowMap() {
@@ -182,6 +193,47 @@
     return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(time));
   }
 
+  function decorateAuthorityState() {
+    const all = achievements();
+    const serverUnlocked = unlocked();
+
+    for (const category of DEFAULT_ORDER) {
+      const items = all.filter((item) => item.c === category);
+      const panel = document.querySelector(`[data-achievement-panel="${category}"]`);
+      const cards = panel ? [...panel.querySelectorAll(".achievement-card")] : [];
+      items.forEach((item, index) => {
+        const card = cards[index];
+        if (!card) return;
+        const earned = Boolean(serverUnlocked[item.id]);
+        const pending = PENDING_IDS.has(item.id) && !earned;
+        card.dataset.achievementId = item.id;
+        card.classList.toggle("pending-achievement", pending);
+
+        // Never infer completion from a client-side threshold.
+        if (!earned) card.classList.remove("complete");
+
+        if (pending) {
+          const icon = card.querySelector(".achievement-icon");
+          if (icon) icon.textContent = "⏳";
+          const badge = card.querySelector(".achievement-badge");
+          if (badge) badge.textContent = "준비 중";
+          card.querySelector(".achievement-progress")?.remove();
+        }
+      });
+    }
+
+    const completed = all.filter(isDone).length;
+    const active = all.length - PENDING_IDS.size;
+    const count = document.querySelector(".achievement-count");
+    if (count) count.textContent = `등록 업적 ${all.length}개 · 활성 ${active}개 · 달성 ${completed}개`;
+
+    const intro = document.querySelector(".achievements-head p");
+    if (intro) intro.textContent = "서버에서 검증 가능한 업적만 활성화됩니다. 기존에 획득한 업적과 칭호는 그대로 유지됩니다.";
+
+    const note = document.querySelector(".achievement-placeholder");
+    if (note) note.textContent = "준비 중 업적은 서버 검증 경로가 연결된 뒤 활성화됩니다.";
+  }
+
   function cloneCompletedCard(item, rows) {
     const list = achievements().filter((entry) => entry.c === item.c);
     const index = list.findIndex((entry) => entry.id === item.id);
@@ -190,6 +242,8 @@
     if (!source) return null;
     const clone = source.cloneNode(true);
     clone.dataset.achievementId = item.id;
+    clone.classList.remove("pending-achievement");
+
     const category = document.createElement("div");
     category.className = "achievement-source-category";
     category.textContent = LABELS[item.c] || item.c;
@@ -234,10 +288,10 @@
     const panel = document.createElement("section");
     panel.className = "achievement-panel";
     panel.dataset.achievementPanel = SPECIAL_ID;
-    panel.innerHTML = `<div class="achievement-category-title"><div><span>ACHIEVED</span><h2>달성한 업적</h2></div><span class="achievement-category-meta">${completed.length}/${achievements().length} 달성</span></div>`;
+    panel.innerHTML = `<div class="achievement-category-title"><div><span>ACHIEVED</span><h2>달성한 업적</h2></div><span class="achievement-category-meta">${completed.length}개 달성</span></div>`;
 
     if (!completed.length) {
-      panel.insertAdjacentHTML("beforeend", '<div class="achievement-completed-empty">아직 달성한 업적이 없습니다.<br>첫 업적을 달성하면 이곳에 자동으로 모입니다.</div>');
+      panel.insertAdjacentHTML("beforeend", '<div class="achievement-completed-empty">아직 달성한 업적이 없습니다.</div>');
     } else {
       const grid = document.createElement("div");
       grid.className = "achievement-grid achievement-completed-grid";
@@ -259,7 +313,7 @@
     if (!tools) {
       tools = document.createElement("div");
       tools.className = "achievement-order-tools";
-      tools.innerHTML = '<span class="achievement-order-hint">⋮⋮ 손잡이를 끌어 카테고리 순서를 변경할 수 있습니다.</span><button class="achievement-order-reset" type="button">기본 순서</button>';
+      tools.innerHTML = '<span class="achievement-order-hint">⋮⋮ 끌어서 순서 변경</span><button class="achievement-order-reset" type="button">기본 순서</button>';
       wrap.append(tools);
       tools.querySelector(".achievement-order-reset")?.addEventListener("click", async () => {
         try { localStorage.removeItem(ORDER_KEY); } catch {}
@@ -379,6 +433,7 @@
       const activeBefore = lastActiveId || tabs.querySelector(".achievement-tab.active")?.dataset.achievementTab || "";
       const local = readLocalOrder();
       reorderRegular(local.length ? local : DEFAULT_ORDER);
+      decorateAuthorityState();
       buildCompletedView();
       decorateHandles();
       addOrderTools();

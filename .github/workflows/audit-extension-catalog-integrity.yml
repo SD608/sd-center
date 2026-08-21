@@ -1,0 +1,30 @@
+name: Audit Official Extension Catalog Integrity
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/audit-extension-catalog-integrity.yml'
+      - 'tools/audit-extension-catalog-integrity.py'
+      - 'update/extensions-catalog.json'
+      - 'update/desktop-policy.json'
+      - 'downloads/extensions/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compute exact SHA-256 for catalog and required-policy ZIPs
+        run: python tools/audit-extension-catalog-integrity.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: official-extension-integrity-report
+          path: artifacts/extension-integrity/extension-integrity-report.json
+          if-no-files-found: error

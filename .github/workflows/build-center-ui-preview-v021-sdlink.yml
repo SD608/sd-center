@@ -1,0 +1,74 @@
+name: Test SDCenter v0.21 SD Link Integration
+
+on:
+  push:
+    branches: [feature/sdlink-integrated]
+    paths:
+      - 'preview/v021/**'
+      - 'tools/apply-center-ui-v021-sdlink.js'
+      - 'tools/patch-center-ui-v021-sdlink-main.js'
+      - 'tools/patch-center-ui-v021-sdlink-ui.js'
+      - 'tools/check-center-ui-v021-sdlink.js'
+      - '.github/workflows/build-center-ui-preview-v021-sdlink.yml'
+  pull_request:
+    branches: [preview/center-ui-v230-20260819]
+    paths:
+      - 'preview/v021/**'
+      - 'tools/apply-center-ui-v021-sdlink.js'
+      - 'tools/patch-center-ui-v021-sdlink-main.js'
+      - 'tools/patch-center-ui-v021-sdlink-ui.js'
+      - 'tools/check-center-ui-v021-sdlink.js'
+      - '.github/workflows/build-center-ui-preview-v021-sdlink.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration-contract:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check integration sources
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check 'preview/v021/sdlink-integration.js'
+          node --check 'preview/v021/test-sdlink-integration-v021.js'
+          node --check 'tools/apply-center-ui-v021-sdlink.js'
+          node --check 'tools/patch-center-ui-v021-sdlink-main.js'
+          node --check 'tools/patch-center-ui-v021-sdlink-ui.js'
+          node --check 'tools/check-center-ui-v021-sdlink.js'
+
+      - name: Run persistence and binding regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $fixture=Join-Path $env:RUNNER_TEMP 'sdlink-v021-fixture'
+          New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'src') | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'tools') | Out-Null
+          Copy-Item 'preview/v021/sdlink-integration.js' (Join-Path $fixture 'src\sdlink-integration.js') -Force
+          Copy-Item 'preview/v021/test-sdlink-integration-v021.js' (Join-Path $fixture 'tools\test-sdlink-integration-v021.js') -Force
+          node (Join-Path $fixture 'tools\test-sdlink-integration-v021.js')
+
+      - name: Guard server and economic sync boundary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $files = @(
+            'preview/v021/sdlink-integration.js',
+            'tools/apply-center-ui-v021-sdlink.js',
+            'tools/patch-center-ui-v021-sdlink-main.js',
+            'tools/patch-center-ui-v021-sdlink-ui.js'
+          )
+          $joined = ($files | ForEach-Object { Get-Content $_ -Raw }) -join "`n"
+          foreach($forbidden in @('push_sd_link_transaction', 'pull_sd_link_transactions', 'signedAmount(', 'wallet_ledger', 'supabase/migrations')) {
+            if($joined.Contains($forbidden)){ throw "v0.21 integration crossed protected economic/Core boundary: $forbidden" }
+          }
+          Write-Host 'SD Link v0.21 integration boundary guard passed'

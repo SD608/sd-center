@@ -1,0 +1,11 @@
+{
+  "id": "sd-mukjippa",
+  "name": "SD묵찌빠",
+  "displayVersion": "Version 1.1 · v1.0.1",
+  "description": "SD지갑 가상잔액으로 즐기는 연승 도전형 묵찌빠 시뮬레이션입니다.",
+  "improvement": "묵·찌·빠 음성 구호를 제거하고 효과음, 배경음, 연승 시스템은 그대로 유지합니다.",
+  "entry": "main.js",
+  "icon": "public/icons/icon-512.png",
+  "accent": "purple",
+  "userDataFolder": "SD묵찌빠"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "sdminer-desktop",
+  "productName": "SD광부",
+  "version": "1.1.1",
+  "private": true,
+  "description": "SD지갑 연동 광산 채굴·판매 기록·수익 통계 시뮬레이션",
+  "author": "SDWallet",
+  "main": "main.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "make": "electron-forge make",
+    "package": "electron-forge package",
+    "check": "node --check main.js && node --check preload.js && node --check src/settings.js && node --check src/wallet-database.js && node --check src/mining-engine.js && node --check public/js/app.js"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "latest",
+    "@electron-forge/maker-squirrel": "latest",
+    "electron": "latest"
+  }
+}

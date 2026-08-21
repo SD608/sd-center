@@ -1,0 +1,41 @@
+name: Audit v2.2.7 Extension Updater Source
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/audit-v227-updater-source.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract-updater-source:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify exact official v2.2.7
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup=Join-Path $env:RUNNER_TEMP 'SDCenterSetup-v2.2.7.exe'
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
+          if((Get-Item $setup).Length -ne 140105216){ throw 'size mismatch' }
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "hash mismatch: $hash" }
+          Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7\resources\app'
+          $out=Join-Path $env:RUNNER_TEMP 'updater-source'
+          New-Item -ItemType Directory -Force -Path (Join-Path $out 'src') | Out-Null
+          Copy-Item (Join-Path $root 'main.js') (Join-Path $out 'main.js')
+          Copy-Item (Join-Path $root 'src\app-registry.js') (Join-Path $out 'src\app-registry.js')
+          Copy-Item (Join-Path $root 'package.json') (Join-Path $out 'package.json')
+          "UPDATER_SOURCE=$out" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+      - uses: actions/upload-artifact@v4
+        with:
+          name: official-v2.2.7-updater-source-audit
+          path: ${{ env.UPDATER_SOURCE }}
+          if-no-files-found: error
