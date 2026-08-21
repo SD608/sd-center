@@ -9,8 +9,8 @@
     "start": "electron .",
     "check": "node scripts/check.js",
     "test": "node --test tests/*.test.js",
-    "test:bug": "node --test tests/bug-regression.test.js",
-    "test:error": "node --test tests/error-resilience.test.js",
+    "test:bug": "node --test tests/bug-regression.test.js tests/presence-bug-regression.test.js",
+    "test:error": "node --test tests/error-resilience.test.js tests/presence-error-resilience.test.js",
     "build:win": "electron-builder --win nsis --x64"
   },
   "devDependencies": {
