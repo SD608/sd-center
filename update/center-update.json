@@ -3,6 +3,6 @@
   "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.8/SDCenterSetup.exe",
   "sha256": "b9b48f2bd2fe09e601304b5b1c3cd634ad3be21f46294a16855d993f707ec0cc",
   "notes": "SD Core v0.24 통합, 공식 확장팩 업데이트 무결성 강화, 오프라인 상태 표시 및 Windows 안정성을 개선했습니다.",
-  "publishedAt": "2026-08-22T03:31:00+09:00",
+  "publishedAt": "2026-08-22T03:47:00+09:00",
   "squirrelFeedUrl": "https://github.com/SD608/sd-center/releases/latest/download"
 }
