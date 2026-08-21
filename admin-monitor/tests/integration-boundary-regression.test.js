@@ -9,11 +9,17 @@ const repoRoot = path.resolve(__dirname, "../..");
 const read = (relative) => fs.readFileSync(path.join(repoRoot, relative), "utf8");
 
 test("admin wallet mutation stays behind Core server ledger path", () => {
-  const sql = read("sql/SD608_관리자_접속현황_v1.sql");
-  assert.match(sql, /sd_core_private\.apply_server_wallet_delta_impl\s*\(/i);
-  assert.doesNotMatch(sql, /update\s+public\.wallets\b/i);
-  assert.doesNotMatch(sql, /insert\s+into\s+public\.transactions\b/i);
-  assert.match(sql, /p_request_id\s+is\s+null/i);
+  const baseSql = read("sql/SD608_관리자_접속현황_v1.sql");
+  const limitSql = read("sql/SD608_관리자_입출금_1000억_상한.sql");
+  for (const sql of [baseSql, limitSql]) {
+    assert.match(sql, /sd_core_private\.apply_server_wallet_delta_impl\s*\(/i);
+    assert.doesNotMatch(sql, /update\s+public\.wallets\b/i);
+    assert.doesNotMatch(sql, /insert\s+into\s+public\.transactions\b/i);
+    assert.match(sql, /p_request_id\s+is\s+null/i);
+  }
+  assert.match(limitSql, /p_amount\s*>\s*100000000000/i);
+  assert.match(read("admin-monitor/lib/sd-admin-api.js"), /MAX_ADJUSTMENT_AMOUNT\s*=\s*100000000000/);
+  assert.match(read("admin-monitor/renderer/index.html"), /max=["']100000000000["']/i);
 });
 
 test("presence storage has no direct authenticated table access", () => {

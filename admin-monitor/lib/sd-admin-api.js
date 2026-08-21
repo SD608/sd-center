@@ -2,6 +2,7 @@
 
 const { friendlyError } = require("./errors");
 const DEFAULT_TIMEOUT_MS = 12000;
+const MAX_ADJUSTMENT_AMOUNT = 100000000000;
 
 function normalizeBaseUrl(value) {
   const url = new URL(String(value || ""));
@@ -39,7 +40,7 @@ class SdAdminApi {
   async rpc(name,args={}, {uncertainOnNetwork=false}={}){if(!/^[a-z0-9_]+$/i.test(String(name||""))) throw new ApiError("INVALID_RPC_NAME"); if(!this.isAuthenticated) throw new ApiError("AUTH_REQUIRED",{status:401}); return this._fetchJson(`/rest/v1/rpc/${name}`,{method:"POST",body:JSON.stringify(args||{})},{authenticated:true,uncertainOnNetwork});}
   me(){return this.rpc("sd_admin_v1_me");} listUsers(){return this.rpc("sd_admin_v1_list_users");} getUser(userId){return this.rpc("sd_admin_v1_get_user",{p_user_id:userId});}
   listTransactions(userId,beforeSeq=null,limit=50){return this.rpc("sd_admin_v1_list_transactions",{p_user_id:userId,p_before_seq:beforeSeq,p_limit:Math.max(1,Math.min(Number(limit)||50,100))});}
-  adjustWallet({userId,direction,amount,note=null,requestId}){const normalizedDirection=String(direction||"").toLowerCase(); const normalizedAmount=Math.trunc(Number(amount)); if(!userId) throw new ApiError("WALLET_TARGET_NOT_FOUND"); if(!requestId) throw new ApiError("REQUEST_ID_REQUIRED"); if(!['credit','debit'].includes(normalizedDirection)) throw new ApiError("INVALID_DIRECTION"); if(!Number.isSafeInteger(normalizedAmount)||normalizedAmount<1||normalizedAmount>1000000000) throw new ApiError("INVALID_AMOUNT"); const cleanNote=String(note||"").trim(); if(cleanNote.length>80) throw new ApiError("NOTE_TOO_LONG"); return this.rpc("sd_admin_v1_adjust_wallet",{p_target_user_id:userId,p_direction:normalizedDirection,p_amount:normalizedAmount,p_note:cleanNote||null,p_request_id:requestId},{uncertainOnNetwork:true});}
+  adjustWallet({userId,direction,amount,note=null,requestId}){const normalizedDirection=String(direction||"").toLowerCase(); const normalizedAmount=Number(amount); if(!userId) throw new ApiError("WALLET_TARGET_NOT_FOUND"); if(!requestId) throw new ApiError("REQUEST_ID_REQUIRED"); if(!['credit','debit'].includes(normalizedDirection)) throw new ApiError("INVALID_DIRECTION"); if(!Number.isSafeInteger(normalizedAmount)||normalizedAmount<1||normalizedAmount>MAX_ADJUSTMENT_AMOUNT) throw new ApiError("INVALID_AMOUNT"); const cleanNote=String(note||"").trim(); if(cleanNote.length>80) throw new ApiError("NOTE_TOO_LONG"); return this.rpc("sd_admin_v1_adjust_wallet",{p_target_user_id:userId,p_direction:normalizedDirection,p_amount:normalizedAmount,p_note:cleanNote||null,p_request_id:requestId},{uncertainOnNetwork:true});}
   explainError(error){return friendlyError(error);}
 }
-module.exports={SdAdminApi,ApiError,normalizeBaseUrl,normalizeKey};
+module.exports={SdAdminApi,ApiError,MAX_ADJUSTMENT_AMOUNT,normalizeBaseUrl,normalizeKey};
