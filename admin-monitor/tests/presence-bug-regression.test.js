@@ -28,6 +28,16 @@ test("stop waits for an in-flight heartbeat before sending end", async()=>{
   assert.deepEqual(calls,["sd_presence_v1_heartbeat","sd_presence_v1_end"]); assert.equal(r.ended,true);
 });
 
+test("concurrent starts install exactly one timer", async()=>{
+  const gate=deferred(); let timers=0; const r=new PresenceReporter(base({rpc:async(n)=>n==="sd_presence_v1_heartbeat"?gate.promise:{ok:true},setIntervalFn:()=>{timers++;return {unref(){}};}}));
+  const a=r.start(); const b=r.start(); await Promise.resolve(); gate.resolve({ok:true}); await Promise.all([a,b]); assert.equal(timers,1); await r.stop();
+});
+
+test("concurrent stops send exactly one end RPC", async()=>{
+  const gate=deferred(); let ends=0; const r=new PresenceReporter(base({rpc:async(n)=>{if(n==="sd_presence_v1_end"){ends++;return gate.promise;} return {ok:true};}}));
+  const a=r.stop(); const b=r.stop(); await Promise.resolve(); assert.equal(ends,1); gate.resolve({ok:true}); await Promise.all([a,b]); assert.equal(ends,1);
+});
+
 test("stop is idempotent and never submits duplicate end events", async()=>{
   let ends=0; const r=new PresenceReporter(base({rpc:async(n)=>{if(n==="sd_presence_v1_end") ends++; return {ok:true};}}));
   await r.stop(); await r.stop(); assert.equal(ends,1);
