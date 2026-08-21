@@ -10,5 +10,7 @@ contextBridge.exposeInMainWorld("sdAdmin", Object.freeze({
   getUser: (userId) => invoke("sd:user", { userId }),
   listTransactions: (userId, beforeSeq = null, limit = 50) => invoke("sd:transactions", { userId, beforeSeq, limit }),
   adjustWallet: (payload) => invoke("sd:adjust", payload),
-  getPendingAdjustment: () => invoke("sd:pending-adjustment")
+  getPendingAdjustment: () => invoke("sd:pending-adjustment"),
+  getRoadmap: () => invoke("sd:roadmap"),
+  showRoadmapFile: () => invoke("sd:roadmap-show-file")
 }));
