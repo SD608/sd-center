@@ -5,7 +5,9 @@ on:
     paths:
       - '.github/workflows/test-extension-update-integrity-hardening.yml'
       - 'tools/patch-v024-extension-update-integrity.js'
+      - 'tools/patch-v024-extension-update-trust-bootstrap.js'
       - 'tools/test-extension-update-integrity-helper.js'
+      - 'tools/test-extension-update-trust-bootstrap.js'
       - 'tools/audit-extension-catalog-integrity.py'
       - 'update/extensions-catalog.json'
       - 'update/desktop-policy.json'
@@ -43,19 +45,20 @@ jobs:
           $root=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7\resources\app'
           if(-not (Test-Path (Join-Path $root 'main.js'))){ throw 'installed v2.2.7 main.js missing' }
           "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Apply exact-version + SHA-256 updater hardening
+      - name: Apply exact-version + SHA-256 updater hardening and trust bootstrap
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
           node tools/patch-v024-extension-update-integrity.js "$env:APP_ROOT"
+          node tools/patch-v024-extension-update-trust-bootstrap.js "$env:APP_ROOT"
           node --check "$env:APP_ROOT\main.js"
-      - name: Test integrity helper behavior
+      - name: Test integrity and production-catalog transition behavior
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          node tools/test-extension-update-integrity-helper.js "$env:APP_ROOT\main.js"
+          node tools/test-extension-update-trust-bootstrap.js "$env:APP_ROOT\main.js"
           $main=Get-Content "$env:APP_ROOT\main.js" -Raw
-          foreach($marker in @('verifyOfficialExtensionPackage','crypto.createHash("sha256")','actualSha256 !== expectedSha256','compareVersions(inspected.metadata.rawVersion, version) !== 0')) {
+          foreach($marker in @('verifyOfficialExtensionPackage','crypto.createHash("sha256")','actualSha256 !== expectedSha256','compareVersions(inspected.metadata.rawVersion, version) !== 0','CURRENT_OFFICIAL_EXTENSION_PACKAGE_SHA256','embeddedOfficialExtensionSha256','확장팩 카탈로그 SHA-256이 센터의 검증값과 충돌')) {
             if(-not $main.Contains($marker)){ throw "missing hardening marker: $marker" }
           }
       - name: Launch patched center process smoke
