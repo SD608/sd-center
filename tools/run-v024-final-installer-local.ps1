@@ -39,7 +39,7 @@ function Invoke-Node {
   param([Parameter(Mandatory = $true)][string[]]$Arguments)
   & node @Arguments
   if ($LASTEXITCODE -ne 0) {
-    throw "node failed with exit code $LASTEXITCODE: node $($Arguments -join ' ')"
+    throw "node failed with exit code ${LASTEXITCODE}: node $($Arguments -join ' ')"
   }
 }
 
