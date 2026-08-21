@@ -1,0 +1,58 @@
+name: Final Installer Workflow Preflight
+
+on:
+  pull_request:
+    branches: [release/sd-center-core-v1]
+    paths:
+      - 'tools/build-v024-final-installer.js'
+      - '.github/workflows/build-center-v024-final-installer.yml'
+      - '.github/workflows/final-installer-preflight.yml'
+  push:
+    branches: [release/v024-final-gate-20260820]
+    paths:
+      - 'tools/build-v024-final-installer.js'
+      - '.github/workflows/build-center-v024-final-installer.yml'
+      - '.github/workflows/final-installer-preflight.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate installer builder JavaScript
+        run: node --check tools/build-v024-final-installer.js
+      - name: Parse installer workflow YAML
+        shell: ruby {0}
+        run: |
+          require 'yaml'
+          YAML.load_file('.github/workflows/build-center-v024-final-installer.yml', aliases: true)
+          puts 'installer workflow YAML parsed'
+      - name: Validate immutable candidate and release-safety guards
+        shell: python
+        run: |
+          from pathlib import Path
+          text = Path('.github/workflows/build-center-v024-final-installer.yml').read_text(encoding='utf-8')
+          required = [
+              'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f',
+              'ea3a912e0e3f771788462d82af16a7129b8684d50ee12c2840d5ebd5090087cb',
+              '226811c8086805c68ce631330808842d320654797e3bf3c6661d345b1bf427ba',
+              'c5e54e2f46815564e560c5b14200a21062138ecee17d24bdb7e628a4ac8caf9c',
+              '1be6f63eac00363ae4c19af42d33398aca1402431c9a7f88bb480edf7f1b68b6',
+              "ELECTRON_WINSTALLER_VERSION: '5.4.4'",
+              'contents: read',
+              'actions: read',
+          ]
+          for token in required:
+              if token not in text:
+                  raise SystemExit(f'missing Final Gate invariant: {token}')
+          forbidden = ['gh release ' + 'create', 'gh release ' + 'upload', 'git push origin HEAD:' + 'main']
+          for token in forbidden:
+              if token in text:
+                  raise SystemExit(f'forbidden release side effect: {token}')
+          print('Final Gate installer invariants passed')
