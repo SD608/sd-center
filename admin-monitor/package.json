@@ -1,6 +1,6 @@
 {
   "name": "sd-admin-monitor",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "SD 로드맵 및 관리자 접속 현황 운영 도구",
   "main": "main.js",
