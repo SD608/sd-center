@@ -6,6 +6,7 @@
       "name": "SD Link",
       "version": "1.4.1",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLink_v1.4.1_Desktop.zip?v=141",
+      "sha256": "032d7e9fec32d99f9ae13a568baa1d1d80c5fb713392bdd103ccbd3ce9f59707",
       "notes": "SD Link 전용 심플 연결고리 아이콘을 추가했습니다. v1.4.0의 PC 슬롯·홀짝 온라인 브리지와 백그라운드 동기화 기능은 그대로 유지됩니다.",
       "icon": "https://sd608.github.io/sd-center/assets/icons/sdlink.svg?v=141",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/sdlink.svg?v=141"
@@ -14,36 +15,42 @@
       "name": "SD 물류센터",
       "version": "1.1.0",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDLogisticsCenter_v1.1.0_Desktop.zip?v=110",
+      "sha256": "3a1b1c156b233d0d74555dce2f8899030cd4573f00524dc4edeb4e130a1ace08",
       "notes": "PC 물류 평판·본부레벨·배송 진행도를 SD Link가 읽을 수 있는 공용 브리지로 내보냅니다. 기존 물류 진행도와 SD지갑 데이터는 유지됩니다."
     },
     "sd-slot": {
       "name": "SD슬롯",
       "version": "1.1.0",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDSlot_v1.1.0_Desktop.zip?v=110",
+      "sha256": "66ae3b9ee4e6d5bb97fb08d90e5bd045a6f463b155ec194ebb6d37a2f7478d5b",
       "notes": "PC 슬롯의 잔액·확률·결과·게임 기록을 모바일과 동일한 play_sd_slot 서버 RPC로 통합했습니다. SD Link v1.4.0 로그인이 필요합니다."
     },
     "sd-mukjippa": {
       "name": "SD묵찌빠",
       "version": "1.0.1",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDMukjippa_Version1_1_Desktop.zip",
+      "sha256": "70e62db0a82e1f4fb4ee01639471ff88017e3c32f24fb49853ebbac7feb297ca",
       "notes": "컴퓨터와 묵찌빠를 진행하며 연승에 도전하는 선택형 미니게임입니다. 보상을 정산하거나 더 높은 보상을 위해 계속 도전할 수 있습니다."
     },
     "sta-expansion": {
       "name": "STA",
       "version": "1.5.1",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/STA_Version6_Desktop.zip?v=151",
+      "sha256": "f9633beca57d218ac441f066c7021299a81fcb82ce707a7ed0e09a4bd7f9f320",
       "notes": "해킹·습격·현금 확보·운반 등 여러 단계를 직접 수행하는 작전형 확장팩입니다. 다양한 미니게임을 클리어하며 큰 수익을 노릴 수 있습니다."
     },
     "bitcoin": {
       "name": "SD비트코인 채굴장",
       "version": "1.2.2",
       "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDBitcoinMiner_v1.2.2_Desktop.zip",
+      "sha256": "cd1dbc64f81f90fc3b2518ccee534243e521ca0f18a92d9839d2507ede45e65d",
       "notes": "방과 채굴 장비를 확장하고 전기세·GPU 내구도를 관리하며 자동 채굴 시설을 운영하는 확장팩입니다."
     },
     "sd-flea-market": {
       "name": "SD 플리마켓",
       "version": "1.2.3",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDFleaMarket_v1.2.3_Desktop.zip?v=123",
+      "sha256": "5ee869af576045fae3bc48366a8de58bdcac7bfeedad77a9a9d1d94bd5ac3e75",
       "icon": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "iconUrl": "https://sd608.github.io/sd-center/assets/icons/flea-market.png?v=3",
       "notes": "아이템 사전과 물건 보관함의 실제 36종 아이콘을 단순 채색 스타일로 교체했습니다. 새 6x6 배열 기준으로 이름과 아이콘을 1:1 고정했으며 기존 획득 기록과 보관함 데이터는 유지됩니다.",
@@ -53,18 +60,21 @@
       "name": "SD금고",
       "version": "1.2.1",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDVault_v1.2.1_Desktop.zip?v=121",
+      "sha256": "468030d343b97c09c152a9589c0e14d2831d6a6197e88e44c62b798af09ab95a",
       "notes": "기본 앱 시절 종합센터 내부 ../../shared/open-center 모듈을 참조하던 문제를 수정하고 필요한 모듈을 ZIP 내부에 자체 포함했습니다."
     },
     "odd-even": {
       "name": "SD홀짝",
       "version": "1.2.0",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDOddEven_v1.2.0_Desktop.zip?v=120",
+      "sha256": "da5b4aa44f78d87f14e5ca3386c9b530fccdf293ceba562fce2c69eeff4f26f9",
       "notes": "PC 홀짝의 베팅·주사위·정산을 모바일과 동일한 서버 RPC로 통합했습니다. PC와 모바일 게임 기록과 업적이 같은 계정으로 합쳐집니다."
     },
     "miner": {
       "name": "SD광부",
       "version": "1.1.1",
       "downloadUrl": "https://sd608.github.io/sd-center/downloads/extensions/SDMiner_v1.1.1_Desktop.zip?v=111",
+      "sha256": "bb180fec1e7e7d3db394d58a53bb1775c5be77801c0d78b529ececf0e75da70c",
       "notes": "기본 앱 시절 종합센터 내부 ../../shared/open-center 모듈을 참조하던 문제를 수정하고 필요한 모듈을 ZIP 내부에 자체 포함했습니다."
     }
   }
