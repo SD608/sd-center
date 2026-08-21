@@ -63,6 +63,8 @@ class PresenceReporter {
     this._clearInterval = clearIntervalFn;
     this.timer = null;
     this.inFlight = null;
+    this.startPromise = null;
+    this.stopPromise = null;
     this.running = false;
     this.ended = false;
     this.lastError = null;
@@ -117,43 +119,57 @@ class PresenceReporter {
 
   async start() {
     if (this.ended) throw new Error("REPORTER_ENDED");
+    if (this.startPromise) return this.startPromise;
     if (this.running) return;
 
-    this.running = true;
-    try {
-      await this.heartbeat();
-    } catch (error) {
-      this.running = false;
-      throw error;
-    }
+    const task = (async () => {
+      this.running = true;
+      try {
+        await this.heartbeat();
+      } catch (error) {
+        this.running = false;
+        throw error;
+      }
 
-    if (!this.running || this.ended) return;
-    this.timer = this._setInterval(() => this._tick(), this.intervalMs);
-    this.timer?.unref?.();
+      if (!this.running || this.ended || this.timer) return;
+      this.timer = this._setInterval(() => this._tick(), this.intervalMs);
+      this.timer?.unref?.();
+    })().finally(() => {
+      if (this.startPromise === task) this.startPromise = null;
+    });
+    this.startPromise = task;
+    return task;
   }
 
   async stop() {
     if (this.ended) return null;
+    if (this.stopPromise) return this.stopPromise;
 
-    this.running = false;
-    if (this.timer) this._clearInterval(this.timer);
-    this.timer = null;
+    const task = (async () => {
+      this.running = false;
+      if (this.timer) this._clearInterval(this.timer);
+      this.timer = null;
 
-    const pending = this.inFlight;
-    if (pending) {
-      try { await pending; } catch { /* end still needs to be attempted */ }
-    }
+      const pending = this.inFlight;
+      if (pending) {
+        try { await pending; } catch { /* end still needs to be attempted */ }
+      }
 
-    if (this.ended) return null;
-    try {
-      const result = await this.rpc("sd_presence_v1_end", { p_instance_id: this.instanceId });
-      this.ended = true;
-      return result;
-    } catch (error) {
-      this.lastError = error;
-      try { this.onError?.(error); } catch { /* ignore callback failures */ }
-      return null;
-    }
+      if (this.ended) return null;
+      try {
+        const result = await this.rpc("sd_presence_v1_end", { p_instance_id: this.instanceId });
+        this.ended = true;
+        return result;
+      } catch (error) {
+        this.lastError = error;
+        try { this.onError?.(error); } catch { /* ignore callback failures */ }
+        return null;
+      }
+    })().finally(() => {
+      if (this.stopPromise === task) this.stopPromise = null;
+    });
+    this.stopPromise = task;
+    return task;
   }
 }
 
