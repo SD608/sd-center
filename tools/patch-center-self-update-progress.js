@@ -20,6 +20,11 @@ function replaceOnce(source, needle, replacement, label) {
   return source.slice(0, index) + replacement + source.slice(index + needle.length);
 }
 
+function replaceAllRequired(source, needle, replacement, label) {
+  if (!source.includes(needle)) throw new Error(`Patch marker missing: ${label}`);
+  return source.split(needle).join(replacement);
+}
+
 let main = read("main.js");
 
 if (!main.includes('progress: null, version: "", error: ""')) {
@@ -31,27 +36,46 @@ if (!main.includes('progress: null, version: "", error: ""')) {
   );
 }
 
-main = main
-  .replace(
+if (!main.includes('phase: "checking", progress: null')) {
+  main = replaceAllRequired(
+    main,
     'sendCenterUpdateState({ phase: "checking", error: "" })',
     'sendCenterUpdateState({ phase: "checking", progress: null, error: "" })',
-  )
-  .replace(
+    "all checking states",
+  );
+}
+if (!main.includes('phase: "available", updateAvailable: true, downloaded: false, progress: null')) {
+  main = replaceAllRequired(
+    main,
     'sendCenterUpdateState({ phase: "available", updateAvailable: true, downloaded: false, error: "" })',
     'sendCenterUpdateState({ phase: "available", updateAvailable: true, downloaded: false, progress: null, error: "" })',
-  )
-  .replace(
+    "available state",
+  );
+}
+if (!main.includes('phase: "latest", updateAvailable: false, downloaded: false, progress: 100')) {
+  main = replaceAllRequired(
+    main,
     'sendCenterUpdateState({ phase: "latest", updateAvailable: false, downloaded: false, version: app.getVersion(), error: "" })',
     'sendCenterUpdateState({ phase: "latest", updateAvailable: false, downloaded: false, progress: 100, version: app.getVersion(), error: "" })',
-  )
-  .replace(
+    "latest state",
+  );
+}
+if (!main.includes('phase: "downloaded", updateAvailable: true, downloaded: true, progress: 100')) {
+  main = replaceAllRequired(
+    main,
     'sendCenterUpdateState({ phase: "downloaded", updateAvailable: true, downloaded: true, version: match ? match[1] : "", releaseNotes: String(releaseNotes || ""), error: "" })',
     'sendCenterUpdateState({ phase: "downloaded", updateAvailable: true, downloaded: true, progress: 100, version: match ? match[1] : "", releaseNotes: String(releaseNotes || ""), error: "" })',
-  )
-  .replace(
+    "downloaded state",
+  );
+}
+if (!main.includes('phase: "error", progress: null')) {
+  main = replaceAllRequired(
+    main,
     'sendCenterUpdateState({ phase: "error", error: error?.message || String(error) })',
     'sendCenterUpdateState({ phase: "error", progress: null, error: error?.message || String(error) })',
+    "all error states",
   );
+}
 
 if (!main.includes('phase: "installing", progress: 100')) {
   main = replaceOnce(
@@ -147,7 +171,7 @@ const newRender = `function renderSelfUpdate() {
 
   const update = state.selfUpdate || {};
   const phase = String(update.phase || "idle");
-  const progressNumber = Number(update.progress);
+  const progressNumber = update.progress == null ? Number.NaN : Number(update.progress);
   const hasProgressValue = Number.isFinite(progressNumber) && progressNumber >= 0 && progressNumber <= 100;
   const progress = hasProgressValue ? Math.max(0, Math.min(100, progressNumber)) : null;
   const indeterminate = phase === "checking" || phase === "available" || phase === "downloading";
@@ -189,7 +213,7 @@ const newRender = `function renderSelfUpdate() {
   }
 }`;
 
-if (!renderer.includes("center-update-progress")) {
+if (!renderer.includes("--center-update-progress")) {
   renderer = replaceOnce(renderer, oldRender, newRender, "renderSelfUpdate progress UI");
 }
 
@@ -197,6 +221,8 @@ write("public/js/app.js", renderer);
 
 for (const marker of [
   'progress: null, version: "", error: ""',
+  'phase: "checking", progress: null',
+  'phase: "error", progress: null',
   'phase: "installing", progress: 100',
 ]) {
   if (!read("main.js").includes(marker)) throw new Error(`Missing main updater progress marker: ${marker}`);
@@ -209,6 +235,7 @@ for (const marker of [
   if (!read("public/css/style.css").includes(marker)) throw new Error(`Missing updater progress CSS marker: ${marker}`);
 }
 for (const marker of [
+  "update.progress == null ? Number.NaN",
   "--center-update-progress",
   "aria-busy",
   "정확한 바이트 퍼센트를 제공하지 않아",
