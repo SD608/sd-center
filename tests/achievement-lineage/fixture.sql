@@ -1,6 +1,16 @@
 create extension if not exists pgcrypto;
 create schema if not exists private;
 
+do $$ begin
+  create role anon noinherit;
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create role authenticated noinherit;
+exception when duplicate_object then null;
+end $$;
+
 create table public.sd_achievements (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
