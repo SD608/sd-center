@@ -6,6 +6,7 @@ on:
     paths:
       - 'tools/build-v024-final-installer.js'
       - 'tools/run-v024-final-installer-local.ps1'
+      - 'tools/RUN-FINAL-GATE-BUILDER.cmd'
       - '.github/workflows/build-center-v024-final-installer.yml'
       - '.github/workflows/final-installer-preflight.yml'
   push:
@@ -13,6 +14,7 @@ on:
     paths:
       - 'tools/build-v024-final-installer.js'
       - 'tools/run-v024-final-installer-local.ps1'
+      - 'tools/RUN-FINAL-GATE-BUILDER.cmd'
       - '.github/workflows/build-center-v024-final-installer.yml'
       - '.github/workflows/final-installer-preflight.yml'
 
@@ -42,7 +44,8 @@ jobs:
 
           workflow = Path('.github/workflows/build-center-v024-final-installer.yml').read_text(encoding='utf-8')
           local_builder = Path('tools/run-v024-final-installer-local.ps1').read_text(encoding='utf-8')
-          combined = workflow + '\n' + local_builder
+          launcher = Path('tools/RUN-FINAL-GATE-BUILDER.cmd').read_text(encoding='utf-8')
+          combined = workflow + '\n' + local_builder + '\n' + launcher
           required = [
               'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f',
               'ea3a912e0e3f771788462d82af16a7129b8684d50ee12c2840d5ebd5090087cb',
@@ -55,6 +58,8 @@ jobs:
               'actions: read',
               'publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY',
               'official_main_manifest_release_modified=false',
+              r'%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe',
+              'where pwsh.exe',
           ]
           for token in required:
               if token not in combined:
@@ -66,7 +71,7 @@ jobs:
               'update/center-update.json',
           ]
           for token in forbidden:
-              if token in local_builder:
+              if token in local_builder or token in launcher:
                   raise SystemExit(f'forbidden local-builder release side effect: {token}')
           print('Final Gate installer invariants passed')
 
@@ -90,11 +95,16 @@ jobs:
             throw "PowerShell parser reported $($errors.Count) error(s)."
           }
           Write-Host 'local Final Gate PowerShell parsed'
+      - name: Confirm Windows PowerShell absolute fallback exists
+        shell: cmd
+        run: |
+          if not exist "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" exit /b 1
+          "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Write-Host 'Windows PowerShell absolute fallback works'"
       - name: Confirm local builder has no publication commands
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $text = Get-Content 'tools/run-v024-final-installer-local.ps1' -Raw
+          $text = (Get-Content 'tools/run-v024-final-installer-local.ps1' -Raw) + "`n" + (Get-Content 'tools/RUN-FINAL-GATE-BUILDER.cmd' -Raw)
           foreach ($token in @('gh release create', 'gh release upload', 'git push origin HEAD:main', 'update/center-update.json')) {
             if ($text.Contains($token)) { throw "forbidden release side effect: $token" }
           }
