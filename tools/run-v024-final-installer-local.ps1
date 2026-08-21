@@ -43,6 +43,16 @@ function Invoke-Node {
   }
 }
 
+function Write-Utf8NoBom {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $true)][string]$Content
+  )
+
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+}
+
 function Stop-Center {
   Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 }
@@ -143,7 +153,14 @@ try {
   $stagedPackagePath = Join-Path $stage 'resources\app\package.json'
   $stagedPkg = Get-Content -LiteralPath $stagedPackagePath -Raw | ConvertFrom-Json
   $stagedPkg.version = $InstallerVersion
-  $stagedPkg | ConvertTo-Json -Depth 100 | Set-Content -LiteralPath $stagedPackagePath -Encoding utf8
+  $stagedPackageJson = $stagedPkg | ConvertTo-Json -Depth 100
+  Write-Utf8NoBom -Path $stagedPackagePath -Content $stagedPackageJson
+
+  $stagedPackageBytes = [IO.File]::ReadAllBytes($stagedPackagePath)
+  if ($stagedPackageBytes.Length -ge 3 -and $stagedPackageBytes[0] -eq 0xEF -and $stagedPackageBytes[1] -eq 0xBB -and $stagedPackageBytes[2] -eq 0xBF) {
+    throw 'Staged package.json unexpectedly contains a UTF-8 BOM.'
+  }
+  Invoke-Node -Arguments @('-e', "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8')); console.log('PASS staged package.json JSON parse')", $stagedPackagePath)
 
   Assert-Hash -Path (Join-Path $stage 'resources\app\main.js') -Expected $ExpectedCandidateMainSha256 -Label 'staged main.js'
   Assert-Hash -Path (Join-Path $stage 'resources\app\src\sdlink-core-runtime.js') -Expected $ExpectedCoreRuntimeSha256 -Label 'staged Core runtime'
