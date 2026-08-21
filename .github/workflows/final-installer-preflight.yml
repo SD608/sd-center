@@ -59,7 +59,9 @@ jobs:
               'publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY',
               'official_main_manifest_release_modified=false',
               r'%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe',
-              'where pwsh.exe',
+              r'%ProgramFiles%\nodejs\node.exe',
+              'SDCENTER_NODE_EXE',
+              '--probe-only',
           ]
           for token in required:
               if token not in combined:
@@ -79,6 +81,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Parse local Final Gate PowerShell
         shell: pwsh
         run: |
@@ -100,6 +105,19 @@ jobs:
         run: |
           if not exist "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" exit /b 1
           "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Write-Host 'Windows PowerShell absolute fallback works'"
+      - name: Execute launcher dependency probe with spaced Node path
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $probeDir = Join-Path $env:RUNNER_TEMP 'SDCenter Node Path With Spaces'
+          New-Item -ItemType Directory -Force -Path $probeDir | Out-Null
+          $nodeSource = (Get-Command node.exe).Source
+          $probeNode = Join-Path $probeDir 'node.exe'
+          Copy-Item -LiteralPath $nodeSource -Destination $probeNode -Force
+          $env:SDCENTER_NODE_EXE = $probeNode
+          & cmd.exe /d /c 'tools\RUN-FINAL-GATE-BUILDER.cmd --probe-only'
+          if ($LASTEXITCODE -ne 0) { throw "launcher dependency probe failed with $LASTEXITCODE" }
+          Write-Host 'launcher dependency probe with spaced Node path passed'
       - name: Confirm local builder has no publication commands
         shell: pwsh
         run: |
