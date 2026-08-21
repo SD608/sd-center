@@ -1,0 +1,58 @@
+name: Build SD Admin Center
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "tools/sd-admin-center/**"
+      - ".github/workflows/build-sd-admin-center.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Unit tests
+        working-directory: tools/sd-admin-center
+        run: python -m unittest -v test_sd_admin_core.py
+
+  build:
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install pinned PyInstaller
+        run: python -m pip install pyinstaller==6.22.0
+      - name: Build windowed EXE
+        working-directory: tools/sd-admin-center
+        run: >
+          python -m PyInstaller
+          --noconfirm
+          --clean
+          --onefile
+          --windowed
+          --name SDAdminCenter
+          --add-data "roadmap.default.json;."
+          SDAdminCenter.pyw
+      - name: Smoke artifact identity
+        shell: pwsh
+        working-directory: tools/sd-admin-center
+        run: |
+          $p = "dist\SDAdminCenter.exe"
+          if (-not (Test-Path $p)) { throw "SDAdminCenter.exe not found" }
+          Get-Item $p | Format-List Name,Length
+          Get-FileHash $p -Algorithm SHA256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SDAdminCenter-win-x64
+          path: tools/sd-admin-center/dist/SDAdminCenter.exe
+          if-no-files-found: error
