@@ -1,11 +1,12 @@
 "use strict";
 
 const path = require("path");
-const { app, BrowserWindow, ipcMain, session } = require("electron");
+const { app, BrowserWindow, ipcMain, session, shell } = require("electron");
 const { SdAdminApi } = require("./lib/sd-admin-api");
 const { friendlyError } = require("./lib/errors");
 const { PendingAdjustmentStore } = require("./lib/pending-adjustment-store");
 const { WalletAdjustmentService } = require("./lib/wallet-adjustment-service");
+const { RoadmapStore } = require("./lib/roadmap-store");
 
 const PROD_URL = "https://qmatphbjzafdtlyviqoa.supabase.co";
 const PROD_PUBLISHABLE_KEY = "sb_publishable_H2qTl_30-7hPUYFhJ_N_QA_X71xZswO";
@@ -16,6 +17,7 @@ const api = new SdAdminApi({
 
 let mainWindow = null;
 let walletService = null;
+let roadmapStore = null;
 
 function safeResult(fn) {
   return async (_event, payload) => {
@@ -36,11 +38,17 @@ function registerIpc() {
   ipcMain.handle("sd:transactions", safeResult(({ userId, beforeSeq, limit }) => api.listTransactions(userId, beforeSeq, limit)));
   ipcMain.handle("sd:adjust", safeResult((payload) => walletService.adjust(payload)));
   ipcMain.handle("sd:pending-adjustment", safeResult(() => walletService.pending()));
+  ipcMain.handle("sd:roadmap", safeResult(() => roadmapStore.read()));
+  ipcMain.handle("sd:roadmap-show-file", safeResult(() => {
+    const filePath = roadmapStore.ensure();
+    shell.showItemInFolder(filePath);
+    return { path: filePath };
+  }));
 }
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1180, height: 760, minWidth: 900, minHeight: 600, show: false, backgroundColor: "#0c1018", autoHideMenuBar: true,
+    width: 1280, height: 800, minWidth: 980, minHeight: 640, show: false, backgroundColor: "#0c1018", autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, nodeIntegration: false, webviewTag: false, devTools: process.env.NODE_ENV === "development" }
   });
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -60,6 +68,10 @@ if (!gotLock) {
     session.defaultSession.setPermissionCheckHandler(() => false);
     const store = new PendingAdjustmentStore(path.join(app.getPath("userData"), "pending-wallet-adjustment.json"));
     walletService = new WalletAdjustmentService({ api, store });
+    roadmapStore = new RoadmapStore({
+      userDataPath: app.getPath("userData"),
+      seedPath: path.join(__dirname, "roadmap.default.json")
+    });
     registerIpc();
     createWindow();
   });
