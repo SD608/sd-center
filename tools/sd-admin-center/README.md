@@ -47,3 +47,10 @@ py -3 -m PyInstaller --noconfirm --clean --onefile --windowed `
 - 실제 회원 목록 조회는 서버의 `admin_list_sd_members()`가 `sd_assert_active_admin()`으로 관리자 권한을 검증합니다.
 - 관리자 비밀번호와 세션 토큰은 파일에 저장하지 않습니다.
 - 접속 상태는 heartbeat 기록 시각 기반이며 실제 소켓 연결 여부로 오인하지 않도록 표시합니다.
+
+## 현재 검증
+
+- 로컬 Python unit test 7/7 PASS
+- Python syntax compile PASS
+- 운영 DB schema/RPC 권한 경로 read-only 확인
+- 실제 Windows EXE 실행/100·125·150% UI 시각 검증은 별도 필요
