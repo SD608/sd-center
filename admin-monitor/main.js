@@ -6,7 +6,7 @@ const { SdAdminApi } = require("./lib/sd-admin-api");
 const { friendlyError } = require("./lib/errors");
 const { PendingAdjustmentStore } = require("./lib/pending-adjustment-store");
 const { WalletAdjustmentService } = require("./lib/wallet-adjustment-service");
-const { RoadmapStore } = require("./lib/roadmap-store");
+const { RoadmapStore, ALLOWED_REMOTE_URL } = require("./lib/roadmap-store");
 
 const PROD_URL = "https://qmatphbjzafdtlyviqoa.supabase.co";
 const PROD_PUBLISHABLE_KEY = "sb_publishable_H2qTl_30-7hPUYFhJ_N_QA_X71xZswO";
@@ -38,7 +38,7 @@ function registerIpc() {
   ipcMain.handle("sd:transactions", safeResult(({ userId, beforeSeq, limit }) => api.listTransactions(userId, beforeSeq, limit)));
   ipcMain.handle("sd:adjust", safeResult((payload) => walletService.adjust(payload)));
   ipcMain.handle("sd:pending-adjustment", safeResult(() => walletService.pending()));
-  ipcMain.handle("sd:roadmap", safeResult(() => roadmapStore.read()));
+  ipcMain.handle("sd:roadmap", safeResult(() => roadmapStore.sync()));
   ipcMain.handle("sd:roadmap-show-file", safeResult(() => {
     const filePath = roadmapStore.ensure();
     shell.showItemInFolder(filePath);
@@ -70,7 +70,9 @@ if (!gotLock) {
     walletService = new WalletAdjustmentService({ api, store });
     roadmapStore = new RoadmapStore({
       userDataPath: app.getPath("userData"),
-      seedPath: path.join(__dirname, "roadmap.default.json")
+      seedPath: path.join(__dirname, "roadmap.default.json"),
+      livePath: path.join(__dirname, "lib", "roadmap-live.json"),
+      remoteUrl: ALLOWED_REMOTE_URL
     });
     registerIpc();
     createWindow();
