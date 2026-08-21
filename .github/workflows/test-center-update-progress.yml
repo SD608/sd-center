@@ -1,6 +1,15 @@
 name: Center Update Progress Regression
 
 on:
+  push:
+    branches:
+      - feat/center-update-progress-20260822
+    paths:
+      - tools/patch-center-self-update-progress.js
+      - tools/test-center-self-update-progress.js
+      - tools/patch-v223-electron-autoupdater-core.js
+      - tools/patch-v223-electron-autoupdater-ui.js
+      - .github/workflows/test-center-update-progress.yml
   pull_request:
     branches:
       - main
