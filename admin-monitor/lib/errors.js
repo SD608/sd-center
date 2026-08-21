@@ -9,7 +9,8 @@ const ERROR_MESSAGES = Object.freeze({
   INSTANCE_APP_CONFLICT: "실행 인스턴스의 앱 정보가 일치하지 않습니다.", INSTANCE_DEVICE_CONFLICT: "실행 인스턴스의 기기 정보가 일치하지 않습니다.",
   PENDING_ADJUSTMENT_EXISTS: "확인되지 않은 입출금 요청을 먼저 처리하세요.", PENDING_ADJUSTMENT_CONFLICT: "미확정 입출금 요청 정보가 일치하지 않습니다.",
   PENDING_ADJUSTMENT_CORRUPT: "미확정 입출금 기록을 읽을 수 없습니다. 추가 거래를 중지하고 확인이 필요합니다.",
-  ROADMAP_DATA_INVALID: "로드맵 데이터 파일을 읽을 수 없습니다.",
+  ROADMAP_DATA_INVALID: "로드맵 데이터 파일을 읽을 수 없습니다.", ROADMAP_LIVE_INVALID: "공식 로드맵 상태 데이터가 올바르지 않습니다.",
+  ROADMAP_LIVE_REMOTE_FAILED: "최신 로드맵 상태를 확인하지 못했습니다. 저장된 상태를 사용합니다.",
   invalid_credentials: "이메일 또는 비밀번호가 올바르지 않습니다.", email_not_confirmed: "이메일 인증이 완료되지 않았습니다.", user_banned: "사용할 수 없는 계정입니다.",
   PGRST202: "관리자 서버 기능이 아직 준비되지 않았습니다.", PGRST203: "관리자 서버 기능 구성이 올바르지 않습니다."
 });
