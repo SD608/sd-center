@@ -5,12 +5,14 @@ on:
     branches: [release/sd-center-core-v1]
     paths:
       - 'tools/build-v024-final-installer.js'
+      - 'tools/run-v024-final-installer-local.ps1'
       - '.github/workflows/build-center-v024-final-installer.yml'
       - '.github/workflows/final-installer-preflight.yml'
   push:
     branches: [release/v024-final-gate-20260820]
     paths:
       - 'tools/build-v024-final-installer.js'
+      - 'tools/run-v024-final-installer-local.ps1'
       - '.github/workflows/build-center-v024-final-installer.yml'
       - '.github/workflows/final-installer-preflight.yml'
 
@@ -37,7 +39,10 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          text = Path('.github/workflows/build-center-v024-final-installer.yml').read_text(encoding='utf-8')
+
+          workflow = Path('.github/workflows/build-center-v024-final-installer.yml').read_text(encoding='utf-8')
+          local_builder = Path('tools/run-v024-final-installer-local.ps1').read_text(encoding='utf-8')
+          combined = workflow + '\n' + local_builder
           required = [
               'c77ff83ddd8ac950873058739f177ed953f29e22f335b276c7440b818aee393f',
               'ea3a912e0e3f771788462d82af16a7129b8684d50ee12c2840d5ebd5090087cb',
@@ -45,14 +50,52 @@ jobs:
               'c5e54e2f46815564e560c5b14200a21062138ecee17d24bdb7e628a4ac8caf9c',
               '1be6f63eac00363ae4c19af42d33398aca1402431c9a7f88bb480edf7f1b68b6',
               "ELECTRON_WINSTALLER_VERSION: '5.4.4'",
+              "$ElectronWinstallerVersion = '5.4.4'",
               'contents: read',
               'actions: read',
+              'publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY',
+              'official_main_manifest_release_modified=false',
           ]
           for token in required:
-              if token not in text:
+              if token not in combined:
                   raise SystemExit(f'missing Final Gate invariant: {token}')
-          forbidden = ['gh release ' + 'create', 'gh release ' + 'upload', 'git push origin HEAD:' + 'main']
+          forbidden = [
+              'gh release ' + 'create',
+              'gh release ' + 'upload',
+              'git push origin HEAD:' + 'main',
+              'update/center-update.json',
+          ]
           for token in forbidden:
-              if token in text:
-                  raise SystemExit(f'forbidden release side effect: {token}')
+              if token in local_builder:
+                  raise SystemExit(f'forbidden local-builder release side effect: {token}')
           print('Final Gate installer invariants passed')
+
+  validate-local-windows-builder:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse local Final Gate PowerShell
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'tools/run-v024-final-installer-local.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          )
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw "PowerShell parser reported $($errors.Count) error(s)."
+          }
+          Write-Host 'local Final Gate PowerShell parsed'
+      - name: Confirm local builder has no publication commands
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $text = Get-Content 'tools/run-v024-final-installer-local.ps1' -Raw
+          foreach ($token in @('gh release create', 'gh release upload', 'git push origin HEAD:main', 'update/center-update.json')) {
+            if ($text.Contains($token)) { throw "forbidden release side effect: $token" }
+          }
+          Write-Host 'local Final Gate release-safety guard passed'
