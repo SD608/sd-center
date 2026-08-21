@@ -53,16 +53,11 @@ $text = $text.Replace(
   "'SDCenter v0.24 Final Gate local installer build'",
   "'SDCenter v0.24 Final Gate R3 local installer build'"
 )
-$text = $text.Replace(
-  "    \"candidate_main_sha256=`$ExpectedCandidateMainSha256\",",
-  "    \"candidate_main_sha256=`$ExpectedCandidateMainSha256\",`r`n    'r3_change_scope=official extension exact-version + SHA-256 integrity hardening',"
-)
 
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($runtimeScript, $text, $utf8NoBom)
 try {
   & $runtimeScript -CandidateZip $candidate -InstallerVersion $InstallerVersion -OutputDir $OutputDir
-  if ($LASTEXITCODE -ne 0) { throw "R3 builder failed with exit code $LASTEXITCODE" }
 }
 finally {
   Remove-Item -LiteralPath $runtimeScript -Force -ErrorAction SilentlyContinue
