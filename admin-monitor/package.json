@@ -19,7 +19,7 @@
   },
   "build": {
     "appId": "com.sd608.adminmonitor",
-    "productName": "SD 관리자 도구",
+    "productName": "SD 사용자 현황",
     "asar": true,
     "files": ["main.js", "preload.js", "roadmap.default.json", "lib/**/*", "renderer/**/*", "package.json"],
     "directories": {"output": "dist"},
