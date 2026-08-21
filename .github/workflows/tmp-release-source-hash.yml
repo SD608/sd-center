@@ -20,4 +20,5 @@ jobs:
             sql/release-gate/20260821093500_sd_release_store_core_routes_v1.sql \
             sql/release-gate/20260821093800_sd_release_game_core_routes_v1.sql \
             sql/release-gate/20260821094100_sd_release_legacy_bridge_core_routes_v1.sql \
-            sql/release-gate/20260821094300_sd_release_signup_bonus_core_route_v1.sql
+            sql/release-gate/20260821094300_sd_release_signup_bonus_core_route_v1.sql \
+            sql/release-gate/20260821100100_sd_release_legacy_profile_snapshot_lock_v1.sql
