@@ -7,7 +7,8 @@ const os = require("node:os");
 const path = require("node:path");
 const { RoadmapStore, validateRoadmap, progressOf } = require("../lib/roadmap-store");
 
-const seed = path.join(__dirname, "..", "roadmap.default.json");
+const root = path.join(__dirname, "..");
+const seed = path.join(root, "roadmap.default.json");
 
 test("official roadmap seed contains 14 chapters and 112 unique subchapters", () => {
   const data = validateRoadmap(JSON.parse(fs.readFileSync(seed, "utf8")));
@@ -49,4 +50,10 @@ test("malformed roadmap is rejected without silently resetting data", () => {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("packaged product name stays stable so existing Electron userData path is preserved", () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+  assert.equal(pkg.build.appId, "com.sd608.adminmonitor");
+  assert.equal(pkg.build.productName, "SD 사용자 현황");
 });
