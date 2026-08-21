@@ -37,17 +37,18 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference='Stop'
-          $text=Get-Content 'tools/run-v024-final-installer-r3-local.ps1' -Raw
+          $wrapper=Get-Content 'tools/run-v024-final-installer-r3-local.ps1' -Raw
+          $base=Get-Content 'tools/run-v024-final-installer-local.ps1' -Raw
           foreach($marker in @(
             'f88c77455849e8545a192ed7cc0979bb33864c9fdbebcfbd0110408170849939',
             '065b1c2c78c60d45026d3ba41718fedd9c8ff05595119c0adb441eaffacfd215',
             '61078f1e6bac7c2cc541d1bc0b13d4b260c9cb431f47fef3fcff796e201a234b',
-            'test-extension-update-integrity-helper.js',
-            'publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY'
+            'test-extension-update-integrity-helper.js'
           )) {
-            if(-not $text.Contains($marker)){ throw "missing R3 marker: $marker" }
+            if(-not $wrapper.Contains($marker)){ throw "missing R3 marker: $marker" }
           }
+          if(-not $base.Contains('publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY')){ throw 'base builder blocked-publication marker missing' }
           foreach($bad in @('gh release create','git push origin HEAD:main','center-update.json')) {
-            if($text.Contains($bad)){ throw "publication side effect marker found: $bad" }
+            if($wrapper.Contains($bad) -or $base.Contains($bad)){ throw "publication side effect marker found: $bad" }
           }
           Write-Host 'R3 local builder release-safety PASS'
