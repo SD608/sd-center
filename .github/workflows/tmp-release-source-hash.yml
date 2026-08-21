@@ -2,6 +2,10 @@ name: Temporary Release Source Hash
 on:
   push:
     branches: [release/v024-final-gate-20260820]
+  pull_request:
+    paths:
+      - 'sql/release-gate/**'
+      - '.github/workflows/tmp-release-source-hash.yml'
 permissions:
   contents: read
 jobs:
