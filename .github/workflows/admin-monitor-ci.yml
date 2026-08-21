@@ -7,6 +7,7 @@ on:
     paths:
       - "admin-monitor/**"
       - "sql/SD608_관리자_접속현황_v1.sql"
+      - "sql/SD608_회원계좌_개인정보보호.sql"
       - "account.html"
       - "ranking.html"
       - "members.html"
@@ -16,6 +17,7 @@ on:
     paths:
       - "admin-monitor/**"
       - "sql/SD608_관리자_접속현황_v1.sql"
+      - "sql/SD608_회원계좌_개인정보보호.sql"
       - "account.html"
       - "ranking.html"
       - "members.html"
