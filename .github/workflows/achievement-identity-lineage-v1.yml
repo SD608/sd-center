@@ -1,0 +1,50 @@
+name: SD Achievement Identity Lineage v1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'database/migrations/sd_achievement_identity_lineage_v1.sql'
+      - 'tests/achievement-lineage/**'
+      - 'docs/achievement-identity-lineage-v1.md'
+      - '.github/workflows/achievement-identity-lineage-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  identity-lineage-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: achievement_lineage_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d achievement_lineage_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: achievement_lineage_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build achievement identity fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-lineage/fixture.sql
+      - name: Apply permanent identity and lineage migration
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_identity_lineage_v1.sql
+      - name: Run identity, asset-preservation, and lineage regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-lineage/identity_lineage_regression.sql
+      - name: Verify migration has no production/release side effects
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -Eiq 'site-config\.js|center-update\.json|releases/download|wallets[[:space:]]+set[[:space:]]+balance' database/migrations/sd_achievement_identity_lineage_v1.sql
+          echo 'release/economy side-effect guard PASS'
