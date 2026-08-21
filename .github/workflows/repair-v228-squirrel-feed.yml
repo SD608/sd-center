@@ -1,0 +1,72 @@
+name: Repair v2.2.8 Squirrel feed
+
+on:
+  push:
+    branches:
+      - hotfix/v228-squirrel-feed-20260822
+    paths:
+      - .github/workflows/repair-v228-squirrel-feed.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download exact public R5 installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 5 --retry-delay 2 \
+            -o SDCenterSetup.exe \
+            https://github.com/SD608/sd-center/releases/download/v.2.2.8/SDCenterSetup.exe
+          test "$(stat -c '%s' SDCenterSetup.exe)" = "140152832"
+          echo "b9b48f2bd2fe09e601304b5b1c3cd634ad3be21f46294a16855d993f707ec0cc  SDCenterSetup.exe" | sha256sum -c -
+
+      - name: Recover exact Squirrel assets from installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import zipfile
+          with zipfile.ZipFile('SDCenterSetup.exe') as z:
+              for name in ('RELEASES', 'SDCenter-2.2.8-full.nupkg'):
+                  with z.open(name) as src, open(name, 'wb') as dst:
+                      dst.write(src.read())
+          PY
+          test "$(stat -c '%s' RELEASES)" = "79"
+          test "$(stat -c '%s' SDCenter-2.2.8-full.nupkg)" = "139392231"
+          echo "4a79d1f3c4cf01942c48782868bd5a2d53fbf3c4934670a66ae8e9ebe7bf992d  RELEASES" | sha256sum -c -
+          echo "97299eab1117b6fa1e2edd25c9e3aaadca5de28c7085cc866bb25b73550e47d5  SDCenter-2.2.8-full.nupkg" | sha256sum -c -
+          echo "460fd543aaf88511f93506e6641c255e2b73ddbc  SDCenter-2.2.8-full.nupkg" | sha1sum -c -
+          grep -aF "460FD543AAF88511F93506E6641C255E2B73DDBC SDCenter-2.2.8-full.nupkg 139392231" RELEASES
+
+      - name: Upload exact Squirrel feed assets to existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload v.2.2.8 \
+            RELEASES \
+            SDCenter-2.2.8-full.nupkg \
+            --clobber \
+            --repo SD608/sd-center
+
+      - name: Verify tag and latest feed paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          for base in \
+            "https://github.com/SD608/sd-center/releases/download/v.2.2.8" \
+            "https://github.com/SD608/sd-center/releases/latest/download"
+          do
+            curl -fL --retry 5 --retry-delay 2 -o remote-RELEASES "$base/RELEASES"
+            echo "4a79d1f3c4cf01942c48782868bd5a2d53fbf3c4934670a66ae8e9ebe7bf992d  remote-RELEASES" | sha256sum -c -
+            curl -fL --retry 5 --retry-delay 2 -o remote.nupkg "$base/SDCenter-2.2.8-full.nupkg"
+            test "$(stat -c '%s' remote.nupkg)" = "139392231"
+            echo "97299eab1117b6fa1e2edd25c9e3aaadca5de28c7085cc866bb25b73550e47d5  remote.nupkg" | sha256sum -c -
+            rm -f remote-RELEASES remote.nupkg
+          done
