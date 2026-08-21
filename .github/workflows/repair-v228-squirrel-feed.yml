@@ -3,7 +3,7 @@ name: Repair v2.2.8 Squirrel feed
 on:
   push:
     branches:
-      - hotfix/v228-squirrel-feed-20260822
+      - main
     paths:
       - .github/workflows/repair-v228-squirrel-feed.yml
   workflow_dispatch:
