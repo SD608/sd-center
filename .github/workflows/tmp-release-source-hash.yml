@@ -1,0 +1,19 @@
+name: Temporary Release Source Hash
+on:
+  push:
+    branches: [release/v024-final-gate-20260820]
+permissions:
+  contents: read
+jobs:
+  hash:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print release migration SHA-256
+        run: |
+          sha256sum \
+            sql/release-gate/20260821092700_sd_achievement_hidden_difficulty_v1.sql \
+            sql/release-gate/20260821093500_sd_release_store_core_routes_v1.sql \
+            sql/release-gate/20260821093800_sd_release_game_core_routes_v1.sql \
+            sql/release-gate/20260821094100_sd_release_legacy_bridge_core_routes_v1.sql \
+            sql/release-gate/20260821094300_sd_release_signup_bonus_core_route_v1.sql
