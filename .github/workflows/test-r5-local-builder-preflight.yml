@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/test-r5-local-builder-preflight.yml'
+      - 'tools/RUN-R5-FINAL-GATE-BUILDER.cmd'
       - 'tools/run-v024-final-installer-r5-local.ps1'
       - 'tools/run-v024-final-installer-local.ps1'
       - 'tools/test-extension-update-trust-bootstrap.js'
@@ -37,6 +38,24 @@ jobs:
           Write-Host 'R5 wrapper PowerShell parser PASS'
           '@
           if($LASTEXITCODE -ne 0){ throw 'R5 wrapper parser failed' }
+      - name: Validate R5 CMD PowerShell path independence
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $launcher=Get-Content 'tools/RUN-R5-FINAL-GATE-BUILDER.cmd' -Raw
+          foreach($marker in @(
+            'set "PS=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"',
+            'set "PS=%SystemRoot%\Sysnative\WindowsPowerShell\v1.0\powershell.exe"',
+            '"%PS%" -NoProfile -ExecutionPolicy Bypass',
+            '728a60445253a8798bb65d578e2192222d4cffcce61d22a3b2192f7fc2612ee5',
+            '7791eb054d6334d9c4c7c9fb27795b63b4e59ec5'
+          )) {
+            if(-not $launcher.Contains($marker)){ throw "missing R5 launcher marker: $marker" }
+          }
+          if($launcher.Contains('powershell.exe -NoProfile')){ throw 'launcher still relies on PATH powershell.exe invocation' }
+          $legacy="$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+          if(-not (Test-Path $legacy -PathType Leaf)){ throw 'expected Windows PowerShell absolute path missing on runner' }
+          Write-Host 'R5 launcher absolute Windows PowerShell path PASS'
       - name: Validate exact R5 identity and release safety markers
         shell: pwsh
         run: |
