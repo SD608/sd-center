@@ -1,0 +1,56 @@
+name: SD Achievement Authority Hardening
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - hardening/achievement-authority-20260820
+    paths:
+      - 'sql/SD608_업적_서버권한_하드닝.sql'
+      - 'assets/js/achievement-custom-ui.js'
+      - 'tests/achievement-security/**'
+      - '.github/workflows/achievement-authority-hardening.yml'
+  pull_request:
+    paths:
+      - 'sql/SD608_업적_서버권한_하드닝.sql'
+      - 'assets/js/achievement-custom-ui.js'
+      - 'tests/achievement-security/**'
+      - '.github/workflows/achievement-authority-hardening.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  authority-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: achievement_security_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d achievement_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: achievement_security_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build vulnerable-compatible achievement fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-security/fixture.sql
+      - name: Apply achievement authority hardening
+        run: psql -v ON_ERROR_STOP=1 -f sql/SD608_업적_서버권한_하드닝.sql
+      - name: Run authority and asset-preservation regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-security/authority_regression.sql
+      - name: Check achievement UI syntax
+        run: node --check assets/js/achievement-custom-ui.js
+      - name: Run achievement UI authority regression
+        run: node tests/achievement-security/ui_authority_regression.js

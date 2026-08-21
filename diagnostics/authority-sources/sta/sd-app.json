@@ -1,0 +1,11 @@
+{
+  "id": "sta-expansion",
+  "name": "STA",
+  "displayVersion": "Version 6 · v1.5.0",
+  "description": "운반 완료 후 5분 재도전 쿨타임이 적용된 SD지갑 연동 작전 확장팩입니다.",
+  "improvement": "운반 목적지에 도착한 시점부터 5분 동안 새 작전을 시작할 수 없습니다. 전선 해킹 화면의 색상 이름 글자를 제거했습니다.",
+  "entry": "main.js",
+  "icon": "public/icons/icon-512.png",
+  "accent": "red",
+  "userDataFolder": "STA"
+}

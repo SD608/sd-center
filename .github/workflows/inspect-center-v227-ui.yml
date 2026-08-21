@@ -1,0 +1,69 @@
+name: Inspect SDCenter v2.2.7 UI
+
+on:
+  push:
+    branches: [preview/center-ui-v230-20260819]
+    paths:
+      - '.github/workflows/inspect-center-v227-ui.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-center-v227-ui.yml'
+      - 'tools/patch-center-ui-preview.js'
+      - 'tools/build-center-ui-preview.js'
+      - '.github/workflows/build-center-ui-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download verified v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.7.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "v2.2.7 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $appDir=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7'
+          $root=Join-Path $appDir 'resources\app'
+          if(-not (Test-Path (Join-Path $root 'public\index.html'))){ throw 'v2.2.7 UI source missing' }
+          "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Collect UI source
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $out=Join-Path $env:RUNNER_TEMP 'center-v227-ui-source'
+          New-Item -ItemType Directory -Force -Path (Join-Path $out 'public\css') | Out-Null
+          New-Item -ItemType Directory -Force -Path (Join-Path $out 'public\js') | Out-Null
+          Copy-Item "$env:APP_ROOT\public\index.html" "$out\public\index.html" -Force
+          Copy-Item "$env:APP_ROOT\public\css\style.css" "$out\public\css\style.css" -Force
+          Copy-Item "$env:APP_ROOT\public\js\app.js" "$out\public\js\app.js" -Force
+          Copy-Item "$env:APP_ROOT\preload.js" "$out\preload.js" -Force
+          Copy-Item "$env:APP_ROOT\package.json" "$out\package.json" -Force
+          "UI_SOURCE=$out" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload UI source
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-v2.2.7-UI-source
+          path: ${{ env.UI_SOURCE }}
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,86 @@
+name: Release Preflight Integrity
+
+on:
+  push:
+    branches: [hardening/release-preflight-20260820]
+    paths:
+      - 'database/ops/release_integrity_snapshot.sql'
+      - 'tools/compare-release-integrity.js'
+      - 'tests/release-preflight/**'
+      - '.github/workflows/release-preflight-integrity.yml'
+  pull_request:
+    paths:
+      - 'database/ops/release_integrity_snapshot.sql'
+      - 'tools/compare-release-integrity.js'
+      - 'tests/release-preflight/**'
+      - '.github/workflows/release-preflight-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integrity-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: release_preflight_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d release_preflight_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: release_preflight_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build production-shape fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/release-preflight/fixture.sql
+
+      - name: Capture baseline snapshot
+        run: psql -v ON_ERROR_STOP=1 -At -f database/ops/release_integrity_snapshot.sql > "$RUNNER_TEMP/before.json"
+
+      - name: Simulate additive schema-only migration
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          begin;
+          create table public.sd_release_preflight_additive_probe(
+            id bigint generated always as identity primary key,
+            created_at timestamptz not null default now()
+          );
+          commit;
+          SQL
+
+      - name: Assert additive migration preserves assets
+        run: |
+          psql -v ON_ERROR_STOP=1 -At -f database/ops/release_integrity_snapshot.sql > "$RUNNER_TEMP/after.json"
+          node tools/compare-release-integrity.js "$RUNNER_TEMP/before.json" "$RUNNER_TEMP/after.json"
+
+      - name: Assert comparator catches wallet mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -c "update public.wallets set balance=balance+1 where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';"
+          psql -v ON_ERROR_STOP=1 -At -f database/ops/release_integrity_snapshot.sql > "$RUNNER_TEMP/mutated.json"
+          if node tools/compare-release-integrity.js "$RUNNER_TEMP/before.json" "$RUNNER_TEMP/mutated.json"; then
+            echo 'Comparator failed to detect wallet mutation' >&2
+            exit 1
+          fi
+          echo 'Comparator correctly blocked changed wallet state'
+
+      - name: Syntax check comparator
+        run: node --check tools/compare-release-integrity.js

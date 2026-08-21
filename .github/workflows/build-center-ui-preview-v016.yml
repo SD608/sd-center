@@ -1,0 +1,132 @@
+name: Build SDCenter UI Preview v0.16
+
+on:
+  push:
+    branches: [preview/center-ui-v230-20260819]
+    paths:
+      - 'tools/patch-center-ui-v016.js'
+      - 'tools/theme-catalog-v016.js'
+      - '.github/workflows/build-center-ui-preview-v016.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-preview-v016:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download verified v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $setup="$env:RUNNER_TEMP\SDCenterSetup-v2.2.7.exe"
+          Invoke-WebRequest -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.7/SDCenterSetup.exe' -OutFile $setup
+          $hash=(Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          if($hash -ne '9e17490d34a10f8ae076597ef2fb27451bd6c11a318776c4fd70ecde1d87fcde'){ throw "v2.2.7 hash mismatch: $hash" }
+          "BASE_SETUP=$setup" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install v2.2.7 base
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Start-Process -FilePath $env:BASE_SETUP -ArgumentList '--silent' -PassThru -Wait | Out-Null
+          Start-Sleep -Seconds 5
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $base=Join-Path $env:LOCALAPPDATA 'SDCenter\app-2.2.7'
+          if(-not (Test-Path (Join-Path $base 'SDCenter.exe'))){ throw 'v2.2.7 install missing' }
+          "BASE_APP_DIR=$base" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Prepare portable preview v0.16
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $preview=Join-Path $env:RUNNER_TEMP 'SDCenter-UI-Preview-v0.16'
+          if(Test-Path $preview){ Remove-Item $preview -Recurse -Force }
+          Copy-Item $env:BASE_APP_DIR $preview -Recurse -Force
+          $root=Join-Path $preview 'resources\app'
+          $assets=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04'
+          $assetZip=Join-Path $env:RUNNER_TEMP 'center-ui-preview-assets-v04.zip'
+          $assetB64=(Get-Content 'tools/center-ui-preview-assets-v04-good.b64' -Raw).Trim()
+          [IO.File]::WriteAllBytes($assetZip,[Convert]::FromBase64String($assetB64))
+          $assetHash=(Get-FileHash $assetZip -Algorithm SHA256).Hash.ToLower()
+          if($assetHash -ne '1b250228b0112b8722eec3eb4cf89dbe138c20d5e7060e7995812e2d73db6b72'){ throw "preview asset hash mismatch: $assetHash" }
+          Expand-Archive -Path $assetZip -DestinationPath $assets -Force
+          Copy-Item (Join-Path $assets 'index.html') (Join-Path $root 'public\index.html') -Force
+          Copy-Item (Join-Path $assets 'ui-preview.css') (Join-Path $root 'public\css\ui-preview.css') -Force
+          Copy-Item (Join-Path $assets 'ui-preview.js') (Join-Path $root 'public\js\ui-preview.js') -Force
+          foreach($v in @('04','05','06','07','08','09','010','011','012','013','014','015','016')){ node "tools/patch-center-ui-v$v.js" "$root" }
+          @(
+            'SD종합센터 UI Remake Preview v0.16',
+            'Base: official v2.2.7',
+            '',
+            '테마 카탈로그 분리 실험:',
+            '- 테마 상점은 종합센터 내장 기능/사이드바 전용 유지',
+            '- 기본 SD 테마만 앱에 내장',
+            '- 신규 테마는 theme-catalog 브랜치의 JSON 카탈로그로 로드',
+            '- 원격 실패 시 마지막 정상 카탈로그 캐시 사용',
+            '- 카탈로그/에셋 URL 스키마와 GitHub 경로 검증',
+            '- 첫 원격 항목: 물류센터 · 차고',
+            '',
+            '프리뷰이며 정식 업데이트 메타데이터는 변경하지 않았습니다.'
+          ) | Set-Content (Join-Path $preview 'PREVIEW_README.txt') -Encoding utf8
+          "SD종합센터 UI Preview`nBase: v2.2.7`nPreview: UI Remake v0.16`nTheme Store is built into the sidebar.`nThemes are loaded from the separate theme-catalog branch.`nHome structure remains unchanged; only Home background is themeable.`nOfficial update metadata is NOT changed." | Set-Content (Join-Path $root 'UI_PREVIEW.txt') -Encoding utf8
+          "PREVIEW_DIR=$preview" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_ROOT=$root" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Validate preview v0.16
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\public\js\app.js"
+          node --check "$env:APP_ROOT\public\js\ui-preview.js"
+          node --check "$env:APP_ROOT\preload.js"
+          node --check "$env:APP_ROOT\src\theme-catalog.js"
+          node --check "$env:APP_ROOT\src\required-updates.js"
+          $pkg=Get-Content "$env:APP_ROOT\package.json" -Raw | ConvertFrom-Json
+          if($pkg.version -ne '2.2.7'){ throw "Base version changed unexpectedly: $($pkg.version)" }
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          $app=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
+          $js=Get-Content "$env:APP_ROOT\public\js\ui-preview.js" -Raw
+          $css=Get-Content "$env:APP_ROOT\public\css\ui-preview.css" -Raw
+          $html=Get-Content "$env:APP_ROOT\public\index.html" -Raw
+          foreach($marker in @('centerAppOperationLocks','withCenterAppOperation','withCenterBulkAppOperation')){ if(-not $main.Contains($marker)){ throw "v0.11 regression marker missing: $marker" } }
+          foreach($marker in @('anyAppOperation','state.updatingAll || state.addingApp')){ if(-not $app.Contains($marker)){ throw "v0.11 renderer regression marker missing: $marker" } }
+          foreach($marker in @('createThemeCatalogService','theme-catalog','center:get-theme-catalog')){ if(-not $main.Contains($marker)){ throw "v0.16 main catalog marker missing: $marker" } }
+          if(-not (Get-Content "$env:APP_ROOT\preload.js" -Raw).Contains('getThemeCatalog')){ throw 'v0.16 preload catalog bridge missing' }
+          foreach($marker in @('<b>테마 상점</b>','id="previewThemeStorePanel"','id="previewThemeRefreshButton"','카탈로그 새로고침')){ if(-not $html.Contains($marker)){ throw "v0.16 HTML marker missing: $marker" } }
+          foreach($marker in @('PREVIEW_BUILTIN_THEME','refreshPreviewThemeCatalog','getThemeCatalog','previewThemeCatalogSource')){ if(-not $js.Contains($marker)){ throw "v0.16 renderer marker missing: $marker" } }
+          if($html.Contains('previewThemeHomeStage') -or $html.Contains('data-preview-theme-shortcut')){ throw 'v0.16 home theme shortcut regression' }
+          if($js.Contains('document.body.dataset.previewTheme') -or $js.Contains('renderPreviewThemeHomeDeck') -or $js.Contains('const PREVIEW_THEMES = [')){ throw 'v0.16 hardcoded/global theme regression' }
+          if($css.Contains('#previewHomePanel[data-preview-theme="logistics"]')){ throw 'v0.16 hardcoded expansion theme CSS remains' }
+          $themeCatalog=(Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/SD608/sd-center/theme-catalog/themes/catalog.json' -UseBasicParsing).Content | ConvertFrom-Json
+          if($themeCatalog.schemaVersion -ne 1){ throw 'remote theme catalog schema mismatch' }
+          if(-not ($themeCatalog.themes | Where-Object { $_.id -eq 'logistics' })){ throw 'remote logistics theme missing' }
+
+      - name: Smoke test portable preview
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $exe=Join-Path $env:PREVIEW_DIR 'SDCenter.exe'
+          $proc=Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 10
+          if($proc.HasExited){ throw "UI preview exited during smoke test: $($proc.ExitCode)" }
+          Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Upload portable preview v0.16
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-UI-Preview-v0.16-win-x64
+          path: ${{ env.PREVIEW_DIR }}
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 14

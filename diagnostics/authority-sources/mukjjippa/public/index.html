@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>SD묵찌빠</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><span>✊</span><span>✌️</span><span>✋</span></div>
+        <div>
+          <h1>SD묵찌빠</h1>
+          <p>연승할수록 커지는 가상 보상 · 실제 금전 사용 불가</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="soundButton" class="ghost-button" type="button">🔊 효과음</button>
+        <button id="musicButton" class="ghost-button" type="button">🎵 배경음</button>
+        <button id="centerButton" class="ghost-button" type="button">종합센터</button>
+      </div>
+    </header>
+
+    <section class="notice">
+      <strong>하이 리스크 · 하이 리턴</strong>
+      <span>처음 한 번만 선결제합니다. 승리 후 정산하지 않고 도전하다 패배하면 누적 정산 예정 금액이 전부 사라집니다.</span>
+    </section>
+
+    <div class="main-grid">
+      <section class="game-column">
+        <section class="streak-card">
+          <div class="streak-heading">
+            <div>
+              <span class="eyebrow">연승 진행도</span>
+              <h2 id="streakTitle">도전을 시작하세요</h2>
+            </div>
+            <div class="payout-preview">
+              <span>현재 정산 예정</span>
+              <strong id="potentialPayout">0원</strong>
+            </div>
+          </div>
+          <div id="streakTrack" class="streak-track"></div>
+        </section>
+
+        <section class="arena" id="arena">
+          <div class="arena-glow"></div>
+          <div class="fighter player-fighter" id="playerFighter">
+            <span class="fighter-label">PLAYER</span>
+            <div class="hand-display" id="playerHand">?</div>
+            <strong>나</strong>
+          </div>
+
+          <div class="center-stage">
+            <div id="attackerBadge" class="attacker-badge neutral">공격권 결정 전</div>
+            <div id="callText" class="call-text">READY</div>
+            <div id="statusText" class="status-text">계좌를 연결하고 게임을 시작하세요</div>
+            <div id="fairnessCode" class="fairness-code">공정성 코드: -</div>
+          </div>
+
+          <div class="fighter computer-fighter" id="computerFighter">
+            <span class="fighter-label">COMPUTER</span>
+            <div class="hand-display computer" id="computerHand">?</div>
+            <strong>컴퓨터</strong>
+          </div>
+        </section>
+
+        <section class="action-card">
+          <div id="startPanel" class="action-panel">
+            <div class="bet-box">
+              <label for="betInput">도전금</label>
+              <div class="bet-input-wrap">
+                <input id="betInput" type="text" inputmode="numeric" autocomplete="off" value="1,000">
+                <span>원</span>
+              </div>
+              <div id="betButtons" class="bet-buttons">
+                <button type="button" data-bet="1000">+1,000</button>
+                <button type="button" data-bet="5000">+5,000</button>
+                <button type="button" data-bet="10000">+10,000</button>
+                <button type="button" data-bet="100000">+100,000</button>
+                <button type="button" data-bet="1000000">+1,000,000</button>
+                <button type="button" data-action="reset" class="reset-button">초기화</button>
+              </div>
+            </div>
+            <button id="startButton" class="primary-button start-button" type="button">
+              <span>도전 시작</span><small>도전금 선결제</small>
+            </button>
+          </div>
+
+          <div id="handPanel" class="action-panel hand-panel hidden">
+            <div class="hand-guide">
+              <strong id="handGuideTitle">손을 선택하세요</strong>
+              <span id="handGuideText">컴퓨터 손은 이미 보안 난수로 확정되었습니다.</span>
+            </div>
+            <div class="hand-buttons">
+              <button type="button" data-move="rock"><span>✊</span><strong>묵</strong><small>1</small></button>
+              <button type="button" data-move="scissors"><span>✌️</span><strong>찌</strong><small>2</small></button>
+              <button type="button" data-move="paper"><span>✋</span><strong>빠</strong><small>3</small></button>
+            </div>
+          </div>
+
+          <div id="decisionPanel" class="action-panel decision-panel hidden">
+            <div>
+              <span class="eyebrow">선택의 순간</span>
+              <h3 id="decisionTitle">보상을 받을까요?</h3>
+              <p id="decisionText">계속 도전하다 패배하면 현재 보상은 0원이 됩니다.</p>
+            </div>
+            <div class="decision-buttons">
+              <button id="cashoutButton" class="cashout-button" type="button">보상받기</button>
+              <button id="continueButton" class="risk-button" type="button">다음 연승 도전</button>
+            </div>
+          </div>
+
+          <div id="endPanel" class="action-panel end-panel hidden">
+            <div>
+              <span class="eyebrow">도전 종료</span>
+              <h3 id="endTitle">게임이 종료되었습니다</h3>
+              <p id="endText">새 도전을 시작할 수 있습니다.</p>
+            </div>
+            <button id="newGameButton" class="primary-button" type="button">새 도전 준비</button>
+          </div>
+        </section>
+
+        <section class="card hand-log-card">
+          <div class="card-heading">
+            <div><span class="eyebrow">진행 기록</span><h2>현재 도전의 손 기록</h2></div>
+          </div>
+          <div id="handLog" class="hand-log"><p class="empty">아직 진행 기록이 없습니다.</p></div>
+        </section>
+      </section>
+
+      <aside class="side-column">
+        <section class="card wallet-card">
+          <div class="card-heading">
+            <div><span class="eyebrow">연결 계좌</span><h2>SD지갑</h2></div>
+            <button id="refreshButton" class="icon-button" type="button" title="계좌 새로고침 (F5)">↻</button>
+          </div>
+          <select id="accountSelect" aria-label="계좌 선택"><option value="">계좌를 연결하세요</option></select>
+          <div class="wallet-balance"><span>현재 잔액</span><strong id="balanceText">-</strong></div>
+          <div class="wallet-actions">
+            <button id="autoDetectButton" type="button">자동 연결</button>
+            <button id="chooseDbButton" type="button">직접 선택</button>
+          </div>
+          <p id="walletMessage" class="small-message">SD지갑을 실행한 뒤 자동 연결을 누르세요. F5는 계좌와 진행 상태를 새로고침합니다.</p>
+        </section>
+
+        <section class="card rules-card">
+          <div class="card-heading"><div><span class="eyebrow">배당 구조</span><h2>연승 보상표</h2></div><span class="fair-tag">공정 승부</span></div>
+          <div id="rewardTable" class="reward-table"></div>
+        </section>
+
+        <section class="card stats-card">
+          <div class="card-heading"><div><span class="eyebrow">누적 통계</span><h2>내 기록</h2></div></div>
+          <div class="stats-grid">
+            <div><span>완료한 도전</span><strong id="statGames">0</strong></div>
+            <div><span>최고 연승</span><strong id="statBest">0</strong></div>
+            <div><span>총 도전금</span><strong id="statStake">0원</strong></div>
+            <div><span>총 정산금</span><strong id="statPayout">0원</strong></div>
+          </div>
+        </section>
+
+        <section class="card sound-card">
+          <div class="card-heading"><div><span class="eyebrow">사운드</span><h2>음량 설정</h2></div></div>
+          <label class="volume-control" for="volumeInput"><span>전체 음량</span><strong id="volumeText">70%</strong></label>
+          <input id="volumeInput" type="range" min="0" max="100" value="70">
+          <p class="small-message">효과음과 배경음은 앱 내부에서 생성되며 외부 음원 파일을 사용하지 않습니다.</p>
+        </section>
+
+        <section class="card history-card">
+          <div class="card-heading"><div><span class="eyebrow">최근 결과</span><h2>도전 기록</h2></div></div>
+          <div id="gameHistory" class="game-history"><p class="empty">완료된 도전이 없습니다.</p></div>
+        </section>
+
+        <section class="card transactions-card">
+          <div class="card-heading"><div><span class="eyebrow">SD지갑</span><h2>최근 거래</h2></div></div>
+          <div id="transactionList" class="transaction-list"><p class="empty">최근 거래가 없습니다.</p></div>
+        </section>
+      </aside>
+    </div>
+  </main>
+  <script src="js/app.js"></script>
+</body>
+</html>

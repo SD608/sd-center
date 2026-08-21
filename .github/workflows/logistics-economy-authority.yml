@@ -1,0 +1,50 @@
+name: Logistics Economy Authority
+
+on:
+  push:
+    branches: [hardening/logistics-economy-authority-20260820]
+    paths:
+      - 'database/migrations/sd_logistics_reward_authority_v1.sql'
+      - 'tests/logistics-authority/**'
+      - '.github/workflows/logistics-economy-authority.yml'
+  pull_request:
+    paths:
+      - 'database/migrations/sd_logistics_reward_authority_v1.sql'
+      - 'tests/logistics-authority/**'
+      - '.github/workflows/logistics-economy-authority.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  logistics-authority-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: logistics_authority_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d logistics_authority_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: logistics_authority_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build logistics economy fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/logistics-authority/fixture.sql
+      - name: Apply reward authority hardening
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_logistics_reward_authority_v1.sql
+      - name: Run logistics reward authority regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/logistics-authority/regression.sql

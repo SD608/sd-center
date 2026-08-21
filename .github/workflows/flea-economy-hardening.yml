@@ -1,0 +1,50 @@
+name: SD Flea Economy Hardening
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - hardening/flea-economy-20260820
+    paths:
+      - 'sql/SD608_플리마켓_PC인벤토리_경제권한_핫픽스.sql'
+      - 'tests/flea-security/**'
+      - '.github/workflows/flea-economy-hardening.yml'
+  pull_request:
+    paths:
+      - 'sql/SD608_플리마켓_PC인벤토리_경제권한_핫픽스.sql'
+      - 'tests/flea-security/**'
+      - '.github/workflows/flea-economy-hardening.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  economy-authority:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: flea_security_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d flea_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: flea_security_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build flea authority fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/flea-security/fixture.sql
+      - name: Apply flea economy hardening
+        run: psql -v ON_ERROR_STOP=1 -f sql/SD608_플리마켓_PC인벤토리_경제권한_핫픽스.sql
+      - name: Run exploit and compatibility regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/flea-security/economy_regression.sql

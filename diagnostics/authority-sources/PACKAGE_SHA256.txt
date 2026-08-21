@@ -1,0 +1,4 @@
+cb0d4458af4a0bb7e464f6abf4ffed0449946cbe0b7449801ec592eaf2eb4906  /tmp/pkgs/bitcoin.zip
+bb180fec1e7e7d3db394d58a53bb1775c5be77801c0d78b529ececf0e75da70c  /tmp/pkgs/miner.zip
+70e62db0a82e1f4fb4ee01639471ff88017e3c32f24fb49853ebbac7feb297ca  /tmp/pkgs/mukjjippa.zip
+f9633beca57d218ac441f066c7021299a81fcb82ce707a7ed0e09a4bd7f9f320  /tmp/pkgs/sta.zip

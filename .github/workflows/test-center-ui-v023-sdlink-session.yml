@@ -1,0 +1,52 @@
+name: Test SDCenter v0.23 SD Link Session Persistence
+
+on:
+  push:
+    branches: [feature/sdlink-integrated-v023]
+    paths:
+      - 'preview/v023-sdlink-session/**'
+      - 'tools/patch-center-ui-v023-sdlink-session.js'
+      - '.github/workflows/test-center-ui-v023-sdlink-session.yml'
+  pull_request:
+    branches: [preview/center-ui-v230-20260819]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  session-contract:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check 'preview/v023-sdlink-session/sdlink-session-persistence.js'
+          node --check 'preview/v023-sdlink-session/test-sdlink-session-persistence-v023.js'
+          node --check 'tools/patch-center-ui-v023-sdlink-session.js'
+
+      - name: Run integrated session persistence regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node 'preview/v023-sdlink-session/test-sdlink-session-persistence-v023.js'
+
+      - name: Guard Core and economy boundary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $joined=(Get-Content 'preview/v023-sdlink-session/sdlink-session-persistence.js' -Raw)+(Get-Content 'tools/patch-center-ui-v023-sdlink-session.js' -Raw)
+          foreach($forbidden in @('push_sd_link_transaction','pull_sd_link_transactions','signedAmount(','sd_core_apply_wallet_event','wallet_ledger','supabase/migrations')){
+            if($joined.Contains($forbidden)){ throw "v0.23 session fix crossed protected Core/economic boundary: $forbidden" }
+          }
+          foreach($required in @('SD_CENTER_LINK_INTEGRATED','session.remember = true','patchIntegratedSdLinkAuthSession')){
+            if(-not $joined.Contains($required)){ throw "v0.23 session persistence marker missing: $required" }
+          }
+          Write-Host 'v0.23 session persistence boundary contract passed'
