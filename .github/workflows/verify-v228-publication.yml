@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
 
+# Retriggered after the exact v2.2.8 Release asset was published.
 jobs:
   verify-publication:
     runs-on: ubuntu-latest
