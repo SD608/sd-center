@@ -72,7 +72,8 @@ if (!gotLock) {
       userDataPath: app.getPath("userData"),
       seedPath: path.join(__dirname, "roadmap.default.json"),
       livePath: path.join(__dirname, "lib", "roadmap-live.json"),
-      remoteUrl: ALLOWED_REMOTE_URL
+      remoteUrl: ALLOWED_REMOTE_URL,
+      eventProvider: () => api.listRoadmapEvents()
     });
     registerIpc();
     createWindow();
