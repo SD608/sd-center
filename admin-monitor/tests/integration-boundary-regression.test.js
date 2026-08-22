@@ -29,6 +29,17 @@ test("presence storage has no direct authenticated table access", () => {
   assert.match(sql, /viewer\.role\s*=\s*'admin'|p\.role='admin'|p\.role\s*=\s*'admin'/i);
 });
 
+test("admin last seen falls back to auth sign-in only when presence is absent", () => {
+  const sql = read("database/migrations/sd_admin_last_seen_auth_fallback_v1.sql");
+  assert.match(sql, /left\s+join\s+auth\.users\s+au\s+on\s+au\.id\s*=\s*p\.id/i);
+  assert.match(sql, /coalesce\s*\(\s*pr\.last_seen_at\s*,\s*au\.last_sign_in_at\s*\)/i);
+  assert.match(sql, /'last_seen_at'\s*,\s*coalesce\s*\(/i);
+  assert.match(sql, /select\s+max\(s\.last_seen_at\)[\s\S]*au\.last_sign_in_at/i);
+  assert.match(sql, /message='ADMIN_REQUIRED'/i);
+  assert.doesNotMatch(sql, /update\s+public\.wallets\b/i);
+  assert.doesNotMatch(sql, /insert\s+into\s+public\.transactions\b/i);
+});
+
 test("public member wallet page stays removed while ranking implementation remains", () => {
   assert.equal(fs.existsSync(path.join(repoRoot, "members.html")), false);
   assert.equal(fs.existsSync(path.join(repoRoot, "assets/js/members-page.js")), false);
