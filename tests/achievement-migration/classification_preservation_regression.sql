@@ -14,6 +14,7 @@ select user_id, achievement_id, unlocked_at
 from public.sd_user_achievements;
 
 \ir ../../database/migrations/sd_achievement_migration_classification_v1.sql
+\ir ../../database/migrations/sd_achievement_migration_classification_v1_rls.sql
 
 do $$
 declare
@@ -101,6 +102,15 @@ begin
         or not preserve_title_reward
   ) then
     raise exception '3-2 regression: preservation contract disabled';
+  end if;
+
+  if not exists (
+    select 1 from pg_policies
+     where schemaname='public'
+       and tablename='sd_achievement_migration_classification'
+       and policyname='sd_achievement_migration_no_client_access_v1'
+  ) then
+    raise exception '3-2 regression: explicit RLS deny policy missing';
   end if;
 
   v_failed := false;
