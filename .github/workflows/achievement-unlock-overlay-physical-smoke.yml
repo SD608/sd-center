@@ -1,0 +1,78 @@
+name: SD Achievement Overlay Physical Smoke Candidate
+
+on:
+  push:
+    branches: [feat/achievement-unlock-overlay-v1-20260822]
+    paths:
+      - 'preview/v024-core/sdlink-achievement-overlay.js'
+      - 'tools/achievement-overlay-main-patch.js'
+      - 'tools/patch-achievement-unlock-overlay-v1.js'
+      - 'tools/inject-achievement-overlay-physical-smoke.js'
+      - '.github/workflows/achievement-unlock-overlay-physical-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-process-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download exact public R5 Squirrel package
+        shell: pwsh
+        run: |
+          $url = 'https://github.com/SD608/sd-center/releases/download/v.2.2.8/SDCenter-2.2.8-full.nupkg'
+          Invoke-WebRequest -Uri $url -OutFile r5.nupkg
+          if ((Get-Item r5.nupkg).Length -ne 139392231) { throw 'R5 nupkg size mismatch' }
+          $sha = (Get-FileHash r5.nupkg -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($sha -ne '97299eab1117b6fa1e2edd25c9e3aaadca5de28c7085cc866bb25b73550e47d5') { throw "R5 nupkg SHA mismatch: $sha" }
+      - name: Expand and verify exact R5 app root
+        shell: pwsh
+        run: |
+          Copy-Item r5.nupkg r5.zip
+          Expand-Archive r5.zip candidate
+          $app = Join-Path $PWD 'candidate/lib/net45/resources/app'
+          $main = Join-Path $app 'main.js'
+          $sha = (Get-FileHash $main -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($sha -ne 'eec3a7ac2ce56e3fd68005d0ed86f766b99c4d37832f03d8729ad5d6d8afb38d') { throw "R5 main.js SHA mismatch: $sha" }
+          $exe = Join-Path $PWD 'candidate/lib/net45/SDCenter.exe'
+          $exeSha = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($exeSha -ne '226811c8086805c68ce631330808842d320654797e3bf3c6661d345b1bf427ba') { throw "R5 SDCenter.exe SHA mismatch: $exeSha" }
+      - name: Apply production overlay patch and candidate-only smoke hook
+        shell: pwsh
+        run: |
+          $app = Join-Path $PWD 'candidate/lib/net45/resources/app'
+          $net45 = Join-Path $PWD 'candidate/lib/net45'
+          node tools/patch-achievement-unlock-overlay-v1.js $app
+          node tools/inject-achievement-overlay-physical-smoke.js $app $net45
+          node --check (Join-Path $app 'main.js')
+          node --check (Join-Path $app 'src/sdlink-achievement-overlay.js')
+      - name: Run packaged Electron smoke process
+        shell: pwsh
+        run: |
+          $net45 = Join-Path $PWD 'candidate/lib/net45'
+          $exe = Join-Path $net45 'SDCenter.exe'
+          $p = Start-Process -FilePath $exe -ArgumentList '--sd-achievement-overlay-smoke' -WorkingDirectory $net45 -PassThru
+          if (-not $p.WaitForExit(20000)) {
+            try { $p.Kill($true) } catch {}
+            throw 'Chapter 3-7 packaged smoke process did not exit within 20 seconds'
+          }
+          if ($p.ExitCode -ne 0) { throw "Chapter 3-7 packaged smoke exited with code $($p.ExitCode)" }
+          Write-Host 'Chapter 3-7 packaged Electron process smoke PASS'
+      - name: Package physical candidate
+        shell: pwsh
+        run: |
+          Compress-Archive -Path candidate/lib/net45 -DestinationPath SDCenter-Ch3-7-Overlay-Smoke-R5.zip -CompressionLevel Optimal
+          $sha = (Get-FileHash SDCenter-Ch3-7-Overlay-Smoke-R5.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          Write-Host "candidate_sha256=$sha"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-Ch3-7-Overlay-Smoke-R5
+          path: SDCenter-Ch3-7-Overlay-Smoke-R5.zip
+          if-no-files-found: error
+          retention-days: 7
