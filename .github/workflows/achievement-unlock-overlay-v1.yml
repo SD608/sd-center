@@ -1,0 +1,48 @@
+name: SD Achievement Unlock Overlay v1
+
+on:
+  push:
+    branches: [feat/achievement-unlock-overlay-v1-20260822]
+    paths:
+      - 'preview/v024-core/sdlink-achievement-overlay.js'
+      - 'tools/achievement-overlay-main-patch.js'
+      - 'tools/patch-achievement-unlock-overlay-v1.js'
+      - 'tools/test-achievement-unlock-overlay-v1.js'
+      - '.github/workflows/achievement-unlock-overlay-v1.yml'
+  pull_request:
+    paths:
+      - 'preview/v024-core/sdlink-achievement-overlay.js'
+      - 'tools/achievement-overlay-main-patch.js'
+      - 'tools/patch-achievement-unlock-overlay-v1.js'
+      - 'tools/test-achievement-unlock-overlay-v1.js'
+      - '.github/workflows/achievement-unlock-overlay-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  overlay-regression:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        shell: pwsh
+        run: |
+          node --check preview/v024-core/sdlink-achievement-overlay.js
+          node --check tools/achievement-overlay-main-patch.js
+          node --check tools/patch-achievement-unlock-overlay-v1.js
+          node --check tools/test-achievement-unlock-overlay-v1.js
+      - name: Overlay authority and dedupe regression
+        shell: pwsh
+        run: node tools/test-achievement-unlock-overlay-v1.js
+      - name: Guard release boundary
+        shell: pwsh
+        run: |
+          $patch = Get-Content tools/patch-achievement-unlock-overlay-v1.js -Raw
+          if ($patch -notmatch 'eec3a7ac2ce56e3fd68005d0ed86f766b99c4d37832f03d8729ad5d6d8afb38d') { throw 'exact R5 base hash guard missing' }
+          if ($patch -match 'center-update.json|site-config.js|gh release|git push') { throw '3-7 patch must not publish or modify current release metadata' }
+          Write-Host 'Chapter 3-7 release boundary PASS'

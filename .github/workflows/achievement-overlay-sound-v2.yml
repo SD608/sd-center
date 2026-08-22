@@ -1,0 +1,46 @@
+name: SD Achievement Overlay Sound v2
+
+on:
+  push:
+    branches: [feat/achievement-unlock-overlay-v1-20260822]
+    paths:
+      - 'tools/achievement-overlay-sound-v2.js'
+      - 'tools/test-achievement-overlay-sound-v2.js'
+      - 'tools/patch-achievement-unlock-overlay-v1.js'
+      - '.github/workflows/achievement-overlay-sound-v2.yml'
+  pull_request:
+    paths:
+      - 'tools/achievement-overlay-sound-v2.js'
+      - 'tools/test-achievement-overlay-sound-v2.js'
+      - 'tools/patch-achievement-unlock-overlay-v1.js'
+      - '.github/workflows/achievement-overlay-sound-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  achievement-chime-regression:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        shell: pwsh
+        run: |
+          node --check tools/achievement-overlay-sound-v2.js
+          node --check tools/test-achievement-overlay-sound-v2.js
+          node --check tools/patch-achievement-unlock-overlay-v1.js
+      - name: Custom chime and security regression
+        shell: pwsh
+        run: node tools/test-achievement-overlay-sound-v2.js
+      - name: Release safety guard
+        shell: pwsh
+        run: |
+          $sound = Get-Content tools/achievement-overlay-sound-v2.js -Raw
+          if ($sound -match 'child_process|powershell|cmd\.exe|Invoke-WebRequest|fetch\(') { throw 'Achievement sound must remain process-free and network-free' }
+          $patch = Get-Content tools/patch-achievement-unlock-overlay-v1.js -Raw
+          if ($patch -match 'center-update.json|site-config.js|gh release|git push') { throw 'Sound polish must not publish or modify release metadata' }
+          Write-Host 'Chapter 3-7 custom chime release boundary PASS'
