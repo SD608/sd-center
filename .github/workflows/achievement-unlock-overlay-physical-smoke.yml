@@ -9,6 +9,13 @@ on:
       - 'tools/patch-achievement-unlock-overlay-v1.js'
       - 'tools/inject-achievement-overlay-physical-smoke.js'
       - '.github/workflows/achievement-unlock-overlay-physical-smoke.yml'
+  pull_request:
+    paths:
+      - 'preview/v024-core/sdlink-achievement-overlay.js'
+      - 'tools/achievement-overlay-main-patch.js'
+      - 'tools/patch-achievement-unlock-overlay-v1.js'
+      - 'tools/inject-achievement-overlay-physical-smoke.js'
+      - '.github/workflows/achievement-unlock-overlay-physical-smoke.yml'
   workflow_dispatch:
 
 permissions:
