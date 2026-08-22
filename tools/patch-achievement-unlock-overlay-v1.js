@@ -4,6 +4,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { patchMainSource } = require("./achievement-overlay-main-patch");
+const { patchOverlaySoundSource } = require("./achievement-overlay-sound-v2");
 
 const root = process.argv[2];
 if (!root) throw new Error("Usage: node patch-achievement-unlock-overlay-v1.js <app-root>");
@@ -23,10 +24,16 @@ if (!alreadyPatched && hash !== EXPECTED_R5_MAIN_SHA256) {
 }
 
 fs.mkdirSync(path.dirname(helperTarget), { recursive: true });
-fs.copyFileSync(helperSource, helperTarget);
+const helper = fs.readFileSync(helperSource, "utf8").replace(/\r\n/g, "\n");
+const polishedHelper = patchOverlaySoundSource(helper);
+fs.writeFileSync(helperTarget, polishedHelper, "utf8");
 const patched = patchMainSource(main);
 fs.writeFileSync(mainPath, patched, "utf8");
 for (const marker of ["patchIntegratedSdLinkAchievementOverlay", "achievementOverlayPatch", "sdlink-achievement-overlay"]) {
   if (!patched.includes(marker)) throw new Error(`Achievement overlay marker missing after patch: ${marker}`);
 }
-console.log(`Chapter 3-7 achievement unlock overlay patch applied; base=${alreadyPatched ? "already-patched" : "exact-r5"}`);
+for (const marker of ["ACHIEVEMENT_CHIME_DATA_URL", "media-src data:", "autoplay preload=\"auto\""]) {
+  if (!polishedHelper.includes(marker)) throw new Error(`Achievement chime marker missing after patch: ${marker}`);
+}
+if (polishedHelper.includes("shell.beep()")) throw new Error("Windows system beep must not remain in final achievement overlay helper");
+console.log(`Chapter 3-7 achievement unlock overlay patch applied with custom chime; base=${alreadyPatched ? "already-patched" : "exact-r5"}`);
