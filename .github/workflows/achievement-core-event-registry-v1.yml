@@ -60,7 +60,7 @@ jobs:
         run: |
           set -euo pipefail
           SQL=database/migrations/sd_achievement_core_event_registry_v1.sql
-          grep -q "client_submission_allowed,false" "$SQL"
+          grep -q "client_submission_allowed boolean not null default false" "$SQL"
           grep -q "ACHIEVEMENT_EVENT_CLIENT_SUBMISSION_DISABLED" "$SQL"
           grep -q "pg_advisory_xact_lock" "$SQL"
           grep -q "ACHIEVEMENT_EVENT_ID_CONFLICT" "$SQL"
