@@ -95,7 +95,7 @@ function patchOverlaySoundSource(sourceInput) {
     '<div class="arrow">›</div></a></body></html>',
     '<div class="arrow">›</div></a><audio aria-hidden="true" autoplay preload="auto" src="${ACHIEVEMENT_CHIME_DATA_URL}"></audio></body></html>',
   );
-  output = output.replace("      try { shell.beep(); } catch {}\n", "");
+  output = output.replace(/^\s*try \{ shell\.beep\(\); \} catch \{\}\r?\n/m, "");
 
   for (const marker of [SOUND_MARK, "media-src data:", "autoplay preload=\"auto\""]) {
     if (!output.includes(marker)) throw new Error(`achievement chime marker missing after patch: ${marker}`);
