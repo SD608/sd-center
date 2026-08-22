@@ -1,0 +1,73 @@
+name: SD Achievement Core Event Registry v1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'database/migrations/sd_achievement_identity_lineage_v1.sql'
+      - 'database/migrations/sd_achievement_migration_classification_v1*.sql'
+      - 'database/migrations/sd_achievement_core_event_registry_v1.sql'
+      - 'tests/achievement-lineage/**'
+      - 'tests/achievement-migration/**'
+      - 'tests/achievement-core-event/**'
+      - 'docs/achievement-core-event-registry-v1.md'
+      - '.github/workflows/achievement-core-event-registry-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  registry-event-stat-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: achievement_core_event_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d achievement_core_event_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: achievement_core_event_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Chapter 3-1 fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-lineage/fixture.sql
+      - name: Apply permanent achievement identity
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_identity_lineage_v1.sql
+      - name: Add Chapter 3-2 catalog and player assets
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-migration/fixture.sql
+      - name: Apply Chapter 3-2 classification
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_migration_classification_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_migration_classification_v1_rls.sql
+      - name: Add Core event fixture support
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-core-event/fixture.sql
+      - name: Run producer registry and exactly-once event/stat regression
+        working-directory: tests/achievement-core-event
+        run: psql -v ON_ERROR_STOP=1 -f registry_event_stat_regression.sql
+      - name: Verify fail-closed and release/economy side-effect safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          SQL=database/migrations/sd_achievement_core_event_registry_v1.sql
+          grep -q "client_submission_allowed,false" "$SQL"
+          grep -q "ACHIEVEMENT_EVENT_CLIENT_SUBMISSION_DISABLED" "$SQL"
+          grep -q "pg_advisory_xact_lock" "$SQL"
+          grep -q "ACHIEVEMENT_EVENT_ID_CONFLICT" "$SQL"
+          grep -q "ACHIEVEMENT_EVENT_AUDIT_IS_APPEND_ONLY" "$SQL"
+          grep -q "Chapter 3-3 registry only; no producer cutover until Chapter 3-4" "$SQL"
+          ! grep -Eiq '(^|[[:space:]])(update|delete[[:space:]]+from)[[:space:]]+public\.sd_(achievements|achievement_progress|user_achievements)' "$SQL"
+          ! grep -Eiq 'insert[[:space:]]+into[[:space:]]+public\.sd_(achievement_progress|user_achievements)' "$SQL"
+          ! grep -Eiq 'wallets[[:space:]]+set[[:space:]]+balance|site-config\.js|center-update\.json|releases/download' "$SQL"
+          ! grep -Eiq 'execute[[:space:]]+format|execute[[:space:]]+[^;]*(validator_key|p_validator_key)' "$SQL"
+          echo 'Chapter 3-3 fail-closed/event-id/player-asset/release/economy safety guard PASS'
