@@ -5,7 +5,7 @@ on:
   pull_request:
     paths:
       - 'database/migrations/sd_achievement_identity_lineage_v1.sql'
-      - 'database/migrations/sd_achievement_migration_classification_v1.sql'
+      - 'database/migrations/sd_achievement_migration_classification_v1*.sql'
       - 'tests/achievement-migration/**'
       - 'tests/achievement-lineage/**'
       - 'docs/achievement-migration-classification-v1.md'
