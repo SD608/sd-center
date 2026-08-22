@@ -43,4 +43,4 @@ v0.2.2에서는 챕터 상태도 `pending < next < in_progress < complete` 순�
 
 GitHub Actions의 Windows process smoke와 NSIS 생성 성공은 실제 사용자 Windows 환경 검증과 다릅니다. 실제 배포 전에는 신규 설치, 기존 버전 위 업데이트, 재설치, 완전 종료 후 재실행, 재부팅, 오프라인 복구, 기존 userData, 100/125/150% UI 확인이 별도로 필요합니다.
 
-v0.2.2 최종 후보의 코드 회귀 및 Windows CI process smoke/NSIS 생성은 통과했습니다. 실제 사용자 PC 검증은 별도 Gate입니다.
+v0.2.2 코드 회귀 및 Windows CI process smoke/NSIS 생성은 통과했습니다. 실제 사용자 PC 검증은 별도 Gate입니다.
