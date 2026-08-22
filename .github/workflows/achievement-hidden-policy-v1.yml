@@ -1,0 +1,73 @@
+name: SD Achievement Hidden Policy v1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'database/migrations/sd_achievement_hidden_policy_v1.sql'
+      - 'tests/achievement-hidden/**'
+      - '.github/workflows/achievement-hidden-policy-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  hidden-policy-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: achievement_hidden_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d achievement_hidden_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: achievement_hidden_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Chapter 3-1 fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-lineage/fixture.sql
+      - name: Apply permanent achievement identity
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_identity_lineage_v1.sql
+      - name: Add Chapter 3-2 catalog and player assets
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-migration/fixture.sql
+      - name: Apply Chapter 3-2 classification
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_migration_classification_v1.sql
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_migration_classification_v1_rls.sql
+      - name: Add Core event fixture support
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-core-event/fixture.sql
+      - name: Apply Chapter 3-3 Core registry
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_core_event_registry_v1.sql
+      - name: Add Chapter 3-4 server-state fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-content-move/fixture.sql
+      - name: Apply Chapter 3-4 content move
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_content_move_backfill_v1.sql
+      - name: Expand exact 99 catalog and historical hidden state
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-hidden/fixture.sql
+      - name: Apply and regress Chapter 3-5 hidden policy
+        working-directory: tests/achievement-hidden
+        run: psql -v ON_ERROR_STOP=1 -f hidden_policy_regression.sql
+      - name: Verify presentation-only and release safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          SQL=database/migrations/sd_achievement_hidden_policy_v1.sql
+          grep -q "expected exactly 10 codes" "$SQL"
+          grep -q "exact reviewed 99-achievement catalog" "$SQL"
+          grep -q "set hidden" "$SQL"
+          ! grep -Eiq 'update[[:space:]]+public\.sd_achievement_progress|update[[:space:]]+public\.sd_user_achievements' "$SQL"
+          ! grep -Eiq 'insert[[:space:]]+into[[:space:]]+public\.sd_(achievement_progress|user_achievements)' "$SQL"
+          ! grep -Eiq 'delete[[:space:]]+from[[:space:]]+public\.sd_(achievement_progress|user_achievements|achievements)' "$SQL"
+          ! grep -Eiq 'wallets[[:space:]]+set[[:space:]]+balance|center-update\.json|site-config\.js|releases/download' "$SQL"
+          echo 'Chapter 3-5 presentation-only/asset/release safety guard PASS'
