@@ -19,11 +19,38 @@ create sequence public.transactions_sync_seq_seq;
 create table public.transactions(
  id uuid primary key default gen_random_uuid(),wallet_id uuid not null references public.wallets(id),user_id uuid not null references auth.users(id),transaction_type text not null,description text not null,amount bigint not null,balance_before bigint not null,balance_after bigint not null,request_id uuid unique,platform text not null,metadata jsonb not null default '{}'::jsonb,created_at timestamptz not null default now(),sync_seq bigint not null default nextval('public.transactions_sync_seq_seq')
 );
-create table public.sd_achievements(code text primary key,name text not null,active boolean not null default true);
+create table public.sd_achievements(
+ id uuid not null default gen_random_uuid() unique,
+ code text primary key,
+ name text not null,
+ title_reward text,
+ active boolean not null default true
+);
 create table public.sd_achievement_progress(
  user_id uuid not null references auth.users(id),achievement_id text not null,current_value numeric not null default 0,unlocked boolean not null default false,unlocked_at timestamptz,source_app text not null default 'unknown',metadata jsonb not null default '{}'::jsonb,updated_at timestamptz not null default now(),constraint sd_achievement_progress_pkey primary key(user_id,achievement_id)
 );
-insert into public.sd_achievements(code,name,active) values('ranking-01','Season 0 1위',true);
+create table public.sd_user_achievements(
+ user_id uuid not null references auth.users(id),
+ achievement_id uuid not null references public.sd_achievements(id),
+ unlocked_at timestamptz not null default now(),
+ primary key(user_id,achievement_id)
+);
+insert into public.sd_achievements(code,name,title_reward,active) values('ranking-01','Season 0 1위','전설',true);
+
+create function private.bridge_sd_achievement_title() returns trigger language plpgsql security definer set search_path='' as $$
+begin
+ if new.unlocked is true then
+   insert into public.sd_user_achievements(user_id,achievement_id,unlocked_at)
+   select new.user_id,a.id,coalesce(new.unlocked_at,new.updated_at,now())
+   from public.sd_achievements a
+   where a.code=new.achievement_id and a.active=true
+   on conflict(user_id,achievement_id) do nothing;
+ end if;
+ return new;
+end $$;
+create trigger trg_sd_achievement_title_bridge
+ after insert or update of unlocked,unlocked_at on public.sd_achievement_progress
+ for each row execute function private.bridge_sd_achievement_title();
 
 create function private.upsert_sd_authoritative_achievement(p_user_id uuid,p_achievement_id text,p_server_value numeric,p_target numeric,p_metadata jsonb default '{}'::jsonb)
 returns void language plpgsql security definer set search_path='' as $$
