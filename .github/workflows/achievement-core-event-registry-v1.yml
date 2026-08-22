@@ -55,6 +55,36 @@ jobs:
       - name: Run producer registry and exactly-once event/stat regression
         working-directory: tests/achievement-core-event
         run: psql -v ON_ERROR_STOP=1 -f registry_event_stat_regression.sql
+      - name: Force two-session concurrent SUM serialization
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 -f tests/achievement-core-event/concurrency_setup.sql
+          rm -f /tmp/chapter33-lock-ready
+          (
+            psql -v ON_ERROR_STOP=1 <<'SQL'
+          begin;
+          select pg_advisory_xact_lock(hashtextextended('44444444-4444-4444-8444-444444444444|sta.test.concurrent-sum',3303));
+          \! touch /tmp/chapter33-lock-ready
+          select pg_sleep(2);
+          select private.apply_sd_achievement_stat_v1(
+            '44444444-4444-4444-8444-444444444444','sta.test.concurrent-sum',5,
+            'chapter33:concurrent:0001','{"worker":1}'::jsonb
+          );
+          commit;
+          SQL
+          ) &
+          worker1=$!
+          for _ in $(seq 1 50); do
+            test -f /tmp/chapter33-lock-ready && break
+            sleep 0.1
+          done
+          test -f /tmp/chapter33-lock-ready
+          psql -v ON_ERROR_STOP=1 -c "select private.apply_sd_achievement_stat_v1('44444444-4444-4444-8444-444444444444','sta.test.concurrent-sum',7,'chapter33:concurrent:0002','{\"worker\":2}'::jsonb);" &
+          worker2=$!
+          wait "$worker1"
+          wait "$worker2"
+          psql -v ON_ERROR_STOP=1 -f tests/achievement-core-event/concurrency_verify.sql
       - name: Verify fail-closed and release/economy side-effect safety
         shell: bash
         run: |
