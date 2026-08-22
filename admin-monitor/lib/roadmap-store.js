@@ -102,11 +102,6 @@ function mergeRoadmaps(localRoadmap, officialRoadmap) {
       mergedChapter.status = officialChapter.status;
       if (officialChapter.label) mergedChapter.label = officialChapter.label;
     }
-    const allComplete = steps.every((step) => step.status === "complete");
-    if (allComplete && officialChapter.status === "complete") {
-      mergedChapter.status = "complete";
-      if (officialChapter.label) mergedChapter.label = officialChapter.label;
-    }
     return mergedChapter;
   });
   for (const localChapter of local.chapters) {
