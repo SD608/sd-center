@@ -2,8 +2,7 @@ begin;
 
 -- Chapter 3-3: common Core achievement event/stat foundation + producer registry.
 -- Dependencies: Chapter 3-1 permanent identity and Chapter 3-2 migration classification.
--- This migration is intentionally additive/shadow-only: it does not cut over any
--- existing producer and does not mutate player achievement progress/earned assets.
+-- This is additive/shadow-only: no existing producer cutover and no player asset mutation.
 
 do $$
 begin
@@ -37,6 +36,7 @@ create table public.sd_achievement_producer_registry (
   validator_key text,
   registry_version text not null default 'chapter-3-3-v1',
   active boolean not null default true,
+  notes text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint sd_achievement_producer_key_format_v1
@@ -72,7 +72,8 @@ create table public.sd_achievement_event_type_registry (
   constraint sd_achievement_event_schema_version_v1
     check (schema_version >= 1),
   constraint sd_achievement_client_event_has_validator_v1
-    check (not client_submission_allowed or validator_key is not null)
+    check (not client_submission_allowed or validator_key is not null),
+  constraint sd_achievement_event_type_producer_unique_v1 unique(event_type,producer_key)
 );
 
 create table public.sd_achievement_stat_registry (
@@ -127,12 +128,8 @@ create table public.sd_achievement_event_ledger (
   event_id text primary key,
   user_id uuid not null
     references public.profiles(id) on update restrict on delete restrict,
-  producer_key text not null
-    references public.sd_achievement_producer_registry(producer_key)
-    on update restrict on delete restrict,
-  event_type text not null
-    references public.sd_achievement_event_type_registry(event_type)
-    on update restrict on delete restrict,
+  producer_key text not null,
+  event_type text not null,
   source_extension_id text,
   submitted_evidence jsonb not null,
   normalized_evidence jsonb not null,
@@ -140,6 +137,14 @@ create table public.sd_achievement_event_ledger (
   schema_version integer not null,
   occurred_at timestamptz not null,
   accepted_at timestamptz not null default now(),
+  constraint sd_achievement_event_producer_fkey_v1
+    foreign key (producer_key)
+    references public.sd_achievement_producer_registry(producer_key)
+    on update restrict on delete restrict,
+  constraint sd_achievement_event_type_producer_fkey_v1
+    foreign key (event_type,producer_key)
+    references public.sd_achievement_event_type_registry(event_type,producer_key)
+    on update restrict on delete restrict,
   constraint sd_achievement_event_id_format_v1
     check (event_id ~ '^[A-Za-z0-9][A-Za-z0-9:._-]{7,159}$'),
   constraint sd_achievement_event_source_extension_format_v1
@@ -209,33 +214,26 @@ revoke all on table public.sd_achievement_core_stats from public, anon, authenti
 revoke all on table public.sd_achievement_stat_event_applications from public, anon, authenticated;
 
 create policy sd_achievement_producer_registry_client_deny_v1
-  on public.sd_achievement_producer_registry for all to anon, authenticated
-  using (false) with check (false);
+  on public.sd_achievement_producer_registry for all to anon, authenticated using (false) with check (false);
 create policy sd_achievement_event_type_registry_client_deny_v1
-  on public.sd_achievement_event_type_registry for all to anon, authenticated
-  using (false) with check (false);
+  on public.sd_achievement_event_type_registry for all to anon, authenticated using (false) with check (false);
 create policy sd_achievement_stat_registry_client_deny_v1
-  on public.sd_achievement_stat_registry for all to anon, authenticated
-  using (false) with check (false);
+  on public.sd_achievement_stat_registry for all to anon, authenticated using (false) with check (false);
 create policy sd_achievement_producer_bindings_client_deny_v1
-  on public.sd_achievement_producer_bindings for all to anon, authenticated
-  using (false) with check (false);
+  on public.sd_achievement_producer_bindings for all to anon, authenticated using (false) with check (false);
 create policy sd_achievement_event_ledger_client_deny_v1
-  on public.sd_achievement_event_ledger for all to anon, authenticated
-  using (false) with check (false);
+  on public.sd_achievement_event_ledger for all to anon, authenticated using (false) with check (false);
 create policy sd_achievement_core_stats_client_deny_v1
-  on public.sd_achievement_core_stats for all to anon, authenticated
-  using (false) with check (false);
+  on public.sd_achievement_core_stats for all to anon, authenticated using (false) with check (false);
 create policy sd_achievement_stat_event_applications_client_deny_v1
-  on public.sd_achievement_stat_event_applications for all to anon, authenticated
-  using (false) with check (false);
+  on public.sd_achievement_stat_event_applications for all to anon, authenticated using (false) with check (false);
 
 -- Registry targets. extension_id is routing metadata, never proof of trust by itself.
 insert into public.sd_achievement_producer_registry
   (producer_key,content_key,extension_id,authority_mode,ingress_mode,event_namespace,validator_key,notes)
-select * from (values
+values
   ('core.wallet','core_wallet',null,'core_state','internal_only','wallet',null,'Core-owned wallet state.'),
-  ('core.gold','core_gold','vault','core_state','internal_only','gold',null,'Core/server-owned gold holding state; Vault is presentation/input surface only.'),
+  ('core.gold','core_gold','vault','core_state','internal_only','gold',null,'Core/server-owned gold holding state; Vault is only a surface.'),
   ('official.logistics','logistics','sd-logistics-center-desktop','server_state','internal_only','logistics',null,'Official logistics server state.'),
   ('official.miner','miner','miner','server_event','internal_only','miner',null,'Official miner accepted server actions.'),
   ('official.mukjjippa','mukjjippa','sd-mukjippa','server_event','internal_only','mukjjippa',null,'Official Mukjjippa server rounds.'),
@@ -246,11 +244,10 @@ select * from (values
   ('official.flea-market','flea_market','sd-flea-market','server_state','internal_only','flea.market',null,'Official Flea Market server-owned marketplace state.'),
   ('core.npc-vault','npc_vault',null,'server_event','internal_only','npcvault',null,'Server-owned NPC vault rounds.'),
   ('core.sdcoin','sdcoin',null,'server_state','internal_only','sdcoin',null,'Server-owned SD Coin state/actions.'),
-  ('core.season','season',null,'season_finalize','internal_only','season',null,'Server-finalized season ranking state.')
-) as v(producer_key,content_key,extension_id,authority_mode,ingress_mode,event_namespace,validator_key,notes);
+  ('core.season','season',null,'season_finalize','internal_only','season',null,'Server-finalized season ranking state.');
 
--- Canonical event namespaces are registered now, but every authenticated submission
--- remains disabled until Chapter 3-4 installs a specific evidence validator.
+-- Canonical event namespaces exist now, but authenticated submission remains disabled
+-- until Chapter 3-4 installs an explicit evidence validator.
 insert into public.sd_achievement_event_type_registry
   (event_type,producer_key,schema_version,client_submission_allowed,validator_key,active,description)
 values
@@ -283,11 +280,11 @@ begin
     raise exception using errcode='P3320', message='ACHIEVEMENT_PRODUCER_BINDING_DELETE_FORBIDDEN';
   end if;
 
-  if tg_op='UPDATE' and (
-    new.achievement_id is distinct from old.achievement_id
-    or new.permanent_code is distinct from old.permanent_code
-  ) then
-    raise exception using errcode='P3321', message='ACHIEVEMENT_PRODUCER_BINDING_IDENTITY_IMMUTABLE';
+  if tg_op='UPDATE' then
+    if new.achievement_id is distinct from old.achievement_id
+       or new.permanent_code is distinct from old.permanent_code then
+      raise exception using errcode='P3321', message='ACHIEVEMENT_PRODUCER_BINDING_IDENTITY_IMMUTABLE';
+    end if;
   end if;
 
   select a.code into v_code from public.sd_achievements a where a.id=new.achievement_id;
@@ -327,42 +324,27 @@ begin
   return new;
 end;
 $$;
-
 revoke all on function private.enforce_sd_achievement_producer_binding_v1() from public, anon, authenticated;
 
 create trigger sd_achievement_producer_binding_guard_v1
 before insert or update or delete on public.sd_achievement_producer_bindings
 for each row execute function private.enforce_sd_achievement_producer_binding_v1();
 
--- Bind every classified permanent identity to the Chapter 3 target producer in shadow/planned mode.
 with producer_map(content_key, producer_key) as (values
-  ('core_wallet','core.wallet'),
-  ('core_gold','core.gold'),
-  ('logistics','official.logistics'),
-  ('miner','official.miner'),
-  ('mukjjippa','official.mukjjippa'),
-  ('slot','official.slot'),
-  ('oddeven','official.oddeven'),
-  ('bitcoin','official.bitcoin'),
-  ('sta','official.sta'),
-  ('flea_market','official.flea-market'),
-  ('npc_vault','core.npc-vault'),
-  ('sdcoin','core.sdcoin'),
-  ('season','core.season')
+  ('core_wallet','core.wallet'),('core_gold','core.gold'),('logistics','official.logistics'),
+  ('miner','official.miner'),('mukjjippa','official.mukjjippa'),('slot','official.slot'),
+  ('oddeven','official.oddeven'),('bitcoin','official.bitcoin'),('sta','official.sta'),
+  ('flea_market','official.flea-market'),('npc_vault','core.npc-vault'),
+  ('sdcoin','core.sdcoin'),('season','core.season')
 )
 insert into public.sd_achievement_producer_bindings(
   achievement_id,permanent_code,producer_key,source_content_key,target_content_key,
   binding_state,evaluation_mode,stat_key,target_value,registry_version,notes
 )
 select c.achievement_id,c.permanent_code,m.producer_key,c.current_content_key,c.target_content_key,
-       case c.disposition
-         when 'move_producer' then 'planned_move'
-         when 'legacy' then 'legacy'
-         else 'shadow'
-       end,
+       case c.disposition when 'move_producer' then 'planned_move' when 'legacy' then 'legacy' else 'shadow' end,
        case when c.disposition='legacy' then 'legacy' else 'adapter' end,
-       null,null,'chapter-3-3-v1',
-       'Chapter 3-3 registry only; no producer cutover until Chapter 3-4.'
+       null,null,'chapter-3-3-v1','Chapter 3-3 registry only; no producer cutover until Chapter 3-4.'
   from public.sd_achievement_migration_classification c
   join producer_map m on m.content_key=c.target_content_key;
 
@@ -389,13 +371,8 @@ begin
     raise exception 'Chapter 3-3 must not activate generic producer bindings before Chapter 3-4';
   end if;
 
-  if exists (
-    select 1 from public.sd_achievement_producer_registry
-     where ingress_mode <> 'internal_only'
-  ) or exists (
-    select 1 from public.sd_achievement_event_type_registry
-     where client_submission_allowed
-  ) then
+  if exists (select 1 from public.sd_achievement_producer_registry where ingress_mode <> 'internal_only')
+     or exists (select 1 from public.sd_achievement_event_type_registry where client_submission_allowed) then
     raise exception 'Chapter 3-3 must remain fail-closed to authenticated event submission';
   end if;
 end $$;
@@ -415,7 +392,6 @@ revoke all on function private.reject_sd_achievement_audit_mutation_v1() from pu
 create trigger sd_achievement_event_ledger_append_only_v1
 before update or delete on public.sd_achievement_event_ledger
 for each row execute function private.reject_sd_achievement_audit_mutation_v1();
-
 create trigger sd_achievement_stat_application_append_only_v1
 before update or delete on public.sd_achievement_stat_event_applications
 for each row execute function private.reject_sd_achievement_audit_mutation_v1();
@@ -444,40 +420,32 @@ begin
   if p_user_id is null or p_stat_key is null or p_event_id is null then
     raise exception using errcode='P3309', message='ACHIEVEMENT_STAT_REQUIRED_FIELD_MISSING';
   end if;
-
   if p_value is null or p_value::text in ('NaN','Infinity','-Infinity') then
     raise exception using errcode='P3310', message='ACHIEVEMENT_STAT_VALUE_INVALID';
   end if;
-
   if jsonb_typeof(v_metadata) <> 'object' or octet_length(v_metadata::text) > 8192 then
     raise exception using errcode='P3310', message='ACHIEVEMENT_STAT_METADATA_INVALID';
   end if;
 
-  select * into v_def
-    from public.sd_achievement_stat_registry s
+  select * into v_def from public.sd_achievement_stat_registry s
    where s.stat_key=p_stat_key and s.active;
   if not found then
     raise exception using errcode='P3309', message='ACHIEVEMENT_STAT_NOT_REGISTERED';
   end if;
-
   if not v_def.allow_negative and p_value < 0 then
     raise exception using errcode='P3310', message='ACHIEVEMENT_STAT_NEGATIVE_VALUE_FORBIDDEN';
   end if;
 
-  select * into v_event
-    from public.sd_achievement_event_ledger e
-   where e.event_id=p_event_id;
+  select * into v_event from public.sd_achievement_event_ledger e where e.event_id=p_event_id;
   if not found then
     raise exception using errcode='P3311', message='ACHIEVEMENT_STAT_EVENT_NOT_FOUND';
   end if;
-
-  if v_event.user_id is distinct from p_user_id
-     or v_event.producer_key is distinct from v_def.producer_key then
+  if v_event.user_id is distinct from p_user_id or v_event.producer_key is distinct from v_def.producer_key then
     raise exception using errcode='P3311', message='ACHIEVEMENT_STAT_EVENT_PRODUCER_MISMATCH';
   end if;
 
-  -- Serialize every update for one user/stat key. This protects SUM from concurrent
-  -- double increments and makes exact event replay deterministic.
+  -- Serialize all events affecting one user's one stat. SUM is concurrency-safe and
+  -- event/stat replay is exactly once.
   perform pg_advisory_xact_lock(hashtextextended(p_user_id::text || '|' || p_stat_key, 3303));
 
   select * into v_application
@@ -493,63 +461,48 @@ begin
   end if;
 
   v_input:=case when v_def.aggregation_mode='flag' then case when p_value>0 then 1 else 0 end else p_value end;
-
-  select * into v_existing
-    from public.sd_achievement_core_stats s
-   where s.user_id=p_user_id and s.stat_key=p_stat_key
-   for update;
+  select * into v_existing from public.sd_achievement_core_stats s
+   where s.user_id=p_user_id and s.stat_key=p_stat_key for update;
 
   if not found then
     v_result:=v_input;
     insert into public.sd_achievement_core_stats(
       user_id,stat_key,value,as_of,source_event_id,version,metadata,updated_at
-    ) values(
-      p_user_id,p_stat_key,v_result,v_event.occurred_at,p_event_id,1,v_metadata,now()
-    );
-  else
-    if v_def.aggregation_mode='sum' then
-      v_result:=v_existing.value + v_input;
+    ) values(p_user_id,p_stat_key,v_result,v_event.occurred_at,p_event_id,1,v_metadata,now());
+  elsif v_def.aggregation_mode='sum' then
+    v_result:=v_existing.value+v_input;
+    update public.sd_achievement_core_stats
+       set value=v_result,as_of=greatest(v_existing.as_of,v_event.occurred_at),
+           source_event_id=p_event_id,version=v_existing.version+1,
+           metadata=coalesce(v_existing.metadata,'{}'::jsonb)||v_metadata,updated_at=now()
+     where user_id=p_user_id and stat_key=p_stat_key;
+  elsif v_def.aggregation_mode in ('max','flag') then
+    v_result:=greatest(v_existing.value,v_input);
+    update public.sd_achievement_core_stats
+       set value=v_result,
+           as_of=case when v_input>=v_existing.value then v_event.occurred_at else v_existing.as_of end,
+           source_event_id=case when v_input>=v_existing.value then p_event_id else v_existing.source_event_id end,
+           version=v_existing.version+1,
+           metadata=coalesce(v_existing.metadata,'{}'::jsonb)||v_metadata,updated_at=now()
+     where user_id=p_user_id and stat_key=p_stat_key;
+  elsif v_def.aggregation_mode='latest' then
+    if v_event.occurred_at>=v_existing.as_of then
+      v_result:=v_input;
       update public.sd_achievement_core_stats
-         set value=v_result,
-             as_of=greatest(v_existing.as_of,v_event.occurred_at),
-             source_event_id=p_event_id,
+         set value=v_result,as_of=v_event.occurred_at,source_event_id=p_event_id,
              version=v_existing.version+1,
-             metadata=coalesce(v_existing.metadata,'{}'::jsonb) || v_metadata,
-             updated_at=now()
+             metadata=coalesce(v_existing.metadata,'{}'::jsonb)||v_metadata,updated_at=now()
        where user_id=p_user_id and stat_key=p_stat_key;
-    elsif v_def.aggregation_mode='max' or v_def.aggregation_mode='flag' then
-      v_result:=greatest(v_existing.value,v_input);
-      update public.sd_achievement_core_stats
-         set value=v_result,
-             as_of=case when v_input>=v_existing.value then v_event.occurred_at else v_existing.as_of end,
-             source_event_id=case when v_input>=v_existing.value then p_event_id else v_existing.source_event_id end,
-             version=v_existing.version+1,
-             metadata=coalesce(v_existing.metadata,'{}'::jsonb) || v_metadata,
-             updated_at=now()
-       where user_id=p_user_id and stat_key=p_stat_key;
-    elsif v_def.aggregation_mode='latest' then
-      if v_event.occurred_at >= v_existing.as_of then
-        v_result:=v_input;
-        update public.sd_achievement_core_stats
-           set value=v_result,
-               as_of=v_event.occurred_at,
-               source_event_id=p_event_id,
-               version=v_existing.version+1,
-               metadata=coalesce(v_existing.metadata,'{}'::jsonb) || v_metadata,
-               updated_at=now()
-         where user_id=p_user_id and stat_key=p_stat_key;
-      else
-        v_result:=v_existing.value;
-      end if;
     else
-      raise exception using errcode='P3310', message='ACHIEVEMENT_STAT_AGGREGATION_INVALID';
+      v_result:=v_existing.value;
     end if;
+  else
+    raise exception using errcode='P3310', message='ACHIEVEMENT_STAT_AGGREGATION_INVALID';
   end if;
 
   insert into public.sd_achievement_stat_event_applications(
     event_id,stat_key,user_id,input_value,resulting_value,metadata,applied_at
   ) values(p_event_id,p_stat_key,p_user_id,p_value,v_result,v_metadata,now());
-
   return v_result;
 end;
 $$;
@@ -582,30 +535,25 @@ declare
   v_stat_metadata jsonb;
   v_inserted integer:=0;
 begin
-  if p_user_id is null then
-    raise exception using errcode='P1001', message='AUTH_REQUIRED';
-  end if;
-
+  if p_user_id is null then raise exception using errcode='P1001', message='AUTH_REQUIRED'; end if;
   if p_event_id is null or p_event_id !~ '^[A-Za-z0-9][A-Za-z0-9:._-]{7,159}$' then
     raise exception using errcode='P3302', message='ACHIEVEMENT_EVENT_ID_INVALID';
   end if;
-
   if jsonb_typeof(coalesce(p_submitted_evidence,'null'::jsonb)) <> 'object'
      or jsonb_typeof(coalesce(p_normalized_evidence,'null'::jsonb)) <> 'object'
      or octet_length(coalesce(p_submitted_evidence,'{}'::jsonb)::text) > 16384
      or octet_length(coalesce(p_normalized_evidence,'{}'::jsonb)::text) > 16384 then
     raise exception using errcode='P3306', message='ACHIEVEMENT_EVENT_EVIDENCE_INVALID';
   end if;
-
-  if jsonb_typeof(coalesce(p_stats,'null'::jsonb)) <> 'array'
-     or jsonb_array_length(coalesce(p_stats,'[]'::jsonb)) > 64 then
+  if jsonb_typeof(coalesce(p_stats,'null'::jsonb)) <> 'array' then
+    raise exception using errcode='P3315', message='ACHIEVEMENT_EVENT_STATS_INVALID';
+  end if;
+  if jsonb_array_length(p_stats)>64 then
     raise exception using errcode='P3315', message='ACHIEVEMENT_EVENT_STATS_INVALID';
   end if;
 
   -- Accepted events remain replayable even if a producer/event type is disabled later.
-  select * into v_existing
-    from public.sd_achievement_event_ledger e
-   where e.event_id=p_event_id;
+  select * into v_existing from public.sd_achievement_event_ledger e where e.event_id=p_event_id;
   if found then
     if v_existing.user_id is distinct from p_user_id
        or v_existing.producer_key is distinct from p_producer_key
@@ -617,20 +565,14 @@ begin
     return jsonb_build_object('accepted',true,'duplicate',true,'event_id',p_event_id);
   end if;
 
-  select * into v_producer
-    from public.sd_achievement_producer_registry p
+  select * into v_producer from public.sd_achievement_producer_registry p
    where p.producer_key=p_producer_key and p.active;
-  if not found then
-    raise exception using errcode='P3303', message='ACHIEVEMENT_PRODUCER_NOT_ACTIVE';
-  end if;
-
-  select * into v_event_type
-    from public.sd_achievement_event_type_registry e
+  if not found then raise exception using errcode='P3303', message='ACHIEVEMENT_PRODUCER_NOT_ACTIVE'; end if;
+  select * into v_event_type from public.sd_achievement_event_type_registry e
    where e.event_type=p_event_type and e.active;
   if not found or v_event_type.producer_key is distinct from p_producer_key then
     raise exception using errcode='P3304', message='ACHIEVEMENT_EVENT_TYPE_NOT_REGISTERED_FOR_PRODUCER';
   end if;
-
   if v_producer.extension_id is distinct from p_source_extension_id then
     raise exception using errcode='P3305', message='ACHIEVEMENT_EVENT_SOURCE_EXTENSION_MISMATCH';
   end if;
@@ -660,12 +602,9 @@ begin
 
   for v_stat in select value from jsonb_array_elements(p_stats)
   loop
-    if jsonb_typeof(v_stat) <> 'object'
-       or coalesce(v_stat->>'stat_key','') = ''
-       or not (v_stat ? 'value') then
+    if jsonb_typeof(v_stat)<>'object' or coalesce(v_stat->>'stat_key','')='' or not (v_stat ? 'value') then
       raise exception using errcode='P3315', message='ACHIEVEMENT_EVENT_STAT_ITEM_INVALID';
     end if;
-
     v_stat_key:=v_stat->>'stat_key';
     begin
       v_stat_value:=(v_stat->>'value')::numeric;
@@ -673,9 +612,7 @@ begin
       raise exception using errcode='P3315', message='ACHIEVEMENT_EVENT_STAT_VALUE_INVALID';
     end;
     v_stat_metadata:=coalesce(v_stat->'metadata','{}'::jsonb);
-    perform private.apply_sd_achievement_stat_v1(
-      p_user_id,v_stat_key,v_stat_value,p_event_id,v_stat_metadata
-    );
+    perform private.apply_sd_achievement_stat_v1(p_user_id,v_stat_key,v_stat_value,p_event_id,v_stat_metadata);
   end loop;
 
   return jsonb_build_object('accepted',true,'duplicate',false,'event_id',p_event_id);
@@ -684,15 +621,10 @@ $$;
 revoke all on function private.accept_sd_achievement_event_v1(uuid,text,text,text,text,jsonb,jsonb,jsonb,text,timestamptz)
   from public, anon, authenticated;
 
--- Chapter 3-4 will replace this dispatcher with explicit validator_key cases.
--- Never dynamically execute a function name supplied by a client/registry row.
+-- Chapter 3-4 replaces this dispatcher with explicit validator_key cases.
+-- No dynamic execution of a function name from client/registry input is allowed.
 create or replace function private.validate_sd_achievement_event_v1(
-  p_validator_key text,
-  p_user_id uuid,
-  p_extension_id text,
-  p_event_type text,
-  p_event_id text,
-  p_evidence jsonb
+  p_validator_key text,p_user_id uuid,p_extension_id text,p_event_type text,p_event_id text,p_evidence jsonb
 )
 returns jsonb
 language plpgsql
@@ -707,10 +639,7 @@ revoke all on function private.validate_sd_achievement_event_v1(text,uuid,text,t
   from public, anon, authenticated;
 
 create or replace function public.submit_sd_achievement_event_v1(
-  p_extension_id text,
-  p_event_type text,
-  p_event_id text,
-  p_evidence jsonb
+  p_extension_id text,p_event_type text,p_event_id text,p_evidence jsonb
 )
 returns jsonb
 language plpgsql
@@ -726,24 +655,17 @@ declare
   v_normalized jsonb;
   v_stats jsonb;
 begin
-  if v_user_id is null then
-    raise exception using errcode='P1001', message='AUTH_REQUIRED';
-  end if;
-
+  if v_user_id is null then raise exception using errcode='P1001', message='AUTH_REQUIRED'; end if;
   if p_event_id is null or p_event_id !~ '^[A-Za-z0-9][A-Za-z0-9:._-]{7,159}$' then
     raise exception using errcode='P3302', message='ACHIEVEMENT_EVENT_ID_INVALID';
   end if;
-
-  if jsonb_typeof(coalesce(p_evidence,'null'::jsonb)) <> 'object'
-     or octet_length(coalesce(p_evidence,'{}'::jsonb)::text) > 16384 then
+  if jsonb_typeof(coalesce(p_evidence,'null'::jsonb))<>'object'
+     or octet_length(coalesce(p_evidence,'{}'::jsonb)::text)>16384 then
     raise exception using errcode='P3306', message='ACHIEVEMENT_EVENT_EVIDENCE_INVALID';
   end if;
 
-  -- Lost-response retry of a previously accepted exact request is duplicate-only,
-  -- even if the producer is later disabled or its validator changes.
-  select * into v_existing
-    from public.sd_achievement_event_ledger e
-   where e.event_id=p_event_id;
+  -- Lost-response retry of an accepted exact request is duplicate-only even after disable/change.
+  select * into v_existing from public.sd_achievement_event_ledger e where e.event_id=p_event_id;
   if found then
     if v_existing.user_id is distinct from v_user_id
        or v_existing.event_type is distinct from p_event_type
@@ -754,31 +676,20 @@ begin
     return jsonb_build_object('accepted',true,'duplicate',true,'event_id',p_event_id);
   end if;
 
-  select * into v_event_type
-    from public.sd_achievement_event_type_registry e
+  select * into v_event_type from public.sd_achievement_event_type_registry e
    where e.event_type=p_event_type and e.active;
-  if not found then
-    raise exception using errcode='P3304', message='ACHIEVEMENT_EVENT_TYPE_NOT_ACTIVE';
-  end if;
-
-  select * into v_producer
-    from public.sd_achievement_producer_registry p
+  if not found then raise exception using errcode='P3304', message='ACHIEVEMENT_EVENT_TYPE_NOT_ACTIVE'; end if;
+  select * into v_producer from public.sd_achievement_producer_registry p
    where p.producer_key=v_event_type.producer_key and p.active;
-  if not found then
-    raise exception using errcode='P3303', message='ACHIEVEMENT_PRODUCER_NOT_ACTIVE';
-  end if;
+  if not found then raise exception using errcode='P3303', message='ACHIEVEMENT_PRODUCER_NOT_ACTIVE'; end if;
 
-  if not v_event_type.client_submission_allowed
-     or v_producer.ingress_mode <> 'authenticated_validated' then
+  if not v_event_type.client_submission_allowed or v_producer.ingress_mode<>'authenticated_validated' then
     raise exception using errcode='P3307', message='ACHIEVEMENT_EVENT_CLIENT_SUBMISSION_DISABLED';
   end if;
-
   if v_producer.extension_id is distinct from p_extension_id then
     raise exception using errcode='P3305', message='ACHIEVEMENT_EVENT_SOURCE_EXTENSION_MISMATCH';
   end if;
-
-  if v_event_type.validator_key is null
-     or v_producer.validator_key is null
+  if v_event_type.validator_key is null or v_producer.validator_key is null
      or v_event_type.validator_key is distinct from v_producer.validator_key then
     raise exception using errcode='P3312', message='ACHIEVEMENT_EVENT_VALIDATOR_NOT_REGISTERED';
   end if;
@@ -786,15 +697,20 @@ begin
   v_validation:=private.validate_sd_achievement_event_v1(
     v_event_type.validator_key,v_user_id,p_extension_id,p_event_type,p_event_id,p_evidence
   );
-
-  if jsonb_typeof(coalesce(v_validation,'null'::jsonb)) <> 'object'
-     or coalesce((v_validation->>'accepted')::boolean,false) is not true then
-    raise exception using errcode='P3313', message='ACHIEVEMENT_EVENT_VALIDATOR_REJECTED';
+  if jsonb_typeof(coalesce(v_validation,'null'::jsonb))<>'object' then
+    raise exception using errcode='P3314', message='ACHIEVEMENT_EVENT_VALIDATOR_OUTPUT_INVALID';
   end if;
+  begin
+    if coalesce((v_validation->>'accepted')::boolean,false) is not true then
+      raise exception using errcode='P3313', message='ACHIEVEMENT_EVENT_VALIDATOR_REJECTED';
+    end if;
+  exception when invalid_text_representation then
+    raise exception using errcode='P3314', message='ACHIEVEMENT_EVENT_VALIDATOR_OUTPUT_INVALID';
+  end;
 
   v_normalized:=coalesce(v_validation->'normalized_evidence','{}'::jsonb);
   v_stats:=coalesce(v_validation->'stats','[]'::jsonb);
-  if jsonb_typeof(v_normalized) <> 'object' or jsonb_typeof(v_stats) <> 'array' then
+  if jsonb_typeof(v_normalized)<>'object' or jsonb_typeof(v_stats)<>'array' then
     raise exception using errcode='P3314', message='ACHIEVEMENT_EVENT_VALIDATOR_OUTPUT_INVALID';
   end if;
 
@@ -804,7 +720,6 @@ begin
   );
 end;
 $$;
-
 revoke all on function public.submit_sd_achievement_event_v1(text,text,text,jsonb) from public, anon;
 grant execute on function public.submit_sd_achievement_event_v1(text,text,text,jsonb) to authenticated;
 
