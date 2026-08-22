@@ -8,6 +8,8 @@ const path = require("node:path");
 const rendererDir = path.join(__dirname, "..", "renderer");
 const hookPath = path.join(rendererDir, "post-login-roadmap-sync.js");
 const indexPath = path.join(rendererDir, "index.html");
+const stylesPath = path.join(rendererDir, "styles.css");
+const appPath = path.join(rendererDir, "app.js");
 
 test("login success triggers exactly one authenticated roadmap sync hook", () => {
   const listeners = new Map();
@@ -57,4 +59,12 @@ test("post-login roadmap hook is loaded after the main renderer script", () => {
   const hookIndex = html.indexOf('<script src="post-login-roadmap-sync.js"></script>');
   assert.ok(appIndex >= 0);
   assert.ok(hookIndex > appIndex, "loadRoadmap 전역 함수가 정의된 뒤 hook이 로드되어야 함");
+});
+
+test("login and app views obey hidden after authentication state changes", () => {
+  const css = fs.readFileSync(stylesPath, "utf8");
+  const app = fs.readFileSync(appPath, "utf8");
+  assert.match(css, /\.login-view\[hidden\],\.app-view\[hidden\]\{display:none!important\}/, "author CSS가 hidden 속성을 덮어쓰지 못하게 해야 함");
+  assert.match(app, /\$\("loginView"\)\.hidden=true;\$\("appView"\)\.hidden=false;/, "로그인 성공 시 로그인 화면을 숨기고 앱 화면을 표시해야 함");
+  assert.match(app, /\$\("appView"\)\.hidden=true;\$\("loginView"\)\.hidden=false;/, "로그아웃 시 앱 화면을 숨기고 로그인 화면을 다시 표시해야 함");
 });
