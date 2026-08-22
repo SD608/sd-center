@@ -93,6 +93,44 @@ test("old 2-8 local state advances to official completion without resetting unre
   }
 });
 
+test("chapter-only official next state advances even when no subchapter changes", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sd-roadmap-chapter-next-"));
+  try {
+    const store = new RoadmapStore({ userDataPath: dir, seedPath: seed, livePath: live });
+    store.ensure();
+    const oldLocal = loadSeed();
+    const chapter3Before = oldLocal.chapters.find((chapter) => chapter.id === "3");
+    assert.equal(chapter3Before.status, "pending");
+    fs.writeFileSync(store.filePath, JSON.stringify(oldLocal), "utf8");
+    const result = store.read();
+    const chapter3 = result.roadmap.chapters.find((chapter) => chapter.id === "3");
+    assert.equal(chapter3.status, "next");
+    assert.equal(chapter3.label, "다음 단계");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("chapter completion advances even when local subchapters are already complete", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sd-roadmap-chapter-complete-"));
+  try {
+    const store = new RoadmapStore({ userDataPath: dir, seedPath: seed, livePath: live });
+    store.ensure();
+    const oldLocal = loadSeed();
+    findStep(oldLocal, "2-8").status = "complete";
+    const chapter2Before = oldLocal.chapters.find((chapter) => chapter.id === "2");
+    assert.notEqual(chapter2Before.status, "complete");
+    fs.writeFileSync(store.filePath, JSON.stringify(oldLocal), "utf8");
+    const result = store.read();
+    const chapter2 = result.roadmap.chapters.find((chapter) => chapter.id === "2");
+    assert.equal(chapter2.status, "complete");
+    assert.equal(chapter2.label, "완료 / 공식 Release");
+    assert.equal(result.sync.updated, true);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("local completion is never downgraded by an older official pending state", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "sd-roadmap-no-downgrade-"));
   try {
