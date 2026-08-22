@@ -1,33 +1,38 @@
-# SD 사용자 현황
+# SD 관리자 도구
 
-SD종합센터와 분리된 관리자 전용 Windows 운영 도구입니다.
+기존 `SD 사용자 현황` 관리자 앱과 로드맵 뷰어를 한 Electron 앱으로 통합한 운영 도구입니다.
 
-## 제공 기능
-- 전체 사용자 온라인/오프라인 현황
-- 사용자별 실행 중 앱/확장팩 표시
-- 3개 초과 실행 앱은 `+N`으로 접고 클릭 시 전체 펼침
-- 동일 확장팩 다중 인스턴스는 `×N` 표시
-- 사용자 상세, 계좌번호, 잔액, 최근 거래 조회
-- 관리자 입금/출금
-- Presence heartbeat 30초, 90초 이상 미수신 시 오프라인 판정
+## 로드맵 갱신 원리
 
-## 경제 안전성
-앱은 `wallets.balance`를 직접 수정하지 않습니다. `sd_admin_v1_adjust_wallet`만 호출하며 서버에서 SD Core의 `apply_server_wallet_delta_impl`로 전달됩니다.
+로드맵 새로고침은 앱 실행파일을 업데이트하는 기능이 아닙니다.
 
-입출금 요청은 UUID `request_id`를 사용합니다. 요청 전 로컬 `userData/pending-wallet-adjustment.json`에 원자적으로 기록하고, 응답 유실/5xx/강제 종료 후에도 같은 ID를 재사용합니다. 성공 또는 명확한 실패가 확인되기 전에는 다른 입출금 요청으로 교체하지 않습니다.
+1. 앱에 포함된 동기화 엔진이 공식 live JSON을 요청합니다.
+2. 원격 데이터가 없거나 실패하면 마지막 정상 캐시, 그 다음 패키지 내 live JSON을 사용합니다.
+3. 공식 상태를 기존 `userData/roadmap.json`에 병합합니다.
+4. 세부 단계와 챕터 상태는 기존 사용자 진행을 뒤로 되돌리지 않는 방향으로만 승격합니다.
+5. 병합된 로컬 데이터를 다시 화면에 렌더링해 진행률을 계산합니다.
 
-관리 API는 `sd_admin_v1_*` 규격으로 고정해 Core 내부 구조가 바뀌어도 어댑터 계층만 수정할 수 있도록 분리했습니다.
+공식 상태 소스는 `data/roadmap-live` 브랜치의 `admin-monitor/lib/roadmap-live.json`입니다. 허용된 HTTPS raw URL 이외의 주소는 사용하지 않습니다.
 
-## 보안
-- Electron `contextIsolation`, sandbox 사용
-- renderer의 Node 및 네트워크 접근 차단
-- 브라우저 권한/새 창/외부 이동 차단
-- 서비스 역할 키 사용 금지, publishable key만 사용
-- 관리자 권한은 서버 `profiles.role/status`에서 매 요청 검증
-- Presence 테이블 직접 접근 권한 없음
-- 내부 SQL/PostgREST 오류 원문을 UI에 노출하지 않음
+따라서 단순한 로드맵 진행 상태 변경은 앱 재설치 없이 live JSON revision을 올린 뒤 새로고침하면 반영됩니다. 반대로 동기화 엔진 자체의 코드 버그는 원격 JSON으로 수정할 수 없으므로 새 앱 빌드가 필요합니다.
 
-## 검사
-`npm run check`, `npm test`, `npm run test:bug`, `npm run test:error`, `npm run build:win`
+## 안전 동작
 
-실제 운영 DB migration과 홈페이지 변경은 Release Gate에 따라 별도 적용합니다. 이 브랜치의 존재나 CI 빌드 성공은 운영 배포 완료를 의미하지 않습니다.
+- 기존 `userData/roadmap.json`을 자동 초기화하지 않습니다.
+- 로컬 완료 상태를 공식 과거 상태가 다시 대기/진행중으로 되돌리지 않습니다.
+- 상위 챕터 상태도 세부 단계 변화와 독립적으로 안전하게 앞으로 승격합니다.
+- 마지막 정상 원격 상태를 `roadmap-live-cache.json`에 보관해 오프라인에서도 사용합니다.
+- 원격 JSON은 schema, revision, ID, status, 크기를 검증합니다.
+- 잘못된 로컬 데이터는 덮어쓰지 않고 오류로 중단합니다.
+
+## 접속 현황
+
+- 관리자 인증 후 사용자 접속 현황 조회
+- 여러 실행 앱/확장팩 `+N` 펼침
+- 사용자 상세 및 거래내역
+- 관리자 입금/출금은 Core server ledger 검증 경로만 사용
+- 미확정 금액 조정 요청은 동일 request ID로 재시도해 중복 반영을 방지
+
+## 빌드/검증 구분
+
+GitHub Actions의 Windows process smoke와 NSIS 생성 성공은 실제 사용자 Windows 환경 검증과 다릅니다. 실제 배포 전에는 신규 설치, 기존 버전 위 업데이트, 재설치, 완전 종료 후 재실행, 재부팅, 오프라인 복구, 기존 userData, 100/125/150% UI 확인이 별도로 필요합니다.
