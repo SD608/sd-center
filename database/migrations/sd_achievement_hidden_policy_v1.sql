@@ -1,3 +1,5 @@
+begin;
+
 -- Chapter 3-5: canonical hidden-achievement presentation policy.
 -- Acquisition authority remains server/Core-owned; this migration changes only hidden presentation metadata.
 
@@ -77,3 +79,5 @@ end $$;
 
 comment on column public.sd_achievements.hidden is
   'Presentation-only hidden flag. Locked hidden achievements mask name/condition in user UI; server/Core acquisition authority is unchanged.';
+
+commit;
