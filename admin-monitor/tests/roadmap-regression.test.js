@@ -100,7 +100,8 @@ test("chapter-only official next state advances even when no subchapter changes"
     store.ensure();
     const oldLocal = loadSeed();
     const chapter3Before = oldLocal.chapters.find((chapter) => chapter.id === "3");
-    assert.equal(chapter3Before.status, "pending");
+    chapter3Before.status = "pending";
+    chapter3Before.label = "대기";
     fs.writeFileSync(store.filePath, JSON.stringify(oldLocal), "utf8");
     const result = store.read();
     const chapter3 = result.roadmap.chapters.find((chapter) => chapter.id === "3");
