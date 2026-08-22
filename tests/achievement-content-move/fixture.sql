@@ -106,3 +106,14 @@ insert into public.sd_user_achievements(user_id,achievement_id,unlocked_at)
 select 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',id,'2026-08-19T09:08:07Z'::timestamptz
   from public.sd_achievements
  where code='flea-03';
+
+-- Persistent CI-only snapshots survive the separate psql process that applies the
+-- migration. The regression drops them after exact comparison.
+create table public.chapter34_before_catalog as
+select id,code,name,description,title_reward,sort_order,active,hidden,
+       lineage_root_id,supersedes_achievement_id
+  from public.sd_achievements;
+
+create table public.chapter34_before_earned as
+select user_id,achievement_id,unlocked_at
+  from public.sd_user_achievements;
