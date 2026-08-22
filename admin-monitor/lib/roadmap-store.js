@@ -6,6 +6,7 @@ const path = require("node:path");
 const STEP_STATES = new Set(["pending", "in_progress", "complete"]);
 const CHAPTER_STATES = new Set(["pending", "next", "in_progress", "complete"]);
 const STEP_RANK = Object.freeze({ pending: 0, in_progress: 1, complete: 2 });
+const CHAPTER_RANK = Object.freeze({ pending: 0, next: 1, in_progress: 2, complete: 3 });
 const ALLOWED_REMOTE_URL = "https://raw.githubusercontent.com/SD608/sd-center/data/roadmap-live/admin-monitor/lib/roadmap-live.json";
 const MAX_REMOTE_BYTES = 64 * 1024;
 
@@ -86,32 +87,25 @@ function mergeRoadmaps(localRoadmap, officialRoadmap) {
     const localChapter = localChapters.get(String(officialChapter.id));
     if (!localChapter) return clone(officialChapter);
     const localSteps = new Map(localChapter.steps.map((step) => [String(step.id), step]));
-    let officialAdvanced = false;
     const steps = officialChapter.steps.map((officialStep) => {
       const localStep = localSteps.get(String(officialStep.id));
-      if (!localStep) {
-        officialAdvanced = true;
-        return clone(officialStep);
-      }
+      if (!localStep) return clone(officialStep);
       const localRank = STEP_RANK[localStep.status];
       const officialRank = STEP_RANK[officialStep.status];
       const status = officialRank > localRank ? officialStep.status : localStep.status;
-      if (officialRank > localRank) officialAdvanced = true;
       return { ...officialStep, ...localStep, status };
     });
     const mergedChapter = { ...officialChapter, ...localChapter, steps };
-    if (officialAdvanced) {
-      const allComplete = steps.every((step) => step.status === "complete");
-      if (allComplete && officialChapter.status === "complete") {
-        mergedChapter.status = "complete";
-        if (officialChapter.label) mergedChapter.label = officialChapter.label;
-      } else if (officialChapter.status === "in_progress") {
-        mergedChapter.status = "in_progress";
-        if (officialChapter.label) mergedChapter.label = officialChapter.label;
-      } else if (officialChapter.status === "next" && mergedChapter.status === "pending") {
-        mergedChapter.status = "next";
-        if (officialChapter.label) mergedChapter.label = officialChapter.label;
-      }
+    const localChapterRank = CHAPTER_RANK[localChapter.status] ?? 0;
+    const officialChapterRank = CHAPTER_RANK[officialChapter.status] ?? 0;
+    if (officialChapterRank > localChapterRank) {
+      mergedChapter.status = officialChapter.status;
+      if (officialChapter.label) mergedChapter.label = officialChapter.label;
+    }
+    const allComplete = steps.every((step) => step.status === "complete");
+    if (allComplete && officialChapter.status === "complete") {
+      mergedChapter.status = "complete";
+      if (officialChapter.label) mergedChapter.label = officialChapter.label;
     }
     return mergedChapter;
   });
