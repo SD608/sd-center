@@ -4,15 +4,19 @@ on:
   push:
     branches: [feat/achievement-unlock-overlay-v1-20260822]
     paths:
+      - 'assets/audio/achievement-unlock-13.mp3'
       - 'preview/v024-core/sdlink-achievement-overlay.js'
       - 'tools/achievement-overlay-main-patch.js'
+      - 'tools/achievement-overlay-sound-v2.js'
       - 'tools/patch-achievement-unlock-overlay-v1.js'
       - 'tools/test-achievement-unlock-overlay-v1.js'
       - '.github/workflows/achievement-unlock-overlay-v1.yml'
   pull_request:
     paths:
+      - 'assets/audio/achievement-unlock-13.mp3'
       - 'preview/v024-core/sdlink-achievement-overlay.js'
       - 'tools/achievement-overlay-main-patch.js'
+      - 'tools/achievement-overlay-sound-v2.js'
       - 'tools/patch-achievement-unlock-overlay-v1.js'
       - 'tools/test-achievement-unlock-overlay-v1.js'
       - '.github/workflows/achievement-unlock-overlay-v1.yml'
@@ -34,6 +38,7 @@ jobs:
         run: |
           node --check preview/v024-core/sdlink-achievement-overlay.js
           node --check tools/achievement-overlay-main-patch.js
+          node --check tools/achievement-overlay-sound-v2.js
           node --check tools/patch-achievement-unlock-overlay-v1.js
           node --check tools/test-achievement-unlock-overlay-v1.js
       - name: Overlay authority and dedupe regression

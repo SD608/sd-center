@@ -1,11 +1,14 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const {
   DEFAULT_MP3_PATH,
+  EXPECTED_MP3_BYTES,
+  EXPECTED_MP3_SHA256,
   MIN_MP3_BYTES,
   hasMp3Signature,
   loadAchievementChimeMp3,
@@ -16,6 +19,8 @@ assert.equal(path.basename(DEFAULT_MP3_PATH), "achievement-unlock-13.mp3");
 assert.equal(fs.existsSync(DEFAULT_MP3_PATH), true, "reviewed 13.mp3 asset must exist");
 const mp3 = loadAchievementChimeMp3();
 assert.ok(mp3.length >= MIN_MP3_BYTES, "reviewed 13.mp3 must not be a placeholder");
+assert.equal(mp3.length, EXPECTED_MP3_BYTES, "repository MP3 byte size must equal the reviewed 13.mp3");
+assert.equal(crypto.createHash("sha256").update(mp3).digest("hex"), EXPECTED_MP3_SHA256, "repository MP3 SHA-256 must equal the reviewed 13.mp3");
 assert.equal(hasMp3Signature(mp3), true, "reviewed sound asset must look like MP3 data");
 assert.notEqual(mp3.toString("utf8"), "TEMP", "TEMP placeholder must never pass the release gate");
 
@@ -35,6 +40,9 @@ new vm.Script(patched, { filename: "sdlink-achievement-overlay-polished.js" });
 
 const dataMatch = patched.match(/const ACHIEVEMENT_CHIME_DATA_URL = "data:audio\/mpeg;base64,([A-Za-z0-9+/=]+)";/);
 assert.ok(dataMatch, "embedded reviewed MP3 data URL missing");
-assert.deepEqual(Buffer.from(dataMatch[1], "base64"), mp3, "runtime sound must exactly equal the reviewed 13.mp3 bytes");
+const embedded = Buffer.from(dataMatch[1], "base64");
+assert.deepEqual(embedded, mp3, "runtime sound must exactly equal the reviewed repository 13.mp3 bytes");
+assert.equal(embedded.length, EXPECTED_MP3_BYTES, "embedded runtime MP3 size must remain exact");
+assert.equal(crypto.createHash("sha256").update(embedded).digest("hex"), EXPECTED_MP3_SHA256, "embedded runtime MP3 SHA-256 must remain exact");
 
 console.log("Chapter 3-7 reviewed achievement MP3 integrity regression PASS");

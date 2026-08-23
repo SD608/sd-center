@@ -4,12 +4,14 @@ on:
   push:
     branches: [feat/achievement-unlock-overlay-v1-20260822]
     paths:
+      - 'assets/audio/achievement-unlock-13.mp3'
       - 'tools/achievement-overlay-sound-v2.js'
       - 'tools/test-achievement-overlay-sound-v2.js'
       - 'tools/patch-achievement-unlock-overlay-v1.js'
       - '.github/workflows/achievement-overlay-sound-v2.yml'
   pull_request:
     paths:
+      - 'assets/audio/achievement-unlock-13.mp3'
       - 'tools/achievement-overlay-sound-v2.js'
       - 'tools/test-achievement-overlay-sound-v2.js'
       - 'tools/patch-achievement-unlock-overlay-v1.js'
@@ -41,6 +43,7 @@ jobs:
         run: |
           $sound = Get-Content tools/achievement-overlay-sound-v2.js -Raw
           if ($sound -match 'child_process|powershell|cmd\.exe|Invoke-WebRequest|fetch\(') { throw 'Achievement sound must remain process-free and network-free' }
+          if ($sound -notmatch '71889' -or $sound -notmatch '33b200c45be66dfecd8130e94b8942b34720abe8fdffb36981aa18286f78237a') { throw 'Reviewed 13.mp3 exact size/SHA pin missing' }
           $patch = Get-Content tools/patch-achievement-unlock-overlay-v1.js -Raw
           if ($patch -match 'center-update.json|site-config.js|gh release|git push') { throw 'Sound polish must not publish or modify release metadata' }
           Write-Host 'Chapter 3-7 custom chime release boundary PASS'

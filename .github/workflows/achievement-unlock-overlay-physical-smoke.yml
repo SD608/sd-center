@@ -4,15 +4,21 @@ on:
   push:
     branches: [feat/achievement-unlock-overlay-v1-20260822]
     paths:
+      - 'assets/audio/achievement-unlock-13.mp3'
       - 'preview/v024-core/sdlink-achievement-overlay.js'
       - 'tools/achievement-overlay-main-patch.js'
+      - 'tools/achievement-overlay-sound-v2.js'
+      - 'tools/test-achievement-overlay-sound-v2.js'
       - 'tools/patch-achievement-unlock-overlay-v1.js'
       - 'tools/inject-achievement-overlay-physical-smoke.js'
       - '.github/workflows/achievement-unlock-overlay-physical-smoke.yml'
   pull_request:
     paths:
+      - 'assets/audio/achievement-unlock-13.mp3'
       - 'preview/v024-core/sdlink-achievement-overlay.js'
       - 'tools/achievement-overlay-main-patch.js'
+      - 'tools/achievement-overlay-sound-v2.js'
+      - 'tools/test-achievement-overlay-sound-v2.js'
       - 'tools/patch-achievement-unlock-overlay-v1.js'
       - 'tools/inject-achievement-overlay-physical-smoke.js'
       - '.github/workflows/achievement-unlock-overlay-physical-smoke.yml'
@@ -30,6 +36,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify exact reviewed 13.mp3
+        shell: pwsh
+        run: node tools/test-achievement-overlay-sound-v2.js
       - name: Download exact public R5 Squirrel package
         shell: pwsh
         run: |
