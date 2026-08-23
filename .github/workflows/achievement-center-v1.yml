@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - 'achievements.html'
       - 'database/migrations/sd_achievement_center_read_v1.sql'
       - 'assets/js/auth-common.js'
       - 'assets/js/achievement-sync.js'
