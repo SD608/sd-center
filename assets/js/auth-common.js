@@ -28,16 +28,41 @@
     }).format(new Date(value));
   };
   const messageForError = (error) => {
-    const raw = String(error?.message || error || "알 수 없는 오류");
+    const raw = String(error?.message || error || "");
     const lower = raw.toLowerCase();
+    const code = String(error?.code || "").toLowerCase();
+    const status = Number(error?.status || error?.statusCode || 0);
+
     if (lower.includes("invalid login credentials")) return "이메일 또는 비밀번호가 맞지 않습니다.";
     if (lower.includes("email not confirmed")) return "이메일 인증이 아직 끝나지 않았습니다. 받은 메일의 인증 버튼을 눌러주세요.";
     if (lower.includes("user already registered")) return "이미 가입된 이메일입니다.";
     if (lower.includes("password") && lower.includes("characters")) return "비밀번호는 8자 이상으로 입력하세요.";
     if (lower.includes("database error") || lower.includes("saving new user")) return "가입 정보를 저장하지 못했습니다. 초대 코드와 닉네임을 확인하세요.";
-    if (lower.includes("rate limit")) return "요청이 너무 많습니다. 잠시 뒤 다시 시도하세요.";
-    if (lower.includes("failed to fetch") || lower.includes("network")) return "서버에 연결하지 못했습니다. 인터넷 연결을 확인하세요.";
-    return raw;
+    if (lower.includes("rate limit") || status === 429) return "요청이 너무 많습니다. 잠시 뒤 다시 시도하세요.";
+    if (lower.includes("failed to fetch") || lower.includes("network") || lower.includes("networkerror")) return "서버에 연결하지 못했습니다. 인터넷 연결을 확인하세요.";
+    if (
+      lower.includes("jwt expired") ||
+      lower.includes("invalid jwt") ||
+      lower.includes("refresh token") ||
+      lower.includes("session not found") ||
+      code === "pgrst301" ||
+      status === 401
+    ) return "로그인 정보가 만료되었습니다. 다시 로그인해 주세요.";
+    if (
+      lower.includes("permission denied") ||
+      lower.includes("row-level security") ||
+      lower.includes("insufficient privilege") ||
+      lower.includes("not authorized") ||
+      lower.includes("unauthorized") ||
+      lower.includes("forbidden") ||
+      code === "42501" ||
+      status === 403
+    ) return "이 요청을 수행할 권한이 없습니다.";
+
+    // Fail closed. Unknown Supabase/PostgREST/SQL/RPC messages can contain
+    // schema, table, column, function, constraint or stack details and must
+    // never be copied into a user-visible status element.
+    return "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
   };
   const setStatus = (element, message, type = "info") => {
     if (!element) return;

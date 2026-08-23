@@ -5,10 +5,15 @@ on:
   pull_request:
     paths:
       - 'database/migrations/sd_achievement_center_read_v1.sql'
+      - 'assets/js/auth-common.js'
       - 'assets/js/achievement-sync.js'
       - 'assets/js/achievements-all.js'
       - 'assets/js/achievement-custom-ui.js'
+      - 'assets/js/profile-page-v8.js'
+      - 'assets/js/profile-card-edit-v7.js'
+      - 'assets/js/profile-shop.js'
       - 'tests/achievement-center/**'
+      - 'tests/achievement-security/auth_error_message_regression.js'
       - '.github/workflows/achievement-center-v1.yml'
 
 permissions:
@@ -66,9 +71,15 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f tests/achievement-center/center_read_regression.sql
       - name: Check browser JavaScript syntax
         run: |
+          node --check assets/js/auth-common.js
           node --check assets/js/achievement-sync.js
           node --check assets/js/achievements-all.js
           node --check assets/js/achievement-custom-ui.js
+          node --check assets/js/profile-page-v8.js
+          node --check assets/js/profile-card-edit-v7.js
+          node --check assets/js/profile-shop.js
+      - name: Verify fail-closed user-visible errors
+        run: node tests/achievement-security/auth_error_message_regression.js
       - name: Verify server-authority and release safety
         shell: bash
         run: |
@@ -77,6 +88,7 @@ jobs:
           SYNC=assets/js/achievement-sync.js
           UI=assets/js/achievements-all.js
           CUSTOM=assets/js/achievement-custom-ui.js
+          AUTH=assets/js/auth-common.js
           grep -q "get_sd_achievement_center_v1" "$RPC"
           grep -q "hidden and not unlocked" "$RPC"
           grep -q "ua.achievement_id is not null" "$RPC"
@@ -86,6 +98,8 @@ jobs:
           ! grep -q 'PENDING_IDS' "$CUSTOM"
           grep -q 'Boolean(item?.unlocked)' "$UI"
           ! grep -Eq 'current_value[^\n]*>=|progress[^\n]*>=.*target' "$UI"
+          ! grep -Eq 'return[[:space:]]+raw[[:space:]]*;' "$AUTH"
+          grep -q '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.' "$AUTH"
           ! grep -Eiq 'wallets[[:space:]]+set[[:space:]]+balance|center-update\.json|site-config\.js|releases/download' "$RPC"
           ! grep -Eiq 'insert[[:space:]]+into[[:space:]]+public\.sd_(achievement_progress|user_achievements)' "$RPC"
           echo 'Chapter 3-6 server-authority/UI/release safety guard PASS'
