@@ -1,78 +1,37 @@
 "use strict";
 
+const fs = require("node:fs");
+const path = require("node:path");
+
 const SOUND_MARK = "ACHIEVEMENT_CHIME_DATA_URL";
-const SAMPLE_RATE = 16000;
-const DURATION_SECONDS = 0.78;
+const DEFAULT_MP3_PATH = path.join(__dirname, "..", "assets", "audio", "achievement-unlock-13.mp3");
+const MIN_MP3_BYTES = 1024;
 
-function synthesizeAchievementChimeWav() {
-  const sampleCount = Math.floor(SAMPLE_RATE * DURATION_SECONDS);
-  const samples = new Float64Array(sampleCount);
-  const partials = [
-    [1.0, 1.0, 0.46],
-    [2.01, 0.24, 0.21],
-    [2.97, 0.10, 0.15],
-  ];
-
-  function addBell(startSeconds, frequency, amplitude, decay) {
-    const start = Math.floor(startSeconds * SAMPLE_RATE);
-    for (let i = start; i < sampleCount; i += 1) {
-      const t = (i - start) / SAMPLE_RATE;
-      const envelope = (1 - Math.exp(-t / 0.005)) * Math.exp(-t / decay);
-      let value = 0;
-      for (const [ratio, partialAmplitude, partialDecay] of partials) {
-        value += partialAmplitude
-          * Math.sin(2 * Math.PI * frequency * ratio * t)
-          * Math.exp(-t / partialDecay);
-      }
-      samples[i] += amplitude * envelope * value;
-    }
+function hasMp3Signature(bytes) {
+  if (!Buffer.isBuffer(bytes) || bytes.length < 3) return false;
+  if (bytes.subarray(0, 3).toString("ascii") === "ID3") return true;
+  // MPEG audio frame sync: 11 set bits followed by a valid non-reserved layer/version nibble.
+  for (let i = 0; i < Math.min(bytes.length - 1, 4096); i += 1) {
+    if (bytes[i] === 0xff && (bytes[i + 1] & 0xe0) === 0xe0) return true;
   }
-
-  // Soft body + delayed perfect-fifth/octave shimmer. Short enough not to annoy on repeated unlocks.
-  addBell(0.000, 392.00, 0.36, 0.42); // G4
-  addBell(0.000, 587.33, 0.22, 0.36); // D5
-  addBell(0.130, 783.99, 0.30, 0.44); // G5
-  addBell(0.130, 1174.66, 0.10, 0.30); // D6
-
-  for (let i = 0; i < sampleCount; i += 1) {
-    const t = i / SAMPLE_RATE;
-    if (t < 0.10) {
-      samples[i] += 0.045
-        * Math.sin(2 * Math.PI * 196 * t)
-        * (1 - Math.exp(-t / 0.004))
-        * Math.exp(-t / 0.05);
-    }
-    if (t > 0.68) {
-      samples[i] *= Math.max(0, (DURATION_SECONDS - t) / (DURATION_SECONDS - 0.68));
-    }
-  }
-
-  let peak = 0;
-  for (const value of samples) peak = Math.max(peak, Math.abs(value));
-  const normalize = peak > 0 ? 0.72 / peak : 1;
-  const pcmBytes = sampleCount * 2;
-  const wav = Buffer.alloc(44 + pcmBytes);
-  wav.write("RIFF", 0, "ascii");
-  wav.writeUInt32LE(36 + pcmBytes, 4);
-  wav.write("WAVE", 8, "ascii");
-  wav.write("fmt ", 12, "ascii");
-  wav.writeUInt32LE(16, 16);
-  wav.writeUInt16LE(1, 20); // PCM
-  wav.writeUInt16LE(1, 22); // mono
-  wav.writeUInt32LE(SAMPLE_RATE, 24);
-  wav.writeUInt32LE(SAMPLE_RATE * 2, 28);
-  wav.writeUInt16LE(2, 32);
-  wav.writeUInt16LE(16, 34);
-  wav.write("data", 36, "ascii");
-  wav.writeUInt32LE(pcmBytes, 40);
-  for (let i = 0; i < sampleCount; i += 1) {
-    const clamped = Math.max(-1, Math.min(1, samples[i] * normalize));
-    wav.writeInt16LE(Math.trunc(clamped * 32767), 44 + (i * 2));
-  }
-  return wav;
+  return false;
 }
 
-function patchOverlaySoundSource(sourceInput) {
+function loadAchievementChimeMp3(mp3Path = DEFAULT_MP3_PATH) {
+  if (!fs.existsSync(mp3Path)) {
+    throw new Error(`reviewed achievement MP3 missing: ${mp3Path}`);
+  }
+  const bytes = fs.readFileSync(mp3Path);
+  if (bytes.length < MIN_MP3_BYTES) {
+    throw new Error(`reviewed achievement MP3 is too small/placeholder: ${bytes.length} bytes`);
+  }
+  if (!hasMp3Signature(bytes)) {
+    throw new Error("reviewed achievement sound is not a valid-looking MP3 asset");
+  }
+  return bytes;
+}
+
+function patchOverlaySoundSource(sourceInput, mp3Bytes = loadAchievementChimeMp3()) {
   const source = String(sourceInput || "");
   if (source.includes(SOUND_MARK)) return source;
   if (!source.includes("try { shell.beep(); } catch {}")) {
@@ -81,11 +40,14 @@ function patchOverlaySoundSource(sourceInput) {
   if (!source.includes("const ACHIEVEMENTS_URL =")) {
     throw new Error("achievement overlay URL marker missing");
   }
+  if (!Buffer.isBuffer(mp3Bytes) || mp3Bytes.length < MIN_MP3_BYTES || !hasMp3Signature(mp3Bytes)) {
+    throw new Error("reviewed achievement MP3 failed integrity checks");
+  }
 
-  const wavBase64 = synthesizeAchievementChimeWav().toString("base64");
+  const mp3Base64 = mp3Bytes.toString("base64");
   let output = source.replace(
     /const ACHIEVEMENTS_URL = ([^;]+);/,
-    (match) => `${match}\nconst ACHIEVEMENT_CHIME_DATA_URL = "data:audio/wav;base64,${wavBase64}";`,
+    (match) => `${match}\nconst ACHIEVEMENT_CHIME_DATA_URL = "data:audio/mpeg;base64,${mp3Base64}";`,
   );
   output = output.replace(
     "default-src 'none'; style-src 'unsafe-inline'",
@@ -97,16 +59,17 @@ function patchOverlaySoundSource(sourceInput) {
   );
   output = output.replace(/^\s*try \{ shell\.beep\(\); \} catch \{\}\r?\n/m, "");
 
-  for (const marker of [SOUND_MARK, "media-src data:", "autoplay preload=\"auto\""]) {
-    if (!output.includes(marker)) throw new Error(`achievement chime marker missing after patch: ${marker}`);
+  for (const marker of [SOUND_MARK, "data:audio/mpeg;base64,", "media-src data:", "autoplay preload=\"auto\""]) {
+    if (!output.includes(marker)) throw new Error(`achievement MP3 marker missing after patch: ${marker}`);
   }
-  if (output.includes("shell.beep()")) throw new Error("system beep remained after achievement chime patch");
+  if (output.includes("shell.beep()")) throw new Error("system beep remained after achievement MP3 patch");
   return output;
 }
 
 module.exports = {
-  DURATION_SECONDS,
-  SAMPLE_RATE,
+  DEFAULT_MP3_PATH,
+  MIN_MP3_BYTES,
+  hasMp3Signature,
+  loadAchievementChimeMp3,
   patchOverlaySoundSource,
-  synthesizeAchievementChimeWav,
 };
