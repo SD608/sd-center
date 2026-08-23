@@ -14,6 +14,7 @@ on:
       - 'assets/js/profile-shop.js'
       - 'tests/achievement-center/**'
       - 'tests/achievement-security/auth_error_message_regression.js'
+      - 'tests/achievement-security/ui_refresh_regression.js'
       - '.github/workflows/achievement-center-v1.yml'
 
 permissions:
@@ -80,6 +81,8 @@ jobs:
           node --check assets/js/profile-shop.js
       - name: Verify fail-closed user-visible errors
         run: node tests/achievement-security/auth_error_message_regression.js
+      - name: Verify achievement UI refresh dedupe
+        run: node tests/achievement-security/ui_refresh_regression.js
       - name: Verify server-authority and release safety
         shell: bash
         run: |
