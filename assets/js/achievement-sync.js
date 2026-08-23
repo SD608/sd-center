@@ -12,9 +12,53 @@
   let pollTimer = null;
   let reloadTimer = null;
   let authSubscription = null;
+  let lastUiSnapshot = "";
 
   const auth = () => window.SD_AUTH || null;
-  const emit = (detail = {}) => window.dispatchEvent(new CustomEvent("sd-achievements-updated", { detail }));
+
+  function uiSnapshotSignature(detail = {}) {
+    const status = detail.synced === true
+      ? "synced"
+      : detail.reason === "signed-out"
+        ? "signed-out"
+        : "unavailable";
+    const snapshotCatalog = Array.isArray(detail.catalog) ? detail.catalog : [];
+    const snapshotRows = Array.isArray(detail.rows) ? detail.rows : [];
+    return JSON.stringify({
+      status,
+      schemaVersion: Number(detail.schemaVersion || 0),
+      catalog: snapshotCatalog.map((item) => [
+        String(item?.code || ""),
+        String(item?.category || ""),
+        Number(item?.sort_order || 0),
+        item?.name == null ? null : String(item.name),
+        item?.description == null ? null : String(item.description),
+        item?.icon == null ? null : String(item.icon),
+        Boolean(item?.hidden),
+        item?.current_value == null ? null : Number(item.current_value || 0),
+        Boolean(item?.unlocked),
+        item?.unlocked_at || null,
+        Boolean(item?.title_owned),
+        Boolean(item?.title_equipped),
+      ]),
+      rows: snapshotRows.map((row) => [
+        String(row?.achievement_id || ""),
+        row?.current_value == null ? null : Number(row.current_value || 0),
+        Boolean(row?.unlocked),
+        row?.unlocked_at || null,
+        Boolean(row?.title_owned),
+        Boolean(row?.title_equipped),
+      ]),
+    });
+  }
+
+  const emit = (detail = {}) => {
+    const signature = uiSnapshotSignature(detail);
+    if (signature === lastUiSnapshot) return false;
+    lastUiSnapshot = signature;
+    window.dispatchEvent(new CustomEvent("sd-achievements-updated", { detail }));
+    return true;
+  };
 
   async function session() {
     const client = auth()?.client;
