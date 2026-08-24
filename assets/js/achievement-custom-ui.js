@@ -7,92 +7,23 @@
     "logistics", "flea", "miner", "mukjjippa", "slot", "oddeven",
     "bitcoin", "sta", "gold", "npcvault", "sdcoin", "wallet", "ranking"
   ];
-  const LABELS = {
-    logistics: "물류센터", flea: "플리마켓", miner: "광부", mukjjippa: "묵찌빠",
-    slot: "슬롯", oddeven: "홀짝", bitcoin: "비트코인", sta: "STA",
-    gold: "금 구매", npcvault: "NPC 금고", sdcoin: "SD코인", wallet: "지갑",
-    ranking: "통장 잔고 랭킹"
-  };
-
-  // No server-final validator exists for these codes yet.
-  // Existing server-unlocked assets remain earned; only NEW acquisition is pending.
-  const PENDING_IDS = new Set([
-    "bitcoin-01", "bitcoin-02", "bitcoin-03", "bitcoin-04", "bitcoin-05",
-    "flea-01", "flea-02", "flea-03", "flea-04", "flea-08", "flea-09", "flea-10", "flea-11", "flea-14", "flea-15", "flea-16", "flea-17", "flea-18",
-    "logistics-01", "logistics-02", "logistics-03", "logistics-04", "logistics-05", "logistics-06", "logistics-07", "logistics-08", "logistics-09", "logistics-10", "logistics-11", "logistics-12", "logistics-13", "logistics-14", "logistics-15", "logistics-16",
-    "miner-01", "miner-02", "miner-03", "miner-04", "miner-05", "miner-06", "miner-07", "miner-08", "miner-09",
-    "mukjjippa-01", "mukjjippa-02", "ranking-01", "sta-01", "sta-02", "sta-03"
-  ]);
-
-  let lastActiveId = "";
   let remoteLoadedFor = "";
-  let drag = null;
-  let suppressClick = false;
-  let refreshTimer = null;
 
   const auth = () => window.SD_AUTH || null;
-  const achievements = () => Array.isArray(window.SD_ACHIEVEMENTS) ? window.SD_ACHIEVEMENTS : [];
-  const unlocked = () => window.SD_ACHIEVEMENT_UNLOCKED || {};
-
-  // Final completion authority is the server/Core unlocked flag only.
-  function isDone(item) {
-    return Boolean(item && unlocked()[item.id]);
-  }
-
-  function injectStyles() {
-    if (document.getElementById("achievement-custom-ui-style")) return;
-    const style = document.createElement("style");
-    style.id = "achievement-custom-ui-style";
-    style.textContent = `
-      .achievement-tab.completed-tab{border-color:rgba(91,214,153,.28);background:rgba(91,214,153,.08);color:#a9edc9}
-      .achievement-tab.completed-tab.active{border-color:rgba(91,214,153,.5);background:linear-gradient(145deg,rgba(91,214,153,.2),rgba(91,214,153,.08));color:#d8ffea}
-      .achievement-tab.sortable-tab{display:inline-flex;align-items:center;gap:7px;padding-right:9px}
-      .achievement-drag-handle{display:grid;place-items:center;width:24px;height:28px;margin-left:1px;border-radius:8px;color:#62718b;font-size:16px;line-height:1;cursor:grab;touch-action:none;user-select:none}
-      .achievement-drag-handle:hover{background:rgba(255,255,255,.06);color:#b8c5d9}
-      .achievement-tab.dragging{opacity:.58;transform:scale(.97);border-style:dashed}
-      .achievement-tab.dragging .achievement-drag-handle{cursor:grabbing}
-      .achievement-order-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px;padding:0 2px}
-      .achievement-order-hint{margin-right:auto;color:#66758e;font-size:.66rem;font-weight:800}
-      .achievement-order-reset{min-height:30px;padding:0 10px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.035);color:#8f9db2;font:inherit;font-size:.68rem;font-weight:900;cursor:pointer}
-      .achievement-order-reset:hover{color:#e2e9f5;border-color:rgba(255,255,255,.15)}
-      .achievement-source-category{display:inline-flex;align-items:center;min-height:25px;margin-top:13px;padding:0 9px;border:1px solid rgba(91,214,153,.15);border-radius:999px;background:rgba(91,214,153,.06);color:#8fd6b1;font-size:.65rem;font-weight:900}
-      .achievement-unlocked-at{margin-top:10px;color:#65758e;font-size:.68rem;font-weight:800}
-      .achievement-completed-empty{padding:44px 24px;border:1px dashed rgba(91,214,153,.18);border-radius:22px;background:rgba(91,214,153,.025);color:#789188;text-align:center;line-height:1.8}
-      .achievement-card.pending-achievement{border-style:dashed;border-color:rgba(142,156,181,.18);background:linear-gradient(145deg,rgba(39,48,64,.62),rgba(12,21,38,.94))}
-      .achievement-card.pending-achievement .achievement-icon{background:rgba(255,255,255,.05);filter:grayscale(1)}
-      .achievement-card.pending-achievement .achievement-badge{display:inline-flex!important;align-items:center;min-height:25px;padding:0 9px;border:1px solid rgba(148,163,184,.18);border-radius:999px;background:rgba(148,163,184,.07);color:#a8b3c4;font-size:.65rem;font-weight:900}
-      .achievement-card.pending-achievement .achievement-condition{opacity:.72}
-      @media(max-width:760px){.achievement-order-hint{display:none}.achievement-order-tools{margin-top:6px}.achievement-drag-handle{width:27px}}
-    `;
-    document.head.append(style);
-  }
-
-  function readLocalOrder() {
-    try {
-      const value = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]");
-      return Array.isArray(value) ? value.map(String) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function normalizeOrder(order) {
+  const normalizeOrder = (value) => {
+    const source = Array.isArray(value) ? value.map(String) : [];
     const seen = new Set();
-    const result = [];
-    for (const id of Array.isArray(order) ? order : []) {
-      if (!DEFAULT_ORDER.includes(id) || seen.has(id)) continue;
-      seen.add(id);
-      result.push(id);
-    }
-    for (const id of DEFAULT_ORDER) {
-      if (!seen.has(id)) result.push(id);
-    }
-    return result;
-  }
-
-  function saveLocalOrder(order) {
-    try { localStorage.setItem(ORDER_KEY, JSON.stringify(normalizeOrder(order))); } catch {}
-  }
+    const order = source.filter((id) => DEFAULT_ORDER.includes(id) && !seen.has(id) && seen.add(id));
+    DEFAULT_ORDER.forEach((id) => { if (!seen.has(id)) order.push(id); });
+    return order;
+  };
+  const readOrder = () => {
+    try { return normalizeOrder(JSON.parse(localStorage.getItem(ORDER_KEY) || "[]")); }
+    catch (_) { return [...DEFAULT_ORDER]; }
+  };
+  const saveLocalOrder = (order) => {
+    try { localStorage.setItem(ORDER_KEY, JSON.stringify(normalizeOrder(order))); } catch (_) {}
+  };
 
   async function currentUserId() {
     try {
@@ -100,22 +31,19 @@
       if (!client?.auth) return "";
       const { data } = await client.auth.getSession();
       return String(data?.session?.user?.id || "");
-    } catch {
-      return "";
-    }
+    } catch (_) { return ""; }
   }
 
   async function saveRemoteOrder(order) {
     const client = auth()?.client;
     const userId = await currentUserId();
     if (!client || !userId) return false;
-    const payload = {
+    const { error } = await client.from("sd_user_preferences").upsert({
       user_id: userId,
       achievement_category_order: normalizeOrder(order),
-      updated_at: new Date().toISOString()
-    };
-    const result = await client.from("sd_user_preferences").upsert(payload, { onConflict: "user_id" });
-    if (result.error) throw result.error;
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
+    if (error) throw error;
     remoteLoadedFor = userId;
     return true;
   }
@@ -126,330 +54,174 @@
     if (!client || !userId || remoteLoadedFor === userId) return;
     remoteLoadedFor = userId;
     try {
-      const result = await client
-        .from("sd_user_preferences")
+      const { data, error } = await client.from("sd_user_preferences")
         .select("achievement_category_order")
         .eq("user_id", userId)
         .maybeSingle();
-      if (result.error) throw result.error;
-      const remote = Array.isArray(result.data?.achievement_category_order)
-        ? result.data.achievement_category_order.map(String)
-        : [];
-      if (remote.length) {
-        const order = normalizeOrder(remote);
-        saveLocalOrder(order);
-        reorderRegular(order);
+      if (error) throw error;
+      if (Array.isArray(data?.achievement_category_order) && data.achievement_category_order.length) {
+        saveLocalOrder(data.achievement_category_order);
+        apply(false);
       } else {
-        const local = readLocalOrder();
-        if (local.length) await saveRemoteOrder(local);
+        await saveRemoteOrder(readOrder());
       }
     } catch (error) {
-      console.warn("[SD Achievement UI] category order sync failed", error?.message || error);
+      console.warn("[SD Achievement UI] category order sync unavailable", error?.message || error);
     }
   }
 
-  function regularTabs() {
-    const tabs = document.querySelector(".achievement-tabs");
-    if (!tabs) return [];
-    return [...tabs.querySelectorAll(".achievement-tab[data-achievement-tab]")]
-      .filter((button) => button.dataset.achievementTab !== SPECIAL_ID);
+  function injectStyles() {
+    if (document.getElementById("achievement-custom-ui-v2-style")) return;
+    const style = document.createElement("style");
+    style.id = "achievement-custom-ui-v2-style";
+    style.textContent = `
+      .achievement-tab.achievement-completed-tab{border-color:rgba(91,214,153,.28);background:rgba(91,214,153,.08);color:#a9edc9}
+      .achievement-drag-handle{display:inline-grid;place-items:center;width:20px;height:24px;margin-left:5px;border-radius:7px;color:#62718b;cursor:grab;user-select:none}
+      .achievement-tab.is-dragging{opacity:.58;border-style:dashed}
+      .achievement-order-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px}
+      .achievement-order-hint{margin-right:auto;color:#66758e;font-size:.66rem;font-weight:800}
+      .achievement-order-reset{min-height:30px;padding:0 10px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.035);color:#8f9db2;font:inherit;font-size:.68rem;font-weight:900;cursor:pointer}
+      @media(max-width:760px){.achievement-order-hint{display:none}}
+    `;
+    document.head.append(style);
   }
 
-  function currentOrder() {
-    return regularTabs().map((button) => String(button.dataset.achievementTab || ""))
-      .filter((id) => DEFAULT_ORDER.includes(id));
-  }
-
-  function reorderPanels(order) {
-    const main = document.querySelector(".achievements-page");
-    const note = main?.querySelector(".achievement-placeholder");
-    if (!main) return;
-    for (const id of normalizeOrder(order)) {
-      const panel = main.querySelector(`[data-achievement-panel="${id}"]`);
-      if (panel) main.insertBefore(panel, note || null);
-    }
-  }
-
-  function reorderRegular(order) {
-    const tabs = document.querySelector(".achievement-tabs");
-    if (!tabs) return;
-    for (const id of normalizeOrder(order)) {
-      const button = tabs.querySelector(`.achievement-tab[data-achievement-tab="${id}"]`);
-      if (button) tabs.append(button);
-    }
-    const special = tabs.querySelector(`.achievement-tab[data-achievement-tab="${SPECIAL_ID}"]`);
-    if (special) tabs.prepend(special);
-    reorderPanels(order);
-  }
-
-  function rowMap() {
-    const rows = window.SD_ACHIEVEMENT_SYNC?.getRows?.() || [];
-    return new Map(rows.map((row) => [String(row.achievement_id || ""), row]));
-  }
-
-  function formattedDate(value) {
-    const time = Date.parse(String(value || ""));
-    if (!Number.isFinite(time)) return "";
-    return new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(time));
-  }
-
-  function decorateAuthorityState() {
-    const all = achievements();
-    const serverUnlocked = unlocked();
-
-    for (const category of DEFAULT_ORDER) {
-      const items = all.filter((item) => item.c === category);
-      const panel = document.querySelector(`[data-achievement-panel="${category}"]`);
-      const cards = panel ? [...panel.querySelectorAll(".achievement-card")] : [];
-      items.forEach((item, index) => {
-        const card = cards[index];
-        if (!card) return;
-        const earned = Boolean(serverUnlocked[item.id]);
-        const pending = PENDING_IDS.has(item.id) && !earned;
-        card.dataset.achievementId = item.id;
-        card.classList.toggle("pending-achievement", pending);
-
-        // Never infer completion from a client-side threshold.
-        if (!earned) card.classList.remove("complete");
-
-        if (pending) {
-          const icon = card.querySelector(".achievement-icon");
-          if (icon) icon.textContent = "⏳";
-          const badge = card.querySelector(".achievement-badge");
-          if (badge) badge.textContent = "준비 중";
-          card.querySelector(".achievement-progress")?.remove();
-        }
-      });
-    }
-
-    const completed = all.filter(isDone).length;
-    const active = all.length - PENDING_IDS.size;
-    const count = document.querySelector(".achievement-count");
-    if (count) count.textContent = `등록 업적 ${all.length}개 · 활성 ${active}개 · 달성 ${completed}개`;
-
-    const intro = document.querySelector(".achievements-head p");
-    if (intro) intro.textContent = "서버에서 검증 가능한 업적만 활성화됩니다. 기존에 획득한 업적과 칭호는 그대로 유지됩니다.";
-
-    const note = document.querySelector(".achievement-placeholder");
-    if (note) note.textContent = "준비 중 업적은 서버 검증 경로가 연결된 뒤 활성화됩니다.";
-  }
-
-  function cloneCompletedCard(item, rows) {
-    const list = achievements().filter((entry) => entry.c === item.c);
-    const index = list.findIndex((entry) => entry.id === item.id);
-    const panel = document.querySelector(`[data-achievement-panel="${item.c}"]`);
-    const source = index >= 0 ? panel?.querySelectorAll(".achievement-card")?.[index] : null;
-    if (!source) return null;
-    const clone = source.cloneNode(true);
-    clone.dataset.achievementId = item.id;
-    clone.classList.remove("pending-achievement");
-
-    const category = document.createElement("div");
-    category.className = "achievement-source-category";
-    category.textContent = LABELS[item.c] || item.c;
-    const name = clone.querySelector(".achievement-name");
-    if (name) clone.insertBefore(category, name);
-    else clone.append(category);
-
-    const when = formattedDate(rows.get(item.id)?.unlocked_at);
-    if (when) {
-      const date = document.createElement("div");
-      date.className = "achievement-unlocked-at";
-      date.textContent = `달성일 ${when}`;
-      clone.append(date);
-    }
-    return clone;
-  }
-
-  function buildCompletedView() {
-    const tabs = document.querySelector(".achievement-tabs");
-    const main = document.querySelector(".achievements-page");
-    if (!tabs || !main) return;
-
-    tabs.querySelector(`[data-achievement-tab="${SPECIAL_ID}"]`)?.remove();
-    main.querySelector(`[data-achievement-panel="${SPECIAL_ID}"]`)?.remove();
-
-    const rows = rowMap();
-    const completed = achievements().filter(isDone).sort((left, right) => {
-      const leftTime = Date.parse(String(rows.get(left.id)?.unlocked_at || "")) || 0;
-      const rightTime = Date.parse(String(rows.get(right.id)?.unlocked_at || "")) || 0;
-      if (leftTime !== rightTime) return rightTime - leftTime;
-      const categoryDiff = DEFAULT_ORDER.indexOf(left.c) - DEFAULT_ORDER.indexOf(right.c);
-      return categoryDiff || achievements().indexOf(left) - achievements().indexOf(right);
-    });
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "achievement-tab completed-tab";
-    button.dataset.achievementTab = SPECIAL_ID;
-    button.textContent = `달성 업적 (${completed.length})`;
-    tabs.prepend(button);
-
+  function completedPanel(main, completed) {
     const panel = document.createElement("section");
     panel.className = "achievement-panel";
     panel.dataset.achievementPanel = SPECIAL_ID;
-    panel.innerHTML = `<div class="achievement-category-title"><div><span>ACHIEVED</span><h2>달성한 업적</h2></div><span class="achievement-category-meta">${completed.length}개 달성</span></div>`;
-
+    const heading = document.createElement("div");
+    heading.className = "achievement-category-title";
+    const titleWrap = document.createElement("div");
+    const kicker = document.createElement("span");
+    kicker.textContent = "COMPLETED";
+    const title = document.createElement("h2");
+    title.textContent = "달성 완료";
+    titleWrap.append(kicker, title);
+    const meta = document.createElement("span");
+    meta.className = "achievement-category-meta";
+    meta.textContent = `${completed.length}개 달성`;
+    heading.append(titleWrap, meta);
+    const grid = document.createElement("div");
+    grid.className = "achievement-grid";
+    completed.forEach((card) => grid.append(card.cloneNode(true)));
     if (!completed.length) {
-      panel.insertAdjacentHTML("beforeend", '<div class="achievement-completed-empty">아직 달성한 업적이 없습니다.</div>');
-    } else {
-      const grid = document.createElement("div");
-      grid.className = "achievement-grid achievement-completed-grid";
-      for (const item of completed) {
-        const card = cloneCompletedCard(item, rows);
-        if (card) grid.append(card);
-      }
-      panel.append(grid);
+      const empty = document.createElement("div");
+      empty.className = "achievement-empty";
+      empty.textContent = "아직 달성한 업적이 없습니다.";
+      grid.append(empty);
     }
-
-    const firstRegularPanel = main.querySelector(`[data-achievement-panel]:not([data-achievement-panel="${SPECIAL_ID}"])`);
-    main.insertBefore(panel, firstRegularPanel || main.querySelector(".achievement-placeholder") || null);
-  }
-
-  function addOrderTools() {
-    const wrap = document.querySelector(".achievement-tabs-wrap");
-    if (!wrap) return;
-    let tools = wrap.querySelector(".achievement-order-tools");
-    if (!tools) {
-      tools = document.createElement("div");
-      tools.className = "achievement-order-tools";
-      tools.innerHTML = '<span class="achievement-order-hint">⋮⋮ 끌어서 순서 변경</span><button class="achievement-order-reset" type="button">기본 순서</button>';
-      wrap.append(tools);
-      tools.querySelector(".achievement-order-reset")?.addEventListener("click", async () => {
-        try { localStorage.removeItem(ORDER_KEY); } catch {}
-        reorderRegular(DEFAULT_ORDER);
-        try { await saveRemoteOrder(DEFAULT_ORDER); } catch (error) {
-          console.warn("[SD Achievement UI] reset sync failed", error?.message || error);
-        }
-      });
-    }
-  }
-
-  function decorateHandles() {
-    for (const button of regularTabs()) {
-      button.classList.add("sortable-tab");
-      if (button.querySelector(".achievement-drag-handle")) continue;
-      const handle = document.createElement("span");
-      handle.className = "achievement-drag-handle";
-      handle.textContent = "⋮⋮";
-      handle.title = "끌어서 순서 변경";
-      handle.setAttribute("aria-label", "카테고리 순서 변경");
-      button.append(handle);
-    }
+    panel.append(heading, grid);
+    main.append(panel);
+    return panel;
   }
 
   function activate(id) {
     const tabs = document.querySelector(".achievement-tabs");
     const main = document.querySelector(".achievements-page");
-    if (!tabs || !main) return;
-    const button = tabs.querySelector(`[data-achievement-tab="${id}"]`);
-    const panel = main.querySelector(`[data-achievement-panel="${id}"]`);
-    if (!button || !panel) return;
-    tabs.querySelectorAll(".achievement-tab").forEach((entry) => entry.classList.toggle("active", entry === button));
-    main.querySelectorAll("[data-achievement-panel]").forEach((entry) => entry.classList.toggle("active", entry === panel));
+    if (!tabs || !main || !id) return;
+    tabs.querySelectorAll("[data-achievement-tab]").forEach((button) => {
+      const active = button.dataset.achievementTab === id;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    main.querySelectorAll("[data-achievement-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.achievementPanel === id));
   }
 
-  function bindDragEvents() {
-    const tabs = document.querySelector(".achievement-tabs");
-    if (!tabs || tabs.dataset.customSortBound === "1") return;
-    tabs.dataset.customSortBound = "1";
-
-    tabs.addEventListener("click", (event) => {
-      if (suppressClick) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return;
-      }
-      const button = event.target.closest("[data-achievement-tab]");
-      if (button) lastActiveId = String(button.dataset.achievementTab || "");
-    }, true);
-
-    tabs.addEventListener("pointerdown", (event) => {
-      const handle = event.target.closest(".achievement-drag-handle");
-      const button = handle?.closest(".achievement-tab[data-achievement-tab]");
-      if (!handle || !button || button.dataset.achievementTab === SPECIAL_ID) return;
-      event.preventDefault();
-      event.stopPropagation();
-      drag = {
-        button,
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        active: false
-      };
-      try { handle.setPointerCapture(event.pointerId); } catch {}
+  function ensureTools() {
+    const wrap = document.querySelector(".achievement-tabs-wrap");
+    if (!wrap || wrap.querySelector(".achievement-order-tools")) return;
+    const tools = document.createElement("div");
+    tools.className = "achievement-order-tools";
+    const hint = document.createElement("span");
+    hint.className = "achievement-order-hint";
+    hint.textContent = "드래그하여 카테고리 순서 변경";
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "achievement-order-reset";
+    reset.textContent = "기본 순서";
+    reset.addEventListener("click", () => {
+      saveLocalOrder(DEFAULT_ORDER);
+      void saveRemoteOrder(DEFAULT_ORDER).catch((error) => console.warn("[SD Achievement UI] order save unavailable", error?.message || error));
+      apply(false);
     });
-
-    tabs.addEventListener("pointermove", (event) => {
-      if (!drag || event.pointerId !== drag.pointerId) return;
-      const distance = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
-      if (!drag.active && distance < 5) return;
-      if (!drag.active) {
-        drag.active = true;
-        drag.button.classList.add("dragging");
-      }
-      event.preventDefault();
-
-      const rect = tabs.getBoundingClientRect();
-      if (event.clientX < rect.left + 44) tabs.scrollLeft -= 14;
-      else if (event.clientX > rect.right - 44) tabs.scrollLeft += 14;
-
-      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".achievement-tab[data-achievement-tab]");
-      if (!target || target === drag.button || target.dataset.achievementTab === SPECIAL_ID || target.parentElement !== tabs) return;
-      const targetRect = target.getBoundingClientRect();
-      const after = event.clientX > targetRect.left + targetRect.width / 2;
-      tabs.insertBefore(drag.button, after ? target.nextSibling : target);
-      const special = tabs.querySelector(`[data-achievement-tab="${SPECIAL_ID}"]`);
-      if (special) tabs.prepend(special);
-    });
-
-    const finish = async (event) => {
-      if (!drag || (event.pointerId != null && event.pointerId !== drag.pointerId)) return;
-      const wasActive = drag.active;
-      drag.button.classList.remove("dragging");
-      drag = null;
-      if (!wasActive) return;
-      suppressClick = true;
-      window.setTimeout(() => { suppressClick = false; }, 60);
-      const order = currentOrder();
-      saveLocalOrder(order);
-      reorderPanels(order);
-      try { await saveRemoteOrder(order); } catch (error) {
-        console.warn("[SD Achievement UI] order sync failed", error?.message || error);
-      }
-    };
-
-    tabs.addEventListener("pointerup", (event) => { void finish(event); });
-    tabs.addEventListener("pointercancel", (event) => { void finish(event); });
+    tools.append(hint, reset);
+    wrap.append(tools);
   }
 
-  function enhance() {
-    window.clearTimeout(refreshTimer);
-    refreshTimer = window.setTimeout(() => {
-      const tabs = document.querySelector(".achievement-tabs");
-      if (!tabs || !achievements().length) return;
-
-      injectStyles();
-      const activeBefore = lastActiveId || tabs.querySelector(".achievement-tab.active")?.dataset.achievementTab || "";
-      const local = readLocalOrder();
-      reorderRegular(local.length ? local : DEFAULT_ORDER);
-      decorateAuthorityState();
-      buildCompletedView();
-      decorateHandles();
-      addOrderTools();
-      bindDragEvents();
-
-      if (activeBefore === SPECIAL_ID) activate(SPECIAL_ID);
-      else if (activeBefore) activate(activeBefore);
-
-      void loadRemoteOrder().then(() => {
-        decorateHandles();
-        if (lastActiveId === SPECIAL_ID) activate(SPECIAL_ID);
+  function wireDrag(tabs) {
+    let dragging = null;
+    tabs.querySelectorAll(".achievement-tab[data-achievement-tab]:not([data-achievement-tab='completed'])").forEach((button) => {
+      if (!button.querySelector(".achievement-drag-handle")) {
+        const handle = document.createElement("span");
+        handle.className = "achievement-drag-handle";
+        handle.textContent = "⋮⋮";
+        handle.setAttribute("aria-hidden", "true");
+        button.append(handle);
+      }
+      button.draggable = true;
+      button.addEventListener("dragstart", () => { dragging = button; button.classList.add("is-dragging"); });
+      button.addEventListener("dragend", () => {
+        button.classList.remove("is-dragging");
+        dragging = null;
+        const order = [...tabs.querySelectorAll(".achievement-tab[data-achievement-tab]:not([data-achievement-tab='completed'])")].map((node) => node.dataset.achievementTab);
+        saveLocalOrder(order);
+        void saveRemoteOrder(order).catch((error) => console.warn("[SD Achievement UI] order save unavailable", error?.message || error));
+        apply(false);
       });
-    }, 0);
+      button.addEventListener("dragover", (event) => {
+        if (!dragging || dragging === button) return;
+        event.preventDefault();
+        const rect = button.getBoundingClientRect();
+        tabs.insertBefore(dragging, event.clientX < rect.left + rect.width / 2 ? button : button.nextSibling);
+      });
+    });
   }
 
-  window.addEventListener("sd-achievements-updated", enhance);
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", enhance, { once: true });
-  else enhance();
+  function apply(preserveActive = true) {
+    injectStyles();
+    ensureTools();
+    const tabs = document.querySelector(".achievement-tabs");
+    const main = document.querySelector(".achievements-page");
+    if (!tabs || !main) return;
+    const activeBefore = preserveActive ? tabs.querySelector(".achievement-tab.active")?.dataset.achievementTab : null;
+
+    tabs.querySelector(`[data-achievement-tab="${SPECIAL_ID}"]`)?.remove();
+    main.querySelector(`[data-achievement-panel="${SPECIAL_ID}"]`)?.remove();
+
+    const order = readOrder();
+    order.forEach((id) => {
+      const button = tabs.querySelector(`[data-achievement-tab="${id}"]`);
+      const panel = main.querySelector(`[data-achievement-panel="${id}"]`);
+      if (button) tabs.append(button);
+      if (panel) main.append(panel);
+    });
+
+    const completed = [...main.querySelectorAll(".achievement-card.complete")].filter((card) => !card.closest(`[data-achievement-panel="${SPECIAL_ID}"]`));
+    const completedButton = document.createElement("button");
+    completedButton.type = "button";
+    completedButton.className = "achievement-tab achievement-completed-tab";
+    completedButton.dataset.achievementTab = SPECIAL_ID;
+    completedButton.textContent = `달성 완료 (${completed.length})`;
+    completedButton.addEventListener("click", () => activate(SPECIAL_ID));
+    tabs.prepend(completedButton);
+    completedPanel(main, completed);
+
+    tabs.querySelectorAll(".achievement-tab[data-achievement-tab]").forEach((button) => {
+      if (button.dataset.achievementTab !== SPECIAL_ID) button.onclick = () => activate(button.dataset.achievementTab);
+    });
+    wireDrag(tabs);
+
+    const available = new Set([...tabs.querySelectorAll("[data-achievement-tab]")].map((node) => node.dataset.achievementTab));
+    activate(available.has(activeBefore) ? activeBefore : (completed.length ? SPECIAL_ID : order.find((id) => available.has(id))));
+  }
+
+  async function boot() {
+    apply(false);
+    await loadRemoteOrder();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => void boot(), { once: true });
+  else void boot();
+  window.addEventListener("sd-achievements-updated", () => queueMicrotask(() => apply(true)));
 })();
