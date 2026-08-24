@@ -28,8 +28,9 @@ function patchMain(mainPath) {
 `  const CH3_FINAL_BUNDLED_SDLINK_FILE = "${BUNDLE_FILE}";\n\n` +
 `  function ensureBundledIntegratedSdLink() {\n` +
 `    const existing = appById.get(SD_LINK_ID);\n` +
-`    if (existing) {\n` +
-`      return { ok: true, installed: false, existing: true, version: rawEntryVersion(existing) };\n` +
+`    const existingVersion = existing ? rawEntryVersion(existing) : "0.0.0";\n` +
+`    if (existing && compareVersions(existingVersion, CH3_FINAL_BUNDLED_SDLINK_VERSION) >= 0) {\n` +
+`      return { ok: true, installed: false, upgraded: false, existing: true, version: existingVersion };\n` +
 `    }\n\n` +
 `    const bundlePath = path.join(__dirname, "bundled", CH3_FINAL_BUNDLED_SDLINK_FILE);\n` +
 `    if (!fs.existsSync(bundlePath)) {\n` +
@@ -49,13 +50,13 @@ function patchMain(mainPath) {
 `    const destinationDirectory = path.join(INSTALLED_APPS_ROOT, SD_LINK_ID);\n` +
 `    installInspectedZip(inspected, destinationDirectory);\n` +
 `    const packagePath = archiveAppZip(bundlePath, SD_LINK_ID);\n` +
-`    const removedExisting = removedById.get(SD_LINK_ID) || null;\n` +
+`    const previousEntry = existing || removedById.get(SD_LINK_ID) || null;\n` +
 `    const now = new Date().toISOString();\n` +
 `    const appEntry = {\n` +
 `      ...inspected.metadata,\n` +
 `      directory: destinationDirectory,\n` +
 `      packagePath,\n` +
-`      importedAt: removedExisting?.importedAt || now,\n` +
+`      importedAt: previousEntry?.importedAt || now,\n` +
 `      updatedAt: now,\n` +
 `      integratedService: true,\n` +
 `    };\n` +
@@ -66,7 +67,13 @@ function patchMain(mainPath) {
 `    if (!installed) {\n` +
 `      throw new Error("내장 SD Link 등록을 완료하지 못했습니다.");\n` +
 `    }\n` +
-`    return { ok: true, installed: true, existing: false, version: rawEntryVersion(installed) };\n` +
+`    return {\n` +
+`      ok: true,\n` +
+`      installed: !existing,\n` +
+`      upgraded: Boolean(existing),\n` +
+`      existing: Boolean(existing),\n` +
+`      version: rawEntryVersion(installed),\n` +
+`    };\n` +
 `  }\n\n` + functionAnchor;
   source = replaceOnce(source, functionAnchor, bootstrap, "SD Link startup function");
 
