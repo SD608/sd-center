@@ -7,6 +7,10 @@ on:
     paths:
       - '.github/workflows/ch3-final-release-candidate.yml'
       - 'tools/build-ch3-final-release-candidate.ps1'
+  pull_request:
+    paths:
+      - '.github/workflows/ch3-final-release-candidate.yml'
+      - 'tools/build-ch3-final-release-candidate.ps1'
   workflow_dispatch:
 
 permissions:
