@@ -19,7 +19,7 @@ permissions:
 jobs:
   build-final-gate-candidate:
     runs-on: windows-2025
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,6 +31,76 @@ jobs:
         shell: pwsh
         run: |
           ./tools/build-ch3-final-release-candidate.ps1 -CandidateVersion '2.2.9' -OutputDir 'final-gate-ch3-output'
+      - name: Automated clean install, upgrade, relaunch and reinstall smoke
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          function Stop-Center { Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue }
+          function Start-Smoke([string]$Exe,[string]$Label) {
+            Stop-Center
+            $p=Start-Process -FilePath $Exe -PassThru
+            Start-Sleep -Seconds 10
+            if($p.HasExited){ throw "$Label exited during process smoke. code=$($p.ExitCode)" }
+            Stop-Center
+            Start-Sleep -Seconds 2
+            if(Get-Process SDCenter -ErrorAction SilentlyContinue){ throw "$Label left SDCenter.exe running after forced close" }
+            Write-Host "PASS $Label process smoke"
+          }
+          function Install-Silent([string]$Setup,[string]$Label) {
+            Stop-Center
+            $p=Start-Process -FilePath $Setup -ArgumentList '--silent' -PassThru -Wait
+            if($p.ExitCode -ne 0){ throw "$Label Setup exited with code $($p.ExitCode)" }
+            Start-Sleep -Seconds 5
+            Write-Host "PASS $Label Setup --silent"
+          }
+
+          $installRoot=Join-Path $env:LOCALAPPDATA 'SDCenter'
+          $dataRoot=Join-Path $env:APPDATA 'SD종합센터'
+          Stop-Center
+          if(Test-Path $installRoot){ Remove-Item $installRoot -Recurse -Force }
+          if(Test-Path $dataRoot){ Remove-Item $dataRoot -Recurse -Force }
+
+          $oldSetup=Join-Path $env:RUNNER_TEMP 'SDCenterSetup-2.2.8.exe'
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.8/SDCenterSetup.exe' -OutFile $oldSetup
+          $oldHash=(Get-FileHash $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant()
+          if($oldHash -ne 'b9b48f2bd2fe09e601304b5b1c3cd634ad3be21f46294a16855d993f707ec0cc'){ throw "official 2.2.8 Setup hash mismatch: $oldHash" }
+
+          Install-Silent $oldSetup 'clean v2.2.8 install'
+          $oldExe=Join-Path $installRoot 'app-2.2.8\SDCenter.exe'
+          if(-not (Test-Path $oldExe -PathType Leaf)){ throw "clean v2.2.8 installed exe missing: $oldExe" }
+          Start-Smoke $oldExe 'installed v2.2.8'
+          if(-not (Test-Path $dataRoot -PathType Container)){ throw "expected existing userData root was not created: $dataRoot" }
+          $marker=Join-Path $dataRoot 'final-gate-ci-preserve-marker.txt'
+          'CH3-FINAL-GATE-PRESERVE' | Set-Content -LiteralPath $marker -Encoding utf8
+
+          $newSetup=(Resolve-Path 'final-gate-ch3-output\SDCenterSetup.exe').Path
+          Install-Silent $newSetup 'v2.2.8 to v2.2.9 upgrade'
+          $newExe=Join-Path $installRoot 'app-2.2.9\SDCenter.exe'
+          if(-not (Test-Path $newExe -PathType Leaf)){ throw "upgraded v2.2.9 installed exe missing: $newExe" }
+          if(-not (Test-Path $marker -PathType Leaf)){ throw 'existing userData marker was lost during upgrade' }
+          if((Get-Content $marker -Raw) -notmatch 'CH3-FINAL-GATE-PRESERVE'){ throw 'existing userData marker changed during upgrade' }
+          Start-Smoke $newExe 'upgraded v2.2.9'
+
+          # Same-version Setup execution must remain safe and preserve userData.
+          Install-Silent $newSetup 'same-version v2.2.9 Setup replay'
+          if(-not (Test-Path $marker -PathType Leaf)){ throw 'userData marker was lost during same-version Setup replay' }
+          Start-Smoke $newExe 'same-version v2.2.9 replay'
+
+          # Explicit uninstall + reinstall smoke. Squirrel app uninstall must not delete external Electron userData.
+          $update=Join-Path $installRoot 'Update.exe'
+          if(-not (Test-Path $update -PathType Leaf)){ throw 'Squirrel Update.exe missing before reinstall smoke' }
+          Stop-Center
+          $u=Start-Process -FilePath $update -ArgumentList '--uninstall','-s' -PassThru -Wait
+          if($u.ExitCode -ne 0){ throw "Squirrel uninstall failed: $($u.ExitCode)" }
+          Start-Sleep -Seconds 5
+          if(-not (Test-Path $marker -PathType Leaf)){ throw 'existing userData marker was removed by uninstall' }
+          Install-Silent $newSetup 'v2.2.9 reinstall'
+          if(-not (Test-Path $newExe -PathType Leaf)){ throw 'reinstalled v2.2.9 exe missing' }
+          if(-not (Test-Path $marker -PathType Leaf)){ throw 'existing userData marker was lost during reinstall' }
+          Start-Smoke $newExe 'reinstalled v2.2.9'
+
+          Stop-Center
+          Write-Host 'PASS automated Windows clean-install/upgrade/relaunch/reinstall + synthetic userData preservation smoke'
       - name: Show provenance
         shell: pwsh
         run: Get-Content final-gate-ch3-output/FINAL_GATE_PROVENANCE.txt
