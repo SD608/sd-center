@@ -1,0 +1,35 @@
+name: Admin Wallet Security v2
+
+on:
+  push:
+    branches:
+      - fix/admin-wallet-session-device-gate-20260824
+    paths:
+      - 'database/migrations/sd_admin_wallet_session_device_v2.sql'
+      - 'assets/js/members-page.js'
+      - 'tools/test-admin-wallet-security-v2.js'
+      - '.github/workflows/admin-wallet-security-v2.yml'
+  pull_request:
+    paths:
+      - 'database/migrations/sd_admin_wallet_session_device_v2.sql'
+      - 'assets/js/members-page.js'
+      - 'tools/test-admin-wallet-security-v2.js'
+      - '.github/workflows/admin-wallet-security-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check admin members UI
+        run: node --check assets/js/members-page.js
+      - name: Admin wallet security contract regression
+        run: node tools/test-admin-wallet-security-v2.js
