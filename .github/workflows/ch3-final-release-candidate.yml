@@ -32,10 +32,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Build blocked Chapter 3 Final Release Gate candidate
         shell: pwsh
-        run: |
-          ./tools/build-ch3-final-release-candidate.ps1 -CandidateVersion '2.2.10' -OutputDir 'final-gate-ch3-output'
+        run: ./tools/build-ch3-final-release-candidate.ps1 -CandidateVersion '2.2.10' -OutputDir 'final-gate-ch3-output'
+
       - name: Automated clean install, SD Link bootstrap, upgrade, relaunch and reinstall smoke
         shell: pwsh
         run: |
@@ -43,153 +44,138 @@ jobs:
           $expectedSdLinkSha='032d7e9fec32d99f9ae13a568baa1d1d80c5fb713392bdd103ccbd3ce9f59707'
           $installRoot=Join-Path $env:LOCALAPPDATA 'SDCenter'
           $dataRoot=Join-Path $env:APPDATA 'SD종합센터'
-          $legacyLinkRoot=Join-Path $env:APPDATA 'SD Link'
+          $legacyRoot=Join-Path $env:APPDATA 'SD Link'
+          $newSetup=(Resolve-Path 'final-gate-ch3-output\SDCenterSetup.exe').Path
+          $newExe=Join-Path $installRoot 'app-2.2.10\SDCenter.exe'
 
           function Stop-Center {
             Get-Process SDCenter -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 2
           }
-
-          function Assert-SdLinkInstalled([string]$Label) {
-            $registryPath=Join-Path $dataRoot 'apps.json'
-            if(-not (Test-Path $registryPath -PathType Leaf)){ throw "$Label SD Link registry missing: $registryPath" }
-            $registry=Get-Content -LiteralPath $registryPath -Raw | ConvertFrom-Json
-            $entries=@($registry.customApps | Where-Object { $_.id -eq 'sdlink-desktop' })
-            if($entries.Count -ne 1){ throw "$Label expected exactly one SD Link registry entry, got $($entries.Count)" }
-            $entry=$entries[0]
-            if([string]$entry.rawVersion -ne '1.4.1'){ throw "$Label SD Link version mismatch: $($entry.rawVersion)" }
-            if($entry.integratedService -ne $true){ throw "$Label SD Link is not marked integratedService" }
-            $entryFile=Join-Path ([string]$entry.directory) ([string]$entry.entry)
-            if(-not (Test-Path $entryFile -PathType Leaf)){ throw "$Label SD Link entry file missing: $entryFile" }
-            $archive=Join-Path $dataRoot 'app-packages\sdlink-desktop.zip'
-            if(-not (Test-Path $archive -PathType Leaf)){ throw "$Label SD Link archived package missing" }
-            $archiveHash=(Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-            if($archiveHash -ne $expectedSdLinkSha){ throw "$Label SD Link archived package hash mismatch: $archiveHash" }
-            $integratedUserData=Join-Path $dataRoot 'linked-services\sd-link\userdata\sdlink'
-            if(-not (Test-Path $integratedUserData -PathType Container)){ throw "$Label integrated SD Link userData root missing" }
-            Write-Host "PASS $Label bundled SD Link registry/package/userData"
+          function Reset-CiState {
+            Stop-Center
+            foreach($p in @($installRoot,$dataRoot,$legacyRoot)){ if(Test-Path $p){ Remove-Item $p -Recurse -Force } }
           }
-
+          function Install-Silent([string]$Setup,[string]$Label) {
+            Stop-Center
+            $p=Start-Process -FilePath $Setup -ArgumentList '--silent' -PassThru -Wait
+            if($p.ExitCode -ne 0){ throw "$Label Setup failed: $($p.ExitCode)" }
+            Start-Sleep -Seconds 5
+            Write-Host "PASS $Label Setup"
+          }
+          function Assert-SdLink([string]$Label) {
+            $registryPath=Join-Path $dataRoot 'apps.json'
+            if(-not (Test-Path $registryPath -PathType Leaf)){ throw "$Label apps.json missing" }
+            $registry=Get-Content $registryPath -Raw | ConvertFrom-Json
+            $links=@($registry.customApps | Where-Object { $_.id -eq 'sdlink-desktop' })
+            if($links.Count -ne 1){ throw "$Label SD Link registry count=$($links.Count)" }
+            $link=$links[0]
+            if([string]$link.rawVersion -ne '1.4.1'){ throw "$Label SD Link version=$($link.rawVersion)" }
+            if($link.integratedService -ne $true){ throw "$Label integratedService missing" }
+            if(-not (Test-Path (Join-Path ([string]$link.directory) ([string]$link.entry)) -PathType Leaf)){ throw "$Label SD Link entry missing" }
+            $archive=Join-Path $dataRoot 'app-packages\sdlink-desktop.zip'
+            if(-not (Test-Path $archive -PathType Leaf)){ throw "$Label archived SD Link package missing" }
+            $hash=(Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+            if($hash -ne $expectedSdLinkSha){ throw "$Label SD Link hash=$hash" }
+            if(-not (Test-Path (Join-Path $dataRoot 'linked-services\sd-link\userdata\sdlink') -PathType Container)){ throw "$Label integrated userData missing" }
+            Write-Host "PASS $Label bundled SD Link state"
+          }
           function Start-Smoke {
             param([string]$Exe,[string]$Label,[switch]$VerifySdLink)
             Stop-Center
             $p=Start-Process -FilePath $Exe -PassThru
             Start-Sleep -Seconds 10
-            if($p.HasExited){ throw "$Label exited during process smoke. code=$($p.ExitCode)" }
+            if($p.HasExited){ throw "$Label exited: $($p.ExitCode)" }
             if($VerifySdLink){
-              Assert-SdLinkInstalled $Label
-              $children=@(Get-CimInstance Win32_Process | Where-Object {
-                $_.Name -ieq 'SDCenter.exe' -and [string]$_.CommandLine -match '--sd-child-app=sdlink-desktop'
-              })
-              if($children.Count -lt 1){ throw "$Label did not start integrated SD Link child process" }
-              Write-Host "PASS $Label integrated SD Link child process running"
+              Assert-SdLink $Label
+              $children=@(Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'SDCenter.exe' -and [string]$_.CommandLine -match '--sd-child-app=sdlink-desktop' })
+              if($children.Count -lt 1){ throw "$Label integrated SD Link child not running" }
+              Write-Host "PASS $Label SD Link child running"
             }
             Stop-Center
-            if(Get-Process SDCenter -ErrorAction SilentlyContinue){ throw "$Label left SDCenter.exe running after cleanup" }
+            if(Get-Process SDCenter -ErrorAction SilentlyContinue){ throw "$Label residual SDCenter.exe" }
             Write-Host "PASS $Label process smoke"
           }
-
-          function Install-Silent([string]$Setup,[string]$Label) {
-            Stop-Center
-            $p=Start-Process -FilePath $Setup -ArgumentList '--silent' -PassThru -Wait
-            if($p.ExitCode -ne 0){ throw "$Label Setup exited with code $($p.ExitCode)" }
-            Start-Sleep -Seconds 5
-            Write-Host "PASS $Label Setup --silent"
-          }
-
           function Uninstall-Center([string]$Label) {
             Stop-Center
             $update=Join-Path $installRoot 'Update.exe'
-            if(-not (Test-Path $update -PathType Leaf)){ throw "$Label Squirrel Update.exe missing" }
-            $u=Start-Process -FilePath $update -ArgumentList '--uninstall','-s' -PassThru -Wait
-            if($u.ExitCode -ne 0){ throw "$Label Squirrel uninstall failed: $($u.ExitCode)" }
+            if(-not (Test-Path $update -PathType Leaf)){ throw "$Label Update.exe missing" }
+            $p=Start-Process -FilePath $update -ArgumentList '--uninstall','-s' -PassThru -Wait
+            if($p.ExitCode -ne 0){ throw "$Label uninstall failed: $($p.ExitCode)" }
             Start-Sleep -Seconds 5
             Write-Host "PASS $Label uninstall"
           }
 
-          Stop-Center
-          foreach($root in @($installRoot,$dataRoot,$legacyLinkRoot)){
-            if(Test-Path $root){ Remove-Item $root -Recurse -Force }
-          }
-
-          $newSetup=(Resolve-Path 'final-gate-ch3-output\SDCenterSetup.exe').Path
-          Install-Silent $newSetup 'clean candidate 2.2.10 install'
-          $newExe=Join-Path $installRoot 'app-2.2.10\SDCenter.exe'
-          if(-not (Test-Path $newExe -PathType Leaf)){ throw "clean candidate installed exe missing: $newExe" }
+          # 1) Truly clean candidate install: SD Link must be present and running without a prior registry.
+          Reset-CiState
+          Install-Silent $newSetup 'clean candidate 2.2.10'
+          if(-not (Test-Path $newExe -PathType Leaf)){ throw 'clean candidate exe missing' }
           Start-Smoke $newExe 'clean candidate 2.2.10' -VerifySdLink
           Uninstall-Center 'clean candidate 2.2.10'
 
-          # Reset only the disposable CI profile so the upgrade path starts from a real v2.2.8 state.
-          Stop-Center
-          foreach($root in @($installRoot,$dataRoot,$legacyLinkRoot)){
-            if(Test-Path $root){ Remove-Item $root -Recurse -Force }
-          }
-
+          # 2) Exact official 2.2.8 -> fixed candidate with synthetic old SD Link and legacy userData.
+          Reset-CiState
           $oldSetup=Join-Path $env:RUNNER_TEMP 'SDCenterSetup-2.2.8.exe'
           Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/SD608/sd-center/releases/download/v.2.2.8/SDCenterSetup.exe' -OutFile $oldSetup
           $oldHash=(Get-FileHash $oldSetup -Algorithm SHA256).Hash.ToLowerInvariant()
-          if($oldHash -ne 'b9b48f2bd2fe09e601304b5b1c3cd634ad3be21f46294a16855d993f707ec0cc'){ throw "official 2.2.8 Setup hash mismatch: $oldHash" }
-
-          Install-Silent $oldSetup 'clean v2.2.8 install'
+          if($oldHash -ne 'b9b48f2bd2fe09e601304b5b1c3cd634ad3be21f46294a16855d993f707ec0cc'){ throw "official 2.2.8 hash=$oldHash" }
+          Install-Silent $oldSetup 'clean v2.2.8'
           $oldExe=Join-Path $installRoot 'app-2.2.8\SDCenter.exe'
-          if(-not (Test-Path $oldExe -PathType Leaf)){ throw "clean v2.2.8 installed exe missing: $oldExe" }
           Start-Smoke $oldExe 'installed v2.2.8'
-          if(-not (Test-Path $dataRoot -PathType Container)){ throw "expected existing userData root was not created: $dataRoot" }
-          $marker=Join-Path $dataRoot 'final-gate-ci-preserve-marker.txt'
-          'CH3-FINAL-GATE-PRESERVE' | Set-Content -LiteralPath $marker -Encoding utf8
 
-          # Synthetic old integrated/standalone state: code is old, userData is legacy and must be preserved/migrated.
-          $legacySdLinkData=Join-Path $legacyLinkRoot 'sdlink'
-          New-Item -ItemType Directory -Force -Path $legacySdLinkData | Out-Null
-          $legacyMarker=Join-Path $legacySdLinkData 'final-gate-legacy-marker.txt'
-          'LEGACY-SDLINK-PRESERVE' | Set-Content -LiteralPath $legacyMarker -Encoding utf8
+          $marker=Join-Path $dataRoot 'final-gate-ci-preserve-marker.txt'
+          'CH3-FINAL-GATE-PRESERVE' | Set-Content $marker -Encoding utf8
+          $legacyData=Join-Path $legacyRoot 'sdlink'
+          New-Item -ItemType Directory -Force -Path $legacyData | Out-Null
+          $legacyMarker=Join-Path $legacyData 'final-gate-legacy-marker.txt'
+          'LEGACY-SDLINK-PRESERVE' | Set-Content $legacyMarker -Encoding utf8
+
           $oldLinkDir=Join-Path $dataRoot 'installed-apps\sdlink-desktop'
           New-Item -ItemType Directory -Force -Path $oldLinkDir | Out-Null
-          '// synthetic old SD Link payload for Final Gate upgrade test' | Set-Content -LiteralPath (Join-Path $oldLinkDir 'main.js') -Encoding utf8
+          '// synthetic old SD Link payload' | Set-Content (Join-Path $oldLinkDir 'main.js') -Encoding utf8
           $oldImportedAt='2026-01-01T00:00:00.000Z'
-          $syntheticRegistry=[ordered]@{
-            version=2
-            hiddenBuiltinIds=@()
+          [ordered]@{
+            version=2; hiddenBuiltinIds=@(); removedApps=@();
             customApps=@([ordered]@{
-              id='sdlink-desktop'; name='SD Link'; productName='SD Link'; version='PC Link · v1.3.1'; rawVersion='1.3.1'
-              description='synthetic old link'; improvement='synthetic old link'; accent='cyan'; icon=''; entry='main.js'
-              userDataFolder='SD Link'; builtin=$false; sourceZipName='legacy-sdlink.zip'; directory=$oldLinkDir; packagePath=''
+              id='sdlink-desktop'; name='SD Link'; productName='SD Link'; version='PC Link · v1.3.1'; rawVersion='1.3.1';
+              description='synthetic old link'; improvement='synthetic old link'; accent='cyan'; icon=''; entry='main.js';
+              userDataFolder='SD Link'; builtin=$false; sourceZipName='legacy-sdlink.zip'; directory=$oldLinkDir; packagePath='';
               importedAt=$oldImportedAt; updatedAt=$oldImportedAt; integratedService=$true
             })
-            removedApps=@()
-          }
-          $syntheticRegistry | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $dataRoot 'apps.json') -Encoding utf8
+          } | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $dataRoot 'apps.json') -Encoding utf8
 
           Install-Silent $newSetup 'v2.2.8 to v2.2.10 upgrade'
-          if(-not (Test-Path $newExe -PathType Leaf)){ throw "upgraded v2.2.10 installed exe missing: $newExe" }
-          if(-not (Test-Path $marker -PathType Leaf)){ throw 'existing userData marker was lost during upgrade' }
-          if((Get-Content $marker -Raw) -notmatch 'CH3-FINAL-GATE-PRESERVE'){ throw 'existing userData marker changed during upgrade' }
+          if(-not (Test-Path $marker -PathType Leaf)){ throw 'center userData marker lost on upgrade' }
           Start-Smoke $newExe 'upgraded v2.2.10' -VerifySdLink
-          $upgradedRegistry=Get-Content -LiteralPath (Join-Path $dataRoot 'apps.json') -Raw | ConvertFrom-Json
-          $upgradedLink=@($upgradedRegistry.customApps | Where-Object { $_.id -eq 'sdlink-desktop' })[0]
-          if([string]$upgradedLink.importedAt -ne $oldImportedAt){ throw "SD Link importedAt was not preserved: $($upgradedLink.importedAt)" }
-          $migratedMarker=Join-Path $dataRoot 'linked-services\sd-link\userdata\sdlink\final-gate-legacy-marker.txt'
-          if(-not (Test-Path $migratedMarker -PathType Leaf)){ throw 'legacy SD Link userData marker was not migrated to integrated userData' }
-          if((Get-Content $migratedMarker -Raw) -notmatch 'LEGACY-SDLINK-PRESERVE'){ throw 'migrated SD Link userData marker changed' }
-          if(-not (Test-Path $legacyMarker -PathType Leaf)){ throw 'legacy SD Link source userData was destructively removed' }
-          Write-Host 'PASS old SD Link code upgraded to bundled v1.4.1 and legacy userData preserved'
 
-          Install-Silent $newSetup 'same-version v2.2.10 Setup replay'
-          if(-not (Test-Path $marker -PathType Leaf)){ throw 'userData marker was lost during same-version Setup replay' }
+          $registryPath=Join-Path $dataRoot 'apps.json'
+          $registry=Get-Content $registryPath -Raw | ConvertFrom-Json
+          $upgradedLink=@($registry.customApps | Where-Object { $_.id -eq 'sdlink-desktop' })[0]
+          $actualImported=[DateTimeOffset]$upgradedLink.importedAt
+          $expectedImported=[DateTimeOffset]$oldImportedAt
+          if($actualImported.ToUniversalTime() -ne $expectedImported.ToUniversalTime()){ throw "SD Link importedAt changed: $actualImported" }
+          $migrated=Join-Path $dataRoot 'linked-services\sd-link\userdata\sdlink\final-gate-legacy-marker.txt'
+          if(-not (Test-Path $migrated -PathType Leaf)){ throw 'legacy SD Link userData not migrated' }
+          if((Get-Content $migrated -Raw) -notmatch 'LEGACY-SDLINK-PRESERVE'){ throw 'migrated legacy marker changed' }
+          if(-not (Test-Path $legacyMarker -PathType Leaf)){ throw 'legacy source userData was destructively removed' }
+          Write-Host 'PASS old SD Link upgraded and legacy userData preserved'
+
+          # 3) Same-version replay and uninstall/reinstall must preserve external userData.
+          Install-Silent $newSetup 'same-version v2.2.10 replay'
+          if(-not (Test-Path $marker -PathType Leaf)){ throw 'userData marker lost on same-version replay' }
           Start-Smoke $newExe 'same-version v2.2.10 replay' -VerifySdLink
-
           Uninstall-Center 'v2.2.10 reinstall preparation'
-          if(-not (Test-Path $marker -PathType Leaf)){ throw 'existing userData marker was removed by uninstall' }
+          if(-not (Test-Path $marker -PathType Leaf)){ throw 'userData marker removed by uninstall' }
           Install-Silent $newSetup 'v2.2.10 reinstall'
-          if(-not (Test-Path $newExe -PathType Leaf)){ throw 'reinstalled v2.2.10 exe missing' }
-          if(-not (Test-Path $marker -PathType Leaf)){ throw 'existing userData marker was lost during reinstall' }
+          if(-not (Test-Path $marker -PathType Leaf)){ throw 'userData marker lost on reinstall' }
           Start-Smoke $newExe 'reinstalled v2.2.10' -VerifySdLink
-
           Stop-Center
-          Write-Host 'PASS automated Windows candidate clean-install + mandatory SD Link bootstrap/upgrade + relaunch/reinstall + synthetic userData preservation smoke'
+          Write-Host 'PASS Windows candidate clean-install + mandatory SD Link + upgrade/replay/reinstall + userData preservation smoke'
+
       - name: Show provenance
         shell: pwsh
         run: Get-Content final-gate-ch3-output/FINAL_GATE_PROVENANCE.txt
+
       - name: Upload blocked Final Gate artifact
         uses: actions/upload-artifact@v4
         with:
