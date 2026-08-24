@@ -20,7 +20,7 @@ $ReviewedAudioSha256 = '33b200c45be66dfecd8130e94b8942b34720abe8fdffb36981aa1828
 $ReviewedAudioSize = 71889
 $BundledSdLinkVersion = '1.4.1'
 $BundledSdLinkFile = 'SDLink_v1.4.1_Desktop.zip'
-$BundledSdLinkSize = 85300
+$BundledSdLinkSize = 85865
 $BundledSdLinkSha256 = '032d7e9fec32d99f9ae13a568baa1d1d80c5fb713392bdd103ccbd3ce9f59707'
 $ElectronWinstallerVersion = '5.4.4'
 
