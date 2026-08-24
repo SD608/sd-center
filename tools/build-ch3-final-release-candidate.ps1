@@ -1,6 +1,6 @@
 param(
   [string]$OutputDir = (Join-Path (Get-Location) 'final-gate-ch3-output'),
-  [string]$CandidateVersion = '2.2.9'
+  [string]$CandidateVersion = '2.2.10'
 )
 
 Set-StrictMode -Version Latest
@@ -18,6 +18,10 @@ $BaseCoreRuntimeSha256 = '1be6f63eac00363ae4c19af42d33398aca1402431c9a7f88bb480e
 $BaseBackgroundGuardSha256 = '5b5ab522315facb2e2562c8c1cced6736bdc4d0252c194e60b68b86641c95e20'
 $ReviewedAudioSha256 = '33b200c45be66dfecd8130e94b8942b34720abe8fdffb36981aa18286f78237a'
 $ReviewedAudioSize = 71889
+$BundledSdLinkVersion = '1.4.1'
+$BundledSdLinkFile = 'SDLink_v1.4.1_Desktop.zip'
+$BundledSdLinkSize = 85300
+$BundledSdLinkSha256 = '032d7e9fec32d99f9ae13a568baa1d1d80c5fb713392bdd103ccbd3ce9f59707'
 $ElectronWinstallerVersion = '5.4.4'
 
 function Hash([string]$Path) {
@@ -59,7 +63,12 @@ try {
   & git merge-base --is-ancestor $ExpectedChapter3Head HEAD
   if ($LASTEXITCODE -ne 0) { throw 'Exact Chapter 3 #70 HEAD is not an ancestor of this candidate branch.' }
 
-  $allowed = @('.github/workflows/ch3-final-release-candidate.yml','tools/build-ch3-final-release-candidate.ps1') | Sort-Object
+  $allowed = @(
+    '.github/workflows/ch3-final-release-candidate.yml',
+    'tools/build-ch3-final-release-candidate.ps1',
+    'tools/patch-ch3-final-sdlink-bundle.js',
+    'tools/test-ch3-final-sdlink-bundle.js'
+  ) | Sort-Object
   $changed = @(& git diff --name-only "$ExpectedChapter3Head..HEAD") | Where-Object { $_ } | Sort-Object
   if (($changed -join "`n") -ne ($allowed -join "`n")) {
     throw "Unexpected candidate-branch diff since #70:`n$($changed -join "`n")"
@@ -74,11 +83,19 @@ try {
   if ((Get-Item -LiteralPath $audio).Length -ne $ReviewedAudioSize) { throw 'Reviewed achievement MP3 size mismatch.' }
   Assert-Hash $audio $ReviewedAudioSha256 'reviewed achievement MP3'
 
+  $bundledSdLinkSource = Join-Path $repoRoot "downloads\extensions\$BundledSdLinkFile"
+  if ((Get-Item -LiteralPath $bundledSdLinkSource).Length -ne $BundledSdLinkSize) {
+    throw "Reviewed SD Link package size mismatch. expected=$BundledSdLinkSize actual=$((Get-Item -LiteralPath $bundledSdLinkSource).Length)"
+  }
+  Assert-Hash $bundledSdLinkSource $BundledSdLinkSha256 'reviewed bundled SD Link v1.4.1 package'
+
   Write-Host 'Running Chapter 3 overlay/source regressions before packaging...'
   Invoke-Node @('tools/test-achievement-unlock-overlay-v1.js')
   Invoke-Node @('tools/test-achievement-overlay-sound-v2.js')
   Invoke-Node @('--check','preview/v024-core/sdlink-achievement-overlay.js')
   Invoke-Node @('--check','tools/patch-achievement-unlock-overlay-v1.js')
+  Invoke-Node @('--check','tools/patch-ch3-final-sdlink-bundle.js')
+  Invoke-Node @('--check','tools/test-ch3-final-sdlink-bundle.js')
 
   $work = Join-Path ([IO.Path]::GetTempPath()) ('sdcenter-ch3-finalgate-' + [guid]::NewGuid().ToString('N'))
   $download = Join-Path $work 'SDCenter-2.2.8-full.nupkg'
@@ -113,12 +130,21 @@ try {
 
     Write-Host 'Applying exact Chapter 3-7 overlay patch to exact R5 app payload...'
     Invoke-Node @('tools/patch-achievement-unlock-overlay-v1.js', $appRoot)
-    $patchedMainSha256 = Hash (Join-Path $appRoot 'main.js')
     $patchedHelper = Join-Path $appRoot 'src\sdlink-achievement-overlay.js'
     $patchedHelperSha256 = Hash $patchedHelper
     $helperText = Get-Content -LiteralPath $patchedHelper -Raw
     if ($helperText -match 'shell\.beep\(\)') { throw 'System beep remains in final helper.' }
     if ($helperText -notmatch 'ACHIEVEMENT_CHIME_DATA_URL') { throw 'Reviewed achievement chime is not embedded.' }
+
+    Write-Host 'Applying mandatory bundled SD Link clean-install bootstrap...'
+    Invoke-Node @('tools/test-ch3-final-sdlink-bundle.js',(Join-Path $appRoot 'main.js'))
+    $bundledDir = Join-Path $appRoot 'bundled'
+    New-Item -ItemType Directory -Force -Path $bundledDir | Out-Null
+    $bundledSdLinkTarget = Join-Path $bundledDir $BundledSdLinkFile
+    Copy-Item -LiteralPath $bundledSdLinkSource -Destination $bundledSdLinkTarget -Force
+    Assert-Hash $bundledSdLinkTarget $BundledSdLinkSha256 'staged bundled SD Link package'
+    Invoke-Node @('tools/patch-ch3-final-sdlink-bundle.js', $appRoot)
+    $patchedMainSha256 = Hash (Join-Path $appRoot 'main.js')
 
     Write-Host 'Running staged app source checks...'
     Invoke-Node @('--check',(Join-Path $appRoot 'main.js'))
@@ -190,7 +216,7 @@ try {
     $fullNupkgSha256 = Hash $fullNupkg
     $releasesSha256 = Hash $releases
 
-    Write-Host 'Verifying generated nupkg contains exact patched payload...'
+    Write-Host 'Verifying generated nupkg contains exact patched payload and mandatory SD Link bundle...'
     $verifyZip = Join-Path $work 'verify.zip'
     $verifyDir = Join-Path $work 'verify'
     Copy-Item -LiteralPath $fullNupkg -Destination $verifyZip -Force
@@ -198,6 +224,7 @@ try {
     $verifyApp = Join-Path $verifyDir 'lib\net45\resources\app'
     Assert-Hash (Join-Path $verifyApp 'main.js') $patchedMainSha256 'packaged patched main.js'
     Assert-Hash (Join-Path $verifyApp 'src\sdlink-achievement-overlay.js') $patchedHelperSha256 'packaged overlay helper'
+    Assert-Hash (Join-Path $verifyApp "bundled\$BundledSdLinkFile") $BundledSdLinkSha256 'packaged bundled SD Link v1.4.1'
     $verifyPkg = Get-Content -LiteralPath (Join-Path $verifyApp 'package.json') -Raw | ConvertFrom-Json
     if ($verifyPkg.version -ne $CandidateVersion) { throw 'Packaged candidate version mismatch.' }
 
@@ -205,7 +232,7 @@ try {
     $tree = (& git rev-parse 'HEAD^{tree}').Trim()
     $provenance = Join-Path $output 'FINAL_GATE_PROVENANCE.txt'
     @(
-      'SDCenter Chapter 3 Final Release Gate candidate',
+      'SDCenter Chapter 3 Final Release Gate candidate — SD Link bundle fix',
       "built_at_utc=$([DateTime]::UtcNow.ToString('o'))",
       "candidate_source_head=$head",
       "candidate_source_tree=$tree",
@@ -217,6 +244,9 @@ try {
       "base_main_sha256=$BaseMainSha256",
       "reviewed_audio_size=$ReviewedAudioSize",
       "reviewed_audio_sha256=$ReviewedAudioSha256",
+      "bundled_sdlink_version=$BundledSdLinkVersion",
+      "bundled_sdlink_size=$BundledSdLinkSize",
+      "bundled_sdlink_sha256=$BundledSdLinkSha256",
       "patched_main_sha256=$patchedMainSha256",
       "patched_overlay_helper_sha256=$patchedHelperSha256",
       "electron_winstaller_version=$ElectronWinstallerVersion",
@@ -226,6 +256,7 @@ try {
       "full_nupkg_size_bytes=$((Get-Item -LiteralPath $fullNupkg).Length)",
       "full_nupkg_sha256=$fullNupkgSha256",
       "releases_sha256=$releasesSha256",
+      'replaces_retired_candidate_setup_sha256=7fe1813f74e8be8425de4e021f15c17bd8c10778c3d55b9bf99db3541dfafc0a',
       'publication_state=BLOCKED_FINAL_GATE_ARTIFACT_ONLY',
       'official_version_manifest_release_modified=false'
     ) | Set-Content -LiteralPath $provenance -Encoding utf8
@@ -233,7 +264,7 @@ try {
     Write-Host "FINAL_SETUP_SHA256=$setupSha256"
     Write-Host "FINAL_NUPKG_SHA256=$fullNupkgSha256"
     Write-Host "FINAL_RELEASES_SHA256=$releasesSha256"
-    Write-Host 'PASS Chapter 3 blocked Final Release Gate candidate generated.'
+    Write-Host 'PASS Chapter 3 blocked Final Release Gate candidate generated with mandatory bundled SD Link.'
   }
   finally {
     Stop-Center
