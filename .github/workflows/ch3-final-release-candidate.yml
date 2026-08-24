@@ -1,0 +1,39 @@
+name: SDCenter Chapter 3 Final Release Candidate
+
+on:
+  push:
+    branches:
+      - release/ch3-final-gate-20260824
+    paths:
+      - '.github/workflows/ch3-final-release-candidate.yml'
+      - 'tools/build-ch3-final-release-candidate.ps1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-final-gate-candidate:
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build blocked Chapter 3 Final Release Gate candidate
+        shell: pwsh
+        run: |
+          ./tools/build-ch3-final-release-candidate.ps1 -CandidateVersion '2.2.9' -OutputDir 'final-gate-ch3-output'
+      - name: Show provenance
+        shell: pwsh
+        run: Get-Content final-gate-ch3-output/FINAL_GATE_PROVENANCE.txt
+      - name: Upload blocked Final Gate artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-Ch3-FinalGate-2.2.9-Candidate
+          path: final-gate-ch3-output/*
+          if-no-files-found: error
+          retention-days: 7
