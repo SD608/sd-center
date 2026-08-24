@@ -20,15 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     revoked: "사용 중지"
   };
 
-  function errorMessage(error) {
-    const parts = [
-      error?.message,
-      error?.details,
-      error?.hint,
-      error?.code ? `오류 코드: ${error.code}` : ""
-    ].filter(Boolean);
-    return parts.join(" / ") || "알 수 없는 오류";
-  }
+  const errorMessage = (error) => auth.messageForError(error);
 
   async function copyText(text) {
     try {
@@ -214,8 +206,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         "success"
       );
 
-      // 생성 뒤 자동 클립보드 복사를 하지 않음.
-      // 브라우저 권한 문제로 실제 생성 성공을 오류처럼 표시하는 현상을 막음.
       await loadInvites();
     } catch (error) {
       auth.setStatus(statusBox, errorMessage(error), "error");

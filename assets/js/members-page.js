@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let members = [];
   let viewer = null;
+  let adminWalletReady = false;
+  let adminWalletDeviceKey = "";
+  let adminWalletDeviceSecret = "";
 
   function formatAccount(value) {
     return String(value || "-");
@@ -21,6 +24,65 @@ document.addEventListener("DOMContentLoaded", async () => {
     badge.className = `member-badge ${extra}`.trim();
     badge.textContent = text;
     return badge;
+  }
+
+  function randomHex(bytes = 32) {
+    if (!globalThis.crypto?.getRandomValues) return "";
+    const values = new Uint8Array(bytes);
+    globalThis.crypto.getRandomValues(values);
+    return Array.from(values, (value) => value.toString(16).padStart(2, "0")).join("");
+  }
+
+  function randomRequestId() {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+    if (!globalThis.crypto?.getRandomValues) return "";
+    const values = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(values);
+    values[6] = (values[6] & 0x0f) | 0x40;
+    values[8] = (values[8] & 0x3f) | 0x80;
+    const hex = Array.from(values, (value) => value.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  function getAdminWalletSecret() {
+    const storageKey = "sd_admin_wallet_device_secret_v2";
+    try {
+      let value = String(localStorage.getItem(storageKey) || "").trim().toLowerCase();
+      if (!/^[0-9a-f]{64}$/.test(value)) {
+        value = randomHex(32);
+        if (!value) return "";
+        localStorage.setItem(storageKey, value);
+      }
+      return value;
+    } catch {
+      return "";
+    }
+  }
+
+  async function bindAdminWalletDevice() {
+    adminWalletReady = false;
+    adminWalletDeviceKey = String(auth.security?.getDeviceKey?.() || "").trim();
+    adminWalletDeviceSecret = getAdminWalletSecret();
+    if (!adminWalletDeviceKey || !adminWalletDeviceSecret) {
+      throw new Error("ADMIN_DEVICE_BINDING_UNAVAILABLE");
+    }
+
+    const heartbeat = await auth.client.rpc("record_sd_access_heartbeat", {
+      p_device_key: adminWalletDeviceKey,
+      p_platform: auth.security?.detectPlatform?.() || "web",
+      p_browser_label: auth.security?.detectBrowser?.() || null,
+      p_timezone: auth.security?.timezone?.() || null,
+      p_locale: navigator.language || null,
+      p_page: auth.security?.currentPageLabel?.() || "account.html"
+    });
+    if (heartbeat.error) throw heartbeat.error;
+
+    const bound = await auth.client.rpc("admin_bind_sd_wallet_device_v2", {
+      p_device_key: adminWalletDeviceKey,
+      p_device_secret: adminWalletDeviceSecret
+    });
+    if (bound.error) throw bound.error;
+    adminWalletReady = true;
   }
 
   function createAmountForm(member, mode) {
@@ -64,17 +126,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     form.append(amount, note, submit, quick);
 
+    let pendingFingerprint = "";
+    let pendingRequestId = "";
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       auth.clearStatus(status);
       const value = Math.trunc(Number(amount.value || 0));
       const currentBalance = Math.max(0, Number(member.balance || 0));
+      const noteText = String(note.value || "").trim();
 
       if (!Number.isFinite(value) || value < 1 || value > 1000000000) {
         return auth.setStatus(status, `${isDebit ? "차감" : "지급"} 금액은 1원 이상 10억원 이하로 입력하세요.`, "error");
       }
       if (isDebit && value > currentBalance) {
         return auth.setStatus(status, `현재 잔액 ${currentBalance.toLocaleString("ko-KR")}원보다 많이 차감할 수 없습니다.`, "error");
+      }
+      if (!adminWalletReady || !adminWalletDeviceKey || !adminWalletDeviceSecret) {
+        return auth.setStatus(status, "관리자 지갑 보안 확인이 완료되지 않아 지급/차감을 사용할 수 없습니다.", "error");
       }
 
       const actionText = isDebit ? "차감" : "지급";
@@ -83,21 +152,36 @@ document.addEventListener("DOMContentLoaded", async () => {
         : `${member.nickname}님에게 ${value.toLocaleString("ko-KR")}원의 SD 가상잔액을 지급할까요?`;
       if (!window.confirm(confirmText)) return;
 
+      const fingerprint = JSON.stringify([member.user_id, isDebit ? "debit" : "credit", value, noteText]);
+      if (pendingFingerprint !== fingerprint || !pendingRequestId) {
+        pendingFingerprint = fingerprint;
+        pendingRequestId = randomRequestId();
+      }
+      if (!pendingRequestId) {
+        return auth.setStatus(status, "안전한 요청 번호를 만들지 못했습니다. 다시 로그인한 뒤 시도하세요.", "error");
+      }
+
       submit.disabled = true;
       submit.textContent = `${actionText} 중…`;
       try {
-        const rpcName = isDebit ? "admin_debit_sd_wallet" : "admin_credit_sd_wallet";
-        const { data, error } = await auth.client.rpc(rpcName, {
+        const { data, error } = await auth.client.rpc("sd_admin_v2_adjust_wallet", {
           p_target_user_id: member.user_id,
+          p_direction: isDebit ? "debit" : "credit",
           p_amount: value,
-          p_note: String(note.value || "").trim() || null
+          p_request_id: pendingRequestId,
+          p_device_key: adminWalletDeviceKey,
+          p_device_secret: adminWalletDeviceSecret,
+          p_note: noteText || null
         });
         if (error) throw error;
 
+        pendingFingerprint = "";
+        pendingRequestId = "";
         const balanceAfter = Number(data?.balance_after || 0);
+        const retryLabel = data?.duplicate ? " · 재시도 중복 방지 확인" : "";
         auth.setStatus(
           status,
-          `${data?.nickname || member.nickname}님 ${actionText} 완료: ${value.toLocaleString("ko-KR")}원 · 현재 잔액 ${balanceAfter.toLocaleString("ko-KR")}원`,
+          `${data?.nickname || member.nickname}님 ${actionText} 완료: ${value.toLocaleString("ko-KR")}원 · 현재 잔액 ${balanceAfter.toLocaleString("ko-KR")}원${retryLabel}`,
           "success"
         );
         await loadMembers(false);
@@ -152,7 +236,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       row.append(name, account, balance);
 
-      const canManage = viewer?.role === "admin"
+      const canManage = adminWalletReady
+        && viewer?.role === "admin"
         && !member.is_me
         && member.status === "active"
         && member.role !== "admin";
@@ -220,8 +305,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (memberResult.error) throw memberResult.error;
       viewer = profileResult.data;
       members = memberResult.data || [];
+
+      adminWalletReady = false;
+      if (viewer?.role === "admin" && viewer?.status === "active") {
+        try {
+          await bindAdminWalletDevice();
+        } catch (error) {
+          adminWalletReady = false;
+          auth.setStatus(status, "관리자 지갑 보안 확인에 실패했습니다. 지급/차감 기능은 비활성화됩니다.", "error");
+        }
+      }
+
       render();
-      if (showSync) {
+      if (showSync && (viewer?.role !== "admin" || adminWalletReady)) {
         auth.setStatus(status, `회원 ${members.length}명의 계좌를 불러왔습니다.`, "success");
         setTimeout(() => auth.clearStatus(status), 1600);
       }
