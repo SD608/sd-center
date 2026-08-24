@@ -26,10 +26,14 @@ try {
   assert.ok(patched.includes(`CH3_FINAL_BUNDLED_SDLINK_FILE = "${BUNDLE_FILE}"`));
   assert.ok(patched.includes("ensureBundledIntegratedSdLink();"));
   assert.ok(patched.includes("const existing = appById.get(SD_LINK_ID);"));
+  assert.ok(patched.includes("const existingVersion = existing ? rawEntryVersion(existing) : \"0.0.0\";"));
+  assert.ok(patched.includes("compareVersions(existingVersion, CH3_FINAL_BUNDLED_SDLINK_VERSION) >= 0"));
   assert.ok(patched.includes("const bundlePath = path.join(__dirname, \"bundled\", CH3_FINAL_BUNDLED_SDLINK_FILE);"));
   assert.ok(patched.includes("installInspectedZip(inspected, destinationDirectory);"));
+  assert.ok(patched.includes("const previousEntry = existing || removedById.get(SD_LINK_ID) || null;"));
   assert.ok(patched.includes("registry = upsertCustomApp(registry, appEntry);"));
   assert.ok(patched.includes("reloadCatalog();"));
+  assert.ok(patched.includes("upgraded: Boolean(existing)"));
   assert.ok(patched.includes("app.quit();"));
   assert.equal((patched.match(/ensureBundledIntegratedSdLink\(\);/g) || []).length, 1);
 
