@@ -83,6 +83,15 @@ class SdAdminApi {
     this._notifySessionChange();
   }
 
+  _dropRuntimeSession() {
+    this.session = null;
+  }
+
+  _isDefinitiveAuthFailure(error) {
+    const status = Number(error?.status || 0);
+    return status === 400 || status === 401 || status === 403;
+  }
+
   clearSession() {
     this.session = null;
     this._notifySessionChange();
@@ -167,7 +176,8 @@ class SdAdminApi {
     try {
       return await this.me();
     } catch (error) {
-      this.clearSession();
+      if (this._isDefinitiveAuthFailure(error)) this.clearSession();
+      else this._dropRuntimeSession();
       throw error;
     }
   }
@@ -190,7 +200,7 @@ class SdAdminApi {
           user: body.user || this.session.user
         });
       } catch (error) {
-        this.clearSession();
+        if (this._isDefinitiveAuthFailure(error)) this.clearSession();
         throw error;
       } finally {
         this.refreshPromise = null;
