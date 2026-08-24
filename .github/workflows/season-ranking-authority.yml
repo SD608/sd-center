@@ -2,14 +2,18 @@ name: Season Ranking Authority
 
 on:
   push:
-    branches: [release/v024-final-gate-20260820]
+    branches: [release/v024-final-gate-20260820, feat/season0-finalize-season1-v2-20260822]
     paths:
       - 'database/migrations/sd_season0_ranking_authority_v1.sql'
+      - 'database/migrations/sd_season_transition_authority_v2.sql'
+      - 'database/migrations/sd_season_transition_authority_v3_hardening.sql'
       - 'tests/season-ranking-authority/**'
       - '.github/workflows/season-ranking-authority.yml'
   pull_request:
     paths:
       - 'database/migrations/sd_season0_ranking_authority_v1.sql'
+      - 'database/migrations/sd_season_transition_authority_v2.sql'
+      - 'database/migrations/sd_season_transition_authority_v3_hardening.sql'
       - 'tests/season-ranking-authority/**'
       - '.github/workflows/season-ranking-authority.yml'
   workflow_dispatch:
@@ -44,7 +48,109 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build fixture
         run: psql -v ON_ERROR_STOP=1 -f tests/season-ranking-authority/fixture.sql
-      - name: Apply Season 0 ranking authority
+      - name: Apply Season 0 ranking authority v1
         run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_season0_ranking_authority_v1.sql
-      - name: Run ranking regression
+      - name: Apply Season transition authority v2
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_season_transition_authority_v2.sql
+      - name: Seed production-like pre-v3 state
+        run: psql -v ON_ERROR_STOP=1 -f tests/season-ranking-authority/pre-v3-state.sql
+      - name: Apply Season transition authority v3 hardening
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_season_transition_authority_v3_hardening.sql
+      - name: Run authorization and rollback fault regression
         run: psql -v ON_ERROR_STOP=1 -f tests/season-ranking-authority/regression.sql
+      - name: Run multi-session writer/finalizer concurrency regression
+        run: bash tests/season-ranking-authority/concurrency.sh
+      - name: Run post-finalize ranking and asset regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/season-ranking-authority/post-regression.sql
+
+  core-bridge-regression:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check integrated Core bridge
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node --check 'preview/v024-core/sdlink-core-runtime.js'
+          node --check 'preview/v024-core/test-sdlink-core-runtime-v024.js'
+          node --check 'preview/v024-core/test-core-public-errors-v024.js'
+          node --check 'preview/v024-core/sdlink-background-window-guard.js'
+          node --check 'preview/v024-core/test-sdlink-background-window-guard-v024.js'
+          node --check 'tools/patch-center-ui-v024-core.js'
+      - name: Run integrated Core bridge regression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          node 'preview/v024-core/test-sdlink-core-runtime-v024.js'
+          node 'preview/v024-core/test-core-public-errors-v024.js'
+          node 'preview/v024-core/test-sdlink-background-window-guard-v024.js'
+      - name: Guard Core bridge transition contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $joined=(Get-Content 'preview/v024-core/sdlink-core-runtime.js' -Raw)+(Get-Content 'preview/v024-core/sdlink-background-window-guard.js' -Raw)+(Get-Content 'tools/patch-center-ui-v024-core.js' -Raw)
+          foreach($required in @(
+            'SD_CENTER_LINK_INTEGRATED',
+            'sd_core_register_device',
+            'sd_core_apply_sd_link_event',
+            'sd_core_list_transactions',
+            'push_sd_link_transaction',
+            'pull_sd_link_transactions',
+            'stableCoreEventId',
+            'translateCoreError',
+            'SD_CORE_UNAVAILABLE',
+            '거래는 보존되며',
+            '온라인 가상잔액이 부족합니다.',
+            'createSdLinkBackgroundWindowGuard',
+            'allowManagerWindow',
+            '--sd-link-auto-start',
+            'windowsHide'
+          )){
+            if(-not $joined.Contains($required)){ throw "Core/R2 guard marker missing: $required" }
+          }
+          foreach($forbidden in @('request_sd_wallet_migration =','get_sd_link_snapshot =','syncAchievementProgress =','syncBitcoinSnapshot =')){
+            if($joined.Contains($forbidden)){ throw "Core bridge unexpectedly rewrites protected onboarding/non-wallet flow: $forbidden" }
+          }
+          Write-Host 'v0.24 Core bridge transition contract PASS'
+
+  achievement-authority-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: achievement_security_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d achievement_security_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: achievement_security_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build achievement fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-security/fixture.sql
+      - name: Apply achievement authority hardening
+        run: psql -v ON_ERROR_STOP=1 -f sql/SD608_업적_서버권한_하드닝.sql
+      - name: Run achievement authority and asset-preservation regression
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-security/authority_regression.sql
+      - name: Run achievement UI authority regression
+        run: |
+          node --check assets/js/achievement-custom-ui.js
+          node tests/achievement-security/ui_authority_regression.js
