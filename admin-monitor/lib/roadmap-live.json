@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "revision": 2,
+  "updated_at": "2026-08-22T04:40:00+09:00",
+  "chapters": {
+    "2": {
+      "status": "complete",
+      "label": "완료 / 공식 Release"
+    },
+    "3": {
+      "status": "next",
+      "label": "다음 단계"
+    }
+  },
+  "steps": {
+    "2-8": "complete"
+  }
+}
