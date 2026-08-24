@@ -5,6 +5,7 @@ const invoke = (channel, payload) => ipcRenderer.invoke(channel, payload || {});
 
 contextBridge.exposeInMainWorld("sdAdmin", Object.freeze({
   login: (email, password) => invoke("sd:login", { email, password }),
+  restoreLogin: () => invoke("sd:restore-login"),
   logout: () => invoke("sd:logout"),
   listUsers: () => invoke("sd:users"),
   getUser: (userId) => invoke("sd:user", { userId }),
