@@ -11,6 +11,7 @@ const css = fs.readFileSync(path.join(uiRoot, "styles.css"), "utf8");
 const js = fs.readFileSync(path.join(uiRoot, "ui.js"), "utf8");
 const contract = fs.readFileSync(path.join(uiRoot, "CONTRACT.md"), "utf8");
 const gateCmd = fs.readFileSync(path.join(uiRoot, "RUN-WINDOWS-UI-GATE.cmd"), "utf8");
+const gateHtml = fs.readFileSync(path.join(uiRoot, "WINDOWS-UI-GATE.html"), "utf8");
 
 const requiredIds = [
   "appRoot", "connectionLabel", "toolSummary", "storageSummary", "dailySummary",
@@ -46,10 +47,14 @@ assert(css.includes("prefers-reduced-motion"), "reduced-motion support missing")
 assert(!css.includes("min-width:930px"), "legacy fixed min-width must not return");
 assert(contract.includes("실제 Windows 사용자 시각 검증 전에는 최종 UI Gate PASS가 아니다"), "physical UI Gate warning missing");
 
-assert(gateCmd.includes("?demo=1"), "Windows Gate launcher must remain demo-only");
+assert(gateCmd.includes("WINDOWS-UI-GATE.html"), "Windows Gate launcher must open local bootstrap file");
 assert(gateCmd.includes("SD_UI_GATE_VALIDATE_ONLY"), "Windows Gate launcher validation mode missing");
+assert(gateCmd.includes("SD_UI_GATE_E2E"), "Windows Gate launcher E2E mode missing");
+assert(gateCmd.includes("--new-window"), "Windows Gate launcher must use normal local-file navigation");
 assert(gateCmd.includes("Microsoft\\Edge\\Application\\msedge.exe"), "Windows Gate launcher must resolve Edge directly");
 assert(!/powershell/i.test(gateCmd), "Windows Gate launcher must not require PowerShell");
 assert(!fs.existsSync(path.join(uiRoot, "RUN-WINDOWS-UI-GATE.ps1")), "PowerShell Gate launcher must stay removed");
+assert(gateHtml.includes("./index.html?demo=1"), "Gate bootstrap must redirect to demo UI with a relative local URL");
+assert(!/https?:\/\//i.test(gateHtml), "Gate bootstrap must not require network navigation");
 
 console.log("miner-ui-v1 static authority/layout contract PASS");
