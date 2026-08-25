@@ -11,7 +11,6 @@ $$;
 
 create temp table miner_test_context(k text primary key, v uuid not null);
 
--- Public API privilege boundary.
 select pg_temp.assert_true(
   has_function_privilege('authenticated','public.sd_miner_v3_start(uuid,text,text,text)','EXECUTE'),
   'authenticated must execute v3 start');
@@ -24,7 +23,6 @@ select pg_temp.assert_true(
 
 set request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","session_id":"aaaaaaaa-0000-4000-8000-000000000001"}';
 
--- Common live-session/device heartbeat + miner capability binding.
 select public.record_sd_access_heartbeat(
   'miner-device-A','desktop','electron-test','Asia/Seoul','ko-KR','miner');
 select public.sd_miner_v3_bind_device(
@@ -40,7 +38,6 @@ select pg_temp.assert_true(exists(
     and d.revoked_at is null
 ), 'miner capability must bind to owned live-session device');
 
--- Legacy entitlements/progress survive the remake baseline.
 select pg_temp.assert_true(
   (public.sd_miner_v3_get_state(
     'miner-device-A','aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
@@ -60,7 +57,6 @@ select pg_temp.assert_true(
    where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and achievement_id='miner-06'),
   'legacy miner-06 unlock must survive');
 
--- Start exact replay + max one active job.
 insert into miner_test_context(k,v)
 select 'job1',(public.sd_miner_v3_start(
   '10000000-0000-4000-8000-000000000001','miner-device-A',
@@ -87,7 +83,6 @@ begin
 exception when sqlstate 'P1054' then null;
 end;$$;
 
--- Server ready_at is authoritative; merely waiting never creates inventory.
 do $$
 begin
   perform public.sd_miner_v3_claim(
@@ -102,9 +97,9 @@ select pg_temp.assert_true(
    where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')=0,
   'pending job must not create background inventory');
 
--- CI advances only the server-owned ready timestamp; clients have no table write privilege.
 update public.sd_miner_jobs
-set ready_at=clock_timestamp()-interval '1 millisecond'
+set started_at=clock_timestamp()-interval '2 seconds',
+    ready_at=clock_timestamp()-interval '1 second'
 where job_id=(select v from miner_test_context where k='job1');
 
 select public.sd_miner_v3_claim(
@@ -120,7 +115,6 @@ select pg_temp.assert_true(
    where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')=1,
   'one accepted claim adds one item');
 
--- Lost-response retry is exact replay; a fresh request cannot re-claim the job.
 select public.sd_miner_v3_claim(
   '20000000-0000-4000-8000-000000000001',
   (select v from miner_test_context where k='job1'),
@@ -140,7 +134,6 @@ begin
 exception when sqlstate 'P1055' then null;
 end;$$;
 
--- Authoritative refresh is monotonic over legitimate legacy assets.
 select pg_temp.assert_true(
   (select current_value from public.sd_achievement_progress
    where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and achievement_id='miner-01')=86,
@@ -154,7 +147,6 @@ select pg_temp.assert_true(
    where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and achievement_id='miner-08')=5,
   'miner-08 legacy progress must remain');
 
--- Wrong miner secret fails closed.
 do $$
 begin
   perform public.sd_miner_v3_get_state(
@@ -163,7 +155,6 @@ begin
 exception when sqlstate 'P1009' then null;
 end;$$;
 
--- Revoked device fails closed.
 update public.sd_access_devices set revoked_at=now()
 where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and device_key='miner-device-A';
 do $$
@@ -176,7 +167,6 @@ end;$$;
 update public.sd_access_devices set revoked_at=null,last_seen_at=now()
 where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and device_key='miner-device-A';
 
--- Deleted auth session fails closed even while the JWT-shaped claims remain.
 delete from auth.sessions where id='aaaaaaaa-0000-4000-8000-000000000001';
 do $$
 begin
@@ -190,7 +180,6 @@ insert into auth.sessions(id,user_id,not_after) values(
 select public.record_sd_access_heartbeat(
   'miner-device-A','desktop','electron-test','Asia/Seoul','ko-KR','miner');
 
--- Stale presence fails; a new common heartbeat restores it.
 update public.sd_access_devices set last_seen_at=now()-interval '11 minutes'
 where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and device_key='miner-device-A';
 do $$
@@ -203,7 +192,6 @@ end;$$;
 select public.record_sd_access_heartbeat(
   'miner-device-A','desktop','electron-test','Asia/Seoul','ko-KR','miner');
 
--- Cross-user use of another user's device key fails.
 set request.jwt.claims = '{"sub":"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb","session_id":"bbbbbbbb-0000-4000-8000-000000000001"}';
 do $$
 begin
@@ -213,7 +201,6 @@ begin
 exception when sqlstate 'P1003' then null;
 end;$$;
 
--- Inactive account fails even with a live session and server-side device row.
 insert into public.sd_access_devices(user_id,device_key,platform,last_seen_at,bound_session_id)
 values('cccccccc-cccc-4ccc-8ccc-cccccccccccc','miner-device-C','desktop',now(),
        'cccccccc-0000-4000-8000-000000000001');
@@ -226,12 +213,10 @@ begin
 exception when sqlstate 'P1002' then null;
 end;$$;
 
--- Return to active miner and test Core-routed sale exactly once.
 set request.jwt.claims = '{"sub":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","session_id":"aaaaaaaa-0000-4000-8000-000000000001"}';
 select public.record_sd_access_heartbeat(
   'miner-device-A','desktop','electron-test','Asia/Seoul','ko-KR','miner');
 
--- Deterministic CI stock. Authenticated clients cannot perform this DML.
 update public.sd_miner_inventory
 set quantity=quantity+10,acquired_count=acquired_count+10
 where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and ore_key='stone';
@@ -267,7 +252,6 @@ begin
 exception when sqlstate 'P1015' then null;
 end;$$;
 
--- Old 300ms/auto economy is fail-closed after v3 cutover.
 do $$
 begin
   perform public.sd_miner_mine('40000000-0000-4000-8000-000000000001');
@@ -284,14 +268,14 @@ select pg_temp.assert_true(
   (select count(*) from public.sd_miner_actions where action_type='mine')=0,
   'legacy mine action must not execute');
 
--- A ready job remains a single pending claim; it does not repeat in background.
 insert into miner_test_context(k,v)
 select 'job2',(public.sd_miner_v3_start(
   '50000000-0000-4000-8000-000000000001','miner-device-A',
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa','surface'
 )->>'job_id')::uuid;
 update public.sd_miner_jobs
-set ready_at=clock_timestamp()-interval '1 minute'
+set started_at=clock_timestamp()-interval '2 seconds',
+    ready_at=clock_timestamp()-interval '1 second'
 where job_id=(select v from miner_test_context where k='job2');
 select pg_temp.assert_true(
   (select status from public.sd_miner_jobs
