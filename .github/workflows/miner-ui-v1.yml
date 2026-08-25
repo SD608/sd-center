@@ -1,0 +1,56 @@
+name: Miner UI Workshop Mine v1
+
+on:
+  push:
+    branches: [feat/miner-ui-workshop-mine-v1-20260825]
+    paths:
+      - 'miner-remake/ui-v1/**'
+      - 'tests/miner-ui-v1/**'
+      - '.github/workflows/miner-ui-v1.yml'
+      - 'audits/ch4-5-miner-ui-workshop-mine-20260825.md'
+  pull_request:
+    paths:
+      - 'miner-remake/ui-v1/**'
+      - 'tests/miner-ui-v1/**'
+      - '.github/workflows/miner-ui-v1.yml'
+      - 'audits/ch4-5-miner-ui-workshop-mine-20260825.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: node --check miner-remake/ui-v1/ui.js
+      - name: UI authority and responsive contract
+        run: node tests/miner-ui-v1/ui-contract.js
+
+  windows-render:
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned render driver
+        shell: pwsh
+        run: npm install --prefix .ui-ci playwright-core@1.55.0 --no-save --ignore-scripts
+      - name: Render workshop and mine layouts
+        shell: pwsh
+        run: node tests/miner-ui-v1/capture.cjs
+      - name: Upload UI render evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-Miner-UI-v1-Windows-Renders
+          path: ui-artifacts/miner-v1/*.png
+          if-no-files-found: error
+          retention-days: 14
