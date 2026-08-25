@@ -1,5 +1,6 @@
 SD광부 4막 5장 Windows UI Gate 확인 순서
 
+0. 이 후보는 PowerShell 설치/환경변수가 필요하지 않습니다. Windows 기본 CMD가 Microsoft Edge를 직접 찾아 실행합니다.
 1. Windows 설정 > 시스템 > 디스플레이 > 배율을 100%로 설정합니다.
 2. RUN-WINDOWS-UI-GATE.cmd를 실행합니다.
 3. 작업장 화면과 광산 화면에서 아래 항목을 확인합니다.
