@@ -72,28 +72,6 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f tests/miner-work-loop-v3/regression.sql
           psql -v ON_ERROR_STOP=1 -f tests/shared-item-inventory-v1/regression.sql
-      - name: Seed two already-accepted current-day claims before economy cutover
-        run: |
-          psql -v ON_ERROR_STOP=1 <<'SQL'
-          insert into public.sd_miner_jobs(
-            job_id,user_id,start_request_id,mine_key,status,cycle_ms,
-            started_at,ready_at,claimed_at,claim_request_id,result_ore_key,result_quantity
-          ) values
-          (
-            '61000000-0000-4000-8000-000000000001',
-            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-            '62000000-0000-4000-8000-000000000001','surface','claimed',5000,
-            now()-interval '20 seconds',now()-interval '15 seconds',now()-interval '10 seconds',
-            '63000000-0000-4000-8000-000000000001','stone',1
-          ),
-          (
-            '61000000-0000-4000-8000-000000000002',
-            'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-            '62000000-0000-4000-8000-000000000002','surface','claimed',5000,
-            now()-interval '20 seconds',now()-interval '15 seconds',now()-interval '9 seconds',
-            '63000000-0000-4000-8000-000000000002','stone',1
-          );
-          SQL
       - name: Apply Chapter 4-4 final miner economy
         run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_miner_economy_balance_v1.sql
       - name: Verify final constants and preserved assets
