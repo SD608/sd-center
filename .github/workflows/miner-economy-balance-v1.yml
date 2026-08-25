@@ -13,6 +13,7 @@ on:
       - 'tests/miner-work-loop-v3/**'
       - 'tests/shared-item-inventory-v1/**'
       - 'tests/miner-economy-balance-v1/**'
+      - 'audits/ch4-4-miner-economy-balance-20260825.md'
       - '.github/workflows/miner-economy-balance-v1.yml'
   pull_request:
     paths:
@@ -25,6 +26,7 @@ on:
       - 'tests/miner-work-loop-v3/**'
       - 'tests/shared-item-inventory-v1/**'
       - 'tests/miner-economy-balance-v1/**'
+      - 'audits/ch4-4-miner-economy-balance-20260825.md'
       - '.github/workflows/miner-economy-balance-v1.yml'
   workflow_dispatch:
 
