@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SD광부</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div id="appRoot" class="app" data-connection="waiting">
+    <header class="topbar">
+      <div class="brand-row">
+        <div class="brand-mark" aria-hidden="true">SD</div>
+        <div>
+          <h1>SD광부</h1>
+          <span id="connectionLabel" class="connection-pill">Core 연동 대기</span>
+        </div>
+      </div>
+      <div class="top-metrics" aria-label="광부 상태">
+        <div><span>곡괭이</span><strong id="toolSummary">Lv.1</strong></div>
+        <div><span>보관함</span><strong id="storageSummary">0 / 500</strong></div>
+        <div><span>오늘</span><strong id="dailySummary">0 / 3,600</strong></div>
+      </div>
+    </header>
+
+    <nav class="area-tabs" aria-label="광부 구역">
+      <button class="area-tab is-active" type="button" data-tab="workshop" aria-selected="true">작업장</button>
+      <button class="area-tab" type="button" data-tab="mine" aria-selected="false">광산</button>
+    </nav>
+
+    <main class="workspace">
+      <section class="view is-active" data-view="workshop" aria-label="작업장">
+        <div class="workshop-grid">
+          <section class="panel equipment-panel">
+            <div class="panel-title"><h2>장비</h2><span id="progressionLabel">누적 0회</span></div>
+            <article class="equipment-card">
+              <div class="equipment-icon pick-icon" aria-hidden="true"><i></i></div>
+              <div class="equipment-copy">
+                <span>채굴 도구</span>
+                <strong id="toolName">낡은 곡괭이</strong>
+                <small id="toolEffect">5.0초</small>
+              </div>
+              <button id="upgradeToolButton" class="compact-button" type="button" data-ui-action="upgrade-tool" disabled>강화</button>
+            </article>
+            <article class="equipment-card">
+              <div class="equipment-icon crate-icon" aria-hidden="true"><i></i></div>
+              <div class="equipment-copy">
+                <span>운반 장비</span>
+                <strong id="storageName">광석 자루</strong>
+                <small id="storageEffect">500개</small>
+              </div>
+              <button id="upgradeStorageButton" class="compact-button" type="button" data-ui-action="upgrade-storage" disabled>강화</button>
+            </article>
+            <div id="nextUpgrade" class="upgrade-next" aria-live="polite">다음 단계는 Core 연동 후 표시</div>
+          </section>
+
+          <section class="panel workshop-scene-panel">
+            <div class="panel-title"><h2>작업장</h2><span id="workshopStatus">대기</span></div>
+            <div class="workshop-scene" aria-hidden="true">
+              <div class="lamp lamp-left"><i></i></div>
+              <div class="lamp lamp-right"><i></i></div>
+              <div class="back-wall"></div>
+              <div class="tool-rack"><i></i><i></i><i></i></div>
+              <div class="workbench"><span></span><b></b></div>
+              <div class="mine-cart"><div></div><i></i><i></i></div>
+              <div class="floor-rail rail-a"></div>
+              <div class="floor-rail rail-b"></div>
+            </div>
+            <button class="primary-button wide" type="button" data-open-mine>광산으로 이동</button>
+          </section>
+
+          <aside class="panel inventory-panel">
+            <div class="panel-title"><h2>보관함</h2><span id="inventoryCapacityLabel">0 / 500</span></div>
+            <div id="inventoryList" class="inventory-list"></div>
+            <button id="sellAllButton" class="secondary-button wide" type="button" data-ui-action="sell-all" disabled>전체 판매</button>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" data-view="mine" aria-label="광산">
+        <div class="mine-grid">
+          <section class="panel mine-panel">
+            <div class="panel-title"><h2>광산</h2><span id="jobStatus">대기</span></div>
+            <div id="mineStage" class="mine-stage">
+              <div class="mine-ceiling"></div>
+              <div class="beam beam-l"></div><div class="beam beam-r"></div><div class="beam beam-t"></div>
+              <div class="tunnel-glow"></div>
+              <div id="oreWall" class="ore-wall" aria-hidden="true">
+                <i class="vein copper v1"></i><i class="vein iron v2"></i><i class="vein emerald v3"></i><i class="vein diamond v4"></i>
+              </div>
+              <div class="track-line track-left"></div><div class="track-line track-right"></div>
+              <div class="track-ties"></div>
+              <div id="minerTool" class="miner-tool" aria-hidden="true"><span></span><i></i></div>
+              <div id="oreResult" class="ore-result" aria-live="polite"></div>
+              <div class="job-progress"><i id="jobProgressBar"></i></div>
+            </div>
+            <div class="mine-actions">
+              <button id="mineButton" class="primary-button" type="button" data-ui-action="start" disabled>채굴 시작</button>
+              <button id="claimButton" class="secondary-button" type="button" data-ui-action="claim" disabled>획득</button>
+            </div>
+          </section>
+
+          <aside class="mine-side">
+            <section class="panel status-panel">
+              <div class="panel-title"><h2>채굴 상태</h2></div>
+              <dl class="status-list">
+                <div><dt>작업 시간</dt><dd id="cycleLabel">5.0초</dd></div>
+                <div><dt>총 채굴</dt><dd id="totalMinedLabel">0회</dd></div>
+                <div><dt>오늘 채굴</dt><dd id="dailyMinedLabel">0회</dd></div>
+                <div><dt>최근 광물</dt><dd id="lastOreLabel">없음</dd></div>
+              </dl>
+            </section>
+            <section class="panel quick-inventory">
+              <div class="panel-title"><h2>광물</h2><span id="mineInventoryLabel">0 / 500</span></div>
+              <div id="mineInventoryList" class="mini-ore-list"></div>
+            </section>
+            <button class="secondary-button wide" type="button" data-open-workshop>작업장으로 이동</button>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <div id="busyShield" class="busy-shield" hidden aria-hidden="true"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="previewBadge" class="preview-badge" hidden>UI PREVIEW</div>
+  </div>
+  <script src="./ui.js"></script>
+</body>
+</html>
