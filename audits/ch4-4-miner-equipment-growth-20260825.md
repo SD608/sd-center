@@ -1,7 +1,7 @@
 # 4막 4장 — 장비·비용·성장 시스템
 
 검토일: 2026-08-25  
-대상: `SD608/sd-center`  
+대상: `SD608/sd-center` / Draft PR #79  
 범위: 서버 장비 정본, 성장 조건, Core 업그레이드 비용, 채굴 속도, 저장 용량, 회귀  
 Production 변경: **없음**
 
@@ -60,9 +60,9 @@ Production 변경: **없음**
 
 Supabase 현재 권고에 맞춰 새 `SECURITY DEFINER` 함수는 `search_path=''`를 사용하고 relation/function을 schema-qualified 하며, private helper는 `PUBLIC/anon/authenticated` EXECUTE를 revoke한다. public RPC만 authenticated에 명시적으로 grant한다.
 
-## 회귀 목표
+## 회귀 범위
 
-PostgreSQL 17에서 기존 4-2, 4-3, 경제 가드레일 회귀를 먼저 수행한 뒤 다음을 검사한다.
+PostgreSQL 17에서 기존 4-2, 4-3, 경제 가드레일 회귀를 먼저 수행한 뒤 다음을 검사했다.
 
 1. 장비 catalog 정확성
 2. client DML/private helper 차단
@@ -81,6 +81,44 @@ PostgreSQL 17에서 기존 4-2, 4-3, 경제 가드레일 회귀를 먼저 수행
 15. revoked device 업그레이드 차단
 16. 기존 광부 업적 진행/해금 단조 보존
 
+## 실제 CI 결과
+
+최종 검증 HEAD: `ecea6332e2ad941fac882df9ad364c1f29f793f3`
+
+`Miner Equipment Growth v1` run **32817289434**: **PASS**
+
+- 4-2 migration/regression: PASS
+- 4-3 shared-item migration/regression: PASS
+- pre-4-7 economy guardrail migration/regression: PASS
+- 4-4 equipment migration: PASS
+- equipment catalog/RLS/private permission: PASS
+- growth gate/Core spend/exact retry/stale expected-level: PASS
+- dynamic tool cycle: PASS
+- storage capacity/full/999→1000 claim: PASS
+- insufficient funds/revoked device: PASS
+- legacy asset/achievement preservation assertions: PASS
+
+### 실패 및 수정 이력
+
+첫 장비 회귀 실패는 코드가 아니라 테스트 request UUID가 상속 회귀에서 이미 사용된 UUID와 충돌하여 `MINER_REQUEST_IDEMPOTENCY_CONFLICT`가 발생한 것이었다. 장비 전용 UUID 대역으로 분리했다.
+
+두 번째 회귀 실패도 코드가 아니라 테스트가 사용자 B의 시작 인벤토리를 0으로 가정한 문제였다. 앞선 상속 회귀가 합법적 광물 2개를 남긴 상태였으므로 고정 `+1000 → -1`은 실제 총량 1001이 됐다. v3 회귀는 기존 정본 수량을 먼저 읽고 `capacity-current`만 추가하도록 수정했으며 최종 run에서 전 단계 PASS했다.
+
+## 판정
+
+**4막 4장 서버 장비·비용·성장 시스템 + PostgreSQL 17 CI 검사 범위: PASS.**
+
+Critical/High 결함은 이 검사 범위에서 확인되지 않았다. 단, 실제 Windows 클라이언트/UI/운영 환경까지 포함한 무결점 주장은 하지 않는다.
+
 ## Gate 경계
 
-이 장에서 PASS 가능한 범위는 서버 장비·비용·성장 구현과 PostgreSQL 회귀뿐이다. 실제 Windows UI/작업장 연출은 4-5, Core 전체 통합은 4-6, 최종 경제/자동화/시간조작은 4-7, 실제 Windows 설치·업데이트·DPI·오프라인·기존 userData는 4-8에서 별도 검증한다.
+아직 별도 검증 대상:
+
+- 실제 Windows 광부 UI와 작업장/광산 연출: 4-5
+- 실제 클라이언트 v3 장비/채굴 호출 통합
+- Core 경제·업적 전체 E2E: 4-6
+- 장비 효과를 포함한 최종 경제/매크로/시간조작: 4-7
+- Windows 100/125/150%, 설치/업데이트/재설치/재부팅/offline/existing userData: 4-8
+- DEV/Production migration 및 운영 사용자 strict asset digest
+
+`main`, Production DB, 공식 버전, update manifest, GitHub Release는 변경하지 않았다.
