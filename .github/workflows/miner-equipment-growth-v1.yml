@@ -15,6 +15,7 @@ on:
       - 'tests/shared-item-inventory-v1/**'
       - 'tests/miner-economy-balance-v1/**'
       - 'tests/miner-equipment-growth-v1/**'
+      - 'audits/ch4-4-miner-equipment-growth-20260825.md'
       - '.github/workflows/miner-equipment-growth-v1.yml'
   pull_request:
     paths:
@@ -29,6 +30,7 @@ on:
       - 'tests/shared-item-inventory-v1/**'
       - 'tests/miner-economy-balance-v1/**'
       - 'tests/miner-equipment-growth-v1/**'
+      - 'audits/ch4-4-miner-equipment-growth-20260825.md'
       - '.github/workflows/miner-equipment-growth-v1.yml'
   workflow_dispatch:
 
