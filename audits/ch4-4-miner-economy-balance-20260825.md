@@ -157,7 +157,7 @@ Production 변경: **없음** — 운영 데이터는 읽기 전용 비교만 �
 
 ## CI 검사 설계
 
-PostgreSQL 17에서 4-2/4-3 전체 회귀를 먼저 수행한 뒤 4-4를 적용한다.
+PostgreSQL 17에서 4-2 회귀를 먼저 수행하고, 그 다음 4-3 migration/회귀를 수행한 뒤 4-4를 적용한다.
 
 4-4 전용 회귀:
 
@@ -178,9 +178,24 @@ PostgreSQL 17에서 4-2/4-3 전체 회귀를 먼저 수행한 뒤 4-4를 적용�
 15. oversell 시 wallet/item/transaction 불변
 16. 기존 miner achievement progress/unlock 단조 보존
 
+## 실제 CI 결과
+
+최종 검증 HEAD: `78b7d15b347516952d6d42ab2def54017da688b2`
+
+- PR workflow `Miner Economy Balance v1` run **32814639317**: **PASS**
+- PostgreSQL: 17
+- 4-2 baseline regression: PASS
+- 4-3 shared-item migration/regression: PASS
+- 4-4 migration: PASS
+- constants/probability/economy math: PASS
+- daily quota/exact-once/rollover/background: PASS
+- final sale prices/Core exact-once/oversell: PASS
+
+첫 PR CI run `32814572618`은 4-4 구현 자체가 아니라 workflow가 4-3을 4-2 회귀보다 먼저 적용하여, 4-2 테스트가 legacy inventory 증가를 기대한 상태에서 실패했다. 4-3에서 이미 검증된 순서대로 `4-2 회귀 -> 4-3 적용/회귀 -> 4-4`로 수정했고 최종 HEAD에서 전 단계 PASS를 확인했다.
+
 ## 판정 경계
 
-4-4에서 PASS로 판단할 수 있는 것은 **최종 서버 경제 규칙과 PostgreSQL 회귀가 실제 성공한 범위**뿐이다.
+**4-4 서버 경제 규칙 + PostgreSQL 17 CI 검사 범위: PASS.**
 
 아직 별도 검증 대상:
 
