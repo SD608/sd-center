@@ -86,4 +86,4 @@ jobs:
       - name: Apply official Chapter 4-4 equipment and growth authority
         run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_miner_equipment_growth_v1.sql
       - name: Verify equipment costs progression storage and Core exact-once
-        run: psql -v ON_ERROR_STOP=1 -f tests/miner-equipment-growth-v1/regression-v2.sql
+        run: psql -v ON_ERROR_STOP=1 -f tests/miner-equipment-growth-v1/regression-v3.sql
