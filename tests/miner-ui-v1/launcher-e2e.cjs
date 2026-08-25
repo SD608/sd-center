@@ -14,6 +14,14 @@ const profile = fs.mkdtempSync(path.join(os.tmpdir(), "sd-miner-ui-gate-"));
 const outDir = path.join(root, "ui-artifacts", "miner-v1");
 fs.mkdirSync(outDir, { recursive: true });
 
+function cleanupProfile() {
+  try {
+    fs.rmSync(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 });
+  } catch (error) {
+    console.warn(`UI gate temp profile cleanup skipped: ${error.code || error.message}`);
+  }
+}
+
 const env = {
   ...process.env,
   SD_UI_GATE_E2E: "1",
@@ -80,10 +88,11 @@ async function waitForCdp() {
     console.log("miner-ui-v1 CMD -> Edge -> SD광부 E2E PASS");
   } finally {
     await browser.close();
-    fs.rmSync(profile, { recursive: true, force: true });
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    cleanupProfile();
   }
 })().catch((error) => {
   console.error(error.stack || error);
-  try { fs.rmSync(profile, { recursive: true, force: true }); } catch (_) {}
+  cleanupProfile();
   process.exit(1);
 });
