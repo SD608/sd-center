@@ -35,7 +35,7 @@ jobs:
 
   windows-render:
     runs-on: windows-2025
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,12 +47,15 @@ jobs:
       - name: Render workshop and mine layouts
         shell: pwsh
         run: node tests/miner-ui-v1/capture.cjs
-      - name: Validate Windows Gate launcher through CMD
+      - name: Validate Windows Gate launcher syntax through CMD
         shell: cmd
         run: |
           set SD_UI_GATE_VALIDATE_ONLY=1
           call miner-remake\ui-v1\RUN-WINDOWS-UI-GATE.cmd
           if errorlevel 1 exit /b %errorlevel%
+      - name: E2E Windows Gate CMD to Edge to SD광부
+        shell: cmd
+        run: node tests\miner-ui-v1\launcher-e2e.cjs
       - name: Upload UI render evidence
         uses: actions/upload-artifact@v4
         with:
