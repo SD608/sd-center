@@ -47,10 +47,24 @@ jobs:
       - name: Render workshop and mine layouts
         shell: pwsh
         run: node tests/miner-ui-v1/capture.cjs
+      - name: Validate Windows Gate launcher
+        shell: pwsh
+        run: |
+          $script = Get-Content miner-remake/ui-v1/RUN-WINDOWS-UI-GATE.ps1 -Raw
+          $null = [scriptblock]::Create($script)
+          if ($script -notmatch '\?demo=1') { throw 'Gate launcher must remain demo-only' }
+          if (-not (Test-Path miner-remake/ui-v1/WINDOWS-UI-GATE.txt)) { throw 'Gate checklist missing' }
       - name: Upload UI render evidence
         uses: actions/upload-artifact@v4
         with:
           name: SDCenter-Miner-UI-v1-Windows-Renders
           path: ui-artifacts/miner-v1/*.png
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Windows UI Gate candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-Miner-UI-v1-Windows-Gate-Candidate
+          path: miner-remake/ui-v1/**
           if-no-files-found: error
           retention-days: 14
