@@ -5,10 +5,12 @@ const path = require("path");
 const assert = require("assert");
 
 const root = path.resolve(__dirname, "..", "..");
-const html = fs.readFileSync(path.join(root, "miner-remake/ui-v1/index.html"), "utf8");
-const css = fs.readFileSync(path.join(root, "miner-remake/ui-v1/styles.css"), "utf8");
-const js = fs.readFileSync(path.join(root, "miner-remake/ui-v1/ui.js"), "utf8");
-const contract = fs.readFileSync(path.join(root, "miner-remake/ui-v1/CONTRACT.md"), "utf8");
+const uiRoot = path.join(root, "miner-remake/ui-v1");
+const html = fs.readFileSync(path.join(uiRoot, "index.html"), "utf8");
+const css = fs.readFileSync(path.join(uiRoot, "styles.css"), "utf8");
+const js = fs.readFileSync(path.join(uiRoot, "ui.js"), "utf8");
+const contract = fs.readFileSync(path.join(uiRoot, "CONTRACT.md"), "utf8");
+const gateCmd = fs.readFileSync(path.join(uiRoot, "RUN-WINDOWS-UI-GATE.cmd"), "utf8");
 
 const requiredIds = [
   "appRoot", "connectionLabel", "toolSummary", "storageSummary", "dailySummary",
@@ -43,5 +45,11 @@ assert(css.includes("@media(max-width:650px)"), "narrow responsive breakpoint mi
 assert(css.includes("prefers-reduced-motion"), "reduced-motion support missing");
 assert(!css.includes("min-width:930px"), "legacy fixed min-width must not return");
 assert(contract.includes("실제 Windows 사용자 시각 검증 전에는 최종 UI Gate PASS가 아니다"), "physical UI Gate warning missing");
+
+assert(gateCmd.includes("?demo=1"), "Windows Gate launcher must remain demo-only");
+assert(gateCmd.includes("SD_UI_GATE_VALIDATE_ONLY"), "Windows Gate launcher validation mode missing");
+assert(gateCmd.includes("Microsoft\\Edge\\Application\\msedge.exe"), "Windows Gate launcher must resolve Edge directly");
+assert(!/powershell/i.test(gateCmd), "Windows Gate launcher must not require PowerShell");
+assert(!fs.existsSync(path.join(uiRoot, "RUN-WINDOWS-UI-GATE.ps1")), "PowerShell Gate launcher must stay removed");
 
 console.log("miner-ui-v1 static authority/layout contract PASS");
