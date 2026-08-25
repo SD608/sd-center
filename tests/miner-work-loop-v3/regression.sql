@@ -11,6 +11,11 @@ begin
 end;
 $$;
 
+create temp table miner_test_context(
+  k text primary key,
+  v uuid not null
+);
+
 -- Public privilege contract: v3 is authenticated-only; legacy endpoints remain
 -- callable only to return a controlled fail-closed upgrade error.
 select pg_temp.assert_true(
@@ -79,12 +84,13 @@ select pg_temp.assert_true(
 
 -- Start is exact-once. One user cannot overlap mining jobs even with distinct
 -- request IDs, which removes click/macro throughput as an economic variable.
-select (public.sd_miner_v3_start(
+insert into miner_test_context(k,v)
+select 'job1', (public.sd_miner_v3_start(
   '10000000-0000-4000-8000-000000000001',
   'miner-device-A',
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   'surface'
-)->>'job_id') as job_id \gset
+)->>'job_id')::uuid;
 
 select pg_temp.assert_true(
   (public.sd_miner_v3_start(
@@ -92,7 +98,7 @@ select pg_temp.assert_true(
     'miner-device-A',
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     'surface'
-  )->>'job_id')::uuid = :'job_id'::uuid,
+  )->>'job_id')::uuid = (select v from miner_test_context where k='job1'),
   'start retry must replay the same job'
 );
 
@@ -122,7 +128,7 @@ do $$
 begin
   perform public.sd_miner_v3_claim(
     '20000000-0000-4000-8000-000000000001',
-    :'job_id'::uuid,
+    (select v from pg_temp.miner_test_context where k='job1'),
     'miner-device-A',
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
   );
@@ -142,14 +148,14 @@ select pg_temp.assert_true(
 -- server table directly; authenticated clients have no table write privilege.
 update public.sd_miner_jobs
 set ready_at = clock_timestamp() - interval '1 millisecond'
-where job_id=:'job_id'::uuid;
+where job_id=(select v from miner_test_context where k='job1');
 
 select public.sd_miner_v3_claim(
   '20000000-0000-4000-8000-000000000001',
-  :'job_id'::uuid,
+  (select v from miner_test_context where k='job1'),
   'miner-device-A',
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-) as first_claim \gset
+);
 
 select pg_temp.assert_true(
   (select total_mined from public.sd_miner_accounts
@@ -164,7 +170,7 @@ select pg_temp.assert_true(
 
 select public.sd_miner_v3_claim(
   '20000000-0000-4000-8000-000000000001',
-  :'job_id'::uuid,
+  (select v from miner_test_context where k='job1'),
   'miner-device-A',
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 );
@@ -178,7 +184,7 @@ do $$
 begin
   perform public.sd_miner_v3_claim(
     '20000000-0000-4000-8000-000000000002',
-    :'job_id'::uuid,
+    (select v from pg_temp.miner_test_context where k='job1'),
     'miner-device-A',
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
   );
@@ -192,17 +198,17 @@ $$;
 -- historical progress/unlocks that were already greater.
 select pg_temp.assert_true(
   (select current_value from public.sd_achievement_progress
-   where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and achievement_id='miner-01') = 86,
+   where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaaaaaa' and achievement_id='miner-01') = 86,
   'miner-01 progress must not decrease to new server total_mined=1'
 );
 select pg_temp.assert_true(
   (select unlocked from public.sd_achievement_progress
-   where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and achievement_id='miner-06'),
+   where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaaaaaa' and achievement_id='miner-06'),
   'miner-06 legacy unlock must remain unlocked after refresh'
 );
 select pg_temp.assert_true(
   (select current_value from public.sd_achievement_progress
-   where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and achievement_id='miner-08') = 5,
+   where user_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaaaaaa' and achievement_id='miner-08') = 5,
   'miner-08 legacy progress must not move backward'
 );
 
@@ -400,17 +406,20 @@ select pg_temp.assert_true(
 );
 
 -- One more job proves a ready job still does not repeat in the background.
-select (public.sd_miner_v3_start(
+insert into miner_test_context(k,v)
+select 'job2', (public.sd_miner_v3_start(
   '50000000-0000-4000-8000-000000000001',
   'miner-device-A',
   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   'surface'
-)->>'job_id') as pending_job_id \gset
+)->>'job_id')::uuid;
+
 update public.sd_miner_jobs
 set ready_at=clock_timestamp()-interval '1 minute'
-where job_id=:'pending_job_id'::uuid;
+where job_id=(select v from miner_test_context where k='job2');
 select pg_temp.assert_true(
-  (select status from public.sd_miner_jobs where job_id=:'pending_job_id'::uuid)='active',
+  (select status from public.sd_miner_jobs
+   where job_id=(select v from miner_test_context where k='job2'))='active',
   'ready job must remain one pending claim, not auto-repeat'
 );
 select pg_temp.assert_true(
