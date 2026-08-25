@@ -3,6 +3,7 @@
 검토일: 2026-08-25  
 대상: `SD608/sd-center`  
 브랜치: `feat/miner-ui-workshop-mine-v1-20260825`  
+PR: **#80 (Draft/Open)**  
 상태: **IN_PROGRESS — 실제 Windows 사용자 시각 검증 전 최종 UI Gate PASS 금지**
 
 ## 최신 로드맵 기준
@@ -42,7 +43,7 @@
 - UI는 광물 결과/가격/잔액/성장 조건을 최종 판정하지 않음
 - 4-6 어댑터가 `window.sdMinerUI.applyState()`로 서버 정본을 전달
 - UI 경제 액션은 `sd-miner-ui-action` 이벤트만 발생
-- 운영 DB write 없음
+- 운영 광부/지갑/사용자 자산 DB write 없음
 
 `?demo=1`은 CI/디자인 렌더 전용 샘플 상태이며 운영 데이터와 분리돼 있고 경제 데이터를 저장하지 않는다.
 
@@ -56,7 +57,7 @@
 - 고정 `min-width:930px` 제거
 - 1180 / 920 / 650px 반응형 분기
 
-## 자동 검증
+## 자동 검증 결과
 
 Workflow: `Miner UI Workshop Mine v1`
 
@@ -71,10 +72,26 @@ Workflow: `Miner UI Workshop Mine v1`
 8. 작업장·광산 100/125/150 대응 크기 프록시에서 horizontal overflow / viewport 밖 패널·버튼 / 지나치게 작은 버튼 검사
 9. Windows PNG 6장 artifact 생성
 
-CI 결과는 최종 HEAD 검증 후 이 문서에 갱신한다.
+검증 run `32819159446`:
+- `static-contract`: **SUCCESS**
+- `windows-render`: **SUCCESS**
+- Windows render artifact id: `9552474151`
+- artifact size: `2,058,086 bytes`
+- artifact SHA-256: `f7eda09cf7c9ef842035555e4b918fd103fdcce06bcfd984767b03b58b4d2b8e`
+- 렌더: 작업장/광산 각각 100/125/150 대응 크기, 총 PNG 6장
+
+AI가 생성된 Windows 자동 렌더 PNG를 추가 확인한 범위에서는 패널·버튼의 명백한 잘림/겹침/화면 이탈을 발견하지 못했다. 이 검사는 GitHub Windows runner + Edge headless의 자동 렌더 증거이며 사용자의 실제 Windows 후보를 직접 본 것이 아니다.
+
+감사 문서 기록으로 HEAD가 이동하므로 workflow가 이 문서 경로도 감시하며, 최종 HEAD에서 동일 검증을 다시 실행한다.
 
 ## Gate
 
-이 장의 자동 코드/렌더 검증이 성공하더라도 실제 사용자 Windows 후보의 100/125/150% 시각 확인 전에는 **UI Gate 최종 PASS가 아니다**. 따라서 해당 실환경 확인 전 로드맵 4-5는 COMPLETE/PASS/100으로 올리지 않는다.
+현재 판정:
+- UI 정적/authority 계약: **PASS (검사 범위)**
+- GitHub Windows 2025 자동 렌더: **PASS (검사 범위)**
+- 실제 사용자 Windows 100/125/150% 시각 Gate: **미검증**
+- 4막 5장 최종 상태: **IN_PROGRESS**
+
+따라서 실제 사용자 Windows 후보의 100/125/150% 시각 확인 전에는 **UI Gate 최종 PASS가 아니며**, 로드맵 4-5를 COMPLETE/PASS/100으로 올리지 않는다.
 
 4-6에서 서버 v3 / Core 경제·업적 어댑터를 연결하고, 4-8에서 설치·업데이트·재실행·재부팅·오프라인·기존 userData와 실제 Windows UI Gate를 마감한다.
