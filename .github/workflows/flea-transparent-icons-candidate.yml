@@ -45,6 +45,7 @@ jobs:
           assert report['display_caps']['bulk_row'] == [48, 36]
           assert report['phone_home_overlap_fix'] is True
           assert report['phone_home_app_count'] == 5
+          assert report['phone_home_layout'] == '3 apps first row + 2 centered second row'
           target = Path('diagnostics/SDFleaMarket_v1.2.3_transparent-icons-candidate.zip')
           with zipfile.ZipFile(target) as z:
               names = [n for n in z.namelist() if '/public/assets/items/' in n and n.endswith('.png')]
