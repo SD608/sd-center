@@ -21,6 +21,63 @@ ICON_SIZE = (128, 96)
 OUTPUT = ROOT / "diagnostics/SDFleaMarket_v1.2.3_transparent-icons-candidate.zip"
 SHA_FILE = ROOT / "diagnostics/SDFleaMarket_v1.2.3_transparent-icons-candidate.sha256"
 REPORT = ROOT / "diagnostics/SDFleaMarket_v1.2.3_transparent-icons-report.json"
+DISPLAY_FIX_MARKER = "2026-09-07 native-size aspect-safe item artwork"
+
+# Do not enlarge 128x96 item artwork to fill UI containers.
+# Every displayed image keeps the same 4:3 ratio as the PNG source.
+DISPLAY_FIX_CSS = r'''
+
+/* 2026-09-07 native-size aspect-safe item artwork */
+.item-card .inventory-item-image {
+  width: 96px;
+  height: 72px;
+  max-width: 86%;
+  max-height: 86%;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+  display: block;
+}
+.reward-item-image .reward-product-image {
+  width: 128px;
+  height: 96px;
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+  display: block;
+}
+.dictionary-item-image .dictionary-product-image {
+  width: 84px;
+  height: 63px;
+  max-width: 92%;
+  max-height: 92%;
+  padding: 0;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+  display: block;
+}
+.bulk-result-preview-image {
+  width: 72px;
+  height: 54px;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+}
+.bulk-result-item-image {
+  width: 48px;
+  height: 36px;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+}
+@media(max-width:700px){
+  .item-card .inventory-item-image{width:88px;height:66px}
+  .reward-item-image .reward-product-image{width:120px;height:90px}
+}
+'''
 
 # Sprite order is the user-approved 6x6 sheet, read left-to-right and top-to-bottom.
 ITEM_FILENAMES = [
@@ -93,6 +150,24 @@ def install_icons(package_root: Path) -> dict[str, dict[str, object]]:
     return report
 
 
+def patch_display_css(package_root: Path) -> None:
+    css_path = package_root / "public/style.css"
+    css = css_path.read_text(encoding="utf-8")
+    # These are the v1.2.3 rules that enlarged artwork to the container dimensions.
+    required_base = [
+        ".inventory-item-image{width:100%;height:100%;object-fit:contain",
+        ".reward-product-image{width:100%;height:100%;object-fit:contain",
+        ".dictionary-product-image{width:100%;height:100%;object-fit:contain",
+        ".bulk-result-preview-image{width:72px;height:58px;object-fit:contain",
+        ".bulk-result-item-image{width:52px;height:40px;flex:0 0 auto;object-fit:contain",
+    ]
+    for marker in required_base:
+        if marker not in css:
+            raise RuntimeError(f"base image CSS marker missing: {marker}")
+    if DISPLAY_FIX_MARKER not in css:
+        css_path.write_text(css + DISPLAY_FIX_CSS, encoding="utf-8")
+
+
 def validate_icons(package_root: Path) -> None:
     out = package_root / "public/assets/items"
     files = sorted(path.name for path in out.glob("*.png"))
@@ -115,20 +190,43 @@ def validate_icons(package_root: Path) -> None:
                 raise RuntimeError(f"{filename}: corner {point} is not transparent")
 
 
-def validate_mapping(package_root: Path) -> None:
+def validate_mapping_and_display_css(package_root: Path) -> None:
     app_js = (package_root / "public/app.js").read_text(encoding="utf-8")
     for filename in ITEM_FILENAMES:
         if f"assets/items/{filename}" not in app_js:
             raise RuntimeError(f"app.js mapping missing for {filename}")
-    for token in ("dictionary-product-image", "inventory-item-image", "itemImageHtml"):
+    for token in (
+        "dictionary-product-image", "inventory-item-image", "reward-product-image",
+        "bulk-result-preview-image", "bulk-result-item-image", "itemImageHtml",
+    ):
         if token not in app_js:
             raise RuntimeError(f"app.js UI token missing: {token}")
+
+    css = (package_root / "public/style.css").read_text(encoding="utf-8")
+    for token in (
+        DISPLAY_FIX_MARKER,
+        ".item-card .inventory-item-image",
+        "width: 96px;",
+        "height: 72px;",
+        ".reward-item-image .reward-product-image",
+        "width: 128px;",
+        "height: 96px;",
+        ".dictionary-item-image .dictionary-product-image",
+        "width: 84px;",
+        "height: 63px;",
+        "image-rendering: auto;",
+    ):
+        if token not in css:
+            raise RuntimeError(f"native-size CSS token missing: {token}")
 
 
 def run_static_checks(package_root: Path) -> None:
     if not shutil.which("node"):
         raise RuntimeError("node is required for candidate static checks")
-    for relative in ("main.js", "preload.js", "public/app.js"):
+    for relative in (
+        "main.js", "preload.js", "src/wallet-db.js", "src/sd-integration.js",
+        "public/mission3d.js", "public/bankchase.js", "public/app.js",
+    ):
         path = package_root / relative
         if path.is_file():
             subprocess.run(["node", "--check", str(path)], check=True)
@@ -149,6 +247,15 @@ def repack(package_root: Path, icon_report: dict[str, dict[str, object]]) -> Non
         "sprite_sha256": SPRITE_SHA256,
         "candidate_sha256": digest,
         "icon_count": len(icon_report),
+        "icon_size": list(ICON_SIZE),
+        "native_size_display_fix": True,
+        "display_caps": {
+            "inventory": [96, 72],
+            "reward": [128, 96],
+            "dictionary": [84, 63],
+            "bulk_preview": [72, 54],
+            "bulk_row": [48, 36],
+        },
         "icons": icon_report,
     }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"candidate={OUTPUT}")
@@ -172,8 +279,9 @@ def main() -> None:
             archive.extractall(extracted)
         package_root = find_package_root(extracted)
         icon_report = install_icons(package_root)
+        patch_display_css(package_root)
         validate_icons(package_root)
-        validate_mapping(package_root)
+        validate_mapping_and_display_css(package_root)
         run_static_checks(package_root)
         repack(package_root, icon_report)
 
