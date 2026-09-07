@@ -33,11 +33,22 @@ jobs:
           report = json.loads(Path('diagnostics/SDFleaMarket_v1.2.3_transparent-icons-report.json').read_text(encoding='utf-8'))
           assert report['icon_count'] == 36, report['icon_count']
           assert report['sprite_sha256'] == '9d521eca5e57587581a453cca95cd915aeb8d12e6edfa1bee08c636baf337b14'
+          assert report['icon_size'] == [128, 96], report['icon_size']
+          assert report['native_size_display_fix'] is True
+          assert report['display_caps']['inventory'] == [96, 72]
+          assert report['display_caps']['reward'] == [128, 96]
+          assert report['display_caps']['dictionary'] == [84, 63]
+          assert report['display_caps']['bulk_preview'] == [72, 54]
+          assert report['display_caps']['bulk_row'] == [48, 36]
           target = Path('diagnostics/SDFleaMarket_v1.2.3_transparent-icons-candidate.zip')
           with zipfile.ZipFile(target) as z:
               names = [n for n in z.namelist() if '/public/assets/items/' in n and n.endswith('.png')]
+              css = z.read('sd-flea-market/public/style.css').decode('utf-8')
           assert len(names) == 36, len(names)
+          assert '2026-09-07 native-size aspect-safe item artwork' in css
+          assert '.reward-item-image .reward-product-image' in css
           print('item png count:', len(names))
+          print('native-size display fix: PASS')
           print('candidate sha256:', report['candidate_sha256'])
           PY
       - uses: actions/upload-artifact@v4
