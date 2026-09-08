@@ -1,0 +1,111 @@
+name: Flea v1.2.4 Transparent Icons Release Candidate
+
+on:
+  push:
+    branches:
+      - release/flea-v124-transparent-icons-20260908
+    paths:
+      - '.github/workflows/flea-v124-transparent-icons-release-candidate.yml'
+      - 'tools/build-flea-v124-transparent-icons-release.py'
+      - 'tools/build-flea-transparent-icons-candidate.py'
+      - 'tools/patch-flea-phone-home-layout.py'
+      - 'tools/flea-transparent-icons-b64/**'
+  pull_request:
+    paths:
+      - '.github/workflows/flea-v124-transparent-icons-release-candidate.yml'
+      - 'tools/build-flea-v124-transparent-icons-release.py'
+      - 'tools/build-flea-transparent-icons-candidate.py'
+      - 'tools/patch-flea-phone-home-layout.py'
+      - 'tools/flea-transparent-icons-b64/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install image validation dependency
+        run: python -m pip install --disable-pip-version-check Pillow==12.3.0
+
+      - name: Build exact v1.2.4 release candidate
+        run: python tools/build-flea-v124-transparent-icons-release.py
+
+      - name: Validate package, artwork, UI and publication safety
+        shell: python
+        run: |
+          import hashlib, json, zipfile
+          from pathlib import Path
+          from PIL import Image
+          from io import BytesIO
+
+          expected='a23783ff7192a2e0974ae0bca98e3dbfd6c241df345babd0a867a48ea87cbc8c'
+          candidate=Path('artifacts/flea-v124-transparent-icons/SDFleaMarket_v1.2.4_Desktop-CANDIDATE.zip')
+          if not candidate.is_file(): raise SystemExit('release candidate missing')
+          digest=hashlib.sha256(candidate.read_bytes()).hexdigest()
+          if digest != expected: raise SystemExit(f'release candidate SHA mismatch: {digest}')
+
+          with zipfile.ZipFile(candidate) as z:
+              names=set(z.namelist())
+              pkg=json.loads(z.read('sd-flea-market/package.json'))
+              app=json.loads(z.read('sd-flea-market/sd-app.json'))
+              css=z.read('sd-flea-market/public/style.css').decode('utf-8')
+              index=z.read('sd-flea-market/public/index.html').decode('utf-8')
+              if pkg.get('version')!='1.2.4' or app.get('version')!='1.2.4':
+                  raise SystemExit('v1.2.4 package metadata mismatch')
+              if app.get('displayVersion')!='PC Expansion · v1.2.4':
+                  raise SystemExit('displayVersion mismatch')
+              item_names=sorted(n for n in names if n.startswith('sd-flea-market/public/assets/items/') and n.endswith('.png'))
+              if len(item_names)!=36: raise SystemExit(f'item PNG count={len(item_names)}')
+              for name in item_names:
+                  image=Image.open(BytesIO(z.read(name))).convert('RGBA')
+                  if image.size!=(128,96): raise SystemExit(f'{name}: size={image.size}')
+                  alpha=image.getchannel('A')
+                  if alpha.getextrema()!=(0,255): raise SystemExit(f'{name}: alpha extrema={alpha.getextrema()}')
+                  for point in ((0,0),(127,0),(0,95),(127,95)):
+                      if alpha.getpixel(point)!=0: raise SystemExit(f'{name}: opaque corner {point}')
+              for marker in (
+                  '2026-09-07 native-size aspect-safe item artwork',
+                  '.item-card .inventory-item-image',
+                  '.reward-item-image .reward-product-image',
+                  '.dictionary-item-image .dictionary-product-image',
+                  '2026-09-07 phone home five-app overlap fix',
+                  'grid-template-columns:repeat(6,minmax(0,1fr));',
+                  '.phone-app:nth-child(4){grid-column:2 / span 2}',
+                  '.phone-app:nth-child(5){grid-column:4 / span 2}',
+              ):
+                  if marker not in css: raise SystemExit(f'validated UI marker missing: {marker}')
+              if index.count('class="phone-app"')!=5: raise SystemExit('phone home app count mismatch')
+
+          report=json.loads(Path('artifacts/flea-v124-transparent-icons/SDFleaMarket_v1.2.4_RELEASE_CANDIDATE_REPORT.json').read_text(encoding='utf-8'))
+          if report.get('runtime_diff_except_metadata')!=0: raise SystemExit('runtime diff is not zero')
+          if report.get('source_validated_candidate_sha256')!='d7f4b3c29bcf55d18a82cc116579ce7b982169077f7f6a9748ab07581c335c5f':
+              raise SystemExit('Windows-tested source candidate pin mismatch')
+
+          catalog=json.loads(Path('update/extensions-catalog.json').read_text(encoding='utf-8'))
+          flea=catalog['apps']['sd-flea-market']
+          if flea.get('version')!='1.2.3': raise SystemExit('official catalog changed before final Windows retest')
+          if flea.get('sha256')!='5ee869af576045fae3bc48366a8de58bdcac7bfeedad77a9a9d1d94bd5ac3e75':
+              raise SystemExit('official v1.2.3 SHA changed before final Windows retest')
+          if 'SDFleaMarket_v1.2.3_Desktop.zip' not in flea.get('downloadUrl',''):
+              raise SystemExit('official Flea URL changed before final Windows retest')
+          print('release_candidate_sha256=',digest)
+          print('runtime_diff_except_metadata=0')
+          print('official_publication_state=UNCHANGED_V1.2.3')
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flea-v1.2.4-transparent-icons-release-candidate
+          path: artifacts/flea-v124-transparent-icons/
+          if-no-files-found: error
