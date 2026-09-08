@@ -90,8 +90,12 @@ jobs:
 
           report=json.loads(Path('artifacts/flea-v124-transparent-icons/SDFleaMarket_v1.2.4_RELEASE_CANDIDATE_REPORT.json').read_text(encoding='utf-8'))
           if report.get('runtime_diff_except_metadata')!=0: raise SystemExit('runtime diff is not zero')
-          if report.get('source_validated_candidate_sha256')!='d7f4b3c29bcf55d18a82cc116579ce7b982169077f7f6a9748ab07581c335c5f':
-              raise SystemExit('Windows-tested source candidate pin mismatch')
+          if report.get('windows_tested_v123_zip_sha256')!='d7f4b3c29bcf55d18a82cc116579ce7b982169077f7f6a9748ab07581c335c5f':
+              raise SystemExit('Windows-tested source ZIP evidence mismatch')
+          if report.get('windows_tested_v123_content_sha256')!='358c82fe97a3055d30fc11420d14babb4c9abd5108150b1932266e0654a3514d':
+              raise SystemExit('Windows-tested source runtime content pin mismatch')
+          if report.get('rebuilt_v123_content_sha256')!='358c82fe97a3055d30fc11420d14babb4c9abd5108150b1932266e0654a3514d':
+              raise SystemExit('CI rebuilt runtime differs from Windows-tested content')
 
           catalog=json.loads(Path('update/extensions-catalog.json').read_text(encoding='utf-8'))
           flea=catalog['apps']['sd-flea-market']
@@ -101,6 +105,7 @@ jobs:
           if 'SDFleaMarket_v1.2.3_Desktop.zip' not in flea.get('downloadUrl',''):
               raise SystemExit('official Flea URL changed before final Windows retest')
           print('release_candidate_sha256=',digest)
+          print('windows_tested_content_sha256=358c82fe97a3055d30fc11420d14babb4c9abd5108150b1932266e0654a3514d')
           print('runtime_diff_except_metadata=0')
           print('official_publication_state=UNCHANGED_V1.2.3')
 
