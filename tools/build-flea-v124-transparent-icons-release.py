@@ -10,7 +10,11 @@ from pathlib import Path
 
 ROOT = Path.cwd()
 VALIDATED_V123 = ROOT / "diagnostics/SDFleaMarket_v1.2.3_transparent-icons-candidate.zip"
-VALIDATED_V123_SHA256 = "d7f4b3c29bcf55d18a82cc116579ce7b982169077f7f6a9748ab07581c335c5f"
+# Exact ZIP handed to the user and validated on Windows. The candidate builder itself is
+# not byte-deterministic because archive entry mtimes come from the extraction workspace,
+# so CI verifies the normalized entry-content hash below instead of ZIP container metadata.
+WINDOWS_TESTED_V123_ZIP_SHA256 = "d7f4b3c29bcf55d18a82cc116579ce7b982169077f7f6a9748ab07581c335c5f"
+WINDOWS_TESTED_V123_CONTENT_SHA256 = "358c82fe97a3055d30fc11420d14babb4c9abd5108150b1932266e0654a3514d"
 OUT_DIR = ROOT / "artifacts/flea-v124-transparent-icons"
 OUT_ZIP = OUT_DIR / "SDFleaMarket_v1.2.4_Desktop-CANDIDATE.zip"
 OUT_SHA = OUT_DIR / "SDFleaMarket_v1.2.4_Desktop-CANDIDATE.sha256"
@@ -28,6 +32,19 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def normalized_zip_content_sha256(path: Path) -> str:
+    """Hash file names + uncompressed bytes, intentionally ignoring ZIP metadata."""
+    h = hashlib.sha256()
+    with zipfile.ZipFile(path) as archive:
+        for name in sorted(n for n in archive.namelist() if not n.endswith("/")):
+            data = archive.read(name)
+            h.update(name.encode("utf-8"))
+            h.update(b"\0")
+            h.update(len(data).to_bytes(8, "big"))
+            h.update(data)
+    return h.hexdigest()
+
+
 def deterministic_zip(package_root: Path, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.exists():
@@ -41,18 +58,25 @@ def deterministic_zip(package_root: Path, output: Path) -> None:
             archive.writestr(info, path.read_bytes(), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 
-def build_exact_validated_v123() -> None:
+def build_exact_validated_v123() -> tuple[str, str]:
     subprocess.run(["python", "tools/build-flea-transparent-icons-candidate.py"], check=True)
     subprocess.run(["python", "tools/patch-flea-phone-home-layout.py"], check=True)
     if not VALIDATED_V123.is_file():
         raise RuntimeError("validated v1.2.3 candidate was not produced")
-    digest = sha256(VALIDATED_V123)
-    if digest != VALIDATED_V123_SHA256:
-        raise RuntimeError(f"validated v1.2.3 SHA mismatch: {digest}")
+    zip_digest = sha256(VALIDATED_V123)
+    content_digest = normalized_zip_content_sha256(VALIDATED_V123)
+    if content_digest != WINDOWS_TESTED_V123_CONTENT_SHA256:
+        raise RuntimeError(
+            "validated v1.2.3 runtime content mismatch: "
+            f"{content_digest}; Windows-tested content={WINDOWS_TESTED_V123_CONTENT_SHA256}"
+        )
+    print(f"rebuilt_v123_zip_sha256={zip_digest} (container metadata may differ)")
+    print(f"rebuilt_v123_content_sha256={content_digest}")
+    return zip_digest, content_digest
 
 
 def build_v124() -> None:
-    build_exact_validated_v123()
+    rebuilt_v123_zip_sha, rebuilt_v123_content_sha = build_exact_validated_v123()
     with tempfile.TemporaryDirectory() as td:
         root = Path(td) / "extract"
         root.mkdir()
@@ -125,8 +149,10 @@ def build_v124() -> None:
         raise RuntimeError(f"reproducible v1.2.4 SHA mismatch: {digest}")
     OUT_SHA.write_text(f"{digest}  SDFleaMarket_v1.2.4_Desktop.zip\n", encoding="ascii")
     OUT_REPORT.write_text(json.dumps({
-        "source_validated_candidate": VALIDATED_V123.name,
-        "source_validated_candidate_sha256": VALIDATED_V123_SHA256,
+        "windows_tested_v123_zip_sha256": WINDOWS_TESTED_V123_ZIP_SHA256,
+        "windows_tested_v123_content_sha256": WINDOWS_TESTED_V123_CONTENT_SHA256,
+        "rebuilt_v123_zip_sha256": rebuilt_v123_zip_sha,
+        "rebuilt_v123_content_sha256": rebuilt_v123_content_sha,
         "release_candidate": OUT_ZIP.name,
         "release_candidate_sha256": digest,
         "version": "1.2.4",
