@@ -1,0 +1,143 @@
+name: Homepage UI Gate TEMP
+
+on:
+  push:
+    branches:
+      - feat/homepage-renewal-v1-20260910
+    paths:
+      - index.html
+      - assets/css/home.css
+      - assets/js/home.js
+      - .github/workflows/homepage-ui-gate-temp.yml
+
+permissions:
+  contents: read
+
+jobs:
+  windows-homepage-ui-gate:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright package
+        shell: bash
+        run: npm install --no-save --ignore-scripts playwright@1.55.0
+
+      - name: Start static server
+        shell: bash
+        run: |
+          python -m http.server 4173 > server.log 2>&1 &
+          echo $! > server.pid
+          sleep 2
+          curl --fail http://127.0.0.1:4173/index.html > /dev/null
+
+      - name: Full homepage responsive and interaction checks
+        shell: bash
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ channel: 'chrome', headless: true });
+            const widths = [1920, 1536, 1280, 1050, 981, 980, 760, 660, 390, 320];
+            const results = [];
+            let failed = false;
+
+            for (const width of widths) {
+              const page = await browser.newPage({ viewport: { width, height: 1100 } });
+              const consoleErrors = [];
+              page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+              await page.goto('http://127.0.0.1:4173/index.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+              await page.waitForTimeout(1800);
+
+              const base = await page.evaluate(() => {
+                const visible = el => !!el && !el.hidden && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0;
+                const body = document.documentElement;
+                const count = document.getElementById('extensionCount');
+                const preview = document.getElementById('extensionCountPreview');
+                const cards = [...document.querySelectorAll('#extensionGrid .extension-card')];
+                const brokenImages = [...document.images].filter(img => img.complete && img.naturalWidth === 0).map(img => img.getAttribute('src'));
+                return {
+                  overflow: body.scrollWidth > body.clientWidth + 1,
+                  scrollWidth: body.scrollWidth,
+                  clientWidth: body.clientWidth,
+                  extensionCount: count?.textContent?.trim() ?? null,
+                  extensionPreview: preview?.textContent?.trim() ?? null,
+                  extensionCards: cards.length,
+                  brokenImages,
+                  loginVisible: [...document.querySelectorAll('[data-auth-guest]')].some(visible),
+                  mobileSpotlightVisible: visible(document.querySelector('.sd-mobile-install-spotlight')),
+                  headerHeight: document.querySelector('.home-header')?.getBoundingClientRect().height ?? null
+                };
+              });
+
+              const expectedCount = Number.parseInt(base.extensionCount || '0', 10);
+              const countOk = String(expectedCount) === base.extensionPreview && expectedCount === base.extensionCards;
+              let navOk = true;
+              let escFocusOk = true;
+              let linkCloseOk = true;
+
+              if (width <= 980) {
+                const toggle = page.locator('.home-nav-toggle');
+                await toggle.click();
+                navOk = await toggle.getAttribute('aria-expanded') === 'true' && await page.locator('#homeNav').isVisible();
+                await page.keyboard.press('Escape');
+                escFocusOk = await toggle.getAttribute('aria-expanded') === 'false' && await toggle.evaluate(el => document.activeElement === el);
+                await toggle.click();
+                await page.locator('#homeNav > a').first().click();
+                linkCloseOk = await toggle.getAttribute('aria-expanded') === 'false';
+              }
+
+              const mobileExpected = width <= 760;
+              const mobileOk = base.mobileSpotlightVisible === mobileExpected;
+              const ok = !base.overflow && countOk && navOk && escFocusOk && linkCloseOk && mobileOk && base.loginVisible && base.brokenImages.length === 0;
+              if (!ok) failed = true;
+              results.push({ width, ok, countOk, navOk, escFocusOk, linkCloseOk, mobileOk, ...base, consoleErrors: consoleErrors.slice(0, 5) });
+              await page.screenshot({ path: `homepage-${width}.png`, fullPage: true });
+              await page.close();
+            }
+
+            console.log('UI_GATE_JSON=' + JSON.stringify(results));
+            await browser.close();
+            if (failed) process.exit(1);
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+
+      - name: Install Lighthouse
+        if: success()
+        shell: bash
+        run: npm install --no-save --ignore-scripts lighthouse@12.8.2
+
+      - name: Lighthouse localhost baseline
+        if: success()
+        shell: bash
+        run: |
+          npx lighthouse http://127.0.0.1:4173/index.html --quiet --chrome-flags='--headless --no-sandbox' --output=json --output-path=lighthouse.json
+          node - <<'NODE'
+          const r = require('./lighthouse.json');
+          const out = {
+            performance: r.categories.performance.score,
+            accessibility: r.categories.accessibility.score,
+            bestPractices: r.categories['best-practices'].score,
+            seo: r.categories.seo.score,
+            lcpMs: r.audits['largest-contentful-paint'].numericValue,
+            cls: r.audits['cumulative-layout-shift'].numericValue,
+            tbtMs: r.audits['total-blocking-time'].numericValue
+          };
+          console.log('LIGHTHOUSE_JSON=' + JSON.stringify(out));
+          NODE
+
+      - name: Upload preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage-ui-gate-temp
+          path: |
+            homepage-*.png
+            lighthouse.json
+            server.log
+          if-no-files-found: ignore
