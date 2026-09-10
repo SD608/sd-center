@@ -138,7 +138,7 @@ jobs:
             '<!-- homepage-ui-gate-temp-v2 -->',
             '### Homepage UI Gate TEMP — Windows evidence',
             '',
-            `- head SHA: `${process.env.GITHUB_SHA}``,
+            '- head SHA: ' + process.env.GITHUB_SHA,
             `- Windows Chrome responsive/interactions: **${ui.every(x => x.ok) ? 'PASS' : 'FAIL'}**`,
             `- widths: ${widths}`,
             `- Lighthouse localhost: Performance **${out.performance}**, Accessibility **${out.accessibility}**, Best Practices **${out.bestPractices}**, SEO **${out.seo}**`,
