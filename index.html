@@ -3,318 +3,286 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta http-equiv="Expires" content="0"/>
-<meta content="SD종합센터 본체와 SD슬롯, SD묵찌빠 등 선택형 확장팩을 다운로드하는 공식 페이지" name="description"/>
+<meta content="SD종합센터 Windows 본체, SD 계정, 선택형 확장팩을 한곳에서 이용하는 공식 페이지" name="description"/>
 <meta content="#0b1224" name="theme-color"/>
-<title>SD종합센터 · 확장팩 다운로드</title><link rel="manifest" href="manifest.webmanifest" />
-<link href="favicon.ico" rel="icon"/>
-<link href="assets/css/style.css?v=online2" rel="stylesheet"/>
-<link href="assets/css/mobile-login-fix.css?v=20260813a" rel="stylesheet"/>
+<title>SD종합센터</title>
 <script>
-(function(){
-  var ua=navigator.userAgent||"";
-  var isAndroid=/Android/i.test(ua);
-  var isIOS=/iPhone|iPad|iPod/i.test(ua) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
-  document.documentElement.dataset.sdPlatform=isAndroid?"android":(isIOS?"ios":"other");
-})();
+  document.documentElement.classList.add("sd-js");
+  if (/Android/i.test(navigator.userAgent || "")) document.documentElement.classList.add("sd-android");
 </script>
 <style>
-.mobile-install-spotlight{display:none}
-@media (max-width:760px){
-  .header-download{display:none!important}
-  .hero .hero-actions [data-download-link]{display:none!important}
-  .hero .download-meta{display:none!important}
-  .mobile-install-spotlight{display:block;width:calc(100% - 20px);box-sizing:border-box;margin:12px auto 4px;padding:18px;border:1px solid rgba(112,159,255,.28);border-radius:20px;background:linear-gradient(135deg,rgba(34,73,148,.96),rgba(16,35,72,.98));box-shadow:0 18px 48px rgba(0,0,0,.3)}
-  .mobile-install-head{display:flex;align-items:center;gap:13px}
-  .mobile-install-head img{width:54px;height:54px;flex:0 0 auto;border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
-  .mobile-install-copy{min-width:0;display:flex;flex-direction:column}
-  .mobile-install-copy small{color:#8fb4ff;font-size:.66rem;font-weight:900;letter-spacing:.13em}
-  .mobile-install-copy strong{margin-top:2px;color:#fff;font-size:1.08rem;letter-spacing:-.025em}
-  .mobile-install-copy span{margin-top:2px;color:#b7c7df;font-size:.74rem;line-height:1.45}
-  .mobile-install-primary,.mobile-install-secondary{display:flex;width:100%;box-sizing:border-box;align-items:center;justify-content:center;text-decoration:none;text-align:center;font-weight:900;border-radius:15px}
-  .mobile-install-primary{min-height:58px;margin-top:14px;background:linear-gradient(135deg,#65d1ff,#6385ff 78%);color:#fff;box-shadow:0 14px 30px rgba(72,122,255,.32);font-size:1rem}
-  .mobile-install-secondary{min-height:46px;margin-top:9px;border:1px solid rgba(164,190,236,.18);background:rgba(255,255,255,.045);color:#c8d5e8;font-size:.78rem}
-  .mobile-install-note{display:block;margin-top:10px;color:#8192aa;font-size:.68rem;line-height:1.55;text-align:center}
-  .mobile-install-ios{display:none!important}
-  html[data-sd-platform="other"] .mobile-install-apk,html[data-sd-platform="ios"] .mobile-install-apk{display:none!important}
-  html[data-sd-platform="android"] .mobile-install-web-primary,html[data-sd-platform="ios"] .mobile-install-web-primary{display:none!important}
-  html[data-sd-platform="other"] .mobile-install-web-primary{display:flex!important}
-  html[data-sd-platform="ios"] .mobile-install-ios{display:flex!important}
-}
-
-/* PC / Galaxy / iPhone beginner installation guide */
-.device-install-guide{padding-top:130px}
-.device-install-guide .guide-intro{max-width:780px;margin-bottom:30px}
-.device-install-guide .guide-intro h2{margin:10px 0 0;font-size:clamp(2rem,4vw,3.3rem);line-height:1.2;letter-spacing:-.045em}
-.device-install-guide .guide-intro p{margin:16px 0 0;color:var(--muted);line-height:1.8}
-.device-guide-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.device-guide-card{display:flex;min-width:0;padding:26px;flex-direction:column;border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(23,38,65,.9),rgba(10,20,37,.94));box-shadow:0 18px 50px rgba(0,0,0,.17)}
-.device-guide-card.recommended{border-color:rgba(91,139,255,.34);box-shadow:0 20px 60px rgba(47,91,194,.16)}
-.device-guide-top{display:flex;align-items:center;gap:14px}
-.device-guide-mark{display:grid;width:48px;height:48px;flex:0 0 auto;place-items:center;border-radius:15px;background:rgba(92,132,244,.14);color:#9ab7ff;font-size:.78rem;font-weight:950;letter-spacing:.04em}
-.device-guide-title small{display:block;color:#7893c4;font-size:.65rem;font-weight:900;letter-spacing:.11em}
-.device-guide-title h3{margin:2px 0 0;font-size:1.2rem;letter-spacing:-.03em}
-.device-guide-sub{min-height:54px;margin:17px 0;color:#8e9db5;font-size:.8rem;line-height:1.7}
-.device-guide-steps{display:grid;margin:0;padding:0;gap:9px;list-style:none}
-.device-guide-steps li{display:flex;min-height:58px;padding:11px 12px;align-items:flex-start;gap:11px;border:1px solid rgba(143,171,218,.09);border-radius:14px;background:rgba(255,255,255,.025)}
-.device-guide-steps b{display:grid;width:28px;height:28px;flex:0 0 auto;place-items:center;border-radius:9px;background:rgba(89,132,245,.14);color:#85aaff;font-size:.74rem}
-.device-guide-steps div{min-width:0}
-.device-guide-steps strong{display:block;color:#dce6f5;font-size:.79rem}
-.device-guide-steps span{display:block;margin-top:2px;color:#7f8da4;font-size:.71rem;line-height:1.55}
-.device-guide-card .guide-action{display:grid;min-height:50px;margin-top:18px;place-items:center;border-radius:14px;background:linear-gradient(135deg,#58c7f5,#5c7df6 75%);color:#fff;font-size:.82rem;font-weight:900}
-.device-guide-card .guide-action.secondary{border:1px solid rgba(140,170,222,.16);background:rgba(255,255,255,.04);color:#cfdbed}
-.device-guide-note{margin-top:18px;padding:20px 22px;border:1px solid rgba(105,152,255,.16);border-radius:19px;background:rgba(26,48,89,.34)}
-.device-guide-note strong{display:block;margin-bottom:6px;color:#dce8ff}
-.device-guide-note p{margin:0;color:#8f9db1;font-size:.78rem;line-height:1.7}
-.device-guide-note code{color:#a9c5ff}
-.device-quick-nav{display:flex;margin-bottom:22px;gap:9px;flex-wrap:wrap}
-.device-quick-nav a{display:inline-flex;min-height:40px;padding:0 14px;align-items:center;border:1px solid rgba(143,171,218,.12);border-radius:12px;background:rgba(255,255,255,.03);color:#b7c5d9;font-size:.75rem;font-weight:850}
-.device-quick-nav a:hover{border-color:rgba(111,156,255,.35);color:#fff}
-@media(max-width:980px){.device-guide-grid{grid-template-columns:1fr}.device-guide-sub{min-height:0}}
-@media(max-width:660px){.device-install-guide{padding-top:95px}.device-guide-card{padding:21px}.device-guide-note{padding:18px}.device-quick-nav a{flex:1;justify-content:center}}
-}
+  .sd-mobile-install-reserve { display: none; }
+  @media (max-width: 760px) {
+    html.sd-js .sd-mobile-install-reserve { display: block; height: 212px; }
+    html.sd-js.sd-android .sd-mobile-install-reserve { height: 304px; }
+    .sd-mobile-install-reserve > .sd-mobile-install-spotlight { margin-top: 12px !important; }
+  }
 </style>
-<script defer="" src="site-config.js?v=221"></script>
-<script defer="" src="assets/js/extensions-data.js?v=20260817-flea111"></script>
-<script defer="" src="assets/js/app.js?v=20260813d"></script>
-<script defer="True" src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script defer="True" src="assets/js/supabase-config.js?v=2"></script><script defer="True" src="assets/js/auth-common.js?v=2"></script><script defer="True" src="assets/js/auth-nav.js?v=20260813d"></script></head>
-<body>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link href="favicon.ico" rel="icon"/>
+<link href="assets/css/style.css?v=online2" rel="stylesheet"/>
+<link href="assets/css/home.css?v=20260910-home1" rel="stylesheet"/>
+<script defer src="site-config.js?v=221"></script>
+<script defer src="assets/js/extensions-data.js?v=20260817-flea111"></script>
+<script defer src="assets/js/app.js?v=20260813d"></script>
+<script defer src="assets/js/home.js?v=20260910-home1"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="assets/js/supabase-config.js?v=2"></script>
+<script defer src="assets/js/auth-common.js?v=2"></script>
+<script defer src="assets/js/auth-nav.js?v=20260813d"></script>
+</head>
+<body class="home-page">
 <div aria-hidden="true" class="page-glow glow-one"></div>
 <div aria-hidden="true" class="page-glow glow-two"></div>
-<header class="site-header">
-<a aria-label="SD종합센터 홈" class="brand" href="#top">
-<img alt="" src="assets/icons/center.png"/>
-<span>SD종합센터</span>
-</a>
-<nav aria-label="주요 메뉴" class="nav-links"><a href="#online-account">온라인 계정</a>
-<a data-auth-user="" hidden="" href="ranking.html">잔액 랭킹</a>
-<a href="#apps">기본 앱</a>
-<a href="#extensions">확장팩</a>
-<a href="#install">설치 방법</a>
-<a href="#faq">도움말</a>
-</nav>
-<div class="header-actions-group"><div class="header-account"><a class="header-login" data-auth-guest="" href="login.html">로그인</a><a class="header-signup" data-auth-guest="" href="signup.html">회원가입</a><a class="header-signup" data-auth-name="" data-auth-user="" hidden="" href="account.html">내 지갑</a></div><a class="header-download" data-download-link="" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">Windows 다운로드</a></div></header>
-<section class="mobile-install-spotlight" aria-label="SD종합센터 모바일 설치">
-  <div class="mobile-install-head">
+
+<header class="site-header home-header">
+  <a aria-label="SD종합센터 홈" class="brand" href="#top">
     <img alt="" src="assets/icons/center.png"/>
-    <div class="mobile-install-copy">
-      <small>MOBILE APP</small>
-      <strong>SD종합센터 모바일</strong>
-      <span>Android에서는 앱을 바로 설치하고, 다른 모바일에서는 웹 버전을 바로 열 수 있습니다.</span>
+    <span>SD종합센터</span>
+  </a>
+
+  <button class="home-nav-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="homeNav">
+    <span></span><span></span><span></span>
+  </button>
+
+  <nav aria-label="주요 메뉴" class="nav-links home-nav" id="homeNav">
+    <a href="#product">제품</a>
+    <a href="#online-account">온라인</a>
+    <a href="#extensions">확장팩</a>
+    <a href="#help">도움말</a>
+    <span class="home-nav-user-links">
+      <a data-auth-user hidden href="ranking.html">잔액 랭킹</a>
+      <a data-auth-user hidden href="achievements.html">업적</a>
+      <a data-auth-guest href="signup.html">회원가입</a>
+    </span>
+  </nav>
+
+  <div class="header-actions-group">
+    <div class="header-account">
+      <a class="header-login" data-auth-guest href="login.html">로그인</a>
+      <a class="header-signup" data-auth-guest href="signup.html">회원가입</a>
+      <a class="header-signup" data-auth-name data-auth-user hidden href="account.html">내 지갑</a>
     </div>
+    <a class="header-download" data-download-link href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">Windows 다운로드</a>
   </div>
-  <a class="mobile-install-primary mobile-install-apk" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenter-Mobile.apk">Android 앱 설치하기</a>
-  <a class="mobile-install-primary mobile-install-ios" href="#install-iphone">iPhone 설치 방법 보기</a>
-  <a class="mobile-install-primary mobile-install-web-primary" href="mobile.html">모바일 웹으로 시작하기</a>
-  <a class="mobile-install-secondary" href="mobile.html">설치 없이 웹으로 사용</a>
-  <small class="mobile-install-note">Android는 APK 설치, iPhone은 Safari의 홈 화면에 추가 기능을 사용합니다.</small>
-</section>
+</header>
+<div class="sd-mobile-install-reserve" id="sdMobileInstallReserve" aria-hidden="true"></div>
+
 <main id="top">
-<section class="hero section-shell">
-<div class="hero-copy">
-<div class="eyebrow-row">
-<span class="eyebrow">WINDOWS DESKTOP</span>
-<span class="version-badge">Distribution · v<span data-version="">2.1.1</span></span>
-</div>
-<h1>SD 앱과 확장팩을<br/><span>한곳에서.</span></h1>
-<p class="hero-description">
-          SD종합센터 본체를 설치한 뒤 슬롯머신 같은 선택형 확장팩을 자유롭게 추가하세요.
-          모든 금액과 자산은 실제 금융거래가 아닌 가상 시뮬레이션 데이터입니다.
-        </p>
-<div class="hero-actions">
-<a class="primary-button" data-download-link="" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">
-<svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"></path></svg>
-<span>Windows용 다운로드</span>
-</a>
-<a class="secondary-button" href="#extensions">확장팩 둘러보기</a>
-</div>
-<div class="download-meta">
-<span data-system="">Windows 10/11 64비트</span>
-<span class="meta-dot"></span>
-<span data-file-name="">SDCenterSetup.exe</span>
-<span class="meta-dot"></span>
-<span>확장팩 설치 지원</span>
-</div>
-</div>
-<div aria-label="SD종합센터 앱 구성 미리보기" class="hero-visual">
-<div class="window-card">
-<div class="window-topbar">
-<div class="traffic-lights"><span></span><span></span><span></span></div>
-<div class="window-title">SD CENTER</div>
-<div class="online-dot">READY</div>
-</div>
-<div class="window-content">
-<div class="center-heading">
-<img alt="" src="assets/icons/center.png"/>
-<div><small>ALL APPS</small><strong>SD종합센터</strong></div>
-</div>
-<div class="mini-grid">
-<article class="wide"><img alt="" src="assets/icons/wallet.png"/><span>SD지갑 · CORE</span></article>
-</div>
-</div>
-</div>
-<div class="floating-chip chip-version">v<span data-version="">2.1.1</span></div>
-<div class="floating-chip chip-apps">1 CORE APP + PACKS</div>
-</div>
-</section>
-<section aria-label="제품 특징" class="trust-strip section-shell">
-<div><strong>지갑 코어</strong><span>SD지갑 1개만 기본 제공</span></div>
-<div><strong>통합 실행</strong><span>센터와 트레이에서 빠른 접근</span></div>
-<div><strong>로컬 저장</strong><span>시뮬레이션 데이터는 PC에 저장</span></div>
-<div><strong>확장팩 지원</strong><span>ZIP 다운로드 후 센터에 바로 추가</span></div>
-</section>
-<section class="online-account-section section-shell" id="online-account">
-<div class="online-account-copy"><span class="section-kicker">SD608 ONLINE · BETA</span><h2>공식 홈페이지에서 SD 계정을 만드세요</h2><p>이메일 인증과 1회용 가입 코드 확인을 완료하면 회원당 가상계좌 1개와 게임용 가상 250,000원이 자동 생성됩니다.
-홈페이지에서 잔액과 거래 장부를 확인할 수 있으며, Windows·Android 온라인 앱 연결은 단계적으로 추가됩니다.</p><div class="online-actions"><a class="primary-button" data-auth-guest="" href="signup.html">이메일 인증으로 회원가입</a><a class="secondary-button" data-auth-guest="" href="login.html">로그인</a><a class="primary-button" data-auth-user="" hidden="" href="account.html">내 가상지갑 열기</a><a class="secondary-button" href="mobile.html">Android·모바일 앱 열기</a></div></div>
-<div class="online-feature-grid"><article><strong>1</strong><span>회원당 계좌 1개</span></article><article><strong>25만</strong><span>신규 가상 지원금</span></article><article><strong>15명</strong><span>지인 전용 정원</span></article><article><strong>RLS</strong><span>회원별 데이터 분리</span></article></div>
-</section>
-<section class="apps-section section-shell" id="apps">
-<div class="section-heading">
-<span class="section-kicker">INCLUDED APPLICATIONS</span>
-<h2>기본 제공 앱 1개</h2>
-<p>SD지갑만 센터에 기본 포함됩니다. 금고·홀짝·광부·비트코인 채굴장 등 나머지 앱은 확장팩 상점에서 원하는 것만 설치할 수 있습니다.</p>
-</div>
-<div class="app-grid">
-<article class="app-card blue">
-<img alt="SD지갑 아이콘" src="assets/icons/wallet.png"/>
-<div><span>Stage 11</span><h3>SD지갑</h3><p>직접 입출금과 초기 시뮬레이션 금액을 차단하고, 새 계좌에는 25만원 가상 민생지원금만 지급합니다. 이 PC에서 24시간 최대 3개까지 생성됩니다.</p></div>
-</article>
-</div>
-</section>
-<section class="extensions-section section-shell" id="extensions">
-<div class="section-heading">
-<span class="section-kicker">OPTIONAL EXPANSION PACKS</span>
-<h2>필요한 앱만 추가로 설치하세요</h2>
-<p>SD종합센터의 <strong>확장팩 상점</strong>에서 원하는 앱을 골라 바로 설치할 수 있습니다. 홈페이지 ZIP 다운로드를 이용한 수동 설치도 지원합니다.</p>
-</div>
-<div class="extension-toolbar">
-<div class="extension-count"><strong id="extensionCount">0</strong><span>개의 확장팩 공개 중</span></div>
-<div class="extension-warning"><span>!</span> ZIP 파일은 압축을 풀지 마세요.</div>
-</div>
-<div aria-live="polite" class="extension-grid" id="extensionGrid"></div>
-<div class="extension-install-guide">
-<div class="guide-heading">
-<span>3단계 설치</span>
-<strong>종합센터 확장팩 상점에서 앱을 추가하는 방법</strong>
-</div>
-<ol>
-<li><b>1</b><span>SD종합센터에서 <strong>확장팩 상점</strong> 열기</span></li>
-<li><b>2</b><span>원하는 확장팩을 찾아 설치 선택</span></li>
-<li><b>3</b><span>설치가 끝나면 설치된 앱에서 바로 실행</span></li>
-</ol>
-</div>
-</section>
-<section class="device-install-guide section-shell" id="install">
-<div class="guide-intro">
-<span class="section-kicker">INSTALLATION GUIDE</span>
-<h2>처음이어도 그대로 따라 하면 됩니다</h2>
-<p>사용 중인 기기를 고른 뒤 1번부터 순서대로 진행하세요. Windows PC, 삼성 갤럭시, iPhone 설치 방법을 한곳에 정리했습니다.</p>
-</div>
-<div class="device-quick-nav" aria-label="기기별 설치 방법 바로가기">
-<a href="#install-pc">Windows PC</a>
-<a href="#install-galaxy">삼성 갤럭시</a>
-<a href="#install-iphone">iPhone</a>
-</div>
-<div class="device-guide-grid">
-<article class="device-guide-card" id="install-pc">
-<div class="device-guide-top"><span class="device-guide-mark">PC</span><div class="device-guide-title"><small>WINDOWS</small><h3>PC 설치 방법</h3></div></div>
-<p class="device-guide-sub">Windows에서는 설치 프로그램을 내려받아 일반 프로그램처럼 설치합니다.</p>
-<ol class="device-guide-steps">
-<li><b>1</b><div><strong>홈페이지에서 Windows 다운로드</strong><span>아래의 설치 파일 받기 버튼을 누릅니다.</span></div></li>
-<li><b>2</b><div><strong>다운로드 완료 확인</strong><span>브라우저 다운로드 목록 또는 Windows의 다운로드 폴더를 엽니다.</span></div></li>
-<li><b>3</b><div><strong>SDCenterSetup.exe 실행</strong><span>다운로드한 <code>SDCenterSetup.exe</code>를 더블클릭합니다.</span></div></li>
-<li><b>4</b><div><strong>설치 진행</strong><span>화면 안내에 따라 설치를 완료합니다.</span></div></li>
-<li><b>5</b><div><strong>SD종합센터 실행</strong><span>설치가 끝나면 시작 메뉴 또는 바탕화면에서 SD종합센터를 실행합니다.</span></div></li>
-</ol>
-<a class="guide-action" data-download-link href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">Windows 설치 파일 받기</a>
-</article>
-<article class="device-guide-card recommended" id="install-galaxy">
-<div class="device-guide-top"><span class="device-guide-mark">AOS</span><div class="device-guide-title"><small>ANDROID</small><h3>삼성 갤럭시 설치 방법</h3></div></div>
-<p class="device-guide-sub">갤럭시는 Android APK를 내려받아 SD종합센터 앱으로 설치할 수 있습니다.</p>
-<ol class="device-guide-steps">
-<li><b>1</b><div><strong>Chrome 또는 삼성 인터넷으로 접속</strong><span>휴대폰에서 현재 SD종합센터 홈페이지를 엽니다.</span></div></li>
-<li><b>2</b><div><strong>Android 앱 설치하기 선택</strong><span>APK 다운로드 버튼을 눌러 설치 파일을 받습니다.</span></div></li>
-<li><b>3</b><div><strong>다운로드한 APK 열기</strong><span>다운로드 알림을 누르거나 내 파일 → 다운로드에서 APK를 엽니다.</span></div></li>
-<li><b>4</b><div><strong>처음 한 번 설치 권한 허용</strong><span>브라우저에서 받은 앱 설치 권한을 요청하면 해당 브라우저에 대해서만 허용합니다.</span></div></li>
-<li><b>5</b><div><strong>설치 버튼 누르기</strong><span>Android 설치 화면에서 설치를 누르고 완료될 때까지 기다립니다.</span></div></li>
-<li><b>6</b><div><strong>앱 실행 및 로그인</strong><span>홈 화면의 SD종합센터를 열고 홈페이지 계정으로 로그인합니다.</span></div></li>
-</ol>
-<a class="guide-action" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenter-Mobile.apk">Android APK 받기</a>
-</article>
-<article class="device-guide-card" id="install-iphone">
-<div class="device-guide-top"><span class="device-guide-mark">iOS</span><div class="device-guide-title"><small>IPHONE</small><h3>iPhone 설치 방법</h3></div></div>
-<p class="device-guide-sub">iPhone은 APK를 설치하지 않고 Safari에서 홈페이지를 홈 화면에 추가해 앱처럼 사용합니다.</p>
-<ol class="device-guide-steps">
-<li><b>1</b><div><strong>Safari로 홈페이지 접속</strong><span>iPhone의 Safari에서 SD종합센터 홈페이지를 엽니다.</span></div></li>
-<li><b>2</b><div><strong>공유 버튼 누르기</strong><span>Safari의 공유 버튼을 눌러 메뉴를 엽니다.</span></div></li>
-<li><b>3</b><div><strong>홈 화면에 추가 선택</strong><span>메뉴에서 홈 화면에 추가를 찾아 선택합니다.</span></div></li>
-<li><b>4</b><div><strong>추가 확인</strong><span>이름이 SD종합센터인지 확인한 뒤 추가를 누릅니다.</span></div></li>
-<li><b>5</b><div><strong>홈 화면 아이콘으로 실행</strong><span>이후에는 홈 화면에 생긴 SD종합센터 아이콘을 눌러 실행합니다.</span></div></li>
-</ol>
-<a class="guide-action secondary" href="mobile.html">SD종합센터 웹 열기</a>
-</article>
-</div>
-<div class="device-guide-note">
-<strong>처음 사용하는 분</strong>
-<p>설치 후 계정이 없다면 홈페이지에서 이메일 인증과 1회용 가입 코드 확인을 진행해 계정을 만드세요. PC와 모바일의 가상계좌 데이터를 연결해서 사용할 경우에만 PC에서 SD Link를 추가로 설정하면 됩니다.</p>
-</div>
-</section>
-<section class="notice-section section-shell">
-<div class="notice-icon">!</div>
-<div>
-<strong>실제 금융·투자·채굴 서비스가 아닙니다.</strong>
-<p>표시되는 계좌, 금, 광물, 비트코인, 수익과 전기세는 모두 게임 및 시뮬레이션 용도의 가상 데이터입니다. 실제 입금·출금·결제·현금화 기능은 제공하지 않습니다.</p>
-</div>
-</section>
-<section class="faq-section section-shell" id="faq">
-<div class="section-heading">
-<span class="section-kicker">HELP</span>
-<h2>자주 묻는 질문</h2>
-</div>
-<div class="faq-list">
-<details>
-<summary>확장팩은 어떻게 설치하나요?</summary>
-<p>확장팩 ZIP을 다운로드하고 압축을 풀지 않은 상태로 SD종합센터의 ZIP 앱 추가 버튼에서 선택하세요. 같은 확장팩의 새 버전을 선택하면 업데이트할 수 있습니다.</p>
-</details>
-<details>
-<summary>확장팩만 받아도 실행할 수 있나요?</summary>
-<p>홈페이지의 확장팩은 SD종합센터 추가용으로 배포됩니다. 일부 앱은 개발 환경에서 따로 실행할 수 있지만, 일반 사용자는 종합센터에서 설치하는 방식을 권장합니다.</p>
-</details>
-<details>
-<summary>다운로드 버튼을 누르면 바로 설치 마법사가 열리나요?</summary>
-<p>브라우저 보안상 홈페이지가 설치 프로그램을 자동 실행할 수는 없습니다. 버튼을 누르면 설치 파일이 다운로드되고, 사용자가 그 파일을 한 번 열면 Windows 설치가 시작됩니다.</p>
-</details>
-<details>
-<summary>Windows에서 알 수 없는 게시자 경고가 나올 수 있나요?</summary>
-<p>코드 서명 인증서를 적용하지 않은 초기 배포본은 Windows에서 게시자를 확인할 수 없다는 경고가 표시될 수 있습니다. 정식 공개 배포 시에는 코드 서명을 권장합니다.</p>
-</details>
-<details>
-<summary>업데이트하면 기존 데이터가 사라지나요?</summary>
-<p>앱 데이터는 설치 폴더와 분리된 사용자 데이터 폴더에 저장하도록 구성되어 있습니다. 그래도 중요한 배포 전에는 테스트 PC에서 업데이트와 삭제 동작을 확인하세요.</p>
-</details>
-</div>
-</section>
-<section class="cta-section section-shell">
-<img alt="" src="assets/icons/center.png"/>
-<div><span>SD SERIES FINAL</span><h2>지금 SD종합센터를 시작하세요.</h2><p>기본 앱 5개와 계속 추가되는 선택형 확장팩을 한곳에서 만나보세요.</p></div>
-<a class="primary-button" data-download-link="" href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">Windows 다운로드</a>
-</section>
+  <section class="hero home-hero section-shell" id="product">
+    <div class="hero-copy">
+      <div class="eyebrow-row">
+        <span class="eyebrow">SD CENTER</span>
+        <span class="version-badge">v<span data-version>2.1.1</span></span>
+      </div>
+      <h1>SD 앱을<br/><span>한곳에서.</span></h1>
+      <p class="hero-description">SD종합센터를 설치하고 필요한 확장팩만 추가하세요.</p>
+
+      <div class="hero-actions">
+        <a class="primary-button" data-download-link href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"></path></svg>
+          <span>Windows 다운로드</span>
+        </a>
+        <a class="secondary-button" href="#extensions">확장팩 보기</a>
+      </div>
+
+      <div class="download-meta">
+        <span data-system>Windows 10/11 64비트</span>
+        <span class="meta-dot"></span>
+        <span data-file-name>SDCenterSetup.exe</span>
+        <span class="meta-dot"></span>
+        <span>기본 앱 1개</span>
+      </div>
+    </div>
+
+    <aside class="home-command-panel" aria-label="SD종합센터 구성">
+      <div class="home-panel-brand">
+        <img alt="" src="assets/icons/center.png"/>
+        <div>
+          <span>SD CENTER</span>
+          <strong>준비 완료</strong>
+        </div>
+        <i aria-hidden="true"></i>
+      </div>
+      <div class="home-panel-list">
+        <a href="#apps">
+          <span class="home-panel-icon"><img alt="" src="assets/icons/wallet.png"/></span>
+          <span><small>기본 앱</small><strong>SD지갑</strong></span>
+          <b>1</b>
+        </a>
+        <a href="#extensions">
+          <span class="home-panel-icon home-panel-symbol">+</span>
+          <span><small>선택 설치</small><strong>확장팩</strong></span>
+          <b id="extensionCountPreview">PACK</b>
+        </a>
+        <a data-auth-guest href="login.html">
+          <span class="home-panel-icon home-panel-symbol">◎</span>
+          <span><small>SD 계정</small><strong>로그인</strong></span>
+          <b>→</b>
+        </a>
+        <a data-auth-user hidden href="account.html">
+          <span class="home-panel-icon home-panel-symbol">◎</span>
+          <span><small>SD 계정</small><strong>내 지갑</strong></span>
+          <b>→</b>
+        </a>
+      </div>
+    </aside>
+  </section>
+
+  <section class="home-quick-grid section-shell" aria-label="빠른 메뉴">
+    <a class="home-quick-card" data-auth-guest href="login.html">
+      <span>계정</span><strong>로그인</strong><b>→</b>
+    </a>
+    <a class="home-quick-card" data-auth-user hidden href="account.html">
+      <span>계정</span><strong>내 지갑</strong><b>→</b>
+    </a>
+    <a class="home-quick-card" href="#extensions">
+      <span>앱</span><strong>확장팩</strong><b>→</b>
+    </a>
+    <a class="home-quick-card" href="mobile.html">
+      <span>모바일</span><strong>웹 버전</strong><b>→</b>
+    </a>
+  </section>
+
+  <section class="home-online section-shell" id="online-account">
+    <div>
+      <span class="section-kicker">SD ONLINE</span>
+      <h2>SD 계정</h2>
+      <p>홈페이지에서 내 지갑을 확인하고 PC·모바일 연결 기능을 이용할 수 있습니다.</p>
+    </div>
+    <div class="home-online-actions">
+      <a class="primary-button" data-auth-guest href="signup.html">회원가입</a>
+      <a class="secondary-button" data-auth-guest href="login.html">로그인</a>
+      <a class="primary-button" data-auth-user hidden href="account.html">내 지갑</a>
+      <a class="secondary-button" data-auth-user hidden href="ranking.html">잔액 랭킹</a>
+    </div>
+  </section>
+
+  <section class="apps-section home-section section-shell" id="apps">
+    <div class="home-section-heading">
+      <div>
+        <span class="section-kicker">INCLUDED</span>
+        <h2>기본 앱</h2>
+      </div>
+      <span class="home-section-meta">1개</span>
+    </div>
+    <article class="home-wallet-card">
+      <img alt="SD지갑 아이콘" src="assets/icons/wallet.png"/>
+      <div>
+        <span>기본 제공</span>
+        <h3>SD지갑</h3>
+      </div>
+      <a href="account.html">온라인 지갑</a>
+    </article>
+  </section>
+
+  <section class="extensions-section home-section section-shell" id="extensions">
+    <div class="home-section-heading">
+      <div>
+        <span class="section-kicker">EXPANSION PACKS</span>
+        <h2>확장팩</h2>
+      </div>
+      <div class="extension-count"><strong id="extensionCount">0</strong><span>개 공개 중</span></div>
+    </div>
+    <div class="home-extension-note">ZIP 수동 설치를 사용할 때는 압축을 풀지 마세요.</div>
+    <div aria-live="polite" class="extension-grid" id="extensionGrid"></div>
+  </section>
+
+  <section class="home-install home-section section-shell" id="install">
+    <div class="home-section-heading">
+      <div>
+        <span class="section-kicker">INSTALL</span>
+        <h2>설치</h2>
+      </div>
+      <span class="home-section-meta">Windows</span>
+    </div>
+
+    <div class="home-install-grid">
+      <article class="home-install-primary">
+        <div class="home-install-title">
+          <span>01</span>
+          <div><small>WINDOWS</small><strong>SD종합센터 설치</strong></div>
+        </div>
+        <ol>
+          <li><b>1</b><span>설치 파일 다운로드</span></li>
+          <li><b>2</b><span><code>SDCenterSetup.exe</code> 실행</span></li>
+          <li><b>3</b><span>설치 후 SD종합센터 실행</span></li>
+        </ol>
+        <a class="primary-button" data-download-link href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">설치 파일 받기</a>
+      </article>
+
+      <div class="home-install-side">
+        <a href="mobile.html">
+          <span>모바일</span>
+          <strong>모바일 웹 열기</strong>
+          <b>→</b>
+        </a>
+        <a href="#extensions">
+          <span>확장팩</span>
+          <strong>설치할 앱 고르기</strong>
+          <b>→</b>
+        </a>
+        <a data-release-link href="#">
+          <span>버전</span>
+          <strong>최신 릴리스 보기</strong>
+          <b>→</b>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="notice-section home-notice section-shell">
+    <div class="notice-icon">!</div>
+    <div>
+      <strong>실제 금융·투자·채굴 서비스가 아닙니다.</strong>
+      <p>표시되는 계좌와 자산은 게임 및 시뮬레이션용 가상 데이터입니다.</p>
+    </div>
+  </section>
+
+  <section class="faq-section home-section section-shell" id="help">
+    <div class="home-section-heading">
+      <div>
+        <span class="section-kicker">HELP</span>
+        <h2>도움말</h2>
+      </div>
+    </div>
+    <div class="faq-list">
+      <details>
+        <summary>확장팩은 어떻게 설치하나요?</summary>
+        <p>SD종합센터의 확장팩 상점에서 설치하거나, ZIP 파일을 받은 뒤 압축을 풀지 않고 센터에서 추가할 수 있습니다.</p>
+      </details>
+      <details>
+        <summary>Windows 다운로드 후에는 무엇을 하나요?</summary>
+        <p>다운로드한 <code>SDCenterSetup.exe</code>를 열고 설치를 진행한 뒤 SD종합센터를 실행하세요.</p>
+      </details>
+      <details>
+        <summary>모바일에서는 어떻게 사용하나요?</summary>
+        <p><a href="mobile.html">모바일 웹</a>에서 SD 계정으로 이용할 수 있습니다.</p>
+      </details>
+    </div>
+  </section>
 </main>
-<footer class="site-footer section-shell">
-<div class="brand footer-brand"><img alt="" src="assets/icons/center.png"/><span>SD종합센터</span></div>
-<p>© 2026 SDWallet. Simulation software only.</p>
-<div><a href="login.html">로그인</a><a href="account.html">내 지갑</a><a data-release-link="" href="#">최신 버전</a><a data-source-link="" href="#">프로젝트</a></div>
+
+<footer class="site-footer home-footer section-shell">
+  <div class="brand footer-brand"><img alt="" src="assets/icons/center.png"/><span>SD종합센터</span></div>
+  <p>© 2026 SDWallet · Simulation software only.</p>
+  <div>
+    <a href="#product">제품</a>
+    <a href="#extensions">확장팩</a>
+    <a href="login.html" data-auth-guest>로그인</a>
+    <a href="account.html" data-auth-user hidden>내 지갑</a>
+    <a data-release-link href="#">최신 버전</a>
+  </div>
 </footer>
-<div class="modal-backdrop" hidden="" id="downloadModal">
-<section aria-labelledby="downloadTitle" aria-modal="true" class="download-modal" role="dialog">
-<button aria-label="닫기" class="modal-close" id="modalClose" type="button">×</button>
-<div class="download-animation"><span></span></div>
-<h2 id="downloadTitle">다운로드를 시작합니다</h2>
-<p><strong data-file-name="">SDCenterSetup.exe</strong> 다운로드가 끝나면 파일을 열어 설치를 진행하세요.</p>
-<button class="primary-button modal-button" id="modalConfirm" type="button">확인</button>
-</section>
+
+<div class="modal-backdrop" hidden id="downloadModal">
+  <section aria-labelledby="downloadTitle" aria-modal="true" class="download-modal" role="dialog">
+    <button aria-label="닫기" class="modal-close" id="modalClose" type="button">×</button>
+    <div class="download-animation"><span></span></div>
+    <h2 id="downloadTitle">다운로드를 시작합니다</h2>
+    <p><strong data-file-name>SDCenterSetup.exe</strong> 다운로드가 끝나면 파일을 열어 설치를 진행하세요.</p>
+    <button class="primary-button modal-button" id="modalConfirm" type="button">확인</button>
+  </section>
 </div>
 </body>
 </html>

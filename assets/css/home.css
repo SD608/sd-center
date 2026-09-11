@@ -1,0 +1,215 @@
+/* SD종합센터 PC 홈페이지 리뉴얼 v1
+   기존 blue/dark 테마 변수는 assets/css/style.css에서 그대로 사용합니다. */
+
+.home-page {
+  background:
+    radial-gradient(circle at 45% -12%, rgba(67, 116, 221, 0.16), transparent 34%),
+    linear-gradient(180deg, #091427 0%, var(--bg) 44%, var(--bg-deep) 100%);
+}
+
+.home-header {
+  min-height: 70px;
+  margin-top: 14px;
+  padding-block: 10px;
+  border-radius: 19px;
+}
+
+.home-header .nav-links {
+  gap: 24px;
+  font-size: .84rem;
+}
+
+.home-nav-user-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.home-nav-user-links:empty { display: none; }
+
+.home-nav-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  margin-left: auto;
+  padding: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.home-nav-toggle span {
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform .18s ease, opacity .18s ease;
+}
+
+.home-header.is-nav-open .home-nav-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.home-header.is-nav-open .home-nav-toggle span:nth-child(2) { opacity: 0; }
+.home-header.is-nav-open .home-nav-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.home-hero {
+  min-height: auto;
+  padding: 82px 0 48px;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, .75fr);
+  gap: 64px;
+}
+
+.home-hero .hero-copy { align-self: center; }
+.home-hero .eyebrow-row { margin-bottom: 18px; }
+.home-hero h1 { max-width: 700px; font-size: clamp(3.35rem, 6vw, 5.6rem); }
+.home-hero .hero-description { max-width: 560px; margin-top: 22px; font-size: 1rem; line-height: 1.75; }
+.home-hero .hero-actions { margin-top: 30px; }
+.home-hero .download-meta { margin-top: 16px; }
+
+.home-command-panel {
+  align-self: center;
+  overflow: hidden;
+  border: 1px solid rgba(149,180,231,.18);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(21,37,63,.9), rgba(9,18,34,.94));
+  box-shadow: 0 24px 65px rgba(0,0,0,.26);
+}
+
+.home-panel-brand { display: grid; min-height: 82px; padding: 17px 19px; grid-template-columns: 48px 1fr auto; align-items: center; gap: 13px; border-bottom: 1px solid var(--line); background: rgba(5,12,24,.35); }
+.home-panel-brand img { width: 48px; height: 48px; border-radius: 15px; }
+.home-panel-brand div { display: grid; gap: 1px; }
+.home-panel-brand span { color: #7185a8; font-size: .63rem; font-weight: 900; letter-spacing: .14em; }
+.home-panel-brand strong { font-size: .97rem; }
+.home-panel-brand i { width: 9px; height: 9px; border-radius: 50%; background: #62d98c; box-shadow: 0 0 0 5px rgba(98,217,140,.08); }
+
+.home-panel-list { display: grid; padding: 8px; }
+.home-panel-list > a { display: grid; min-height: 72px; padding: 11px 12px; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; border-radius: 15px; transition: background .16s ease; }
+.home-panel-list > a:hover { background: rgba(255,255,255,.045); }
+.home-panel-list > a > span:nth-child(2) { display: grid; gap: 1px; }
+.home-panel-list small { color: #71819b; font-size: .66rem; font-weight: 800; }
+.home-panel-list strong { color: #e7edf7; font-size: .87rem; }
+.home-panel-list b { color: #769cff; font-size: .67rem; letter-spacing: .05em; }
+.home-panel-icon { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(138,170,224,.12); border-radius: 13px; background: rgba(255,255,255,.035); }
+.home-panel-icon img { width: 34px; height: 34px; border-radius: 10px; }
+.home-panel-symbol { color: #91afff; font-size: 1.2rem; font-weight: 700; }
+
+.home-quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.home-quick-card { display: grid; min-height: 90px; padding: 18px 20px; grid-template-columns: 1fr auto; align-content: center; column-gap: 12px; border: 1px solid var(--line); border-radius: 18px; background: rgba(14,26,47,.48); transition: border-color .16s ease, background .16s ease, transform .16s ease; }
+.home-quick-card:hover { transform: translateY(-2px); border-color: rgba(121,168,255,.3); background: rgba(21,38,67,.62); }
+.home-quick-card span { grid-column: 1; color: #71819b; font-size: .67rem; font-weight: 850; }
+.home-quick-card strong { grid-column: 1; font-size: .94rem; }
+.home-quick-card b { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: #779eff; }
+
+.home-online { display: flex; margin-top: 72px; padding: 28px 30px; align-items: center; justify-content: space-between; gap: 28px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.home-online h2 { margin: 4px 0 3px; font-size: clamp(1.65rem,3vw,2.35rem); letter-spacing: -.045em; }
+.home-online p { max-width: 640px; margin: 0; color: #8d9cb1; font-size: .86rem; }
+.home-online-actions { display: flex; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+.home-online-actions .primary-button, .home-online-actions .secondary-button { min-height: 47px; padding-inline: 18px; }
+
+.home-section { padding-top: 82px !important; }
+.home-section-heading { display: flex; margin-bottom: 26px; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.home-section-heading h2 { margin: 5px 0 0; font-size: clamp(1.9rem, 3.4vw, 2.8rem); line-height: 1.15; letter-spacing: -.045em; }
+.home-section-meta { color: #7888a1; font-size: .78rem; font-weight: 800; }
+
+.home-wallet-card { display: grid; min-height: 112px; padding: 18px 20px; grid-template-columns: 58px 1fr auto; align-items: center; gap: 16px; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(145deg, rgba(23,38,65,.72), rgba(10,20,37,.74)); }
+.home-wallet-card img { width: 58px; height: 58px; border-radius: 17px; }
+.home-wallet-card div { display: grid; gap: 1px; }
+.home-wallet-card span { color: #7893c4; font-size: .66rem; font-weight: 900; }
+.home-wallet-card h3 { margin: 0; font-size: 1.08rem; }
+.home-wallet-card > a { padding: 10px 13px; border: 1px solid rgba(132,163,219,.16); border-radius: 12px; color: #a9bde2; font-size: .73rem; font-weight: 850; }
+
+.home-extension-note { margin: -8px 0 18px; color: #8f9db1; font-size: .75rem; }
+.home-page .extension-grid { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
+.home-page .extension-card { min-height: 330px; padding: 23px; border-radius: 20px; box-shadow: 0 14px 38px rgba(0,0,0,.14); }
+
+.home-install-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 14px; }
+.home-install-primary { padding: 26px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(145deg, rgba(23,38,65,.74), rgba(10,20,37,.76)); }
+.home-install-title { display: flex; align-items: center; gap: 13px; }
+.home-install-title > span { display: grid; width: 45px; height: 45px; place-items: center; border-radius: 13px; background: rgba(93,141,255,.12); color: #83a9ff; font-size: .72rem; font-weight: 900; }
+.home-install-title div { display: grid; }
+.home-install-title small { color: #7187b1; font-size: .62rem; font-weight: 900; letter-spacing: .12em; }
+.home-install-title strong { font-size: 1rem; }
+.home-install-primary ol { display: grid; margin: 23px 0; padding: 0; gap: 8px; list-style: none; }
+.home-install-primary li { display: flex; min-height: 44px; align-items: center; gap: 11px; color: #aebbd0; font-size: .8rem; }
+.home-install-primary li b { display: grid; width: 27px; height: 27px; flex: 0 0 auto; place-items: center; border-radius: 8px; background: rgba(93,141,255,.1); color: #83a9ff; font-size: .68rem; }
+.home-install-primary .primary-button { min-height: 49px; }
+.home-install-side { display: grid; gap: 10px; }
+.home-install-side > a { display: grid; min-height: 88px; padding: 17px 19px; grid-template-columns: 1fr auto; align-content: center; column-gap: 14px; border: 1px solid var(--line); border-radius: 18px; background: rgba(14,26,47,.48); }
+.home-install-side > a:hover { border-color: rgba(121,168,255,.3); }
+.home-install-side span { color: #71819b; font-size: .66rem; font-weight: 850; }
+.home-install-side strong { font-size: .88rem; }
+.home-install-side b { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: #769cff; }
+
+.home-notice { margin-top: 82px; }
+.home-page .faq-list details { border-radius: 16px; background: rgba(255,255,255,.02); }
+.home-page .faq-list details + details { margin-top: 8px; }
+.home-page .faq-list a { color: #9db9ff; font-weight: 800; }
+.home-footer { margin-top: 86px; }
+
+.home-page a:focus-visible, .home-page button:focus-visible, .home-page summary:focus-visible { outline: 3px solid rgba(118,169,255,.55); outline-offset: 3px; }
+
+@media (max-width: 1050px) {
+  .home-header .header-download { display: none; }
+  .home-hero { grid-template-columns: minmax(0,1fr) minmax(320px,.72fr); gap: 38px; }
+}
+
+@media (max-width: 980px) {
+  .home-header { position: sticky; }
+  .home-header .home-nav-toggle { display: inline-flex; }
+  .home-header .home-nav { display: none; width: 100%; padding: 10px; position: absolute; top: calc(100% + 8px); left: 0; flex-direction: column; align-items: stretch; gap: 3px; border: 1px solid var(--line); border-radius: 17px; background: rgba(7,16,31,.97); box-shadow: 0 18px 45px rgba(0,0,0,.32); backdrop-filter: blur(20px); }
+  .home-header.is-nav-open .home-nav { display: flex; }
+  .home-header .home-nav > a, .home-nav-user-links > a { min-height: 44px; padding: 0 13px; align-items: center; border-radius: 11px; }
+  .home-header .home-nav > a { display: flex; }
+  .home-header .home-nav > a:hover, .home-nav-user-links > a:hover { background: rgba(255,255,255,.045); }
+  .home-nav-user-links { display: grid; padding-top: 5px; gap: 3px; border-top: 1px solid var(--line); }
+  .home-nav-user-links > a:not([hidden]) { display: flex; }
+  .home-header .header-actions-group { margin-left: 8px; }
+  .home-hero { padding-top: 58px; grid-template-columns: 1fr; gap: 26px; }
+  .home-hero .hero-copy { text-align: left; }
+  .home-hero .eyebrow-row, .home-hero .hero-actions, .home-hero .download-meta { justify-content: flex-start; }
+  .home-hero .hero-description { margin-inline: 0; }
+  .home-command-panel { width: 100%; }
+  .home-online { align-items: flex-start; flex-direction: column; }
+  .home-online-actions { justify-content: flex-start; }
+}
+
+@media (max-width: 760px) {
+  .sd-mobile-install-spotlight { display: block !important; box-sizing: border-box; }
+  .home-header .header-account a.header-login[data-auth-guest] { display: inline-flex; }
+  .home-header .header-account .header-signup[data-auth-guest] { display: none; }
+  .home-hero { padding-top: 44px; }
+  .home-hero .hero-actions [data-download-link], .home-hero .download-meta { display: none; }
+  .home-quick-grid { grid-template-columns: 1fr; }
+  .home-online { margin-top: 52px; padding-inline: 4px; }
+  .home-install-grid { grid-template-columns: 1fr; }
+  .home-section { padding-top: 64px !important; }
+  .home-notice { margin-top: 64px; }
+}
+
+@media (max-width: 660px) {
+  .home-header { width: calc(100% - 20px); min-height: 64px; padding: 8px 10px 8px 12px; }
+  .home-header .brand img { width: 36px; height: 36px; }
+  .home-header .brand span { display: none; }
+  .home-nav-toggle { width: 40px; height: 40px; }
+  .home-header .header-actions-group { gap: 5px; }
+  .home-header .header-account { gap: 5px; }
+  .home-header .header-login, .home-header .header-signup { min-height: 38px; padding-inline: 10px; }
+  .home-hero h1 { font-size: clamp(2.9rem, 15vw, 4.2rem); }
+  .home-hero .hero-description { font-size: .9rem; }
+  .home-command-panel { border-radius: 20px; }
+  .home-panel-list > a { min-height: 67px; }
+  .home-online-actions { width: 100%; }
+  .home-online-actions .primary-button, .home-online-actions .secondary-button { flex: 1; }
+  .home-section-heading { margin-bottom: 20px; }
+  .home-wallet-card { grid-template-columns: 50px 1fr; }
+  .home-wallet-card img { width: 50px; height: 50px; }
+  .home-wallet-card > a { grid-column: 1 / -1; text-align: center; }
+  .home-page .extension-card { padding: 20px; }
+  .home-install-primary { padding: 22px; }
+  .home-notice { padding: 19px; }
+  .home-footer { margin-top: 68px; }
+}
