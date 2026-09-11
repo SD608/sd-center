@@ -2,9 +2,16 @@
 
 // app.js와 home.js는 모두 defer로 로드되며 app.js가 먼저 실행된다.
 // 모바일 설치 카드를 뒤의 외부 인증 스크립트가 끝날 때까지 기다리지 않고
-// 홈페이지 전용 스크립트 단계에서 먼저 배치해 초기 레이아웃 이동을 방지한다.
+// 홈페이지 전용 스크립트 단계에서 먼저 배치한다. 초기 HTML은 카드 높이만큼
+// 공간을 예약하고 있으므로 생성된 카드를 그 슬롯으로 옮겨 레이아웃 이동을 막는다.
 if (typeof window.initializeMobileInstallSpotlight === "function") {
   window.initializeMobileInstallSpotlight();
+  const reserve = document.getElementById("sdMobileInstallReserve");
+  const spotlight = document.querySelector(".sd-mobile-install-spotlight");
+  if (reserve && spotlight) {
+    reserve.append(spotlight);
+    reserve.removeAttribute("aria-hidden");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
