@@ -6,6 +6,18 @@
 <meta content="SD종합센터 Windows 본체, SD 계정, 선택형 확장팩을 한곳에서 이용하는 공식 페이지" name="description"/>
 <meta content="#0b1224" name="theme-color"/>
 <title>SD종합센터</title>
+<script>
+  document.documentElement.classList.add("sd-js");
+  if (/Android/i.test(navigator.userAgent || "")) document.documentElement.classList.add("sd-android");
+</script>
+<style>
+  .sd-mobile-install-reserve { display: none; }
+  @media (max-width: 760px) {
+    html.sd-js .sd-mobile-install-reserve { display: block; height: 212px; }
+    html.sd-js.sd-android .sd-mobile-install-reserve { height: 304px; }
+    .sd-mobile-install-reserve > .sd-mobile-install-spotlight { margin-top: 12px !important; }
+  }
+</style>
 <link rel="manifest" href="manifest.webmanifest"/>
 <link href="favicon.ico" rel="icon"/>
 <link href="assets/css/style.css?v=online2" rel="stylesheet"/>
@@ -54,6 +66,7 @@
     <a class="header-download" data-download-link href="https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe">Windows 다운로드</a>
   </div>
 </header>
+<div class="sd-mobile-install-reserve" id="sdMobileInstallReserve" aria-hidden="true"></div>
 
 <main id="top">
   <section class="hero home-hero section-shell" id="product">
