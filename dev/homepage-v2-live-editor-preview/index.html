@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SD 홈페이지 Renewal V2 — Live Editor Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --editor-bg: #090d15;
+      --editor-panel: #111722;
+      --editor-panel-2: #171e2a;
+      --editor-line: #273142;
+      --editor-text: #eef4ff;
+      --editor-muted: #8f9bad;
+      --editor-accent: #4f8cff;
+      --preview-width: 1280px;
+      --preview-zoom: .72;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--editor-bg); color: var(--editor-text); font-family: Inter, Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    button, input, select { font: inherit; }
+    button, input, select { color: inherit; }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 58px minmax(0, 1fr);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--editor-line);
+      background: rgba(9, 13, 21, .94);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .topbar-brand { min-width: 240px; display: flex; align-items: center; gap: 10px; }
+    .topbar-brand img { width: 28px; height: 28px; border-radius: 8px; }
+    .topbar-brand strong { font-size: 14px; }
+    .topbar-brand span { display: block; margin-top: 1px; color: var(--editor-muted); font-size: 11px; }
+
+    .viewport-tabs { display: flex; gap: 6px; margin-left: auto; }
+    .viewport-button,
+    .action-button,
+    .icon-button {
+      border: 1px solid var(--editor-line);
+      background: var(--editor-panel);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease, transform .15s ease;
+    }
+    .viewport-button:hover,
+    .action-button:hover,
+    .icon-button:hover { border-color: #4b5c78; }
+    .viewport-button:active,
+    .action-button:active,
+    .icon-button:active { transform: translateY(1px); }
+    .viewport-button { padding: 7px 10px; color: var(--editor-muted); font-size: 12px; }
+    .viewport-button.is-active { color: #fff; background: #1b2f54; border-color: #3d6ebd; }
+    .topbar-actions { display: flex; gap: 7px; }
+    .action-button { padding: 8px 12px; font-size: 12px; }
+    .action-button.primary { background: var(--editor-accent); border-color: var(--editor-accent); color: white; font-weight: 700; }
+
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+    }
+
+    .preview-workspace {
+      min-width: 0;
+      overflow: auto;
+      padding: 26px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        #0b1019;
+      background-size: 24px 24px;
+    }
+
+    .preview-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 920px;
+      margin: 0 auto 12px;
+      color: var(--editor-muted);
+      font-size: 12px;
+    }
+
+    .preview-stage {
+      width: min(100%, 920px);
+      margin: 0 auto;
+      overflow: auto;
+      border: 1px solid #263146;
+      border-radius: 16px;
+      background: #070b12;
+      box-shadow: 0 18px 55px rgba(0,0,0,.38);
+    }
+
+    .preview-scale {
+      width: var(--preview-width);
+      transform: scale(var(--preview-zoom));
+      transform-origin: top left;
+    }
+
+    .site-preview {
+      --site-bg: #07101d;
+      --site-bg-2: #0d1726;
+      --site-card: #111d2e;
+      --site-line: rgba(150, 174, 210, .18);
+      --site-text: #f2f7ff;
+      --site-muted: #95a5bd;
+      --site-accent: #4f8cff;
+      --site-gap: 22px;
+      --site-card-pad: 26px;
+      --site-font-scale: 1;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 76% 8%, color-mix(in srgb, var(--site-accent) 25%, transparent), transparent 31%),
+        linear-gradient(180deg, var(--site-bg) 0%, var(--site-bg-2) 100%);
+      color: var(--site-text);
+      font-size: calc(16px * var(--site-font-scale));
+    }
+
+    .site-shell { width: min(1180px, calc(100% - 64px)); margin: 0 auto; }
+    .site-header {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      border-bottom: 1px solid var(--site-line);
+      background: rgba(5, 12, 22, .72);
+    }
+    .site-header-inner { display: flex; align-items: center; gap: 28px; width: 100%; }
+    .site-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; white-space: nowrap; }
+    .site-brand img { width: 34px; height: 34px; border-radius: 9px; }
+    .site-nav { display: flex; gap: 20px; color: var(--site-muted); font-size: .88em; }
+    .site-nav span { cursor: default; }
+    .site-header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .site-login { color: var(--site-muted); font-size: .88em; }
+
+    .site-button {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      border-radius: 10px;
+      border: 1px solid var(--site-line);
+      background: transparent;
+      color: var(--site-text);
+      text-decoration: none;
+      font-size: .9em;
+      font-weight: 700;
+    }
+    .site-button.primary { background: var(--site-accent); border-color: var(--site-accent); color: white; }
+
+    .hero {
+      min-height: 520px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr);
+      align-items: center;
+      gap: 56px;
+      padding: 82px 0 68px;
+    }
+    .hero-kicker { margin: 0 0 16px; color: var(--site-accent); font-size: .76em; font-weight: 800; letter-spacing: .14em; }
+    .hero h1 { margin: 0; max-width: 710px; font-size: 4.35em; line-height: .98; letter-spacing: -.055em; }
+    .hero p { max-width: 610px; margin: 22px 0 0; color: var(--site-muted); font-size: 1.08em; line-height: 1.65; }
+    .hero-actions { display: flex; gap: 10px; margin-top: 30px; }
+    .hero-meta { display: flex; gap: 10px; margin-top: 17px; color: var(--site-muted); font-size: .78em; }
+
+    .hero-console {
+      padding: 22px;
+      border: 1px solid var(--site-line);
+      border-radius: 18px;
+      background: linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.025));
+      box-shadow: 0 22px 60px rgba(0,0,0,.3);
+    }
+    .console-head { display: flex; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid var(--site-line); }
+    .console-head img { width: 42px; height: 42px; border-radius: 11px; }
+    .console-head small { color: var(--site-muted); }
+    .console-head strong { display: block; margin-top: 3px; }
+    .console-status { width: 9px; height: 9px; margin-left: auto; border-radius: 50%; background: #55d98a; box-shadow: 0 0 0 5px rgba(85,217,138,.12); }
+    .console-list { display: grid; gap: 10px; padding-top: 16px; }
+    .console-row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,.04); }
+    .console-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 10px; background: rgba(79,140,255,.13); color: var(--site-accent); font-weight: 900; }
+    .console-row small { color: var(--site-muted); }
+    .console-row strong { display: block; margin-top: 3px; }
+    .console-row b { color: var(--site-muted); font-size: .8em; }
+
+    .site-section { padding: 46px 0; }
+    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+    .section-heading small { color: var(--site-accent); font-weight: 800; letter-spacing: .1em; }
+    .section-heading h2 { margin: 6px 0 0; font-size: 2em; letter-spacing: -.035em; }
+    .section-heading span { color: var(--site-muted); font-size: .8em; }
+
+    .card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--site-gap); }
+    .site-card { min-height: 170px; padding: var(--site-card-pad); border: 1px solid var(--site-line); border-radius: 16px; background: var(--site-card); }
+    .site-card small { color: var(--site-muted); }
+    .site-card h3 { margin: 10px 0 6px; font-size: 1.22em; }
+    .site-card p { margin: 0; color: var(--site-muted); line-height: 1.55; font-size: .86em; }
+    .site-card .site-button { margin-top: 20px; }
+
+    .download-panel { display: grid; grid-template-columns: 1.35fr .65fr; gap: var(--site-gap); }
+    .download-main { padding: calc(var(--site-card-pad) + 4px); border: 1px solid var(--site-line); border-radius: 16px; background: var(--site-card); }
+    .download-main ol { display: grid; gap: 10px; padding-left: 20px; color: var(--site-muted); }
+    .download-side { display: grid; gap: var(--site-gap); }
+    .download-side .site-card { min-height: 0; }
+
+    .site-footer { margin-top: 42px; padding: 30px 0 42px; border-top: 1px solid var(--site-line); color: var(--site-muted); font-size: .78em; }
+
+    .editor-panel {
+      min-height: 0;
+      overflow: auto;
+      border-left: 1px solid var(--editor-line);
+      background: #0f141e;
+    }
+    .editor-head { position: sticky; top: 0; z-index: 5; padding: 18px 18px 14px; border-bottom: 1px solid var(--editor-line); background: rgba(15,20,30,.96); backdrop-filter: blur(14px); }
+    .editor-head strong { display: block; font-size: 14px; }
+    .editor-head span { display: block; margin-top: 4px; color: var(--editor-muted); font-size: 11px; line-height: 1.45; }
+    .editor-section { padding: 17px 18px; border-bottom: 1px solid var(--editor-line); }
+    .editor-section h2 { margin: 0 0 13px; font-size: 12px; letter-spacing: .03em; }
+    .field { display: grid; gap: 6px; margin-top: 12px; }
+    .field:first-of-type { margin-top: 0; }
+    .field label { color: var(--editor-muted); font-size: 11px; }
+    .field input[type="text"],
+    .field input[type="url"],
+    .field select {
+      width: 100%;
+      min-height: 37px;
+      padding: 7px 9px;
+      border: 1px solid var(--editor-line);
+      border-radius: 8px;
+      outline: none;
+      background: var(--editor-panel-2);
+      color: var(--editor-text);
+      font-size: 12px;
+    }
+    .field input:focus, .field select:focus { border-color: #4d78bd; box-shadow: 0 0 0 2px rgba(79,140,255,.12); }
+    .range-row { display: grid; grid-template-columns: 1fr 52px; align-items: center; gap: 10px; }
+    .range-row input[type="range"] { width: 100%; accent-color: var(--editor-accent); }
+    .range-value { color: var(--editor-muted); font-size: 11px; text-align: right; }
+    .color-row { display: grid; grid-template-columns: 44px 1fr; gap: 8px; }
+    .color-row input[type="color"] { width: 44px; height: 37px; border: 1px solid var(--editor-line); border-radius: 8px; background: var(--editor-panel-2); padding: 4px; }
+    .check-list { display: grid; gap: 8px; }
+    .check-row { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid var(--editor-line); border-radius: 8px; background: var(--editor-panel-2); font-size: 12px; }
+    .check-row input { accent-color: var(--editor-accent); }
+    .order-list { display: grid; gap: 7px; }
+    .order-row { display: grid; grid-template-columns: 1fr 30px 30px; align-items: center; gap: 5px; padding: 8px 8px 8px 10px; border: 1px solid var(--editor-line); border-radius: 8px; background: var(--editor-panel-2); font-size: 12px; }
+    .icon-button { width: 30px; height: 28px; display: grid; place-items: center; font-size: 12px; }
+    .save-state { margin-top: 8px; color: var(--editor-muted); font-size: 10px; min-height: 15px; }
+
+    .mobile-site .site-shell { width: calc(100% - 32px); }
+    .mobile-site .site-header { height: 62px; }
+    .mobile-site .site-nav, .mobile-site .site-login { display: none; }
+    .mobile-site .site-header-actions .site-button { min-height: 36px; padding: 0 12px; font-size: .78em; }
+    .mobile-site .hero { min-height: auto; grid-template-columns: 1fr; gap: 34px; padding: 54px 0 42px; }
+    .mobile-site .hero h1 { font-size: 3em; }
+    .mobile-site .hero p { font-size: 1em; }
+    .mobile-site .hero-actions { flex-direction: column; }
+    .mobile-site .hero-actions .site-button { width: 100%; }
+    .mobile-site .hero-meta { flex-wrap: wrap; }
+    .mobile-site .hero-console { padding: 16px; }
+    .mobile-site .site-section { padding: 34px 0; }
+    .mobile-site .card-grid, .mobile-site .download-panel { grid-template-columns: 1fr; }
+    .mobile-site .section-heading { align-items: start; flex-direction: column; }
+
+    @media (max-width: 1120px) {
+      .workspace { grid-template-columns: minmax(0, 1fr) 330px; }
+      .viewport-button { padding-inline: 8px; }
+      .topbar-brand { min-width: 205px; }
+    }
+
+    @media (max-width: 880px) {
+      .app-shell { grid-template-rows: auto minmax(0,1fr); }
+      .topbar { min-height: 58px; flex-wrap: wrap; padding-block: 10px; }
+      .viewport-tabs { order: 3; width: 100%; overflow: auto; }
+      .workspace { grid-template-columns: 1fr; }
+      .editor-panel { border-left: 0; border-top: 1px solid var(--editor-line); max-height: 54vh; }
+      .preview-workspace { min-height: 62vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <img src="../../assets/icons/center.png" alt="" />
+        <div><strong>SD 홈페이지 편집기</strong><span>Renewal V2 · 개발 Preview</span></div>
+      </div>
+
+      <div class="viewport-tabs" aria-label="미리보기 화면 폭">
+        <button class="viewport-button" type="button" data-width="1920">1920 PC</button>
+        <button class="viewport-button is-active" type="button" data-width="1280">1280 PC</button>
+        <button class="viewport-button" type="button" data-width="980">980 태블릿</button>
+        <button class="viewport-button" type="button" data-width="390">390 모바일</button>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="action-button" type="button" id="resetButton">초기화</button>
+        <button class="action-button primary" type="button" id="saveButton">변경사항 저장</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <main class="preview-workspace">
+        <div class="preview-info">
+          <span id="previewLabel">1280 PC · 실시간 미리보기</span>
+          <span>운영 홈페이지와 분리된 개발 전용 화면</span>
+        </div>
+        <div class="preview-stage" id="previewStage">
+          <div class="preview-scale" id="previewScale">
+            <div class="site-preview" id="sitePreview">
+              <header class="site-header">
+                <div class="site-shell site-header-inner">
+                  <div class="site-brand"><img src="../../assets/icons/center.png" alt="" /><span>SD종합센터</span></div>
+                  <nav class="site-nav"><span>홈</span><span>앱</span><span>확장팩</span><span>다운로드</span></nav>
+                  <div class="site-header-actions"><span class="site-login">로그인</span><a class="site-button primary" data-bind="primaryText" data-bind-href="primaryHref" href="#">Windows 다운로드</a></div>
+                </div>
+              </header>
+
+              <main>
+                <section class="site-shell hero" data-section="hero">
+                  <div>
+                    <p class="hero-kicker">SD CENTER</p>
+                    <h1 data-bind="heroTitle">SD 앱을 한곳에서.</h1>
+                    <p data-bind="heroDescription">필요한 SD 앱과 확장팩을 한 화면에서 확인하고 바로 이용할 수 있습니다.</p>
+                    <div class="hero-actions">
+                      <a class="site-button primary" data-bind="primaryText" data-bind-href="primaryHref" href="#">Windows 다운로드</a>
+                      <a class="site-button" data-bind="secondaryText" data-bind-href="secondaryHref" href="#">확장팩 보기</a>
+                    </div>
+                    <div class="hero-meta"><span>Windows 10/11 64비트</span><span>·</span><span>SDCenterSetup.exe</span></div>
+                  </div>
+                  <aside class="hero-console">
+                    <div class="console-head"><img src="../../assets/icons/center.png" alt="" /><div><small>SD CENTER</small><strong>준비 완료</strong></div><i class="console-status"></i></div>
+                    <div class="console-list">
+                      <div class="console-row"><span class="console-icon">W</span><span><small>기본 앱</small><strong>SD지갑</strong></span><b>1</b></div>
+                      <div class="console-row"><span class="console-icon">+</span><span><small>선택 설치</small><strong>확장팩</strong></span><b>PACK</b></div>
+                      <div class="console-row"><span class="console-icon">◎</span><span><small>SD 계정</small><strong>로그인</strong></span><b>→</b></div>
+                    </div>
+                  </aside>
+                </section>
+
+                <section class="site-section" data-section="account">
+                  <div class="site-shell">
+                    <div class="section-heading"><div><small>SD ONLINE</small><h2>SD 계정</h2></div><span>로그인 · 지갑 · 랭킹</span></div>
+                    <div class="card-grid">
+                      <article class="site-card"><small>ACCOUNT</small><h3>내 지갑</h3><p>온라인 지갑과 계정 상태를 확인합니다.</p><a class="site-button" href="#">열기</a></article>
+                      <article class="site-card"><small>RANKING</small><h3>잔액 랭킹</h3><p>현재 순위와 기록을 확인합니다.</p><a class="site-button" href="#">보기</a></article>
+                      <article class="site-card"><small>ACHIEVEMENTS</small><h3>업적</h3><p>해금한 업적과 진행 상태를 확인합니다.</p><a class="site-button" href="#">보기</a></article>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="site-section" data-section="apps">
+                  <div class="site-shell">
+                    <div class="section-heading"><div><small>SD APPS</small><h2>앱</h2></div><span>필요한 기능으로 바로 이동</span></div>
+                    <div class="card-grid">
+                      <article class="site-card"><small>INCLUDED</small><h3>SD지갑</h3><p>기본 제공되는 SD 계정 지갑입니다.</p></article>
+                      <article class="site-card"><small>DESKTOP</small><h3>SD Center</h3><p>Windows에서 SD 앱과 확장팩을 관리합니다.</p></article>
+                      <article class="site-card"><small>MOBILE</small><h3>모바일</h3><p>모바일 웹에서 계정 기능을 이용합니다.</p></article>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="site-section" data-section="extensions">
+                  <div class="site-shell">
+                    <div class="section-heading"><div><small>EXPANSION PACKS</small><h2>확장팩</h2></div><span>선택 설치</span></div>
+                    <div class="card-grid">
+                      <article class="site-card"><small>PACK</small><h3>확장팩 예시 A</h3><p>실제 데이터 연결 전 레이아웃 확인용 카드입니다.</p></article>
+                      <article class="site-card"><small>PACK</small><h3>확장팩 예시 B</h3><p>카드 크기와 간격을 편집기에서 바로 조정할 수 있습니다.</p></article>
+                      <article class="site-card"><small>PACK</small><h3>확장팩 예시 C</h3><p>실제 확장팩 데이터 연동은 별도 검증 단계에서 연결합니다.</p></article>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="site-section" data-section="download">
+                  <div class="site-shell">
+                    <div class="section-heading"><div><small>DOWNLOAD</small><h2>다운로드</h2></div><span>Windows</span></div>
+                    <div class="download-panel">
+                      <div class="download-main"><h3>SD종합센터 설치</h3><ol><li>설치 파일 다운로드</li><li>SDCenterSetup.exe 실행</li><li>설치 후 SD종합센터 실행</li></ol><a class="site-button primary" data-bind="primaryText" data-bind-href="primaryHref" href="#">Windows 다운로드</a></div>
+                      <div class="download-side"><article class="site-card"><small>VERSION</small><h3>최신 릴리스</h3><p>현재 배포 정보를 확인합니다.</p></article><article class="site-card"><small>HELP</small><h3>설치 도움말</h3><p>설치와 업데이트 안내를 확인합니다.</p></article></div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="site-section" data-section="mobile">
+                  <div class="site-shell">
+                    <div class="section-heading"><div><small>MOBILE</small><h2>모바일</h2></div><span>웹 버전</span></div>
+                    <div class="site-card"><h3>모바일에서 SD 계정 이용</h3><p>PC와 다른 정보 우선순위로 구성되는 모바일 화면의 위치를 Preview에서 확인합니다.</p><a class="site-button" href="#">모바일 웹 열기</a></div>
+                  </div>
+                </section>
+              </main>
+
+              <footer class="site-footer"><div class="site-shell">SD종합센터 · 개발 Preview · 실제 금융/투자/채굴 서비스가 아닙니다.</div></footer>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="editor-panel" aria-label="SD 홈페이지 편집기">
+        <div class="editor-head"><strong>SD 홈페이지 편집기</strong><span>값을 바꾸면 왼쪽 Preview에 즉시 반영돼. 저장은 현재 브라우저의 V2 Preview 설정에만 적용돼.</span><div class="save-state" id="saveState"></div></div>
+
+        <section class="editor-section">
+          <h2>Hero</h2>
+          <div class="field"><label for="heroTitle">제목</label><input id="heroTitle" type="text" data-setting="heroTitle" /></div>
+          <div class="field"><label for="heroDescription">설명</label><input id="heroDescription" type="text" data-setting="heroDescription" /></div>
+        </section>
+
+        <section class="editor-section">
+          <h2>버튼</h2>
+          <div class="field"><label for="primaryText">주 버튼 이름</label><input id="primaryText" type="text" data-setting="primaryText" /></div>
+          <div class="field"><label for="primaryHref">주 버튼 링크</label><input id="primaryHref" type="text" data-setting="primaryHref" /></div>
+          <div class="field"><label for="secondaryText">보조 버튼 이름</label><input id="secondaryText" type="text" data-setting="secondaryText" /></div>
+          <div class="field"><label for="secondaryHref">보조 버튼 링크</label><input id="secondaryHref" type="text" data-setting="secondaryHref" /></div>
+        </section>
+
+        <section class="editor-section">
+          <h2>섹션 표시</h2>
+          <div class="check-list" id="visibilityControls"></div>
+        </section>
+
+        <section class="editor-section">
+          <h2>섹션 순서</h2>
+          <div class="order-list" id="orderControls"></div>
+        </section>
+
+        <section class="editor-section">
+          <h2>레이아웃</h2>
+          <div class="field"><label for="cardSize">카드 크기</label><select id="cardSize" data-setting="cardSize"><option value="compact">작게</option><option value="normal">기본</option><option value="large">크게</option></select></div>
+          <div class="field"><label for="gap">카드 간격</label><div class="range-row"><input id="gap" type="range" min="10" max="42" step="1" data-setting="gap" /><span class="range-value" id="gapValue"></span></div></div>
+          <div class="field"><label for="fontScale">글자 크기</label><div class="range-row"><input id="fontScale" type="range" min="85" max="120" step="1" data-setting="fontScale" /><span class="range-value" id="fontScaleValue"></span></div></div>
+        </section>
+
+        <section class="editor-section">
+          <h2>색상</h2>
+          <div class="field"><label for="backgroundColor">배경</label><div class="color-row"><input id="backgroundColor" type="color" data-setting="backgroundColor" /><input id="backgroundText" type="text" aria-label="배경 색상 값" /></div></div>
+          <div class="field"><label for="accentColor">강조색</label><div class="color-row"><input id="accentColor" type="color" data-setting="accentColor" /><input id="accentText" type="text" aria-label="강조 색상 값" /></div></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const STORAGE_KEY = 'sd-homepage-v2-live-editor-preview-v1';
+      const sectionLabels = {
+        account: 'SD 계정',
+        apps: '앱',
+        extensions: '확장팩',
+        download: '다운로드',
+        mobile: '모바일'
+      };
+
+      const defaults = {
+        heroTitle: 'SD 앱을 한곳에서.',
+        heroDescription: '필요한 SD 앱과 확장팩을 한 화면에서 확인하고 바로 이용할 수 있습니다.',
+        primaryText: 'Windows 다운로드',
+        primaryHref: 'https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe',
+        secondaryText: '확장팩 보기',
+        secondaryHref: '#extensions',
+        visible: { account: true, apps: true, extensions: true, download: true, mobile: true },
+        order: ['account', 'apps', 'extensions', 'download', 'mobile'],
+        cardSize: 'normal',
+        gap: 22,
+        fontScale: 100,
+        backgroundColor: '#07101d',
+        accentColor: '#4f8cff',
+        viewport: 1280
+      };
+
+      let state = structuredClone(defaults);
+      let lastSavedJson = '';
+
+      const previewStage = document.getElementById('previewStage');
+      const previewScale = document.getElementById('previewScale');
+      const sitePreview = document.getElementById('sitePreview');
+      const previewLabel = document.getElementById('previewLabel');
+      const saveState = document.getElementById('saveState');
+      const visibilityControls = document.getElementById('visibilityControls');
+      const orderControls = document.getElementById('orderControls');
+      const backgroundText = document.getElementById('backgroundText');
+      const accentText = document.getElementById('accentText');
+
+      function safeClone(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function normalize(candidate) {
+        const next = safeClone(defaults);
+        if (!candidate || typeof candidate !== 'object') return next;
+        for (const key of ['heroTitle','heroDescription','primaryText','primaryHref','secondaryText','secondaryHref','cardSize','backgroundColor','accentColor']) {
+          if (typeof candidate[key] === 'string') next[key] = candidate[key];
+        }
+        if (Number.isFinite(Number(candidate.gap))) next.gap = Math.max(10, Math.min(42, Number(candidate.gap)));
+        if (Number.isFinite(Number(candidate.fontScale))) next.fontScale = Math.max(85, Math.min(120, Number(candidate.fontScale)));
+        if ([1920,1280,980,390].includes(Number(candidate.viewport))) next.viewport = Number(candidate.viewport);
+        if (candidate.visible && typeof candidate.visible === 'object') {
+          Object.keys(next.visible).forEach(key => { if (typeof candidate.visible[key] === 'boolean') next.visible[key] = candidate.visible[key]; });
+        }
+        if (Array.isArray(candidate.order)) {
+          const filtered = candidate.order.filter(key => key in sectionLabels);
+          if (filtered.length === Object.keys(sectionLabels).length && new Set(filtered).size === filtered.length) next.order = filtered;
+        }
+        if (!['compact','normal','large'].includes(next.cardSize)) next.cardSize = 'normal';
+        return next;
+      }
+
+      function loadSaved() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          state = normalize(JSON.parse(raw));
+          lastSavedJson = JSON.stringify(state);
+          saveState.textContent = '저장된 Preview 설정을 불러왔어.';
+        } catch (error) {
+          console.warn('Preview settings could not be loaded.', error);
+          saveState.textContent = '저장 설정을 읽지 못해 기본값으로 열었어.';
+        }
+      }
+
+      function setBoundText(name, value) {
+        document.querySelectorAll(`[data-bind="${name}"]`).forEach(node => { node.textContent = value; });
+      }
+
+      function setBoundHref(name, value) {
+        document.querySelectorAll(`[data-bind-href="${name}"]`).forEach(node => { node.setAttribute('href', value || '#'); });
+      }
+
+      function updateSectionOrder() {
+        const parent = document.querySelector('[data-section="account"]').parentElement;
+        state.order.forEach(key => {
+          const section = document.querySelector(`[data-section="${key}"]`);
+          if (section) parent.appendChild(section);
+        });
+      }
+
+      function updateVisibility() {
+        Object.entries(state.visible).forEach(([key, visible]) => {
+          const section = document.querySelector(`[data-section="${key}"]`);
+          if (section) section.hidden = !visible;
+        });
+      }
+
+      function updateLayout() {
+        const pad = state.cardSize === 'compact' ? 18 : state.cardSize === 'large' ? 34 : 26;
+        sitePreview.style.setProperty('--site-card-pad', `${pad}px`);
+        sitePreview.style.setProperty('--site-gap', `${state.gap}px`);
+        sitePreview.style.setProperty('--site-font-scale', String(state.fontScale / 100));
+        sitePreview.style.setProperty('--site-bg', state.backgroundColor);
+        sitePreview.style.setProperty('--site-accent', state.accentColor);
+      }
+
+      function updateViewport() {
+        const width = state.viewport;
+        document.documentElement.style.setProperty('--preview-width', `${width}px`);
+        sitePreview.classList.toggle('mobile-site', width === 390);
+        document.querySelectorAll('.viewport-button').forEach(button => button.classList.toggle('is-active', Number(button.dataset.width) === width));
+        previewLabel.textContent = `${width}${width === 390 ? ' 모바일' : width === 980 ? ' 태블릿' : ' PC'} · 실시간 미리보기`;
+        requestAnimationFrame(fitPreview);
+      }
+
+      function fitPreview() {
+        const width = state.viewport;
+        const available = Math.max(260, previewStage.clientWidth - 2);
+        const zoom = Math.min(1, available / width);
+        document.documentElement.style.setProperty('--preview-zoom', String(zoom));
+        previewScale.style.height = `${Math.ceil(sitePreview.scrollHeight * zoom)}px`;
+      }
+
+      function syncControls() {
+        document.querySelectorAll('[data-setting]').forEach(control => {
+          const key = control.dataset.setting;
+          if (key in state) control.value = state[key];
+        });
+        document.getElementById('gapValue').textContent = `${state.gap}px`;
+        document.getElementById('fontScaleValue').textContent = `${state.fontScale}%`;
+        backgroundText.value = state.backgroundColor;
+        accentText.value = state.accentColor;
+      }
+
+      function renderVisibilityControls() {
+        visibilityControls.innerHTML = '';
+        Object.keys(sectionLabels).forEach(key => {
+          const label = document.createElement('label');
+          label.className = 'check-row';
+          label.innerHTML = `<input type="checkbox" data-visible="${key}" ${state.visible[key] ? 'checked' : ''}><span>${sectionLabels[key]}</span>`;
+          visibilityControls.appendChild(label);
+        });
+      }
+
+      function moveSection(index, delta) {
+        const nextIndex = index + delta;
+        if (nextIndex < 0 || nextIndex >= state.order.length) return;
+        [state.order[index], state.order[nextIndex]] = [state.order[nextIndex], state.order[index]];
+        renderOrderControls();
+        updateSectionOrder();
+        markDirty();
+        fitPreview();
+      }
+
+      function renderOrderControls() {
+        orderControls.innerHTML = '';
+        state.order.forEach((key, index) => {
+          const row = document.createElement('div');
+          row.className = 'order-row';
+          row.innerHTML = `<span>${sectionLabels[key]}</span><button class="icon-button" type="button" aria-label="${sectionLabels[key]} 위로">↑</button><button class="icon-button" type="button" aria-label="${sectionLabels[key]} 아래로">↓</button>`;
+          const buttons = row.querySelectorAll('button');
+          buttons[0].disabled = index === 0;
+          buttons[1].disabled = index === state.order.length - 1;
+          buttons[0].addEventListener('click', () => moveSection(index, -1));
+          buttons[1].addEventListener('click', () => moveSection(index, 1));
+          orderControls.appendChild(row);
+        });
+      }
+
+      function markDirty() {
+        const current = JSON.stringify(state);
+        saveState.textContent = current === lastSavedJson ? '저장된 상태야.' : '저장되지 않은 변경사항이 있어.';
+      }
+
+      function applyAll() {
+        setBoundText('heroTitle', state.heroTitle);
+        setBoundText('heroDescription', state.heroDescription);
+        setBoundText('primaryText', state.primaryText);
+        setBoundText('secondaryText', state.secondaryText);
+        setBoundHref('primaryHref', state.primaryHref);
+        setBoundHref('secondaryHref', state.secondaryHref);
+        updateVisibility();
+        updateSectionOrder();
+        updateLayout();
+        updateViewport();
+        syncControls();
+        renderVisibilityControls();
+        renderOrderControls();
+        requestAnimationFrame(fitPreview);
+      }
+
+      document.querySelectorAll('[data-setting]').forEach(control => {
+        const eventName = control.type === 'range' || control.type === 'text' || control.type === 'color' ? 'input' : 'change';
+        control.addEventListener(eventName, () => {
+          const key = control.dataset.setting;
+          let value = control.value;
+          if (key === 'gap' || key === 'fontScale') value = Number(value);
+          state[key] = value;
+          if (key === 'heroTitle' || key === 'heroDescription' || key === 'primaryText' || key === 'secondaryText') setBoundText(key, value);
+          if (key === 'primaryHref' || key === 'secondaryHref') setBoundHref(key, value);
+          if (['cardSize','gap','fontScale','backgroundColor','accentColor'].includes(key)) updateLayout();
+          syncControls();
+          markDirty();
+          requestAnimationFrame(fitPreview);
+        });
+      });
+
+      visibilityControls.addEventListener('change', event => {
+        const input = event.target.closest('[data-visible]');
+        if (!input) return;
+        state.visible[input.dataset.visible] = input.checked;
+        updateVisibility();
+        markDirty();
+        requestAnimationFrame(fitPreview);
+      });
+
+      document.querySelectorAll('.viewport-button').forEach(button => {
+        button.addEventListener('click', () => {
+          state.viewport = Number(button.dataset.width);
+          updateViewport();
+          markDirty();
+        });
+      });
+
+      backgroundText.addEventListener('change', () => {
+        if (/^#[0-9a-f]{6}$/i.test(backgroundText.value.trim())) {
+          state.backgroundColor = backgroundText.value.trim();
+          document.getElementById('backgroundColor').value = state.backgroundColor;
+          updateLayout(); markDirty();
+        } else backgroundText.value = state.backgroundColor;
+      });
+      accentText.addEventListener('change', () => {
+        if (/^#[0-9a-f]{6}$/i.test(accentText.value.trim())) {
+          state.accentColor = accentText.value.trim();
+          document.getElementById('accentColor').value = state.accentColor;
+          updateLayout(); markDirty();
+        } else accentText.value = state.accentColor;
+      });
+
+      document.getElementById('saveButton').addEventListener('click', () => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          lastSavedJson = JSON.stringify(state);
+          saveState.textContent = 'V2 Preview 설정을 이 브라우저에 저장했어.';
+        } catch (error) {
+          console.error(error);
+          saveState.textContent = '저장에 실패했어. 브라우저 저장소 설정을 확인해야 해.';
+        }
+      });
+
+      document.getElementById('resetButton').addEventListener('click', () => {
+        state = safeClone(defaults);
+        localStorage.removeItem(STORAGE_KEY);
+        lastSavedJson = '';
+        applyAll();
+        saveState.textContent = '기본값으로 초기화했어. 저장하려면 변경사항 저장을 눌러.';
+      });
+
+      document.addEventListener('click', event => {
+        const link = event.target.closest('.site-preview a');
+        if (link) event.preventDefault();
+      });
+
+      window.addEventListener('resize', fitPreview);
+      if ('ResizeObserver' in window) new ResizeObserver(fitPreview).observe(sitePreview);
+
+      loadSaved();
+      applyAll();
+      if (!lastSavedJson) saveState.textContent = '기본 Preview 상태야.';
+    })();
+  </script>
+</body>
+</html>
