@@ -1,0 +1,38 @@
+name: Homepage V2 copy editor wire temp
+on:
+  push:
+    branches:
+      - feat/homepage-v2-live-editor-preview-20260912
+permissions:
+  contents: write
+jobs:
+  wire:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/homepage-v2-live-editor-preview-20260912
+      - name: Wire copy editor
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('dev/homepage-v2-live-editor-preview/index.html')
+          s = p.read_text(encoding='utf-8')
+          tag = '<script src="./all-copy-editor.js"></script>'
+          if tag not in s:
+              if '</body>' not in s:
+                  raise SystemExit('missing </body>')
+              s = s.replace('</body>', '  ' + tag + '\n</body>', 1)
+              p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit wire change
+        shell: bash
+        run: |
+          if git diff --quiet -- dev/homepage-v2-live-editor-preview/index.html; then exit 0; fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add dev/homepage-v2-live-editor-preview/index.html
+          git commit -m "feat: wire full copy editor into V2 preview"
+          git push origin HEAD:feat/homepage-v2-live-editor-preview-20260912
