@@ -1,0 +1,60 @@
+name: SD Achievement Migration Classification v1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'database/migrations/sd_achievement_identity_lineage_v1.sql'
+      - 'database/migrations/sd_achievement_migration_classification_v1*.sql'
+      - 'tests/achievement-migration/**'
+      - 'tests/achievement-lineage/**'
+      - 'docs/achievement-migration-classification-v1.md'
+      - '.github/workflows/achievement-migration-classification-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  classification-preservation-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: achievement_migration_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d achievement_migration_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: achievement_migration_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Chapter 3-1 fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-lineage/fixture.sql
+      - name: Apply Chapter 3-1 permanent identity migration
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_achievement_identity_lineage_v1.sql
+      - name: Add complete Flea split and representative earned assets
+        run: psql -v ON_ERROR_STOP=1 -f tests/achievement-migration/fixture.sql
+      - name: Run exact classification and asset-preservation regression
+        working-directory: tests/achievement-migration
+        run: psql -v ON_ERROR_STOP=1 -f classification_preservation_regression.sql
+      - name: Verify migration/release/economy side-effect safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          SQL=database/migrations/sd_achievement_migration_classification_v1.sql
+          grep -q "expected exactly 99 reviewed codes" "$SQL"
+          grep -q "expected exactly 13 producer moves" "$SQL"
+          grep -q "expected exactly 86 retained identities" "$SQL"
+          ! grep -Eiq 'update[[:space:]]+public\.sd_(achievements|achievement_progress|user_achievements)|delete[[:space:]]+from[[:space:]]+public\.sd_(achievements|achievement_progress|user_achievements)' "$SQL"
+          ! grep -Eiq 'site-config\.js|center-update\.json|releases/download|wallets[[:space:]]+set[[:space:]]+balance' "$SQL"
+          echo 'classification invariants + player-asset/release/economy side-effect guard PASS'
