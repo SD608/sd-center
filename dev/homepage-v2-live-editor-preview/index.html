@@ -465,20 +465,20 @@
       };
 
       const defaults = {
-        heroTitle: 'SD 앱을 한곳에서.',
-        heroDescription: '필요한 SD 앱과 확장팩을 한 화면에서 확인하고 바로 이용할 수 있습니다.',
+        heroTitle: 'SD종합센터',
+        heroDescription: '',
         primaryText: 'Windows 다운로드',
         primaryHref: 'https://github.com/SD608/sd-center/releases/latest/download/SDCenterSetup.exe',
         secondaryText: '확장팩 보기',
         secondaryHref: '#extensions',
-        visible: { account: true, apps: true, extensions: true, download: true, mobile: true },
-        order: ['account', 'apps', 'extensions', 'download', 'mobile'],
+        visible: { account: true, apps: true, extensions: true, download: false, mobile: true },
+        order: ['account', 'download', 'apps', 'extensions', 'mobile'],
         cardSize: 'normal',
-        gap: 22,
-        fontScale: 100,
+        gap: 10,
+        fontScale: 98,
         backgroundColor: '#07101d',
         accentColor: '#4f8cff',
-        viewport: 1280
+        viewport: 1920
       };
 
       let state = structuredClone(defaults);
