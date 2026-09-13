@@ -1,0 +1,74 @@
+name: Flea transparent icons candidate
+
+on:
+  push:
+    branches:
+      - chore/flea-transparent-icons-20260907
+    paths:
+      - "tools/build-flea-transparent-icons-candidate.py"
+      - "tools/patch-flea-phone-home-layout.py"
+      - "tools/flea-transparent-icons-b64/**"
+      - ".github/workflows/flea-transparent-icons-candidate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Build transparent icon candidate
+        run: python tools/build-flea-transparent-icons-candidate.py
+      - name: Patch phone home five-app layout
+        run: python tools/patch-flea-phone-home-layout.py
+      - name: Validate report and package
+        run: |
+          python - <<'PY'
+          import json, zipfile
+          from pathlib import Path
+          report = json.loads(Path('diagnostics/SDFleaMarket_v1.2.3_transparent-icons-report.json').read_text(encoding='utf-8'))
+          assert report['icon_count'] == 36, report['icon_count']
+          assert report['sprite_sha256'] == '9d521eca5e57587581a453cca95cd915aeb8d12e6edfa1bee08c636baf337b14'
+          assert report['icon_size'] == [128, 96], report['icon_size']
+          assert report['native_size_display_fix'] is True
+          assert report['display_caps']['inventory'] == [96, 72]
+          assert report['display_caps']['reward'] == [128, 96]
+          assert report['display_caps']['dictionary'] == [84, 63]
+          assert report['display_caps']['bulk_preview'] == [72, 54]
+          assert report['display_caps']['bulk_row'] == [48, 36]
+          assert report['phone_home_overlap_fix'] is True
+          assert report['phone_home_app_count'] == 5
+          assert report['phone_home_layout'] == '3 apps first row + 2 centered second row'
+          target = Path('diagnostics/SDFleaMarket_v1.2.3_transparent-icons-candidate.zip')
+          with zipfile.ZipFile(target) as z:
+              names = [n for n in z.namelist() if '/public/assets/items/' in n and n.endswith('.png')]
+              css = z.read('sd-flea-market/public/style.css').decode('utf-8')
+              html = z.read('sd-flea-market/public/index.html').decode('utf-8')
+          assert len(names) == 36, len(names)
+          assert html.count('class="phone-app"') == 5
+          assert '2026-09-07 native-size aspect-safe item artwork' in css
+          assert '.reward-item-image .reward-product-image' in css
+          assert '2026-09-07 phone home five-app overlap fix' in css
+          assert 'grid-template-columns:repeat(6,minmax(0,1fr));' in css
+          assert '.phone-app:nth-child(4){grid-column:2 / span 2}' in css
+          assert '.phone-app:nth-child(5){grid-column:4 / span 2}' in css
+          print('item png count:', len(names))
+          print('native-size display fix: PASS')
+          print('phone home overlap fix: PASS')
+          print('candidate sha256:', report['candidate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SDFleaMarket-v1.2.3-transparent-icons-candidate
+          path: |
+            diagnostics/SDFleaMarket_v1.2.3_transparent-icons-candidate.zip
+            diagnostics/SDFleaMarket_v1.2.3_transparent-icons-candidate.sha256
+            diagnostics/SDFleaMarket_v1.2.3_transparent-icons-report.json
+          if-no-files-found: error
