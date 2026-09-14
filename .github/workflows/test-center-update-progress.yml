@@ -1,0 +1,46 @@
+name: Center Update Progress Regression
+
+on:
+  push:
+    branches:
+      - feat/center-update-progress-20260822
+    paths:
+      - tools/patch-center-self-update-progress.js
+      - tools/test-center-self-update-progress.js
+      - tools/patch-v223-electron-autoupdater-core.js
+      - tools/patch-v223-electron-autoupdater-ui.js
+      - .github/workflows/test-center-update-progress.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/patch-center-self-update-progress.js
+      - tools/test-center-self-update-progress.js
+      - tools/patch-v223-electron-autoupdater-core.js
+      - tools/patch-v223-electron-autoupdater-ui.js
+      - .github/workflows/test-center-update-progress.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  progress-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check patch and regression
+        run: |
+          node --check tools/patch-center-self-update-progress.js
+          node --check tools/test-center-self-update-progress.js
+      - name: Run fixture regression twice
+        run: node tools/test-center-self-update-progress.js
+      - name: Release safety guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -Eq 'site-config\.js|update/center-update\.json|gh release|git push origin HEAD:main' tools/patch-center-self-update-progress.js
+          ! grep -Eq 'site-config\.js|update/center-update\.json|gh release|git push origin HEAD:main' tools/test-center-self-update-progress.js
