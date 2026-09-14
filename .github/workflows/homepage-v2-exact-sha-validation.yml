@@ -1,0 +1,172 @@
+name: Homepage V2 Exact SHA Validation
+
+on:
+  push:
+    branches:
+      - ci/homepage-v2-exact-sha-validation-20260914
+    paths:
+      - .github/workflows/homepage-v2-exact-sha-validation.yml
+
+permissions:
+  contents: read
+
+env:
+  TARGET_SHA: 064501f5efea4302a4c2c47b7b402d273f978955
+
+jobs:
+  exact-sha-windows-gate:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact PR candidate SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 1
+
+      - name: Prove checkout SHA and candidate source invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          echo "TARGET_SHA=$TARGET_SHA"
+          echo "ACTUAL_SHA=$ACTUAL_SHA"
+          test "$ACTUAL_SHA" = "$TARGET_SHA"
+          test -f v2/index.html
+          test -f assets/css/home-v2.css
+          test -f assets/js/home-v2.js
+          node --check assets/js/home-v2.js
+          ! grep -Rni --include='index.html' --include='home-v2.css' --include='home-v2.js' 'localStorage' v2/index.html assets/css/home-v2.css assets/js/home-v2.js
+          ! grep -Rni 'all-copy-editor' v2/index.html assets/css/home-v2.css assets/js/home-v2.js
+          grep -F 'content="1920"' v2/index.html
+          grep -F 'data-section="download" id="download" hidden' v2/index.html
+          grep -F -- '--v2-bg: #07101d;' assets/css/home-v2.css
+          grep -F -- '--v2-accent: #4f8cff;' assets/css/home-v2.css
+          grep -F -- '--v2-gap: 10px;' assets/css/home-v2.css
+          grep -F -- '--v2-font-scale: .98;' assets/css/home-v2.css
+          printf '{"targetSha":"%s","actualSha":"%s","sourceInvariant":"PASS"}\n' "$TARGET_SHA" "$ACTUAL_SHA" > exact-sha-proof.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright package
+        shell: bash
+        run: npm install --no-save --ignore-scripts playwright@1.55.0
+
+      - name: Start static server
+        shell: bash
+        run: |
+          python -m http.server 4173 > server.log 2>&1 &
+          echo $! > server.pid
+          sleep 2
+          curl --fail http://127.0.0.1:4173/v2/index.html > /dev/null
+
+      - name: V2 responsive and source-lock UI checks
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ channel: 'chrome', headless: true });
+            const widths = [1920, 1536, 1280, 1050, 980, 760, 390, 320];
+            const expectedOrder = ['hero', 'account', 'download', 'apps', 'extensions', 'mobile'];
+            const results = [];
+            let failed = false;
+
+            for (const width of widths) {
+              const page = await browser.newPage({ viewport: { width, height: 1100 } });
+              await page.goto('http://127.0.0.1:4173/v2/index.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+              await page.waitForTimeout(1500);
+
+              const r = await page.evaluate((expectedOrder) => {
+                const bodyStyle = getComputedStyle(document.body);
+                const heroDescription = document.querySelector('.v2-hero-description');
+                const download = document.querySelector('[data-section="download"]');
+                const sections = [...document.querySelectorAll('main > section[data-section]')].map(s => s.dataset.section);
+                const brokenImages = [...document.images]
+                  .filter(img => img.complete && img.naturalWidth === 0)
+                  .map(img => img.getAttribute('src'));
+                const login = document.querySelector('[data-auth-guest]');
+                const account = document.querySelector('[data-auth-user]');
+                return {
+                  overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+                  title: document.title,
+                  viewportBaseline: document.querySelector('meta[name="sd-v2-approved-viewport"]')?.content || null,
+                  sectionOrder: sections,
+                  orderOk: JSON.stringify(sections) === JSON.stringify(expectedOrder),
+                  heroEmpty: (heroDescription?.textContent || '').trim() === '',
+                  heroHidden: heroDescription ? getComputedStyle(heroDescription).display === 'none' : false,
+                  downloadHidden: !!download?.hidden && getComputedStyle(download).display === 'none',
+                  bg: bodyStyle.getPropertyValue('--v2-bg').trim(),
+                  accent: bodyStyle.getPropertyValue('--v2-accent').trim(),
+                  gap: bodyStyle.getPropertyValue('--v2-gap').trim(),
+                  fontScale: bodyStyle.getPropertyValue('--v2-font-scale').trim(),
+                  guestHref: login?.getAttribute('href') || null,
+                  userHref: account?.getAttribute('href') || null,
+                  brokenImages
+                };
+              }, expectedOrder);
+
+              const ok = !r.overflow &&
+                r.title === 'SD종합센터' &&
+                r.viewportBaseline === '1920' &&
+                r.orderOk && r.heroEmpty && r.heroHidden && r.downloadHidden &&
+                r.bg.toLowerCase() === '#07101d' && r.accent.toLowerCase() === '#4f8cff' &&
+                r.gap === '10px' && r.fontScale === '.98' &&
+                r.guestHref === '../login.html' && r.userHref === '../account.html' &&
+                r.brokenImages.length === 0;
+
+              if (!ok) failed = true;
+              results.push({ width, ok, ...r });
+              await page.screenshot({ path: `homepage-v2-${width}.png`, fullPage: true });
+              await page.close();
+            }
+
+            fs.writeFileSync('v2-ui-gate-result.json', JSON.stringify(results, null, 2));
+            console.log('V2_UI_GATE_JSON=' + JSON.stringify(results));
+            await browser.close();
+            if (failed) process.exit(1);
+          })().catch(err => { console.error(err); process.exit(1); });
+          NODE
+
+      - name: Install Lighthouse
+        shell: bash
+        run: npm install --no-save --ignore-scripts lighthouse@12.8.2
+
+      - name: Lighthouse V2 localhost baseline
+        shell: bash
+        run: |
+          npx lighthouse http://127.0.0.1:4173/v2/index.html --quiet --chrome-flags='--headless --no-sandbox' --output=json --output-path=lighthouse-v2.json
+          node <<'NODE'
+          const fs = require('fs');
+          const lh = require('./lighthouse-v2.json');
+          const pct = v => Math.round((v || 0) * 100);
+          const out = {
+            targetSha: process.env.TARGET_SHA,
+            performance: pct(lh.categories.performance.score),
+            accessibility: pct(lh.categories.accessibility.score),
+            bestPractices: pct(lh.categories['best-practices'].score),
+            seo: pct(lh.categories.seo.score),
+            lcpMs: Math.round(lh.audits['largest-contentful-paint'].numericValue),
+            cls: Number(lh.audits['cumulative-layout-shift'].numericValue.toFixed(4)),
+            tbtMs: Math.round(lh.audits['total-blocking-time'].numericValue)
+          };
+          fs.writeFileSync('v2-metrics.json', JSON.stringify(out, null, 2));
+          console.log('V2_METRICS=' + JSON.stringify(out));
+          NODE
+
+      - name: Upload exact-SHA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage-v2-exact-sha-validation
+          path: |
+            exact-sha-proof.json
+            homepage-v2-*.png
+            v2-ui-gate-result.json
+            lighthouse-v2.json
+            v2-metrics.json
+            server.log
+          if-no-files-found: ignore
