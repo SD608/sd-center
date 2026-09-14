@@ -16,7 +16,7 @@ env:
 jobs:
   exact-sha-windows-gate:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout exact PR candidate SHA
         uses: actions/checkout@v4
@@ -61,6 +61,122 @@ jobs:
           echo $! > server.pid
           sleep 2
           curl --fail http://127.0.0.1:4173/v2/index.html > /dev/null
+
+      - name: Guest auth bootstrap and browser network smoke
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('playwright');
+
+          (async () => {
+            const browser = await chromium.launch({ channel: 'chrome', headless: true });
+            const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+            const consoleErrors = [];
+            const pageErrors = [];
+            const requestFailures = [];
+            const badResponses = [];
+
+            page.on('console', (msg) => {
+              if (msg.type() === 'error') consoleErrors.push(msg.text());
+            });
+            page.on('pageerror', (error) => pageErrors.push(String(error?.message || error)));
+            page.on('requestfailed', (request) => {
+              requestFailures.push({ url: request.url(), error: request.failure()?.errorText || 'request failed' });
+            });
+            page.on('response', (response) => {
+              const url = response.url();
+              if (response.status() >= 400 && (url.startsWith('http://127.0.0.1:4173/') || url.includes('supabase') || url.includes('jsdelivr'))) {
+                badResponses.push({ url, status: response.status() });
+              }
+            });
+
+            const homeResponse = await page.goto('http://127.0.0.1:4173/v2/index.html', {
+              waitUntil: 'domcontentloaded', timeout: 30000
+            });
+            await page.waitForFunction(() => Boolean(window.SD_AUTH?.client?.auth), null, { timeout: 15000 });
+            await page.waitForTimeout(1000);
+
+            const home = await page.evaluate(async () => {
+              const session = await window.SD_AUTH.getSession();
+              const config = window.SD_AUTH.config;
+              const guest = document.querySelector('[data-auth-guest]');
+              const user = document.querySelector('[data-auth-user]');
+              const isVisible = (el) => Boolean(el && !el.hidden && getComputedStyle(el).display !== 'none');
+              let settingsStatus = null;
+              let settingsOk = false;
+              let settingsError = null;
+              try {
+                const response = await fetch(`${config.url}/auth/v1/settings`, {
+                  headers: {
+                    apikey: config.publishableKey,
+                    Authorization: `Bearer ${config.publishableKey}`
+                  }
+                });
+                settingsStatus = response.status;
+                settingsOk = response.ok;
+              } catch (error) {
+                settingsError = String(error?.message || error);
+              }
+              return {
+                sessionPresent: Boolean(session),
+                authClientReady: Boolean(window.SD_AUTH?.client?.auth),
+                guestVisible: isVisible(guest),
+                userVisible: isVisible(user),
+                configUrl: config?.url || null,
+                publishableKeyPresent: Boolean(config?.publishableKey),
+                settingsStatus,
+                settingsOk,
+                settingsError
+              };
+            });
+
+            const loginResponse = await page.goto('http://127.0.0.1:4173/login.html?next=/v2/index.html', {
+              waitUntil: 'domcontentloaded', timeout: 30000
+            });
+            await page.waitForFunction(() => Boolean(window.SD_AUTH?.client?.auth), null, { timeout: 15000 });
+            await page.waitForTimeout(500);
+            const login = await page.evaluate(() => ({
+              authClientReady: Boolean(window.SD_AUTH?.client?.auth),
+              formPresent: Boolean(document.getElementById('loginForm')),
+              emailPresent: Boolean(document.getElementById('email')),
+              submitPresent: Boolean(document.getElementById('loginButton')),
+              next: new URLSearchParams(location.search).get('next')
+            }));
+
+            const criticalFailures = requestFailures.filter((item) =>
+              item.url.startsWith('http://127.0.0.1:4173/') || item.url.includes('supabase') || item.url.includes('jsdelivr')
+            );
+            const result = {
+              targetSha: process.env.TARGET_SHA,
+              homeHttpStatus: homeResponse?.status() ?? null,
+              loginHttpStatus: loginResponse?.status() ?? null,
+              home,
+              login,
+              consoleErrors,
+              pageErrors,
+              criticalFailures,
+              badResponses
+            };
+
+            const ok = result.homeHttpStatus === 200 &&
+              result.loginHttpStatus === 200 &&
+              home.authClientReady && !home.sessionPresent && home.guestVisible && !home.userVisible &&
+              home.publishableKeyPresent && home.settingsOk && home.settingsStatus === 200 &&
+              login.authClientReady && login.formPresent && login.emailPresent && login.submitPresent &&
+              login.next === '/v2/index.html' &&
+              consoleErrors.length === 0 && pageErrors.length === 0 && criticalFailures.length === 0 && badResponses.length === 0;
+
+            result.ok = ok;
+            fs.writeFileSync('v2-auth-smoke.json', JSON.stringify(result, null, 2));
+            console.log('V2_AUTH_SMOKE=' + JSON.stringify(result));
+            await browser.close();
+            if (!ok) process.exit(1);
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
 
       - name: V2 responsive and source-lock UI checks
         shell: bash
@@ -164,6 +280,7 @@ jobs:
           name: homepage-v2-exact-sha-validation
           path: |
             exact-sha-proof.json
+            v2-auth-smoke.json
             homepage-v2-*.png
             v2-ui-gate-result.json
             lighthouse-v2.json
