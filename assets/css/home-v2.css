@@ -128,7 +128,7 @@
 .v2-button.primary {
   border-color: var(--v2-accent);
   background: var(--v2-accent);
-  color: #fff;
+  color: var(--v2-bg);
 }
 
 .v2-hero {
