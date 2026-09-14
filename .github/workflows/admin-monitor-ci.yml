@@ -1,0 +1,95 @@
+name: SD Admin Monitor CI
+
+on:
+  push:
+    branches:
+      - "feature/admin-monitor-v1-*"
+    paths:
+      - "admin-monitor/**"
+      - "sql/SD608_관리자_접속현황_v1.sql"
+      - "sql/SD608_회원계좌_개인정보보호.sql"
+      - "account.html"
+      - "ranking.html"
+      - "members.html"
+      - "assets/js/members-page.js"
+      - ".github/workflows/admin-monitor-ci.yml"
+  pull_request:
+    paths:
+      - "admin-monitor/**"
+      - "sql/SD608_관리자_접속현황_v1.sql"
+      - "sql/SD608_회원계좌_개인정보보호.sql"
+      - "account.html"
+      - "ranking.html"
+      - "members.html"
+      - "assets/js/members-page.js"
+      - ".github/workflows/admin-monitor-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check
+        working-directory: admin-monitor
+        run: npm run check
+      - name: Unit and regression tests
+        working-directory: admin-monitor
+        run: npm test
+      - name: Bug suite x5
+        working-directory: admin-monitor
+        shell: bash
+        run: for i in {1..5}; do npm run test:bug; done
+      - name: Error suite x5
+        working-directory: admin-monitor
+        shell: bash
+        run: for i in {1..5}; do npm run test:error; done
+
+  windows-package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned build dependencies
+        working-directory: admin-monitor
+        run: npm install --no-audit --no-fund
+      - name: Build unpacked Windows app for CI process smoke
+        working-directory: admin-monitor
+        run: npx electron-builder --win dir --x64
+      - name: Windows process smoke
+        working-directory: admin-monitor
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path .\dist\win-unpacked -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { throw "WIN_UNPACKED_EXE_NOT_FOUND" }
+          $process = Start-Process -FilePath $exe.FullName -PassThru
+          Start-Sleep -Seconds 8
+          $process.Refresh()
+          if ($process.HasExited) { throw "WINDOWS_PROCESS_EXITED_EARLY:$($process.ExitCode)" }
+          Stop-Process -Id $process.Id -Force
+      - name: Build Windows NSIS candidate
+        working-directory: admin-monitor
+        run: npm run build:win
+      - name: Record Windows candidate SHA-256
+        working-directory: admin-monitor
+        shell: pwsh
+        run: |
+          $dist = (Resolve-Path .\dist).Path
+          $installer = Get-ChildItem -Path $dist -Filter *.exe | Where-Object { $_.DirectoryName -eq $dist } | Select-Object -First 1
+          if (-not $installer) { throw "WINDOWS_INSTALLER_NOT_FOUND" }
+          $hash = (Get-FileHash -Path $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($installer.Name)" | Set-Content -Path .\dist\SHA256SUMS.txt -Encoding ascii
+          Write-Host "Installer: $($installer.Name)"
+          Write-Host "SHA-256: $hash"
+      - name: Upload Windows candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: sd-admin-monitor-windows-candidate
+          path: |
+            admin-monitor/dist/*.exe
+            admin-monitor/dist/SHA256SUMS.txt
+          if-no-files-found: error

@@ -1,0 +1,1 @@
+.amount-input-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(145px,.95fr);gap:10px;align-items:center}.amount-input-row input{width:100%}.amount-preview{color:#c8d4e6;font-size:12px;font-weight:800;line-height:1.35;text-align:right;overflow-wrap:anywhere}.amount-preview.limit-error{color:#ff9ba4}
