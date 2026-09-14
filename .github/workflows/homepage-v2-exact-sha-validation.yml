@@ -178,6 +178,55 @@ jobs:
           });
           NODE
 
+      - name: Negative password auth path
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('playwright');
+
+          (async () => {
+            const browser = await chromium.launch({ channel: 'chrome', headless: true });
+            const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+            const pageErrors = [];
+            page.on('pageerror', (error) => pageErrors.push(String(error?.message || error)));
+
+            await page.goto('http://127.0.0.1:4173/login.html?next=/v2/index.html', {
+              waitUntil: 'domcontentloaded', timeout: 30000
+            });
+            await page.waitForFunction(() => Boolean(window.SD_AUTH?.client?.auth), null, { timeout: 15000 });
+
+            const result = await page.evaluate(async () => {
+              const auth = window.SD_AUTH;
+              const email = `homepage-v2-ci-${Date.now()}@example.invalid`;
+              const password = 'SD-Homepage-V2-CI-Invalid-Password-2026!';
+              const { data, error } = await auth.client.auth.signInWithPassword({ email, password });
+              const mappedMessage = auth.messageForError(error);
+              const session = await auth.getSession().catch(() => null);
+              return {
+                emailDomain: 'example.invalid',
+                authErrorPresent: Boolean(error),
+                rawError: String(error?.message || ''),
+                mappedMessage,
+                sessionPresent: Boolean(session || data?.session)
+              };
+            });
+
+            result.pageErrors = pageErrors;
+            result.ok = result.authErrorPresent &&
+              result.mappedMessage === '이메일 또는 비밀번호가 맞지 않습니다.' &&
+              !result.sessionPresent && pageErrors.length === 0;
+
+            fs.writeFileSync('v2-auth-negative-login.json', JSON.stringify(result, null, 2));
+            console.log('V2_AUTH_NEGATIVE_LOGIN=' + JSON.stringify(result));
+            await browser.close();
+            if (!result.ok) process.exit(1);
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
       - name: V2 responsive and source-lock UI checks
         shell: bash
         run: |
@@ -281,6 +330,7 @@ jobs:
           path: |
             exact-sha-proof.json
             v2-auth-smoke.json
+            v2-auth-negative-login.json
             homepage-v2-*.png
             v2-ui-gate-result.json
             lighthouse-v2.json
