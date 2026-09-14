@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  TARGET_SHA: 064501f5efea4302a4c2c47b7b402d273f978955
+  TARGET_SHA: 56ded4e9b74820652b761eb21bc70bdb35d1b7e7
 
 jobs:
   exact-sha-windows-gate:
