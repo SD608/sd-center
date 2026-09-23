@@ -169,11 +169,99 @@
     return Object.freeze({ forepaw, jumpGuard, tailParry, spikes, blockedSpikes });
   }
 
+  async function runP1OrchestrationGate() {
+    const completed = await withExecutionWorld({
+      bossX: 180, playerX: 260,
+      playerState: { hp: 100, armor: 30, laceration_percent: 0 },
+    }, async ({ adapter, player }) => {
+      const { ATTACK, AbisterP1CombatController } = SDAbisterP1Combat;
+      const controller = new AbisterP1CombatController({ rng: () => 0 });
+      const orchestrator = new SDAbisterP1Orchestration.AbisterP1RuntimeOrchestrator({
+        controller,
+        executionAdapter: adapter,
+      });
+      const observation = {
+        target_id: "player",
+        distance: 2.5,
+        direct_perception: true,
+        relative_angle_degrees: 0,
+        front_attack_valid: true,
+        forepaw_path_clear: true,
+        forepaw_landing_valid: true,
+        tail_path_clear: true,
+        jump_path_clear: true,
+        jump_landing_valid: true,
+        projectile_path_clear: true,
+        cooldown_ready: {
+          [ATTACK.FOREPAW_SLAM]: true,
+          [ATTACK.TAIL_SWEEP]: true,
+          [ATTACK.GEOGEUK_JUMP]: true,
+          [ATTACK.SPIKE_MACHINEGUN]: true,
+        },
+      };
+      const plan = {
+        [ATTACK.FOREPAW_SLAM]: { centerX: player.x, groundY: player.y },
+      };
+      const decision = orchestrator.decide(observation);
+      const locked = await orchestrator.advance(1050, { direct_perception: true }, plan);
+      const active = await orchestrator.advance(350, { direct_perception: true }, plan);
+      const completedEvents = await orchestrator.advance(200);
+      const recovered = await orchestrator.advance(1200);
+      return {
+        decision,
+        locked,
+        active,
+        completedEvents,
+        recovered,
+        snapshot: orchestrator.getSnapshot(),
+      };
+    });
+
+    const cancelled = await withExecutionWorld({
+      bossX: 180, playerX: 260,
+      playerState: { hp: 100, armor: 0, laceration_percent: 0 },
+    }, async ({ adapter, player }) => {
+      const { ATTACK, AbisterP1CombatController } = SDAbisterP1Combat;
+      const orchestrator = new SDAbisterP1Orchestration.AbisterP1RuntimeOrchestrator({
+        controller: new AbisterP1CombatController({ rng: () => 0 }),
+        executionAdapter: adapter,
+      });
+      const observation = {
+        target_id: "player",
+        distance: 2.5,
+        direct_perception: true,
+        relative_angle_degrees: 0,
+        front_attack_valid: true,
+        forepaw_path_clear: true,
+        forepaw_landing_valid: true,
+        tail_path_clear: true,
+        jump_path_clear: true,
+        jump_landing_valid: true,
+        projectile_path_clear: true,
+        cooldown_ready: {
+          [ATTACK.FOREPAW_SLAM]: true,
+          [ATTACK.TAIL_SWEEP]: true,
+          [ATTACK.GEOGEUK_JUMP]: true,
+          [ATTACK.SPIKE_MACHINEGUN]: true,
+        },
+      };
+      orchestrator.decide(observation);
+      const events = await orchestrator.advance(1000, { direct_perception: false }, {
+        [ATTACK.FOREPAW_SLAM]: { centerX: player.x, groundY: player.y },
+      });
+      return { events, snapshot: orchestrator.getSnapshot() };
+    });
+
+    return Object.freeze({ completed, cancelled });
+  }
+
   window.runtimeHarness = Object.freeze({
     runCycles,
     runP1ExecutionGate,
+    runP1OrchestrationGate,
     phaserVersion: () => Phaser.VERSION,
     p1ExecutionAdapterVersion: () => Boolean(window.SDAbisterP1Execution?.AbisterP1PhaserExecutionAdapter),
+    p1OrchestrationVersion: () => Boolean(window.SDAbisterP1Orchestration?.AbisterP1RuntimeOrchestrator),
   });
   createReadyGame("game").then(() => { status.textContent = "READY"; }).catch((error) => { status.textContent = `ERROR:${error.message}`; });
 })();
