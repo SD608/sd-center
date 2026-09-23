@@ -8,8 +8,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "check": "node scripts/check-contract.cjs && node --check core/simulation-clock.js && node --check core/commit-journal.js && node --check encounters/abister/abister-foundation-controller.js && node --check physics/recovery-geometry-adapter.js && node --check electron/runtime-storage-service.js && node --check electron/register-runtime-storage-ipc.js && node --check electron/app-main.cjs && node --check electron/app-preload.cjs && node --check persistence/recovery-coordinator.js && node --check bridge/runtime-persistence-client.js && node --check time/trusted-time-provider.js && node --check dev/harness.js && node --check integration/electron-renderer-bootstrap.js && node --check test/electron-ui-gate.cjs",
-    "test": "node --test test/runtime-core.test.cjs test/runtime-storage.test.cjs"
+    "check": "node scripts/check-contract.cjs && node --check core/simulation-clock.js && node --check core/commit-journal.js && node --check encounters/abister/abister-foundation-controller.js && node --check physics/recovery-geometry-adapter.js && node --check electron/runtime-storage-service.js && node --check electron/register-runtime-storage-ipc.js && node --check electron/app-main.cjs && node --check electron/app-preload.cjs && node --check persistence/recovery-coordinator.js && node --check bridge/runtime-persistence-client.js && node --check time/trusted-time-provider.js && node --check dev/harness.js && node --check integration/electron-renderer-bootstrap.js && node --check test/electron-ui-gate.cjs && node --check test/snapshot-stress-gate.cjs",
+    "test": "node --test test/runtime-core.test.cjs test/runtime-storage.test.cjs",
+    "stress:snapshot": "node test/snapshot-stress-gate.cjs"
   },
   "dependencies": {
     "phaser": "4.2.1"
