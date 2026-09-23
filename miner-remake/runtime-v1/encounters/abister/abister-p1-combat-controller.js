@@ -404,7 +404,7 @@ class AbisterP1CombatController {
   }
 }
 
-module.exports = {
+const API = Object.freeze({
   ATTACK,
   STATE,
   ATTACK_SPECS,
@@ -415,4 +415,7 @@ module.exports = {
   chooseP1Attack,
   resolveTailSweepDirection,
   AbisterP1CombatController,
-};
+});
+
+if (typeof module === "object" && module.exports) module.exports = API;
+if (typeof globalThis !== "undefined") globalThis.SDAbisterP1Combat = API;
