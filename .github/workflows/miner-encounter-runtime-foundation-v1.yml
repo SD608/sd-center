@@ -72,11 +72,11 @@ jobs:
       - name: Install pinned Electron integration tooling
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force .runtime-electron-ci | Out-Null
-          Push-Location .runtime-electron-ci
-          npm init -y | Out-Null
-          npm install --save-exact electron@44.4.3 playwright-core@1.55.0
-          Pop-Location
+          '{"name":"sd-miner-runtime-electron-ci","private":true}' | Set-Content .runtime-electron-ci/package.json -Encoding utf8NoBOM
+          npm install --prefix .runtime-electron-ci --save-exact electron@44.4.3 playwright-core@1.55.0
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: SD광부 UI + Electron runtime IPC + Phaser E2E
         shell: pwsh
         run: node miner-remake/runtime-v1/test/electron-ui-gate.cjs

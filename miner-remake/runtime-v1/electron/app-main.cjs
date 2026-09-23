@@ -1,6 +1,7 @@
 "use strict";
 
 const path = require("node:path");
+const { fileURLToPath } = require("node:url");
 const { app, BrowserWindow, ipcMain, session } = require("electron");
 const { RuntimeStorageService } = require("./runtime-storage-service");
 const { registerRuntimeStorageIpc } = require("./register-runtime-storage-ipc");
@@ -35,7 +36,14 @@ function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   mainWindow.webContents.on("will-attach-webview", (event) => event.preventDefault());
   mainWindow.webContents.on("will-navigate", (event, navigationUrl) => {
-    if (!navigationUrl.startsWith("file:")) event.preventDefault();
+    try {
+      const target = new URL(navigationUrl);
+      if (target.protocol !== "file:" || path.resolve(fileURLToPath(target)) !== uiPath) {
+        event.preventDefault();
+      }
+    } catch {
+      event.preventDefault();
+    }
   });
   mainWindow.once("ready-to-show", () => mainWindow.show());
 
