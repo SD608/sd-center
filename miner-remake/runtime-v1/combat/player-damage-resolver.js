@@ -52,7 +52,7 @@
 
     let appliedDamage = normalDamage;
     let shieldGuardApplied = false;
-    if (response.shield_guard === true && attack.shield_guard === true && response.shield_in_front_arc !== false) {
+    if (response.shield_guard === true && attack.shield_guard === true && response.shield_in_front_arc === true) {
       shieldGuardApplied = true;
       if (Number.isFinite(attack.guarded_damage_normal)) {
         appliedDamage = Number(attack.guarded_damage_normal);
@@ -81,7 +81,7 @@
       armor_damage: armorDamage,
       hp_damage: hpDamage,
       laceration_added_percent: lacerationAdded,
-      external_direct_damage_timer_resets: appliedDamage > 0,
+      external_direct_damage_timer_resets: (armorDamage + hpDamage) > 0,
       player_before: before,
       player_after: after,
     };
