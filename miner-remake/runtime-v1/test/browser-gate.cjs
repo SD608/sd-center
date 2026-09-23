@@ -75,9 +75,42 @@ function edgePath() {
     assert.equal(orchestration.cancelled.snapshot.hits.length, 0);
     assert.equal(orchestration.cancelled.snapshot.player.hp, 100);
 
+    const allAttack = await page.evaluate(() => window.runtimeHarness.runP1AllAttackOrchestrationGate());
+    const expectedAllAttack = {
+      FOREPAW_SLAM: { hp: 88, armor: 0, laceration: 12, hits: 1 },
+      TAIL_SWEEP: { hp: 68, armor: 0, laceration: 32, hits: 1 },
+      GEOGEUK_JUMP: { hp: 60, armor: 0, laceration: 0, hits: 1 },
+      SPIKE_MACHINEGUN: { hp: 52, armor: 0, laceration: 48, hits: 6 },
+    };
+    for (const [attack, expected] of Object.entries(expectedAllAttack)) {
+      const result = allAttack[attack];
+      assert(result, `missing all-attack result for ${attack}`);
+      assert.equal(result.decision.attack, attack);
+      assert.equal(result.locked[0].type, "ATTACK_LOCK");
+      assert.equal(result.pre_active_hit_count, 0, `${attack} executed before ACTIVE_ENTER`);
+      assert.equal(result.active[0].type, "ATTACK_ACTIVE_ENTER");
+      assert.deepEqual(
+        result.completedEvents.map((event) => event.type),
+        ["ATTACK_ACTIVE_COMPLETE", "RECOVERY_ENTER"],
+      );
+      assert.equal(result.recovered[0].type, "RECOVERY_COMPLETE");
+      assert.equal(result.snapshot.controller.state, "READY");
+      assert.deepEqual(result.snapshot.controller.attack_history, [attack]);
+      assert.equal(result.snapshot.player.hp, expected.hp);
+      assert.equal(result.snapshot.player.armor, expected.armor);
+      assert.equal(result.snapshot.player.laceration_percent, expected.laceration);
+      assert.equal(result.snapshot.hits.length, expected.hits);
+    }
+    assert.equal(allAttack.FOREPAW_SLAM.active[0].execution_result.accepted, true);
+    assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result.length, 1);
+    assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result[0].accepted, true);
+    assert.equal(allAttack.GEOGEUK_JUMP.active[0].execution_result.accepted, true);
+    assert.equal(allAttack.SPIKE_MACHINEGUN.active[0].execution_result.spawned, 6);
+    assert.equal(allAttack.SPIKE_MACHINEGUN.active[0].execution_result.hits, 6);
+
     const outDir = path.resolve(__dirname, "../../../ui-artifacts/miner-runtime-v1");
     fs.mkdirSync(outDir, { recursive: true });
     await page.screenshot({ path: path.join(outDir, "runtime-foundation.png"), fullPage: true });
-    console.log("miner runtime Phaser 4.2.1 boot/re-enter x100 + Abister P1 execution/damage + orchestration E2E Gate PASS");
+    console.log("miner runtime Phaser 4.2.1 boot/re-enter x100 + Abister P1 execution/damage + orchestration + all-attack Edge E2E Gate PASS");
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error.stack || error); process.exit(1); });
