@@ -23,7 +23,12 @@ function registerRuntimeStorageIpc(ipcMain, storage) {
     if (!payload.snapshot || payload.snapshot.run_id !== payload.run_id || payload.snapshot.encounter_id !== payload.encounter_id) {
       throw new Error("SNAPSHOT_ID_MISMATCH");
     }
-    return storage.writeSnapshot(payload.snapshot);
+    storage.writeSnapshot(payload.snapshot);
+    return {
+      ok: true,
+      snapshot_generation: Number(payload.snapshot.snapshot_generation || 0),
+      commit_seq: Number(payload.snapshot.commit_seq || payload.snapshot.base_commit_seq || 0),
+    };
   });
   ipcMain.handle(CHANNELS.READ_RECOVERY, (_event, payload) => {
     assertIds(payload);

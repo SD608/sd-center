@@ -57,3 +57,33 @@ jobs:
           path: ui-artifacts/miner-runtime-v1/*.png
           if-no-files-found: error
           retention-days: 14
+
+  windows-electron-ui-integration:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install exact runtime dependencies
+        shell: pwsh
+        run: npm ci --prefix miner-remake/runtime-v1
+      - name: Install pinned Electron integration tooling
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force .runtime-electron-ci | Out-Null
+          Push-Location .runtime-electron-ci
+          npm init -y | Out-Null
+          npm install --save-exact electron@44.4.3 playwright-core@1.55.0
+          Pop-Location
+      - name: SD광부 UI + Electron runtime IPC + Phaser E2E
+        shell: pwsh
+        run: node miner-remake/runtime-v1/test/electron-ui-gate.cjs
+      - name: Upload Electron integration evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-Miner-Runtime-Electron-Integration-v1
+          path: ui-artifacts/miner-runtime-v1-electron/*.png
+          if-no-files-found: error
+          retention-days: 14
