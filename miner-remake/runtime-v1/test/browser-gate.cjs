@@ -102,8 +102,12 @@ function edgePath() {
       assert.equal(result.snapshot.hits.length, expected.hits);
     }
     assert.equal(allAttack.FOREPAW_SLAM.active[0].execution_result.accepted, true);
-    assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result.length, 1);
+    assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result.length, 3);
     assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result[0].accepted, true);
+    assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result[1].accepted, false);
+    assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result[1].reason, "HIT_CAP");
+    assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result[2].accepted, false);
+    assert.equal(allAttack.TAIL_SWEEP.active[0].execution_result[2].reason, "HIT_CAP");
     assert.equal(allAttack.GEOGEUK_JUMP.active[0].execution_result.accepted, true);
     assert.equal(allAttack.SPIKE_MACHINEGUN.active[0].execution_result.spawned, 6);
     assert.equal(allAttack.SPIKE_MACHINEGUN.active[0].execution_result.hits, 6);
