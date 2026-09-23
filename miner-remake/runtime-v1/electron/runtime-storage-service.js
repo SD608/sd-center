@@ -1,6 +1,7 @@
 "use strict";
 
 const fs = require("node:fs");
+const fsp = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
 
@@ -40,24 +41,28 @@ class RuntimeStorageService {
     };
   }
 
-  _atomicWriteJson(target, value) {
+  async _atomicWriteJson(target, value) {
     const temp = `${target}.tmp-${process.pid}`;
-    const fd = fs.openSync(temp, "w", 0o600);
+    const handle = await fsp.open(temp, "w", 0o600);
     try {
-      fs.writeFileSync(fd, JSON.stringify(value));
-      fs.fsyncSync(fd);
+      await handle.writeFile(JSON.stringify(value));
+      await handle.sync();
     } finally {
-      fs.closeSync(fd);
+      await handle.close();
     }
-    fs.renameSync(temp, target);
+    await fsp.rename(temp, target);
   }
 
-  writeSnapshot(snapshot) {
+  async writeSnapshot(snapshot) {
     if (!snapshot?.run_id || !snapshot?.encounter_id) throw new Error("SNAPSHOT_ID_REQUIRED");
     const paths = this._paths(snapshot.run_id, snapshot.encounter_id);
     const envelope = { checksum: checksum(snapshot), snapshot };
-    if (fs.existsSync(paths.latest)) fs.renameSync(paths.latest, paths.previous);
-    this._atomicWriteJson(paths.latest, envelope);
+    try {
+      await fsp.rename(paths.latest, paths.previous);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+    await this._atomicWriteJson(paths.latest, envelope);
     return paths.latest;
   }
 
@@ -77,15 +82,15 @@ class RuntimeStorageService {
     return [this._readEnvelope(paths.latest), this._readEnvelope(paths.previous)].filter(Boolean);
   }
 
-  appendJournal(runId, encounterId, record) {
+  async appendJournal(runId, encounterId, record) {
     const paths = this._paths(runId, encounterId);
     const envelope = { checksum: checksum(record), record };
-    const fd = fs.openSync(paths.journal, "a", 0o600);
+    const handle = await fsp.open(paths.journal, "a", 0o600);
     try {
-      fs.writeSync(fd, `${JSON.stringify(envelope)}\n`);
-      fs.fsyncSync(fd);
+      await handle.writeFile(`${JSON.stringify(envelope)}\n`);
+      await handle.sync();
     } finally {
-      fs.closeSync(fd);
+      await handle.close();
     }
     return record.commit_seq;
   }
