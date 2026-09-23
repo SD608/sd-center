@@ -87,3 +87,26 @@ jobs:
           path: ui-artifacts/miner-runtime-v1-electron/*.png
           if-no-files-found: error
           retention-days: 14
+
+  windows-storage-durability:
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install exact runtime dependencies
+        shell: pwsh
+        run: npm ci --prefix miner-remake/runtime-v1
+      - name: Snapshot durability and performance 2s -> 3s -> 5s Gate
+        shell: pwsh
+        run: npm --prefix miner-remake/runtime-v1 run stress:snapshot
+      - name: Upload storage profiling evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-Miner-Runtime-Snapshot-Stress-v1
+          path: runtime-profiles/snapshot-stress-v1.json
+          if-no-files-found: error
+          retention-days: 14
