@@ -47,7 +47,7 @@ jobs:
       - name: Install pinned Edge automation driver
         shell: pwsh
         run: npm install --prefix .runtime-ci playwright-core@1.55.0 --no-save --ignore-scripts
-      - name: Phaser boot and re-enter x100 on Edge
+      - name: Phaser boot + Abister P1 execution/damage + re-enter x100 on Edge
         shell: pwsh
         run: node miner-remake/runtime-v1/test/browser-gate.cjs
       - name: Upload runtime render evidence

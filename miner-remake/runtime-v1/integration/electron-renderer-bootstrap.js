@@ -73,8 +73,17 @@
           boss.body.setImmovable(true);
           this.physics.add.collider(player, floor);
           this.physics.add.collider(boss, floor);
+          if (!window.SDAbisterP1Execution?.AbisterP1PhaserExecutionAdapter) throw new Error("P1_EXECUTION_ADAPTER_MISSING");
+          window.__sdAbisterP1ExecutionAdapter = new window.SDAbisterP1Execution.AbisterP1PhaserExecutionAdapter({
+            scene: this,
+            boss,
+            player,
+            unitPx: 40,
+            solids: [floor],
+            playerState: { hp: 100, armor: 0, laceration_percent: 0 },
+          });
           window.clearTimeout(timeout);
-          resolve();
+          resolve({ p1ExecutionAdapterReady: true });
         },
       };
       window.__sdMinerRuntimeGame = new Phaser.Game({
@@ -143,7 +152,9 @@
     const { host, badge } = addRuntimeHost();
     await loadScript(new URL("../runtime-v1/node_modules/phaser/dist/phaser.js", window.location.href).href);
     if (!window.Phaser || window.Phaser.VERSION !== "4.2.1") throw new Error("PHASER_VERSION_MISMATCH");
-    await bootPhaser(host);
+    await loadScript(new URL("../runtime-v1/combat/player-damage-resolver.js", window.location.href).href);
+    await loadScript(new URL("../runtime-v1/encounters/abister/abister-p1-phaser-execution-adapter.js", window.location.href).href);
+    const combatRuntime = await bootPhaser(host);
     const persistence = window.sdMinerRuntime.gateMode ? await runPersistenceSmoke() : null;
     badge.textContent = "RUNTIME READY";
     expose({
@@ -151,6 +162,7 @@
       error: null,
       bridgeVersion: window.sdMinerRuntime.bridgeVersion,
       phaserVersion: window.Phaser.VERSION,
+      p1ExecutionAdapterReady: combatRuntime?.p1ExecutionAdapterReady === true,
       persistence,
     });
   } catch (error) {

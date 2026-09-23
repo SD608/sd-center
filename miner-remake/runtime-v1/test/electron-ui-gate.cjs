@@ -78,6 +78,7 @@ async function cleanup() {
     assert.equal(gate.error, null, `runtime bootstrap error: ${gate.error}`);
     assert.equal(gate.bridgeVersion, "miner-runtime-electron-v1");
     assert.equal(gate.phaserVersion, "4.2.1");
+    assert.equal(gate.p1ExecutionAdapterReady, true);
     assert.equal(gate.persistence.appendSeq, 1);
     assert.equal(gate.persistence.writeOk, true);
     assert.equal(gate.persistence.snapshotCount, 1);
@@ -88,7 +89,7 @@ async function cleanup() {
     assert(await page.locator("#encounterRuntimeHost canvas").count() >= 1, "integrated Phaser canvas missing");
     assert.equal(await page.locator("#encounterRuntimeStatus").innerText(), "RUNTIME READY");
     await page.screenshot({ path: path.join(outDir, "electron-ui-runtime-integration.png"), fullPage: true });
-    console.log("SD광부 UI -> secure Electron -> runtime IPC -> Phaser integration PASS");
+    console.log("SD광부 UI -> secure Electron -> runtime IPC -> Phaser + P1 execution adapter integration PASS");
   } finally {
     await browser.close();
     await cleanup();
