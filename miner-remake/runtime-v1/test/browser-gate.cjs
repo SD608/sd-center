@@ -24,6 +24,7 @@ function edgePath() {
     await page.waitForFunction(() => document.querySelector("#runtimeStatus")?.textContent === "READY", null, { timeout: 15000 });
     assert.equal(await page.evaluate(() => window.runtimeHarness.phaserVersion()), "4.2.1");
     assert.equal(await page.evaluate(() => window.runtimeHarness.p1ExecutionAdapterVersion()), true);
+    assert.equal(await page.evaluate(() => window.runtimeHarness.p1OrchestrationVersion()), true);
     assert((await page.locator("canvas").count()) >= 1, "Phaser canvas missing");
     assert.equal(await page.evaluate(() => window.runtimeHarness.runCycles(100)), 100);
 
@@ -53,9 +54,30 @@ function edgePath() {
     assert.equal(gate.blockedSpikes.hits.length, 0);
     assert.equal(gate.blockedSpikes.state.hp, 100);
 
+    const orchestration = await page.evaluate(() => window.runtimeHarness.runP1OrchestrationGate());
+    assert.equal(orchestration.completed.decision.attack, "FOREPAW_SLAM");
+    assert.equal(orchestration.completed.locked[0].type, "ATTACK_LOCK");
+    assert.equal(orchestration.completed.active[0].type, "ATTACK_ACTIVE_ENTER");
+    assert.equal(orchestration.completed.active[0].execution_result.accepted, true);
+    assert.deepEqual(
+      orchestration.completed.completedEvents.map((event) => event.type),
+      ["ATTACK_ACTIVE_COMPLETE", "RECOVERY_ENTER"],
+    );
+    assert.equal(orchestration.completed.recovered[0].type, "RECOVERY_COMPLETE");
+    assert.equal(orchestration.completed.snapshot.controller.state, "READY");
+    assert.deepEqual(orchestration.completed.snapshot.controller.attack_history, ["FOREPAW_SLAM"]);
+    assert.equal(orchestration.completed.snapshot.player.armor, 0);
+    assert.equal(orchestration.completed.snapshot.player.hp, 88);
+    assert.equal(orchestration.completed.snapshot.player.laceration_percent, 12);
+    assert.equal(orchestration.completed.snapshot.hits.length, 1);
+
+    assert.equal(orchestration.cancelled.events[0].type, "TELEGRAPH_CANCEL_PERCEPTION_LOST");
+    assert.equal(orchestration.cancelled.snapshot.hits.length, 0);
+    assert.equal(orchestration.cancelled.snapshot.player.hp, 100);
+
     const outDir = path.resolve(__dirname, "../../../ui-artifacts/miner-runtime-v1");
     fs.mkdirSync(outDir, { recursive: true });
     await page.screenshot({ path: path.join(outDir, "runtime-foundation.png"), fullPage: true });
-    console.log("miner runtime Phaser 4.2.1 boot/re-enter x100 + Abister P1 execution/damage Gate PASS");
+    console.log("miner runtime Phaser 4.2.1 boot/re-enter x100 + Abister P1 execution/damage + orchestration E2E Gate PASS");
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error.stack || error); process.exit(1); });
