@@ -122,3 +122,27 @@ hardening HEAD run `35835916500` — **SUCCESS**
 ## Release 경계
 
 이 Draft PR의 자동검증이 성공해도 4막 5장 전체 COMPLETE/PASS 또는 공식 Release Gate PASS가 아니다. 4막 6장은 기존 로드맵대로 BLOCKED를 유지한다.
+
+
+## Snapshot durability/performance Gate v1 — 2026-09-23
+
+Recovery Final Exact v1의 이미 승인된 cadence Gate를 신규 게임 규칙 없이 구현한다.
+
+- 논리 Boss stress window: cadence별 최소 10분
+- journal commit: 1초 간격, 각 append에서 checksum + fsync
+- dirty full snapshot 후보: 2.00s → 성능 Gate 실패 시 3.00s → 5.00s
+- snapshot write 측정 범위: serialize/checksum + fsync + atomic rename을 포함한 실제 `RuntimeStorageService.writeSnapshot`
+- 강제 restart/reopen: 60초마다 1회, 총 10회/후보 cadence
+- durability 검증: 최신 valid snapshot + 연속 journal replay 후 `commit_seq`와 Boss HP가 마지막 authoritative commit과 exact 일치
+- 성능 기준: 60Hz frame budget 기준 snapshot blocking p95 <= 25%, 단일 max <= 1 frame
+- 2/3/5초 모두 실패하면 Gate를 억지로 완화하지 않고 `FAIL_OPTIMIZATION_REQUIRED`로 종료
+- JSON evidence: `runtime-profiles/snapshot-stress-v1.json`
+- Windows CI job: `windows-storage-durability`
+- 이 Gate는 headless storage/runtime 자동검증이며 사용자 실제 입력감, 설치 패키지, full Boss P1/P2/P3 검증을 대체하지 않는다.
+
+구현 시작 commits:
+- `deee64bdd64056b1b1403e0193c57ba886032ca0` — stress harness
+- `e9be680936c3460104e85da0ae1468a29692acd2` — npm script/check 연결
+- `ac7179bf9c4e9c2df44d72bc6640c854364a2bd7` — Windows storage Gate CI 연결
+
+현재 상태: **IMPLEMENTED_GATE_HARNESS / CI_RESULT_PENDING**. 결과 확인 전 PASS로 판정하지 않는다.
