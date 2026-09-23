@@ -146,3 +146,35 @@ Recovery Final Exact v1의 이미 승인된 cadence Gate를 신규 게임 규칙
 - `ac7179bf9c4e9c2df44d72bc6640c854364a2bd7` — Windows storage Gate CI 연결
 
 현재 상태: **IMPLEMENTED_GATE_HARNESS / CI_RESULT_PENDING**. 결과 확인 전 PASS로 판정하지 않는다.
+
+
+### Snapshot Gate 1차 실패 → 저장 경로 최적화 → 재시험
+
+1차 Gate:
+- HEAD: `bca4157521088884afcf6a47abc6276b87077961`
+- run: `35842345265`
+- artifact: `SDCenter-Miner-Runtime-Snapshot-Stress-v1` ID `10741232935`, digest `sha256:56b606815b974daed3297ad5eaf1f8407478e4e2fb10c79b4ac029d64e65d660`
+- durability: 2/3/5초 모두 PASS, failed write/recovery 0
+- performance: 2/3/5초 모두 FAIL. 5초도 snapshot blocking p95 10.0002ms / max 18.4424ms로 CANON 한계 4.1667ms / 16.6667ms 초과.
+- 판정: cadence 추가 완화 금지, storage implementation optimization 필요.
+
+최적화:
+- `b6b27209bb84e3f46780b3ef89e4c5c1b399bee7`: snapshot/journal durable write를 `fs/promises` 기반 async I/O로 전환. checksum/serialize 후 write+fsync+rename 완료까지 Promise ACK는 유지.
+- `a937c34c8864a255bb076b3908ea320ceab38d8b`: Electron IPC가 async durable write 완료를 await한 뒤 ACK.
+- `bb0471f02bc4e7d6c6293a0eaf57848798635c48`: storage regression test async contract 반영.
+- `18b6e24338ed59443f68cd049813fac7ba455bff`: stress Gate가 synchronous dispatch blocking과 durable ACK latency를 분리 측정하도록 보정.
+
+재시험:
+- HEAD: `18b6e24338ed59443f68cd049813fac7ba455bff`
+- run: `35842648395`
+- Windows storage job: SUCCESS
+- artifact: `SDCenter-Miner-Runtime-Snapshot-Stress-v1` ID `10741323257`, digest `sha256:36340be70025b169b8aca92a201dfd1c97f57bd7d7587c13a86faf7086b096e2`
+- 2.00s에서 PASS하여 3/5초 재시험 불필요.
+- 10분 logical stress / snapshot 300 / journal 600 / forced reopen+recovery 10.
+- snapshot main-thread blocking: p50 0.1389ms / p95 0.2016ms / max 0.5728ms / over-frame 0.
+- snapshot durable ACK latency: p50 15.9818ms / p95 31.7255ms / max 60.6183ms.
+- journal main-thread blocking: p95 0.1546ms / max 0.3847ms.
+- recovery: p95/max 12.0757ms.
+- failed write/recovery 0, commit_seq + Boss HP exact durability PASS.
+- 자동 Gate 판정: `SNAPSHOT_2S_AUTOMATED_STORAGE_GATE_PASS`.
+- 범위 제한: headless Windows storage profiling이며 사용자 실제 입력감, full Boss payload/AI, packaged installer E2E를 대신하지 않는다.
