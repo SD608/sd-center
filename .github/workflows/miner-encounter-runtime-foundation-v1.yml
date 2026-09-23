@@ -1,0 +1,59 @@
+name: Miner Encounter Runtime Foundation v1
+
+on:
+  push:
+    branches: [feat/miner-encounter-runtime-foundation-v1-20260923]
+    paths:
+      - 'miner-remake/runtime-v1/**'
+      - '.github/workflows/miner-encounter-runtime-foundation-v1.yml'
+      - 'audits/ch4-5-miner-encounter-runtime-foundation-20260923.md'
+  pull_request:
+    paths:
+      - 'miner-remake/runtime-v1/**'
+      - '.github/workflows/miner-encounter-runtime-foundation-v1.yml'
+      - 'audits/ch4-5-miner-encounter-runtime-foundation-20260923.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install exact runtime dependencies
+        run: npm ci --prefix miner-remake/runtime-v1
+      - name: Runtime syntax and security contract
+        run: npm --prefix miner-remake/runtime-v1 run check
+      - name: Encounter/recovery deterministic tests
+        run: npm --prefix miner-remake/runtime-v1 test
+
+  windows-browser-runtime:
+    runs-on: windows-2025
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install exact runtime dependencies
+        shell: pwsh
+        run: npm ci --prefix miner-remake/runtime-v1
+      - name: Install pinned Edge automation driver
+        shell: pwsh
+        run: npm install --prefix .runtime-ci playwright-core@1.55.0 --no-save --ignore-scripts
+      - name: Phaser boot and re-enter x100 on Edge
+        shell: pwsh
+        run: node miner-remake/runtime-v1/test/browser-gate.cjs
+      - name: Upload runtime render evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDCenter-Miner-Encounter-Runtime-v1-Windows
+          path: ui-artifacts/miner-runtime-v1/*.png
+          if-no-files-found: error
+          retention-days: 14

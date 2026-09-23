@@ -1,0 +1,17 @@
+{
+  "name": "sd-miner-encounter-runtime-v1",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SD광부 boss encounter runtime foundation v1",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "node scripts/check-contract.cjs && node --check core/simulation-clock.js && node --check core/commit-journal.js && node --check core/encounter-core.js && node --check encounters/abister/abister-foundation-controller.js && node --check physics/recovery-geometry-adapter.js && node --check electron/runtime-storage-service.js && node --check electron/register-runtime-storage-ipc.js && node --check persistence/recovery-coordinator.js && node --check bridge/runtime-persistence-client.js && node --check time/trusted-time-provider.js && node --check dev/harness.js",
+    "test": "node --test test/runtime-core.test.cjs test/runtime-storage.test.cjs"
+  },
+  "dependencies": {
+    "phaser": "4.2.1"
+  }
+}
