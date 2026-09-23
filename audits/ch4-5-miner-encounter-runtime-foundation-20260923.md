@@ -232,3 +232,45 @@ Artifacts:
 - UI Windows renders ID `10744375509` / digest `sha256:974e5e70ed02e04cee166af36e036e2ab54a5bc5ba290c82eaabf0b3f63ead9e`
 
 검사 범위 Critical 0 / High 0. 본 Gate로 production collider feel, animation/VFX/SFX/rig, 사용자 실제 Windows 100/125/150%, full P2/P3를 PASS 처리하지 않는다. main / Production DB / 공식 version / update manifest / Release 변경 없음. 4막5장 전체 및 공식 Release Gate는 계속 NOT PASS.
+
+
+## Abister P1 state-machine ↔ Phaser execution orchestration E2E Gate v1
+
+사용자 다음 작업 진행 승인에 따라 기존 P1 decision/state-machine과 이미 검증된 Phaser execution/damage adapter를 단일 runtime flow로 연결했다. 신규 전투 수치나 production collider 규칙은 추가하지 않는다.
+
+구현:
+- `abister-p1-combat-controller.js`를 CommonJS + browser global 양쪽에서 동일 API로 읽을 수 있게 노출. 전투 로직/수치는 변경 없음.
+- `abister-p1-runtime-orchestrator.js` 추가. Controller의 `ATTACK_ACTIVE_ENTER`만 Physics execution 권한을 발화하며 LOCK/TELEGRAPH/RECOVERY는 execution adapter를 직접 호출하지 않는다.
+- 전조 중 인지 상실 취소 시 Physics hit 0회를 보장.
+- ACTIVE 중 phase threshold는 이미 실행된 공격 1회를 중복 실행하지 않고 ACTIVE 완료 뒤 transition으로 이어지는 기존 state-machine 계약 유지.
+- spike burst는 async Physics execution 완료 결과를 ACTIVE event에 귀속.
+- Node regression `abister-p1-orchestration.test.cjs` 추가.
+- Windows Edge browser harness에서 실제 Phaser body를 사용해 선택→LOCK→ACTIVE_ENTER→42N contact→armor30 흡수→HP12/열상12→ACTIVE_COMPLETE→RECOVERY→READY 전체 흐름을 검증.
+- 같은 Edge Gate에서 TELEGRAPH 취소 경로가 hit 0 / HP100 유지인지 검증.
+
+Code checkpoint HEAD:
+- `ef471d6d8d16195ec432892453f2b2184b74641d`
+
+Checkpoint CI:
+- Miner Encounter Runtime Foundation v1 PR run `35849489653` SUCCESS
+  - core-contract SUCCESS
+  - windows-browser-runtime SUCCESS
+  - windows-electron-ui-integration SUCCESS
+  - windows-storage-durability SUCCESS
+- push run `35849482967` SUCCESS
+- Miner UI Workshop Mine v1 PR run `35849489647` SUCCESS
+  - static-contract SUCCESS
+  - windows-render SUCCESS
+
+Evidence artifacts:
+- Runtime Windows PR artifact `10744637471`, digest `sha256:6e80a436311688217937a05e5ca67ac624cebc59e2728bbbad44eb6259045af8`
+- Electron integration PR artifact `10744527611`, digest `sha256:a94657397a8bea826621a440c842705a5e63ebb50efef8fa419715b40e98130c`
+- Snapshot stress PR artifact `10744263155`, digest `sha256:8d4b9acbd6d4bd0a7c30bb3c622e485e9fab7cfb0fdb488f2b8642be07133da3`
+- UI Windows renders `10744228159`, digest `sha256:7eeec2487989f81639a9d24af9058fde6d9337cc1f3d6c039c6c2b227d23177e`
+
+판정: **COMPLETE_SUBTASK / P1_ORCHESTRATION_E2E_AUTOMATED_GATE_PASS / USER_WINDOWS_E2E_UNVERIFIED / RELEASE_GATE_NOT_PASS**.
+
+범위 제한:
+- production 최종 collider thickness/rig/animation/VFX/SFX는 여전히 TBD/미검증.
+- full P2/P3, 실제 사용자 Windows100/125/150%, 설치·서명 package, multiplayer, 4막6장 Core, Production DB/자산 Gate는 본 Gate 범위 밖.
+- main / Production DB / 공식 version / update manifest / Release는 변경하지 않는다.
