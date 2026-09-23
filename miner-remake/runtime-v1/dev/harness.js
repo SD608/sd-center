@@ -255,10 +255,98 @@
     return Object.freeze({ completed, cancelled });
   }
 
+  async function runP1AllAttackOrchestrationGate() {
+    const { ATTACK, ATTACK_SPECS, AbisterP1CombatController } = SDAbisterP1Combat;
+    const attacks = [
+      ATTACK.FOREPAW_SLAM,
+      ATTACK.TAIL_SWEEP,
+      ATTACK.GEOGEUK_JUMP,
+      ATTACK.SPIKE_MACHINEGUN,
+    ];
+
+    async function runAttack(attack) {
+      const worldConfig = {
+        bossX: attack === ATTACK.TAIL_SWEEP ? 360 : (attack === ATTACK.SPIKE_MACHINEGUN ? 120 : 180),
+        playerX: attack === ATTACK.TAIL_SWEEP ? 240 : (attack === ATTACK.SPIKE_MACHINEGUN ? 360 : (attack === ATTACK.GEOGEUK_JUMP ? 300 : 260)),
+        playerState: {
+          hp: 100,
+          armor: attack === ATTACK.FOREPAW_SLAM ? 30 : 0,
+          laceration_percent: 0,
+        },
+      };
+
+      return withExecutionWorld(worldConfig, async ({ adapter, boss, player }) => {
+        const controller = new AbisterP1CombatController({ rng: () => 0 });
+        const orchestrator = new SDAbisterP1Orchestration.AbisterP1RuntimeOrchestrator({
+          controller,
+          executionAdapter: adapter,
+        });
+        const cooldownReady = Object.fromEntries(attacks.map((candidate) => [candidate, candidate === attack]));
+        const observation = {
+          target_id: "player",
+          distance:
+            attack === ATTACK.FOREPAW_SLAM ? 2.5 :
+            attack === ATTACK.TAIL_SWEEP ? 3.2 :
+            attack === ATTACK.GEOGEUK_JUMP ? 4.5 : 7,
+          direct_perception: true,
+          relative_angle_degrees: attack === ATTACK.TAIL_SWEEP ? 120 : 0,
+          front_attack_valid: attack === ATTACK.FOREPAW_SLAM,
+          forepaw_path_clear: true,
+          forepaw_landing_valid: true,
+          tail_path_clear: true,
+          jump_path_clear: true,
+          jump_landing_valid: true,
+          projectile_path_clear: true,
+          cooldown_ready: cooldownReady,
+        };
+        const executionPlan = {
+          [ATTACK.FOREPAW_SLAM]: { centerX: player.x, groundY: player.y },
+          [ATTACK.TAIL_SWEEP]: {
+            samples: [
+              { x: player.x, y: player.y },
+              { x: player.x, y: player.y },
+              { x: player.x, y: player.y },
+            ],
+          },
+          [ATTACK.GEOGEUK_JUMP]: { centerX: player.x, groundY: player.y },
+          [ATTACK.SPIKE_MACHINEGUN]: { originX: boss.x, originY: boss.y, direction: 1 },
+        };
+        const spec = ATTACK_SPECS[attack];
+        const decision = orchestrator.decide(observation);
+        const locked = await orchestrator.advance(spec.lock_at_ms, { direct_perception: true }, executionPlan);
+        const beforeActive = orchestrator.getSnapshot();
+        const active = await orchestrator.advance(
+          spec.telegraph_ms - spec.lock_at_ms,
+          { direct_perception: true },
+          executionPlan,
+        );
+        const activeSnapshot = orchestrator.getSnapshot();
+        const completedEvents = await orchestrator.advance(spec.active_ms, { direct_perception: true });
+        const recovered = await orchestrator.advance(spec.recovery_ms, { direct_perception: true });
+        return {
+          attack,
+          decision,
+          locked,
+          pre_active_hit_count: beforeActive.hits.length,
+          active,
+          active_snapshot: activeSnapshot,
+          completedEvents,
+          recovered,
+          snapshot: orchestrator.getSnapshot(),
+        };
+      });
+    }
+
+    const results = {};
+    for (const attack of attacks) results[attack] = await runAttack(attack);
+    return Object.freeze(results);
+  }
+
   window.runtimeHarness = Object.freeze({
     runCycles,
     runP1ExecutionGate,
     runP1OrchestrationGate,
+    runP1AllAttackOrchestrationGate,
     phaserVersion: () => Phaser.VERSION,
     p1ExecutionAdapterVersion: () => Boolean(window.SDAbisterP1Execution?.AbisterP1PhaserExecutionAdapter),
     p1OrchestrationVersion: () => Boolean(window.SDAbisterP1Orchestration?.AbisterP1RuntimeOrchestrator),
