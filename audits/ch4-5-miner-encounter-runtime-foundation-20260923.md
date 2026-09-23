@@ -178,3 +178,57 @@ Recovery Final Exact v1의 이미 승인된 cadence Gate를 신규 게임 규칙
 - failed write/recovery 0, commit_seq + Boss HP exact durability PASS.
 - 자동 Gate 판정: `SNAPSHOT_2S_AUTOMATED_STORAGE_GATE_PASS`.
 - 범위 제한: headless Windows storage profiling이며 사용자 실제 입력감, full Boss payload/AI, packaged installer E2E를 대신하지 않는다.
+
+
+## Abister P1 Phaser/Arcade Physics execution + damage resolution Gate v1 — 2026-09-23
+
+사용자 승인 후 기존 P1 combat decision/state-machine Gate를 실제 Phaser Arcade Physics 충돌 경로와 플레이어 피해 계층에 연결했다. 신규 게임 밸런스 규칙은 추가하지 않았고, exact collider thickness/rig/VFX처럼 정본에서 runtime TBD인 값은 자동검증 fixture 전용으로 분리했다.
+
+구현:
+- `combat/player-damage-resolver.js`
+  - Shift 완전무적 / 검 패링 / 대검 상쇄 무효화
+  - 방패는 `shield_in_front_arc === true`가 명시된 경우에만 가드 성립
+  - Normal 피해는 방어구 우선 → 초과분 HP
+  - 열상 태그는 실제 HP 피해만 1:1 %p 증가
+- `encounters/abister/abister-p1-phaser-execution-adapter.js`
+  - 앞발 내려찍기 2.2블록 landing-width Arcade body
+  - 거극 도약 2.6블록 landing-width Arcade body
+  - 꼬리 sweep 실제 Arcade overlap sample + 1회 사용당 대상 hit cap
+  - 극침 기관사격 6발 / 0.18s / 12블록/s / 최대8블록 실제 dynamic projectile body
+  - solid collider 충돌 시 극침 소멸
+- production exact가 아닌 collider 두께는 `FIXTURE_GEOMETRY`에 격리하고 CANON attack contract에는 넣지 않는다.
+- Node regression에서 P1 state-machine `ATTACK_SPECS`와 execution contract의 ACTIVE/damage/defense flags가 일치하는지 검사한다.
+- Electron UI runtime도 resolver + P1 execution adapter를 same-origin local script로 load하고 실제 Phaser scene에서 adapter 생성까지 확인한다.
+
+구현 commits:
+- `faa802574517d80159bba29f2c508b71fa4dcad8` — P1 Phaser execution/damage Gate 전체 연결
+- `24735470cec5dddd638a8483a7804a95000956ae` — 방패 정면120° proof를 명시적으로 요구하도록 fail-safe 보정
+
+자동검증 결과 — code HEAD `24735470cec5dddd638a8483a7804a95000956ae`:
+- Miner Encounter Runtime Foundation v1 push run `35847900501`: SUCCESS
+  - core-contract: SUCCESS
+  - windows-browser-runtime: SUCCESS
+  - windows-electron-ui-integration: SUCCESS
+  - windows-storage-durability: SUCCESS
+- Miner Encounter Runtime Foundation v1 PR run `35847906956`: SUCCESS
+  - core-contract: SUCCESS
+  - windows-browser-runtime: SUCCESS
+  - windows-electron-ui-integration: SUCCESS
+  - windows-storage-durability: SUCCESS
+- Miner UI Workshop Mine v1 PR run `35847906978`: SUCCESS
+  - static-contract: SUCCESS
+  - windows-render: SUCCESS
+
+Windows 2025 / Edge P1 execution Gate 실제 assertion:
+- 앞발: 42 Normal, 시작 방어구30 → 방어구0 / HP88 / 열상12%p
+- 도약: 방패 정면가드 40 Normal → 8 HP, 열상0
+- 꼬리: 검 패링으로 피해0, 동일 sweep 반복 overlap에도 대상 hit log 1회
+- 기관사격: 실제 projectile 6발 충돌 → 총48 HP / 열상48%p
+- 기관사격 벽 차단: 6발 모두 solid에 소멸 → player hit0 / HP100
+
+Artifacts:
+- `SDCenter-Miner-Encounter-Runtime-v1-Windows` ID `10743713679` / digest `sha256:e791efed49adefa98f46afb70f4cb59360a33b6a515d01a196f941cc3d6c7f7e`
+- `SDCenter-Miner-Runtime-Electron-Integration-v1` ID `10743309808` / digest `sha256:7e8e141340264306ebef0fe28ffcaab42f96938d800c92327677d6b439a019c3`
+- UI Windows renders ID `10744375509` / digest `sha256:974e5e70ed02e04cee166af36e036e2ab54a5bc5ba290c82eaabf0b3f63ead9e`
+
+검사 범위 Critical 0 / High 0. 본 Gate로 production collider feel, animation/VFX/SFX/rig, 사용자 실제 Windows 100/125/150%, full P2/P3를 PASS 처리하지 않는다. main / Production DB / 공식 version / update manifest / Release 변경 없음. 4막5장 전체 및 공식 Release Gate는 계속 NOT PASS.
