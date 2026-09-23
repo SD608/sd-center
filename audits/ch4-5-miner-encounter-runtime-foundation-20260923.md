@@ -274,3 +274,48 @@ Evidence artifacts:
 - production 최종 collider thickness/rig/animation/VFX/SFX는 여전히 TBD/미검증.
 - full P2/P3, 실제 사용자 Windows100/125/150%, 설치·서명 package, multiplayer, 4막6장 Core, Production DB/자산 Gate는 본 Gate 범위 밖.
 - main / Production DB / 공식 version / update manifest / Release는 변경하지 않는다.
+
+
+## Abister P1 all-attack orchestration Edge E2E Gate v1 — 2026-09-23
+
+사용자 승인에 따라 기존 P1 state-machine ↔ Phaser execution orchestration을 네 공격 전체로 확장 검증했다. 신규 전투 수치나 production collider/rig/animation/VFX/SFX 규칙은 추가하지 않았다.
+
+구현/검증:
+- `640a57f821e2ba156b667f1186dfb48a85dd3d00` — browser harness에 `runP1AllAttackOrchestrationGate` 추가.
+- `6b94f0a432d6264bcebd9800dfbf108a905fc375` — Node orchestration regression에서 P1 네 공격이 각각 정확한 execution adapter로 1회만 라우팅되는지 검증.
+- `96bee0f86f72ff793cd4ea6eb37e997543525e38` — Windows Edge all-attack assertion 추가.
+- 1차 runtime PR run `35850784426`은 `windows-browser-runtime`에서 FAIL. 원인은 꼬리 휩쓸기 3개 fixture sample의 반환 배열을 1개라고 잘못 기대한 테스트 assertion이었다. 실제 hit log는 1회였고 adapter는 첫 contact accepted 뒤 나머지 2개 sample을 `HIT_CAP`으로 거부하는 기존 계약대로 동작했다.
+- `6401354c6907dd2063a511bfc92d1d4e6073f9c1` — 꼬리 execution result를 `1 accepted + 2 HIT_CAP rejected`로 정확히 검증하도록 assertion 수정.
+
+최종 code HEAD 자동검증:
+- Miner Encounter Runtime Foundation v1 PR run `35850929153`: SUCCESS
+  - core-contract: SUCCESS
+  - windows-browser-runtime: SUCCESS
+  - windows-electron-ui-integration: SUCCESS
+  - windows-storage-durability: SUCCESS
+- Miner UI Workshop Mine v1 PR run `35850929167`: SUCCESS
+  - static-contract: SUCCESS
+  - windows-render: SUCCESS
+
+Windows 2025 / Microsoft Edge 실제 Phaser orchestration 결과:
+- 공통: 네 공격 모두 state-machine 선택 → `ATTACK_LOCK` → ACTIVE 진입 전 Physics hit 0 → `ATTACK_ACTIVE_ENTER`에서만 execution → `ATTACK_ACTIVE_COMPLETE` → `RECOVERY_ENTER` → `RECOVERY_COMPLETE` → READY.
+- FOREPAW_SLAM: 실제 contact 1회, armor30 → armor0 / HP88 / laceration12.
+- TAIL_SWEEP: fixture sample 3개 중 첫 contact만 accepted, 뒤 2개는 `HIT_CAP`; 실제 hit log 1회 / HP68 / laceration32.
+- GEOGEUK_JUMP: 실제 contact 1회 / HP60 / laceration0.
+- SPIKE_MACHINEGUN: 실제 projectile 6발 spawn / 6 hit / HP52 / laceration48.
+- 각 공격 완료 후 attack_history에는 해당 공격 1회만 기록되고 중복 execution은 없었다.
+
+Artifacts:
+- `SDCenter-Miner-Encounter-Runtime-v1-Windows` ID `10744649488`, digest `sha256:5b2ce82dc11412ccb10c147309e2f35de6aecc7c45c0358d11b7ba44a7390fcd`.
+- `SDCenter-Miner-Runtime-Electron-Integration-v1` ID `10745740705`, digest `sha256:5263aaade0680c979580b2520e89895bc4dfe588536a56b13a6a0de262123c80`.
+- `SDCenter-Miner-Runtime-Snapshot-Stress-v1` ID `10745675345`, digest `sha256:8ec188c32efe85ddc8e4491358fa057e6c8ee869657343cb5ad6e3a131d11f03`.
+- `SDCenter-Miner-UI-v1-Windows-Renders` ID `10745387346`, digest `sha256:84dd4193107eebd3df2e237b1d8e322d3693d2667b0dd4524bd4ae2ca5ddf240`.
+
+검사 범위 판정:
+- Critical 0 / High 0.
+- `COMPLETE_SUBTASK / P1_ALL_ATTACK_ORCHESTRATION_EDGE_E2E_AUTOMATED_GATE_PASS / USER_WINDOWS_E2E_UNVERIFIED / RELEASE_GATE_NOT_PASS`.
+- production 최종 collider thickness/rig/animation/VFX/SFX, 사용자 실제 Windows 100/125/150%, 설치·서명 package, P2/P3 전체, multiplayer, 4막6장 Core/Production은 계속 미검증.
+- main / Production DB / 공식 version / update manifest / Release 변경 없음. PR #85 Draft/미병합 유지.
+- 다음 작업: 미확정 / 확인 필요. 본 Gate 이후 후속 구현 단위는 최신 정본에서 별도 확정한다.
+
+Evidence: `miner_abister_p1_all_attack_orchestration_edge_e2e_gate_v1_pass`
