@@ -91,6 +91,67 @@ test("active phase threshold keeps one execution then transitions without duplic
   assert.equal(execution.calls.length, 1);
 });
 
+test("all four selected attacks route exactly once through ACTIVE_ENTER", async () => {
+  const scenarios = [
+    {
+      attack: combat.ATTACK.FOREPAW_SLAM,
+      observation: { distance: 2.5, relative_angle_degrees: 0, front_attack_valid: true },
+      plan: { centerX: 10, groundY: 20 },
+      call: "forepaw",
+    },
+    {
+      attack: combat.ATTACK.TAIL_SWEEP,
+      observation: { distance: 3.2, relative_angle_degrees: 120, front_attack_valid: false },
+      plan: { samples: [{ x: 1, y: 2 }] },
+      call: "tail",
+    },
+    {
+      attack: combat.ATTACK.GEOGEUK_JUMP,
+      observation: { distance: 4.5, relative_angle_degrees: 0, front_attack_valid: false },
+      plan: { centerX: 10, groundY: 20 },
+      call: "jump",
+    },
+    {
+      attack: combat.ATTACK.SPIKE_MACHINEGUN,
+      observation: { distance: 7, relative_angle_degrees: 0, front_attack_valid: false },
+      plan: { originX: 1, originY: 2, direction: 1 },
+      call: "spikes",
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const execution = makeExecutionMock();
+    const orchestrator = new AbisterP1RuntimeOrchestrator({ executionAdapter: execution, rng: () => 0 });
+    const cooldown_ready = Object.fromEntries(
+      Object.values(combat.ATTACK).map((attack) => [attack, attack === scenario.attack]),
+    );
+    const observation = baseObservation({ ...scenario.observation, cooldown_ready });
+    const decision = orchestrator.decide(observation);
+    assert.equal(decision.attack, scenario.attack);
+
+    const spec = combat.ATTACK_SPECS[scenario.attack];
+    const lockEvents = await orchestrator.advance(spec.lock_at_ms, { direct_perception: true }, {
+      [scenario.attack]: scenario.plan,
+    });
+    assert.equal(lockEvents[0].type, "ATTACK_LOCK");
+    assert.equal(execution.calls.length, 0);
+
+    const activeEvents = await orchestrator.advance(
+      spec.telegraph_ms - spec.lock_at_ms,
+      { direct_perception: true },
+      { [scenario.attack]: scenario.plan },
+    );
+    const active = activeEvents.find((event) => event.type === "ATTACK_ACTIVE_ENTER");
+    assert(active);
+    assert.equal(execution.calls.length, 1);
+    assert.equal(execution.calls[0][0], scenario.call);
+
+    const completed = await orchestrator.advance(spec.active_ms, { direct_perception: true });
+    assert.deepEqual(completed.map((event) => event.type), ["ATTACK_ACTIVE_COMPLETE", "RECOVERY_ENTER"]);
+    assert.equal(execution.calls.length, 1);
+  }
+});
+
 test("spike execution is awaited and attached to ACTIVE event result", async () => {
   const execution = makeExecutionMock();
   const orchestrator = new AbisterP1RuntimeOrchestrator({ executionAdapter: execution, rng: () => 0 });
