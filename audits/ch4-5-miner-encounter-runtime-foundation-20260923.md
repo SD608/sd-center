@@ -64,6 +64,20 @@ Windows 2025/Edge:
 - scene boot/destroy/re-enter 100회
 - screenshot artifact
 
+## 실제 GitHub/CI 결과 — 2026-09-23
+
+구현 commit: `8ac6cc7f1722695c3203589015f3f53f191d6e19`  
+Draft PR: **#85**  
+Actions: **Miner Encounter Runtime Foundation v1** run **35811115290 — SUCCESS**
+
+성공 job:
+- `core-contract`: Node 22 dependency/security contract + encounter/recovery deterministic tests PASS
+- `windows-browser-runtime`: Windows 2025 / Microsoft Edge에서 Phaser 4.2.1 boot, canvas 생성, scene destroy/re-enter 100회 PASS, screenshot artifact 업로드 PASS
+
+이 결과로 **foundation 자동 Gate 범위만 PASS**로 판정한다. 실제 SD광부 Electron package E2E, 사용자 Windows 조작감/UI, 전체 Boss AI, 2/3/5초 snapshot stress/crash profiling, multiplayer, Core 경제·업적은 계속 미검증이다.
+
+검사 범위 Critical 0 / High 0. 공식 Release Gate는 **NOT PASS**이며 4막5장 전체 COMPLETE/PASS로 승격하지 않는다.
+
 ## 아직 PASS가 아닌 항목
 
 - PR #80 사용자 실제 Windows 100/125/150% UI Gate
