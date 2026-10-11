@@ -6,6 +6,7 @@ on:
       - '.github/workflows/audit-extension-catalog-integrity.yml'
       - 'tools/audit-extension-catalog-integrity.py'
       - 'tools/test-retired-bitcoin-downloads.py'
+      - 'tools/check-retired-bitcoin-release-asset.py'
       - 'update/extensions-catalog.json'
       - 'update/desktop-policy.json'
       - 'downloads/extensions/**'
@@ -31,3 +32,15 @@ jobs:
           name: official-extension-integrity-report
           path: artifacts/extension-integrity/extension-integrity-report.json
           if-no-files-found: error
+
+  release-attachment-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fail if legacy Bitcoin Release ZIP is still public
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python tools/check-retired-bitcoin-release-asset.py
