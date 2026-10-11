@@ -1,0 +1,39 @@
+name: Gate Retired Bitcoin Release Asset
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/gate-retired-bitcoin-release-asset.yml'
+      - 'update/extensions-catalog.json'
+      - 'extensions-data.js'
+      - 'assets/js/extensions-data.js'
+      - 'downloads/extensions/SDBitcoinMiner*.zip'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-asset-absent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify the retired ZIP is not still public in v.2.2.1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(gh api repos/SD608/sd-center/releases/tags/v.2.2.1)"
+          count="$(jq '[.assets[] | select(.name == "SDBitcoinMiner_v1.2.2_Desktop.zip")] | length' <<<"$response")"
+          if [[ "$count" != "0" ]]; then
+            echo "::error::Release v.2.2.1 still hosts the retired Bitcoin ZIP. Remove ONLY that exact Release attachment, then rerun this gate."
+            exit 1
+          fi
+          for name in SDCenterSetup.exe SDCenter-Mobile.apk SDMiner_v1.1.0_Desktop.zip SDOddEven_v1.1.0_Desktop.zip SDVault_v1.2.0_Desktop.zip BUILD_INFO.txt SHA256.txt; do
+            if ! jq -e --arg name "$name" '.assets | any(.name == $name)' <<<"$response" >/dev/null; then
+              echo "::error::Unrelated Release attachment is missing: $name"
+              exit 1
+            fi
+          done
+          echo "PASS: retired Bitcoin ZIP absent; seven unrelated Release attachments preserved"
