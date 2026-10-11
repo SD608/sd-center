@@ -81,7 +81,7 @@ jobs:
       - name: Verify all official update entries are SHA pinned
         run: |
           python tools/audit-extension-catalog-integrity.py | tee /tmp/audit.txt
-          grep -q 'catalog integrity pins: 10/10' /tmp/audit.txt
+          grep -q 'catalog integrity pins: 9/9' /tmp/audit.txt
           grep -q 'required-policy integrity pins: 4/4' /tmp/audit.txt
 
   release-safety:
