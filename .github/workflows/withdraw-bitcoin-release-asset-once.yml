@@ -1,0 +1,65 @@
+name: Withdraw One Retired Bitcoin Release ZIP
+
+on:
+  push:
+    branches:
+      - ops-withdraw-bitcoin-release-asset-20261011
+    paths:
+      - '.github/workflows/withdraw-bitcoin-release-asset-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  withdraw-exact-asset:
+    if: github.repository == 'SD608/sd-center'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify exact retired ZIP and remove ONLY its attachment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo='SD608/sd-center'
+          release='v.2.2.1'
+          asset_id='516865122'
+          asset_name='SDBitcoinMiner_v1.2.2_Desktop.zip'
+          expected_size='79637'
+          response="$(gh api "repos/$repo/releases/tags/$release")"
+          test "$(jq -r '.tag_name' <<<"$response")" = "$release"
+          for preserved in BUILD_INFO.txt SDCenter-Mobile.apk SDCenterSetup.exe SDMiner_v1.1.0_Desktop.zip SDOddEven_v1.1.0_Desktop.zip SDVault_v1.2.0_Desktop.zip SHA256.txt; do
+            if ! jq -e --arg n "$preserved" '.assets | any(.name == $n)' <<<"$response" >/dev/null; then
+              echo "::error::Unrelated release attachment is already missing: $preserved"
+              exit 1
+            fi
+          done
+          count="$(jq --arg n "$asset_name" '[.assets[] | select(.name == $n)] | length' <<<"$response")"
+          if [[ "$count" == '0' ]]; then
+            echo 'Retired release attachment was already removed; no mutation performed.'
+            exit 0
+          fi
+          if [[ "$count" != '1' ]]; then
+            echo "::error::Expected exactly one $asset_name, found $count"
+            exit 1
+          fi
+          actual_id="$(jq --arg n "$asset_name" -r '.assets[] | select(.name == $n) | .id' <<<"$response")"
+          actual_size="$(jq --arg n "$asset_name" -r '.assets[] | select(.name == $n) | .size' <<<"$response")"
+          if [[ "$actual_id" != "$asset_id" || "$actual_size" != "$expected_size" ]]; then
+            echo '::error::Release asset identity/size mismatched preflight; refusing deletion.'
+            exit 1
+          fi
+          gh api --method DELETE "repos/$repo/releases/assets/$asset_id"
+          after="$(gh api "repos/$repo/releases/tags/$release")"
+          if jq -e --arg n "$asset_name" '.assets | any(.name == $n)' <<<"$after" >/dev/null; then
+            echo '::error::The retired attachment remains after the deletion API call.'
+            exit 1
+          fi
+          for preserved in BUILD_INFO.txt SDCenter-Mobile.apk SDCenterSetup.exe SDMiner_v1.1.0_Desktop.zip SDOddEven_v1.1.0_Desktop.zip SDVault_v1.2.0_Desktop.zip SHA256.txt; do
+            if ! jq -e --arg n "$preserved" '.assets | any(.name == $n)' <<<"$after" >/dev/null; then
+              echo "::error::Unexpected missing Release attachment: $preserved"
+              exit 1
+            fi
+          done
+          echo 'PASS: only the retired Bitcoin Release ZIP was withdrawn; the seven unrelated attachments remain.'
