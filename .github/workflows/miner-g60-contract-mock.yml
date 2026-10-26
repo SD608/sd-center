@@ -1,0 +1,30 @@
+name: Miner G60 Mock Contract (Non-Production)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/miner-g60-contract/**'
+      - '.github/workflows/miner-g60-contract-mock.yml'
+  push:
+    branches:
+      - 'feat/miner-g60-contract-mock-audit-20261026'
+    paths:
+      - 'sandbox/miner-g60-contract/**'
+      - '.github/workflows/miner-g60-contract-mock.yml'
+permissions:
+  contents: read
+jobs:
+  deterministic-mock:
+    name: Node 22 isolated tests (not Core/Unity Gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static syntax check
+        run: |
+          node --check sandbox/miner-g60-contract/run-authority-mock.cjs
+          node --check sandbox/miner-g60-contract/run-authority-mock.test.cjs
+      - name: Run sandbox mock-only tests
+        run: node --test sandbox/miner-g60-contract/run-authority-mock.test.cjs
