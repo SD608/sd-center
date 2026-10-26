@@ -18,7 +18,7 @@ FLOOR_TTL_MS = 600_000
 class Sandbox:
     def __init__(self, filename: str):
         self.filename = filename
-        with self.tx() as cx:
+        with sqlite3.connect(self.filename) as cx:
             cx.executescript("""
                 CREATE TABLE IF NOT EXISTS runs (
                   run_id TEXT PRIMARY KEY, state TEXT NOT NULL DEFAULT 'OPEN',
