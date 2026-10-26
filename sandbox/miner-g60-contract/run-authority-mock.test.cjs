@@ -43,6 +43,8 @@ test("G60-CONTRACT-04 mock: ACK loss and request retry cannot duplicate committe
   assert.equal(r.commitInventory({ id: "p1", requestId: "r1", item: "ore", change: 1 }), "COMMITTED");
   assert.equal(r.commitInventory({ id: "p1", requestId: "r1", item: "ore", change: 1 }), "COMMITTED");
   assert.equal(r.revisions.get("p1:ore"), 1);
+  assert.equal(r.commitInventory({ id: "p1", requestId: "r1", item: "ore", change: 999 }), "IDEMPOTENCY_CONFLICT");
+  assert.equal(r.revisions.get("p1:ore"), 1);
 });
 
 test("G60-CONTRACT-05 mock: uncommitted changes remain absent, no client mint", () => {
@@ -70,7 +72,7 @@ test("G60-CONTRACT-07 mock: unknown shipment holds join without deadline mutatio
   assert.equal(r.join({ id: "p1", now: deadline - 100, requestId: "hold", tokenEpoch: epoch }), "HOLD_LEDGER");
   assert.equal(r.deadline, deadline);
   r.setUnknownDelivery(false);
-  assert.equal(r.join({ id: "p1", now: deadline - 99, requestId: "retry-fresh", tokenEpoch: epoch }), "JOIN_COMMIT_SAVED");
+  assert.equal(r.join({ id: "p1", now: deadline - 99, requestId: "hold", tokenEpoch: epoch }), "JOIN_COMMIT_SAVED");
 });
 
 test("G60-CONTRACT-08 mock: confirmed death persists; locked player cannot take new damage", () => {
@@ -107,6 +109,7 @@ test("G60-CONTRACT-10 mock: stale epoch and revoked device refused; other teamma
   assert.equal(r.join({ id: "p1", now: 1, requestId: "f", tokenEpoch: 1 }), "STALE_OR_REVOKED");
   assert.equal(r.join({ id: "p1", now: 2, requestId: "g", tokenEpoch: 2 }), "JOIN_COMMIT_SAVED");
   assert.equal(r.command("p1", 2), "ACCEPT");
+  assert.equal(r.join({ id: "p1", now: 3, requestId: "g", tokenEpoch: 999 }), "IDEMPOTENCY_CONFLICT");
   r.revoke("p1");
   assert.equal(r.command("p1", 2), "DENY");
   assert.equal(r.command("p2", 1), "ACCEPT");
