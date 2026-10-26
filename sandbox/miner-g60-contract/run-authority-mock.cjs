@@ -99,7 +99,10 @@ class RunAuthorityMock {
     this.clock(now);
     const key = id + ":join:" + requestId;
     const prior = this.requestResults.get(key);
-    if (prior) return prior;
+    if (prior) {
+      if (prior.epoch !== tokenEpoch) return "IDEMPOTENCY_CONFLICT";
+      return prior.result;
+    }
     const p = this.player(id);
     let result;
     if (this.closed) result = "RUN_CLOSED";
@@ -116,8 +119,9 @@ class RunAuthorityMock {
       this.deadline = null; // old cleanup can no longer close active run
       result = primarySafe ? "JOIN_COMMIT_SAVED" : "JOIN_COMMIT_ELEVATOR";
     }
-    // Retry is idempotent. ClientTime deliberately ignored.
-    this.requestResults.set(key, result);
+    // Persist only terminal, successfully committed join; HOLD/UNKNOWN must be re-queryable.
+    // ClientTime deliberately ignored. Token epoch binds the committed request.
+    if (result.startsWith("JOIN_COMMIT_")) this.requestResults.set(key, { result, epoch: tokenEpoch });
     return result;
   }
 
@@ -133,14 +137,15 @@ class RunAuthorityMock {
   commitInventory({ id, requestId, item, change, committed = true }) {
     this.player(id);
     const key = id + ":inventory:" + requestId;
-    if (this.requestResults.has(key)) return this.requestResults.get(key);
+    const prior = this.requestResults.get(key);
+    if (prior) return prior.item === item && prior.change === change ? prior.result : "IDEMPOTENCY_CONFLICT";
     if (!committed) return "UNKNOWN_NO_COMMIT";
     if (!Number.isSafeInteger(change) || change === 0) throw Error("INVALID_CHANGE");
     const oldQty = this.revisions.get(id + ":" + item) || 0;
     if (oldQty + change < 0) return "INSUFFICIENT_ITEMS";
     this.revisions.set(id + ":" + item, oldQty + change);
     const outcome = "COMMITTED";
-    this.requestResults.set(key, outcome);
+    this.requestResults.set(key, { result: outcome, item, change });
     return outcome;
   }
 
