@@ -3,12 +3,14 @@ on:
   pull_request:
     paths:
       - 'sandbox/miner-g60-contract/**'
+      - 'unity/sd-miner-prototype/**'
       - '.github/workflows/miner-g60-contract-mock.yml'
   push:
     branches:
       - 'feat/miner-g60-contract-mock-audit-20261026'
     paths:
       - 'sandbox/miner-g60-contract/**'
+      - 'unity/sd-miner-prototype/**'
       - '.github/workflows/miner-g60-contract-mock.yml'
 permissions:
   contents: read
@@ -34,3 +36,6 @@ jobs:
       - name: Run SQLite transactional sandbox contract tests (non-production)
         working-directory: sandbox/miner-g60-contract
         run: python -m unittest -v test_sqlite_sandbox.py
+      - name: Check Unity project structure (NOT Unity Editor compilation)
+        run: |
+          python -c "from pathlib import Path; import json; p=Path('unity/sd-miner-prototype'); assert (p/'ProjectSettings/ProjectVersion.txt').exists(); d=json.loads((p/'Packages/manifest.json').read_text()); assert 'com.unity.modules.physics2d' in d['dependencies']; assert 'JoinOutcome.BridgeNotConnected' in (p/'Assets/Scripts/Runtime/FailClosedRunGateway.cs').read_text(); print('Unity scaffold STATIC structure PASS; editor build NOT_RUN')"
