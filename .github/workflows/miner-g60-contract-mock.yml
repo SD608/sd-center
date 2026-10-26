@@ -28,3 +28,9 @@ jobs:
           node --check sandbox/miner-g60-contract/run-authority-mock.test.cjs
       - name: Run sandbox mock-only tests
         run: node --test sandbox/miner-g60-contract/run-authority-mock.test.cjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run SQLite transactional sandbox contract tests (non-production)
+        working-directory: sandbox/miner-g60-contract
+        run: python -m unittest -v test_sqlite_sandbox.py
