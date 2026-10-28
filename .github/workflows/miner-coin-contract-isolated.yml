@@ -1,0 +1,20 @@
+name: Miner coin v0.9 isolated contract (NON-PRODUCTION)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/miner-coin-contract/**'
+      - 'unity/sd-miner-prototype/Assets/Scripts/Runtime/EconomyReadOnlyGateway.cs'
+      - '.github/workflows/miner-coin-contract-isolated.yml'
+  workflow_dispatch:
+jobs:
+  test-mock-only:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run isolated mock regression tests (no DB/Unity/Core)
+        run: node --test sandbox/miner-coin-contract/authority-mock.test.cjs
