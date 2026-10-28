@@ -1,0 +1,22 @@
+name: Center v2.2.8 native Unity auth policy sandbox (NON-PRODUCTION)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/center-unity-auth-contract/**'
+      - '.github/workflows/center-unity-auth-contract-isolated.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-launch-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check native Unity launch guard mock — NO PROCESS START
+        run: node --test sandbox/center-unity-auth-contract/launch-policy.test.cjs
+      - name: Confirm original server authority sandbox regression
+        run: node --test sandbox/miner-coin-contract/authority-mock.test.cjs
