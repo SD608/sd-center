@@ -1,0 +1,46 @@
+name: Miner server authority sandbox PG17 (NON-PRODUCTION)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/miner-server-authority/**'
+      - '.github/workflows/miner-server-authority-sandbox.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  disposable-postgres-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: disposable-ci-only
+          POSTGRES_DB: miner_disposable_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d miner_disposable_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: disposable-ci-only
+      PGDATABASE: miner_disposable_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify original v0.9 sandbox regression tests
+        run: node --test sandbox/miner-coin-contract/authority-mock.test.cjs
+      - name: Apply database QA-only schema in isolated service
+        run: psql -X -v ON_ERROR_STOP=1 -f sandbox/miner-server-authority/schema.sql
+      - name: Verify database privileges and coin/return ledger
+        run: psql -X -v ON_ERROR_STOP=1 -f sandbox/miner-server-authority/tests.sql
+      - name: Assert no privileged function exposed to PUBLIC
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -Atc "SELECT COUNT(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='miner_a_sandbox' AND p.prosecdef AND has_function_privilege('miner_a_client_qa',p.oid,'EXECUTE')" | grep -qx 0
