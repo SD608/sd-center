@@ -41,6 +41,8 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f sandbox/miner-server-authority/schema.sql
       - name: Verify database privileges and coin/return ledger
         run: psql -X -v ON_ERROR_STOP=1 -f sandbox/miner-server-authority/tests.sql
+      - name: Two database connections — settlement race and transaction rollback
+        run: bash sandbox/miner-server-authority/race-and-rollback.sh
       - name: Assert no privileged function exposed to PUBLIC
         run: |
           psql -X -v ON_ERROR_STOP=1 -Atc "SELECT COUNT(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='miner_a_sandbox' AND p.prosecdef AND has_function_privilege('miner_a_client_qa',p.oid,'EXECUTE')" | grep -qx 0
