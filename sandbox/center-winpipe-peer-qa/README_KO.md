@@ -1,0 +1,1 @@
+개발용 Windows Named Pipe OS 프로세스 확인 실험. 실제 Center, Unity, SD Core에 연결하지 않는다. Windows CI 실행 전에는 테스트 성공으로 보지 않는다. 운영 데이터 변경 없음. 사용자 승인: Named Pipe 전송 방식만. Release Gate NOT PASS.
