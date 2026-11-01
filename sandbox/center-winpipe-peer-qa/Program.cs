@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 internal static class Program
@@ -34,8 +35,8 @@ internal static class Program
         using var client = new NamedPipeClientStream(".", args[1], PipeDirection.InOut, PipeOptions.Asynchronous);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(TimeoutSeconds));
         await client.ConnectAsync(cts.Token);
-        using var reader = new StreamReader(client, leaveOpen: true);
-        using var writer = new StreamWriter(client, leaveOpen: true) { AutoFlush = true };
+        using var reader = new StreamReader(client, Encoding.UTF8, false, 1024, leaveOpen: true);
+        using var writer = new StreamWriter(client, new UTF8Encoding(false), 1024, leaveOpen: true) { AutoFlush = true };
         await writer.WriteLineAsync($"HELLO|{args[2]}|{args[3]}");
         var result = await reader.ReadLineAsync(cts.Token);
         if (result is null) return 12;
@@ -85,8 +86,8 @@ internal static class Program
             if (rejectImage) approvedDigest = new string('0', 64);
             bool hashOk = sameImage && string.Equals(Digest(observedImage), approvedDigest,
                 StringComparison.OrdinalIgnoreCase);
-            using var reader = new StreamReader(pipe, leaveOpen: true);
-            using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
+            using var reader = new StreamReader(pipe, Encoding.UTF8, false, 1024, leaveOpen: true);
+            using var writer = new StreamWriter(pipe, new UTF8Encoding(false), 1024, leaveOpen: true) { AutoFlush = true };
             string received = await reader.ReadLineAsync(cts.Token) ?? throw new InvalidOperationException("NO_HELLO");
             string[] parts = received.Split('|');
             bool messageOk = parts.Length == 3 && parts[0] == "HELLO" &&
