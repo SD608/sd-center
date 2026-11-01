@@ -1,0 +1,23 @@
+name: Miner Windows OS peer smoke (NON-PRODUCTION)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/center-winpipe-peer-qa/**'
+      - '.github/workflows/miner-winpipe-peer-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-peer-identity:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish test harness
+        run: dotnet publish sandbox/center-winpipe-peer-qa/SDMinerPipePeerQa.csproj -c Release -r win-x64 --self-contained false -p:UseAppHost=true -o .qa-winpipe-peer
+      - name: Run Windows named pipe peer identity checks
+        shell: pwsh
+        run: ./.qa-winpipe-peer/SDMinerPipePeerQa.exe test
