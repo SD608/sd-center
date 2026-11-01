@@ -1,0 +1,27 @@
+name: SD Miner Core session CSharp bridge QA (NON-PRODUCTION)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/miner-core-session-handoff/**'
+      - '.github/workflows/miner-core-csharp-bridge.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  csharp-pipe:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build independent CSharp pipe probe
+        run: dotnet publish sandbox/miner-core-session-handoff/csharp-probe/MinerBridgeCSharpQa.csproj -c Release -r win-x64 --self-contained false -p:UseAppHost=true -o .qa-core-session
+      - name: Execute cross-process Core mock to CSharp IPC contract
+        run: node sandbox/miner-core-session-handoff/csharp-pipe-integration.test.cjs
+      - name: Re-run issuer and Center relay regression
+        run: node --test sandbox/miner-core-session-handoff/mock-core-session.test.cjs

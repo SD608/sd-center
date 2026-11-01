@@ -1,0 +1,28 @@
+name: SD Miner server-issued game session contract (NON-PRODUCTION)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/miner-core-session-handoff/**'
+      - '.github/workflows/miner-core-game-session-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core-session-contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test Core-only issuer and Center relay with real local IPC
+        run: node --test sandbox/miner-core-session-handoff/mock-core-session.test.cjs
+      - name: Prior Named Pipe transport QA
+        run: node --test sandbox/center-named-pipe-bridge/bridge-sandbox.test.cjs
+      - name: Prior launch guard QA
+        run: node --test sandbox/center-unity-auth-contract/launch-policy.test.cjs
