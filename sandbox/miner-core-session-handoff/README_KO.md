@@ -24,3 +24,9 @@
 CI **Mock pass ≠ 실제 Core/Center/Unity session pass**. 이 브랜치는 격리 실험이며 Release Gate는 **NOT PASS**.
 
 Evidence: `miner_core_only_issuer_center_relay_contract_20261101`.
+
+## 2026-11-01 Cross-language Windows QA 보강
+- `csharp-probe/Program.cs`(.NET 8 독립 C# 콘솔 프로그램): Windows NamedPipeClientStream으로 Node 서버에 접속하는 실제 별도 Windows 프로세스. 테스트용 일회성 opaque ticket은 명령줄이 아닌 테스트 프로세스 stdin으로 받고 조회만 요청하며 Core/Run 연결은 항상 disconnected로 인지.
+- `csharp-pipe-integration.test.cjs`: 모의 Core issue → Node Named Pipe → 독립 C# 프로세스 HELLO/GET_STATUS, 같은 ticket replay 거부, 미발급 ticket 거부 시나리오.
+- GitHub Action `miner-core-csharp-bridge.yml` Windows run #41307137596 **SUCCESS**. 로그 `PASS MOCK_CORE_TO_NODE_PIPE_TO_CSHARP_ONCE_REPLAY_DENIED`; issuer 18/18 재통과. 서버 모형 CI run #41307137510 Windows/Linux에서도 18+18+18 각각 성공.
+- C# 테스트 프로그램은 **공식 Unity 프로젝트 빌드나 실제 Center 실행파일/로그인 연결이 아니다.** 시험용 stdin ticket 프로비저닝은 실제품 안전 bootstrap 수단을 확정한 것으로 취급하지 않는다. 공식 user/device JWT·기기 무효화·게임서버·정식 Core 지급·Unity Editor·Windows 사용자 계정 교차 ACL 검증은 여전히 NOT_RUN/BLOCKED.
