@@ -1,0 +1,34 @@
+name: SD Miner Named Pipe Bridge IPC test (NON-PRODUCTION)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/center-named-pipe-bridge/**'
+      - '.github/workflows/miner-named-pipe-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-named-pipe:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test actual Windows Named Pipe + fake session transport
+        run: node --test sandbox/center-named-pipe-bridge/bridge-sandbox.test.cjs
+      - name: Center launch mock regression
+        run: node --test sandbox/center-unity-auth-contract/launch-policy.test.cjs
+      - name: Miner coin mock regression
+        run: node --test sandbox/miner-coin-contract/authority-mock.test.cjs
+  linux-ipc-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test contract using disposable Unix socket
+        run: node --test sandbox/center-named-pipe-bridge/bridge-sandbox.test.cjs
