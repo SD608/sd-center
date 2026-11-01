@@ -1,0 +1,1 @@
+SD광부 GameSession 기술 검증 DRAFT. SD Core 서버만 발급, Center는 전달만. 기존 SD Core 프로필·기기 상태 및 Run 권한 조건을 점검하며 운영 DB·사용자 자산·정식 배포는 변경하지 않음. TTL 수치·RPC·실인증은 미확정. 본 브랜치는 비운영 테스트 전용.
