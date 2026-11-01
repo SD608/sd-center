@@ -15,4 +15,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test sandbox/miner-dev-real-auth-gate/policy.test.cjs
+      - name: Verify offline policy contract
+        run: node --test sandbox/miner-dev-real-auth-gate/policy.test.cjs
+      - name: Syntax-check real Auth E2E (NO SECRETS, NO LIVE AUTH)
+        run: node --check sandbox/miner-dev-real-auth-gate/dev-auth-e2e.mjs
+      - name: Assert E2E DEV-only preflight (NO LIVE AUTH)
+        run: node sandbox/miner-dev-real-auth-gate/dev-auth-e2e.mjs --preflight
