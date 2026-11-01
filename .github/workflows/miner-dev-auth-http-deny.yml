@@ -1,0 +1,22 @@
+name: Miner DEV Edge deny unauthenticated HTTP (NO USER TOKENS)
+on:
+  pull_request:
+    paths:
+      - 'sandbox/miner-dev-real-auth-gate/**'
+      - '.github/workflows/miner-dev-auth-http-deny.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dev-http-deny:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check deployed DEV edge rejects unauthenticated requests
+        env:
+          DEV_GATE_URL: https://rwjueffaziiawdebbwpf.supabase.co/functions/v1/miner-dev-auth-gate-20261101
+        run: node sandbox/miner-dev-real-auth-gate/http-deny.test.mjs
