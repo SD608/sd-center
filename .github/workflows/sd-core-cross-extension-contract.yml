@@ -1,0 +1,25 @@
+name: SD Core Cross-Extension Authority Static Guard
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'database/migrations/sd_core_reward_authority_v1.sql'
+      - 'database/migrations/sd_core_legacy_reward_authority_v1.sql'
+      - 'docs/sd-core/CROSS_EXTENSION_AUTHORITY_ADDENDUM_20261104.md'
+      - 'tests/sd-core/authority_contract_static.test.mjs'
+      - '.github/workflows/sd-core-cross-extension-contract.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-authority-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static authority contract tests (not a DB/E2E gate)
+        run: node --test tests/sd-core/authority_contract_static.test.mjs
