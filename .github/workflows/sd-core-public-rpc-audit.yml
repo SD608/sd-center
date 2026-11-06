@@ -1,0 +1,25 @@
+name: SD Core Public RPC Authority Static Audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'database/migrations/sd_core_reward_authority_v1.sql'
+      - 'database/migrations/sd_core_server_wallet_delta_v1.sql'
+      - 'database/migrations/sd_logistics_reward_authority_v1.sql'
+      - 'sql/release-gate/20260821092200_sd_release_admin_wallet_core_route_v1.sql'
+      - 'docs/sd-core/PUBLIC_RPC_AUTHORITY_AUDIT_20261106.md'
+      - 'tests/sd-core/public_rpc_authority_static.test.mjs'
+      - '.github/workflows/sd-core-public-rpc-audit.yml'
+permissions:
+  contents: read
+jobs:
+  rpc-authority-source-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source-only permission and authority invariants
+        run: node --test tests/sd-core/public_rpc_authority_static.test.mjs
