@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'docs/bitcoin-retirement-server-rpc-revoke-candidate.sql'
+      - 'docs/bitcoin-retirement-readonly-getters-candidate.sql'
       - 'tools/test-bitcoin-retirement-rpc-acl-*.sql'
       - '.github/workflows/test-retired-bitcoin-rpc-acl.yml'
   workflow_dispatch:
@@ -36,6 +37,10 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f docs/bitcoin-retirement-server-rpc-revoke-candidate.sql
       - name: Test rights, history continuity and assets
         run: psql -v ON_ERROR_STOP=1 -f tools/test-bitcoin-retirement-rpc-acl-assert.sql
+      - name: Replace lazy-creating reads with read-only functions in fixture
+        run: psql -v ON_ERROR_STOP=1 -f docs/bitcoin-retirement-readonly-getters-candidate.sql
+      - name: Verify existing account visibility and no new records on read
+        run: psql -v ON_ERROR_STOP=1 -f tools/test-bitcoin-retirement-readonly-getters.sql
       - name: Verify idempotent reapplication
         run: |
           psql -v ON_ERROR_STOP=1 -f docs/bitcoin-retirement-server-rpc-revoke-candidate.sql
