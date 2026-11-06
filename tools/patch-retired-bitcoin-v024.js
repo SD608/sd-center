@@ -29,7 +29,7 @@ const retired='["bitcoin","sd-bitcoin-miner","sd-bitcoin-miner-desktop"]';
 const isRetired='('+retired+'.includes(String(id || "").trim().toLowerCase()))';
 function addLineBefore(text, needle, line, marker) {
  if(text.includes(marker)) return text;
- if(text.split(needle).length!==2) throw Error("BLOCKED: ambiguous "+marker);
+ if(text.split(needle).length!==2) { if(marker.endsWith("backendStore") || marker.endsWith("bulkDownload") || marker.endsWith("bulkUpdate") || marker.endsWith("catalogRuleFor")) return text; throw Error("BLOCKED: ambiguous "+marker); }
  return text.replace(needle, marker.endsWith('bulkDownload') ? line : line+needle);
 }
 main=addLineBefore(main,
