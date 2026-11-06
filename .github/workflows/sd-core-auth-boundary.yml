@@ -1,0 +1,44 @@
+name: SD Core Auth and Device Boundary (Isolated PG17)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tests/sd-core-auth-boundary/**'
+      - '.github/workflows/sd-core-auth-boundary.yml'
+permissions:
+  contents: read
+jobs:
+  postgres-auth-boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_auth_qa
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_auth_qa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: sd_core_auth_qa
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build disposable Core fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sd-core/fixture.sql
+      - name: Apply existing Core API migrations and reward authority
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f database/migrations/sd_core_wallet_v1.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/migrations/sd_core_ledger_api_v1.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/migrations/sd_core_sdlink_compat_v1.sql
+          psql -X -v ON_ERROR_STOP=1 -f database/migrations/sd_core_reward_authority_v1.sql
+      - name: Run simulated user ownership and device revocation
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sd-core-auth-boundary/auth_device_boundary_regression.sql
