@@ -66,6 +66,20 @@ jobs:
           foreach($required in @('SD-BITCOIN-RETIRED-GUARD:installStoreApp','SD-BITCOIN-RETIRED-GUARD:updateAppFromCatalog')) { if(-not $code.Contains($required)){throw "missing Bitcoin backend guard: $required"} }
           if(-not $ui.Contains('SD-BITCOIN-RETIRED-GUARD:renderStore')){throw 'missing Bitcoin store rendering filter'}
 
+      - name: Audit exact local ZIP install entrypoint signatures (read-only)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $main=Get-Content "$env:APP_ROOT\main.js" -Raw
+          foreach($needle in @('async function addAppFromZip(', 'function addAppFromZip(', 'async function installStoreApp(', 'async function updateAppFromCatalog(')) {
+            $at=$main.IndexOf($needle)
+            if($at -ge 0) {
+              $size=[Math]::Min(3800,$main.Length-$at)
+              Write-Host ('ENTRYPOINT '+$needle+' at '+$at)
+              Write-Host $main.Substring($at,$size)
+            }
+          }
+          if(-not $main.Contains('addAppFromZip(')){ throw 'manual ZIP install path missing; cannot audit' }
       - name: Test integrity and production-catalog transition behavior
         shell: pwsh
         run: |
