@@ -1,0 +1,39 @@
+name: SD Core Server Concurrency PG17
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tests/sd-core-server-concurrency/**'
+      - '.github/workflows/sd-core-server-concurrency.yml'
+permissions:
+  contents: read
+jobs:
+  postgres-concurrency:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_concurrency
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_concurrency"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: sd_core_concurrency
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup isolated fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/logistics-server-authority-v2/fixture.sql
+      - name: Apply server helper
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_server_wallet_delta_v1.sql
+      - name: Run parallel regression
+        run: bash tests/sd-core-server-concurrency/run.sh
