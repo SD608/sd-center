@@ -14,6 +14,16 @@ function inject(source,name) {
 }
 main=inject(main,"installStoreApp");
 main=inject(main,"updateAppFromCatalog");
+
+const manualMarker="SD-BITCOIN-RETIRED-GUARD:addAppFromZip";
+if(!main.includes(manualMarker)) {
+ const needle="const inspected = inspectZip(selection.filePaths[0]);";
+ if(main.split(needle).length!==2) throw Error("BLOCKED: ambiguous or missing manual ZIP inspection gate");
+ main=main.replace(needle,needle+
+   "\n      // "+manualMarker+
+   '\n      if (["bitcoin","sd-bitcoin-miner","sd-bitcoin-miner-desktop"].includes(String(inspected.metadata?.id || "").trim().toLowerCase())) { return {ok:false,retired:true,error:"SD비트코인 채굴장은 신규 ZIP 설치 및 재설치 제공이 중단되었습니다."}; }');
+}
+
 const marker="SD-BITCOIN-RETIRED-GUARD:renderStore";
 if(!renderer.includes(marker)) {
  const re=/(function\s+renderStore\s*\(\s*\)\s*\{)/g;
