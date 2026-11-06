@@ -24,6 +24,31 @@ if(!main.includes(manualMarker)) {
    '\n      if (["bitcoin","sd-bitcoin-miner","sd-bitcoin-miner-desktop"].includes(String(inspected.metadata?.id || "").trim().toLowerCase())) { return {ok:false,retired:true,error:"SD비트코인 채굴장은 신규 ZIP 설치 및 재설치 제공이 중단되었습니다."}; }');
 }
 
+// Defense-in-depth for store discovery, all-updates and bulk downloads.
+const retired='["bitcoin","sd-bitcoin-miner","sd-bitcoin-miner-desktop"]';
+const isRetired='('+retired+'.includes(String(id || "").trim().toLowerCase()))';
+function addLineBefore(text, needle, line, marker) {
+ if(text.includes(marker)) return text;
+ if(text.split(needle).length!==2) throw Error("BLOCKED: ambiguous "+marker);
+ return text.replace(needle,line+needle);
+}
+main=addLineBefore(main,
+ '    const entryId = String(entry?.id || "");',
+ '    // SD-BITCOIN-RETIRED-GUARD:catalogRuleFor\n    if ('+retired+'.includes(String(entry?.id || "").trim().toLowerCase())) return null;\n',
+ 'SD-BITCOIN-RETIRED-GUARD:catalogRuleFor');
+main=addLineBefore(main,
+ '.filter(([id, rule]) => id !== SD_LINK_ID && rule?.version && rule?.downloadUrl)',
+ '.filter(([id]) => { /* SD-BITCOIN-RETIRED-GUARD:backendStore */ return !'+retired+'.includes(String(id).toLowerCase()); })\n        ',
+ 'SD-BITCOIN-RETIRED-GUARD:backendStore');
+main=addLineBefore(main,
+ '.map(([id, rule]) => ({',
+ '.filter(([id]) => { /* SD-BITCOIN-RETIRED-GUARD:bulkDownload */ return !'+retired+'.includes(String(id).toLowerCase()); })\n      ',
+ 'SD-BITCOIN-RETIRED-GUARD:bulkDownload');
+main=addLineBefore(main,
+ '(entry) => entry.id !== SD_LINK_ID && updateAvailabilityFor(entry).updateAvailable,',
+ '(entry) => { /* SD-BITCOIN-RETIRED-GUARD:bulkUpdate */ return !'+retired+'.includes(String(entry.id).toLowerCase()) && entry.id !== SD_LINK_ID && updateAvailabilityFor(entry).updateAvailable; },\n        // ',
+ 'SD-BITCOIN-RETIRED-GUARD:bulkUpdate');
+
 const marker="SD-BITCOIN-RETIRED-GUARD:renderStore";
 if(!renderer.includes(marker)) {
  const re=/(function\s+renderStore\s*\(\s*\)\s*\{)/g;
