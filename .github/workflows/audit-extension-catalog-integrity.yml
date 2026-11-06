@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/audit-extension-catalog-integrity.yml'
       - 'tools/audit-extension-catalog-integrity.py'
+      - 'tools/test-retired-bitcoin-downloads.py'
       - 'update/extensions-catalog.json'
       - 'update/desktop-policy.json'
       - 'downloads/extensions/**'
@@ -21,6 +22,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Confirm retired Bitcoin public URLs are not listed or bundled
+        run: python tools/test-retired-bitcoin-downloads.py
       - name: Compute exact SHA-256 for catalog and required-policy ZIPs
         run: python tools/audit-extension-catalog-integrity.py
       - uses: actions/upload-artifact@v4
@@ -28,3 +31,4 @@ jobs:
           name: official-extension-integrity-report
           path: artifacts/extension-integrity/extension-integrity-report.json
           if-no-files-found: error
+

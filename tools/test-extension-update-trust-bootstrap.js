@@ -46,9 +46,12 @@ try {
     throw new Error("embedded vault trust pin resolution failed");
   }
 
-  const pinnedBitcoinAlias = resolveSha({ version: "1.2.2" }, "sd-bitcoin-miner-desktop", "1.2.2");
-  if (pinnedBitcoinAlias !== "cd1dbc64f81f90fc3b2518ccee534243e521ca0f18a92d9839d2507ede45e65d") {
-    throw new Error("bitcoin alias trust pin resolution failed");
+  for (const id of ["bitcoin", "sd-bitcoin-miner", "sd-bitcoin-miner-desktop"]) {
+    for (const rule of [{ version: "1.2.2" }, { version: "1.2.2", sha256: "a".repeat(64) }]) {
+      let rejected = false;
+      try { resolveSha(rule, id, "1.2.2"); } catch { rejected = true; }
+      if (!rejected) throw new Error("retired bitcoin was accepted by trust resolver: " + id);
+    }
   }
 
   let conflictBlocked = false;

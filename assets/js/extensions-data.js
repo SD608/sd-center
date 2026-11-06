@@ -76,21 +76,6 @@ window.SD_EXTENSION_PACKS = [
     "featured": true
   },
   {
-    "id": "sd-bitcoin-miner",
-    "name": "SD비트코인 채굴장",
-    "stage": "Version 1.2",
-    "version": "v1.2.2",
-    "category": "자동 수익 확장팩",
-    "icon": "assets/icons/bitcoin.png",
-    "fileName": "SDBitcoinMiner_v1.2.2_Desktop.zip",
-    "downloadUrl": "https://github.com/SD608/sd-center/releases/download/v.2.2.1/SDBitcoinMiner_v1.2.2_Desktop.zip",
-    "description": "방을 구입하고 채굴 프레임과 그래픽카드를 설치해 운영하는 자동 수익형 채굴 시뮬레이션입니다. 시설과 장비를 확장해 채굴 규모를 키우는 동시에 전기세와 GPU 내구도를 관리해야 합니다.",
-    "requirements": "SD종합센터 v2.2.1 이상 · SD지갑 · Windows 10/11",
-    "updatedAt": "2026-08-14",
-    "tags": ["자동 채굴", "장비 관리", "시설 확장"],
-    "featured": true
-  },
-  {
     "id": "sd-slot",
     "name": "SD슬롯",
     "stage": "Stage 7",

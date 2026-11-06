@@ -9,6 +9,9 @@ on:
       - 'tools/run-v024-final-installer-local.ps1'
       - 'tools/test-extension-update-trust-bootstrap.js'
       - 'tools/test-offline-ui-state-v024.js'
+      - 'tools/stage-bitcoin-retirement-r5-qa-local.ps1'
+      - 'tools/patch-retired-bitcoin-v024.js'
+      - 'tools/test-retired-bitcoin-v024.js'
       - 'tools/patch-v024-offline-ui-state.js'
   workflow_dispatch:
 
@@ -78,6 +81,29 @@ jobs:
             if($wrapper.Contains($bad) -or $base.Contains($bad)){ throw "publication side effect marker found: $bad" }
           }
           Write-Host 'R5 local builder release-safety PASS'
+      - name: Verify isolated R5 Bitcoin candidate stage script and fail-closed hash gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $script='tools/stage-bitcoin-retirement-r5-qa-local.ps1'
+          $tokens=$null; $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path,[ref]$tokens,[ref]$errors) | Out-Null
+          if($errors.Count -gt 0){ throw "QA stage PowerShell syntax errors: $($errors.Count)" }
+          $source=Get-Content $script -Raw
+          foreach($marker in @('728a60445253a8798bb65d578e2192222d4cffcce61d22a3b2192f7fc2612ee5','eec3a7ac2ce56e3fd68005d0ed86f766b99c4d37832f03d8729ad5d6d8afb38d','QA_ONLY_NOT_RELEASE','addAppFromZip','Get-FileHash')) {
+            if(-not $source.Contains($marker)){ throw "QA guard missing: $marker" }
+          }
+          node --check tools/patch-retired-bitcoin-v024.js
+          node --check tools/test-retired-bitcoin-v024.js
+          node tools/test-retired-bitcoin-v024.js
+          if($LASTEXITCODE -ne 0){ throw "manual ZIP regression failed" }
+          $fake=Join-Path $env:RUNNER_TEMP 'SDCenter-UI-Preview-v0.24-Core-FinalGateCandidate-R5-win-x64.zip'
+          Set-Content -LiteralPath $fake -Value 'INTENTIONALLY INVALID ZIP / VERIFY FAIL CLOSED'
+          $rejected=$false
+          try { & (Resolve-Path $script).Path -CandidateZip $fake 2>&1 | Out-Null }
+          catch { $rejected=$true }
+          if(-not $rejected){ throw 'invalid R5 candidate unexpectedly accepted' }
+          Write-Host 'R5 QA script syntax, existing-client guards and invalid hash rejection PASS'
       - name: Syntax-check R5 offline patch/regression sources
         shell: pwsh
         run: |
