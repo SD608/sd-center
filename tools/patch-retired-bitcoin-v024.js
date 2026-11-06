@@ -41,8 +41,8 @@ main=addLineBefore(main,
  '.filter(([id]) => { /* SD-BITCOIN-RETIRED-GUARD:backendStore */ return !'+retired+'.includes(String(id).toLowerCase()); })\n        ',
  'SD-BITCOIN-RETIRED-GUARD:backendStore');
 main=addLineBefore(main,
- '.map(([id, rule]) => ({',
- '.filter(([id]) => { /* SD-BITCOIN-RETIRED-GUARD:bulkDownload */ return !'+retired+'.includes(String(id).toLowerCase()); })\n      ',
+ 'return Object.entries(extensionCatalog?.apps || {})\n      .map(([id, rule]) => ({',
+ '/* SD-BITCOIN-RETIRED-GUARD:bulkDownload */ return Object.entries(extensionCatalog?.apps || {})\n      .filter(([id]) => !'+retired+'.includes(String(id).toLowerCase()))\n      .map(([id, rule]) => ({',
  'SD-BITCOIN-RETIRED-GUARD:bulkDownload');
 main=addLineBefore(main,
  '(entry) => entry.id !== SD_LINK_ID && updateAvailabilityFor(entry).updateAvailable,',
