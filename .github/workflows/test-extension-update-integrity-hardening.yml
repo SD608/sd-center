@@ -63,7 +63,7 @@ jobs:
           node --check "$env:APP_ROOT\public\js\app.js"
           $code=Get-Content "$env:APP_ROOT\main.js" -Raw
           $ui=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
-          foreach($required in @('SD-BITCOIN-RETIRED-GUARD:installStoreApp','SD-BITCOIN-RETIRED-GUARD:updateAppFromCatalog')) { if(-not $code.Contains($required)){throw "missing Bitcoin backend guard: $required"} }
+          foreach($required in @('SD-BITCOIN-RETIRED-GUARD:installStoreApp','SD-BITCOIN-RETIRED-GUARD:updateAppFromCatalog','SD-BITCOIN-RETIRED-GUARD:addAppFromZip')) { if(-not $code.Contains($required)){throw "missing Bitcoin backend guard: $required"} }
           if(-not $ui.Contains('SD-BITCOIN-RETIRED-GUARD:renderStore')){throw 'missing Bitcoin store rendering filter'}
 
       - name: Audit exact local ZIP install entrypoint signatures (read-only)
