@@ -9,6 +9,10 @@ try {
  'function inspectZip() {return {metadata:{id:chosenId}};}',
  'async function installStoreApp(id) {return {ok:true};}',
  'async function updateAppFromCatalog(id) {return {ok:true};}',
+ 'function catalogRuleFor(entry) { const entryId = String(entry?.id || ""); return null; }',
+ 'function getExtensionStoreState() { const apps = Object.entries({}).filter(([id, rule]) => id !== SD_LINK_ID && rule?.version && rule?.downloadUrl).map(([id, rule]) => ({})); return apps; }',
+ 'function downloadableExtensionEntries() { return Object.entries({}).map(([id, rule]) => ({id,rule})); }',
+ 'function updateAllAvailableApps() { const targets = appCatalog.filter((entry) => entry.id !== SD_LINK_ID && updateAvailabilityFor(entry).updateAvailable,); return targets; }',
  'async function addAppFromZip() {',
  ' const selection = await dialog.showOpenDialog(null, {});',
  ' try { const inspected = inspectZip(selection.filePaths[0]); return {ok:true}; } catch(e) { return {ok:false,error:String(e)}; }',
@@ -21,6 +25,7 @@ try {
  cp.execFileSync(process.execPath,[patch,base]);
  const m=fs.readFileSync(path.join(base,"main.js"),"utf8");
  const u=fs.readFileSync(path.join(dir,"app.js"),"utf8");
+ for(const marker of ["catalogRuleFor","backendStore","bulkDownload","bulkUpdate"]) assert(m.includes("SD-BITCOIN-RETIRED-GUARD:"+marker),marker+" guard absent");
  const api=new Function(m+"\nreturn {installStoreApp,updateAppFromCatalog,addAppFromZip,setZipId:(v)=>chosenId=v};")();
  const view=new Function(u+"\nrenderStore();return state.storeApps;")();
  assert.deepEqual(view.map(x=>x.id),["sd-slot"]);
