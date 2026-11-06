@@ -1,0 +1,49 @@
+name: SD Core Server Event Replay Context (Isolated PG17)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'database/migrations/sd_core_server_wallet_delta_v1.sql'
+      - 'database/migrations/sd_core_server_event_replay_context_v1.sql'
+      - 'tests/sd-core-server-replay/**'
+      - '.github/workflows/sd-core-server-replay-context.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  server-event-replay-context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sd_core_replay_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sd_core_replay_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: sd_core_replay_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build isolated production-shaped test schema
+        run: psql -v ON_ERROR_STOP=1 -f tests/logistics-server-authority-v2/fixture.sql
+      - name: Apply original server helper and settle a historical event
+        run: |
+          psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_server_wallet_delta_v1.sql
+          psql -v ON_ERROR_STOP=1 -f tests/sd-core-server-replay/pre_migration_legacy.sql
+      - name: Apply additive replay context upgrade
+        run: psql -v ON_ERROR_STOP=1 -f database/migrations/sd_core_server_event_replay_context_v1.sql
+      - name: Verify private RPC grants, historical replay, exact retry, context conflict, atomic rollback
+        run: psql -v ON_ERROR_STOP=1 -f tests/sd-core-server-replay/regression.sql
