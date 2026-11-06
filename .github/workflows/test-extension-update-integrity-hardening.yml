@@ -6,6 +6,8 @@ on:
       - '.github/workflows/test-extension-update-integrity-hardening.yml'
       - 'tools/patch-v024-extension-update-integrity.js'
       - 'tools/patch-v024-extension-update-trust-bootstrap.js'
+      - 'tools/patch-retired-bitcoin-v024.js'
+      - 'tools/test-retired-bitcoin-v024.js'
       - 'tools/test-extension-update-integrity-helper.js'
       - 'tools/test-extension-update-trust-bootstrap.js'
       - 'tools/audit-extension-catalog-integrity.py'
@@ -25,6 +27,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Validate retired Bitcoin installation guard in isolation
+        shell: pwsh
+        run: |
+          node tools/test-retired-bitcoin-v024.js
+          node --check tools/patch-retired-bitcoin-v024.js
+          node --check tools/patch-v024-extension-update-trust-bootstrap.js
       - name: Download exact official v2.2.7 installer
         shell: pwsh
         run: |
@@ -52,6 +60,12 @@ jobs:
           node tools/patch-v024-extension-update-integrity.js "$env:APP_ROOT"
           node tools/patch-v024-extension-update-trust-bootstrap.js "$env:APP_ROOT"
           node --check "$env:APP_ROOT\main.js"
+          node --check "$env:APP_ROOT\public\js\app.js"
+          $code=Get-Content "$env:APP_ROOT\main.js" -Raw
+          $ui=Get-Content "$env:APP_ROOT\public\js\app.js" -Raw
+          foreach($required in @('SD-BITCOIN-RETIRED-GUARD:installStoreApp','SD-BITCOIN-RETIRED-GUARD:updateAppFromCatalog')) { if(-not $code.Contains($required)){throw "missing Bitcoin backend guard: $required"} }
+          if(-not $ui.Contains('SD-BITCOIN-RETIRED-GUARD:renderStore')){throw 'missing Bitcoin store rendering filter'}
+
       - name: Test integrity and production-catalog transition behavior
         shell: pwsh
         run: |
