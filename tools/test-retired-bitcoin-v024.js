@@ -13,7 +13,7 @@ try {
  ' const selection = await dialog.showOpenDialog(null, {});',
  ' try { const inspected = inspectZip(selection.filePaths[0]); return {ok:true}; } catch(e) { return {ok:false,error:String(e)}; }',
  '}'
- ].join("\\n")+"\\n";
+ ].join("\n")+"\n";
  const ui='const state={storeApps:[{id:"bitcoin"},{id:"sd-bitcoin-miner"},{id:"sd-slot"}]};\nfunction renderStore(){return state.storeApps.length;}\n';
  fs.writeFileSync(path.join(base,"main.js"),main);
  fs.writeFileSync(path.join(dir,"app.js"),ui);
