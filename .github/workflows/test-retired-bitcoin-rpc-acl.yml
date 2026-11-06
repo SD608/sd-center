@@ -1,0 +1,42 @@
+name: Test Retired Bitcoin RPC ACL (isolated PostgreSQL)
+on:
+  pull_request:
+    paths:
+      - 'docs/bitcoin-retirement-server-rpc-revoke-candidate.sql'
+      - 'tools/test-bitcoin-retirement-rpc-acl-*.sql'
+      - '.github/workflows/test-retired-bitcoin-rpc-acl.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  postgresql-acl:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: bitcoin_retirement_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: bitcoin_retirement_qa
+      PGUSER: postgres
+      PGPASSWORD: test-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare isolated API/asset fixture
+        run: psql -v ON_ERROR_STOP=1 -f tools/test-bitcoin-retirement-rpc-acl-fixture.sql
+      - name: Apply retirement SQL against fixture only
+        run: psql -v ON_ERROR_STOP=1 -f docs/bitcoin-retirement-server-rpc-revoke-candidate.sql
+      - name: Test rights, history continuity and assets
+        run: psql -v ON_ERROR_STOP=1 -f tools/test-bitcoin-retirement-rpc-acl-assert.sql
+      - name: Verify idempotent reapplication
+        run: |
+          psql -v ON_ERROR_STOP=1 -f docs/bitcoin-retirement-server-rpc-revoke-candidate.sql
+          psql -v ON_ERROR_STOP=1 -f tools/test-bitcoin-retirement-rpc-acl-assert.sql
