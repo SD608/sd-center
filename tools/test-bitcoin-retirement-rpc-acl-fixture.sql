@@ -5,8 +5,8 @@ CREATE TABLE public.qa_asset_probe (id integer primary key, btc numeric, wallet 
 
 -- Minimal server-authority history fixture (not an operating database copy).
 CREATE SCHEMA auth;
-CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $
-  SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
+  SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 CREATE TABLE public.sd_bitcoin_accounts (
  user_id uuid PRIMARY KEY, btc_balance numeric NOT NULL DEFAULT 0,
  max_btc_balance numeric DEFAULT 0, total_mined_btc numeric DEFAULT 0,
@@ -37,8 +37,8 @@ CREATE FUNCTION public.sd_bitcoin_buy_gpu(text,uuid) RETURNS void LANGUAGE sql A
 CREATE FUNCTION public.sd_bitcoin_sell(numeric,uuid) RETURNS void LANGUAGE sql AS $$ SELECT NULL::void $$;
 CREATE FUNCTION public.sd_bitcoin_reactivate_electricity(uuid) RETURNS void LANGUAGE sql AS $$ SELECT NULL::void $$;
 CREATE FUNCTION public.upsert_sd_bitcoin_snapshot(text,numeric,text,timestamptz) RETURNS void LANGUAGE sql AS $$ SELECT NULL::void $$;
-CREATE FUNCTION public.sd_bitcoin_get_state() RETURNS jsonb LANGUAGE sql AS $ SELECT '{}'::jsonb $;
-CREATE FUNCTION public.get_sd_bitcoin_snapshot() RETURNS jsonb LANGUAGE sql AS $ SELECT '{}'::jsonb $;
+CREATE FUNCTION public.sd_bitcoin_get_state() RETURNS jsonb LANGUAGE sql AS $$ SELECT '{}'::jsonb $$;
+CREATE FUNCTION public.get_sd_bitcoin_snapshot() RETURNS jsonb LANGUAGE sql AS $$ SELECT '{}'::jsonb $$;
 CREATE FUNCTION public.push_sd_link_transaction(text,text,text,text,bigint,timestamptz,jsonb) RETURNS integer LANGUAGE sql AS $$ SELECT 1 $$;
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
