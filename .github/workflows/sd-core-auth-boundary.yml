@@ -42,3 +42,5 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f database/migrations/sd_core_reward_authority_v1.sql
       - name: Run simulated user ownership and device revocation
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sd-core-auth-boundary/auth_device_boundary_regression.sql
+      - name: Check signed JWT DEV runner JavaScript syntax only
+        run: node --check tests/sd-core-auth-boundary/dev_signed_jwt_readonly_smoke.mjs
